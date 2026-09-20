@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة التحكم الإدارية المتكاملة | Twity Game Hub Admin</title>
+  <link rel="icon" type="image/png" href="../favicon.png">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            cairo: ['Cairo', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+            },
+            dark: {
+              900: '#0b0f19',
+              800: '#111827',
+              700: '#1f2937',
+              600: '#374151',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React 18 & Babel for standalone modern dashboard -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    body {
+      font-family: 'Cairo', sans-serif;
+      background-color: #0b0f19;
+      color: #f3f4f6;
+      margin: 0;
+      overflow-x: hidden;
+    }
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #111827;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #374151;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #4b5563;
+    }
+    .glass-card {
+      background: rgba(17, 24, 39, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card-hover:hover {
+      border-color: rgba(34, 197, 94, 0.3);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(34, 197, 94, 0.1);
+    }
+    .glow-gold {
+      text-shadow: 0 0 12px rgba(234, 179, 8, 0.4);
+    }
+  </style>
+</head>
+<body class="bg-dark-900 text-gray-100 min-h-screen">
+  <div id="root"></div>
+
+  <!-- Firebase v10 Modular SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+      getFirestore, 
+      collection, 
+      doc, 
+      getDoc, 
+      getDocs, 
+      setDoc, 
+      updateDoc, 
+      deleteDoc, 
+      addDoc, 
+      onSnapshot, 
+      serverTimestamp, 
+      query, 
+      orderBy, 
+      limit 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDpjvk1w1MvT7iy9Pgsh7-9QEoHWiLAD9k",
+      authDomain: "game-hub-a674f.firebaseapp.com",
+      projectId: "game-hub-a674f",
+      storageBucket: "game-hub-a674f.firebasestorage.app",
+      messagingSenderId: "562034251468",
+      appId: "1:562034251468:web:5b9f55755906bc9152d469",
+      measurementId: "G-S5YL3W6L92"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Export to window for React component access
+    window.db = db;
+    window.fbTools = {
+      collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, onSnapshot, serverTimestamp, query, orderBy, limit
+    };
+    window.firebaseReady = true;
+    window.dispatchEvent(new Event('firebase-ready'));
+  </script>
+
+  <!-- React Application -->
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    function AdminApp() {
+      const [isAuthenticated, setIsAuthenticated] = useState(() => {
+        return sessionStorage.getItem('twity_admin_auth') === 'true';
+      });
+      const [pin, setPin] = useState('');
+      const [pinError, setPinError] = useState('');
+      const [activeTab, setActiveTab] = useState('overview'); // overview, players, economy, settings, history
+      const [fbStatus, setFbStatus] = useState('connecting'); // connecting, ready, error
+
+      // Data states
+      const [players, setPlayers] = useState([]);
+      const [gameSettings, setGameSettings] = useState({
+        startingChips: 1250,
+        defaultTurnTimer: 72,
+        botDifficulty: 'medium',
+        maintenanceMode: false,
+        announcement: 'مرحباً بكم في مجتمع الألعاب الممتعة!'
+      });
+      const [gameLogs, setGameLogs] = useState([]);
+      const [searchQuery, setSearchQuery] = useState('');
+      const [statusFilter, setStatusFilter] = useState('all');
+
+      // Modals
+      const [editingPlayer, setEditingPlayer] = useState(null);
+      const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
+      const [newPlayerData, setNewPlayerData] = useState({ name: '', chips: 5000, rating: 1200, level: 1 });
+      const [toastMsg, setToastMsg] = useState(null);
+
+      const showToast = (text, type = 'success') => {
+        setToastMsg({ text, type });
+        setTimeout(() => setToastMsg(null), 3500);
+      };
+
+      // Handle Pin Auth
+      const handleLogin = (e) => {
+        e && e.preventDefault();
+        if (pin === '123456' || pin === 'admin2026') {
+          sessionStorage.setItem('twity_admin_auth', 'true');
+          setIsAuthenticated(true);
+          setPinError('');
+          showToast('تم تسجيل الدخول بنجاح! مرحباً بالمدير.');
+        } else {
+          setPinError('رمز المرور غير صحيح! (الرمز الافتراضي: 123456)');
+        }
+      };
+
+      const handleLogout = () => {
+        sessionStorage.removeItem('twity_admin_auth');
+        setIsAuthenticated(false);
+        setPin('');
+      };
+
+      // Set up Realtime Firebase listeners
+      useEffect(() => {
+        if (!isAuthenticated) return;
+
+        const initFirebaseListeners = () => {
+          if (!window.db || !window.fbTools) return;
+          const { collection, doc, onSnapshot, query, orderBy, limit } = window.fbTools;
+          setFbStatus('ready');
+
+          // 1. Players listener
+          try {
+            const playersRef = collection(window.db, 'players');
+            const unsubPlayers = onSnapshot(playersRef, (snapshot) => {
+              const list = [];
+              snapshot.forEach((doc) => {
+                list.push({ id: doc.id, ...doc.data() });
+              });
+              setPlayers(list);
+            }, (err) => {
+              console.error("Players listener error:", err);
+            });
+
+            // 2. Settings listener
+            const settingsDoc = doc(window.db, 'config', 'game_settings');
+            const unsubSettings = onSnapshot(settingsDoc, (docSnap) => {
+              if (docSnap.exists()) {
+                setGameSettings(prev => ({ ...prev, ...docSnap.data() }));
+              }
+            }, (err) => {
+              console.error("Settings listener error:", err);
+            });
+
+            // 3. Game history listener
+            try {
+              const historyQuery = query(collection(window.db, 'game_history'), orderBy('timestamp', 'desc'), limit(50));
+              const unsubHistory = onSnapshot(historyQuery, (snapshot) => {
+                const logs = [];
+                snapshot.forEach((doc) => {
+                  logs.push({ id: doc.id, ...doc.data() });
+                });
+                setGameLogs(logs);
+              }, (err) => {
+                // If index not ready, fall back to simple collection listener
+                const fallbackRef = collection(window.db, 'game_history');
+                onSnapshot(fallbackRef, (snap) => {
+                  const fallbackLogs = [];
+                  snap.forEach(d => fallbackLogs.push({ id: d.id, ...d.data() }));
+                  setGameLogs(fallbackLogs.reverse());
+                });
+              });
+            } catch (e) {
+              console.warn(e);
+            }
+
+            return () => {
+              unsubPlayers();
+              unsubSettings();
+            };
+          } catch (e) {
+            console.error("Firebase init failed:", e);
+            setFbStatus('error');
+          }
+        };
+
+        if (window.firebaseReady) {
+          initFirebaseListeners();
+        } else {
+          window.addEventListener('firebase-ready', initFirebaseListeners);
+          return () => window.removeEventListener('firebase-ready', initFirebaseListeners);
+        }
+      }, [isAuthenticated]);
+
+      // Re-trigger icons after DOM changes
+      useEffect(() => {
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      });
+
+      // Actions: Update Game Settings
+      const handleSaveSettings = async (newConfig) => {
+        if (!window.db || !window.fbTools) return;
+        try {
+          const { doc, setDoc, serverTimestamp } = window.fbTools;
+          await setDoc(doc(window.db, 'config', 'game_settings'), {
+            ...gameSettings,
+            ...newConfig,
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+          setGameSettings(prev => ({ ...prev, ...newConfig }));
+          showToast('✅ تم حفظ الإعدادات وتطبيقها على جميع الأجهزة فوراً!');
+        } catch (err) {
+          showToast('فشل في حفظ الإعدادات: ' + err.message, 'error');
+        }
+      };
+
+      // Actions: Update Player
+      const handleUpdatePlayerChips = async (playerId, deltaOrNewValue, isAbsolute = false) => {
+        if (!window.db || !window.fbTools) return;
+        try {
+          const { doc, updateDoc, serverTimestamp } = window.fbTools;
+          const player = players.find(p => p.id === playerId);
+          if (!player) return;
+
+          const currentChips = Number(player.chips) || 0;
+          const targetChips = isAbsolute ? Number(deltaOrNewValue) : Math.max(0, currentChips + Number(deltaOrNewValue));
+
+          await updateDoc(doc(window.db, 'players', playerId), {
+            chips: targetChips,
+            updatedAt: serverTimestamp()
+          });
+
+          showToast(`✅ تم تعديل رصيد اللاعب (${player.name || playerId}) إلى ${targetChips.toLocaleString()} رقاقة`);
+          if (editingPlayer && editingPlayer.id === playerId) {
+            setEditingPlayer(prev => ({ ...prev, chips: targetChips }));
+          }
+        } catch (err) {
+          showToast('خطأ في تعديل الرصيد: ' + err.message, 'error');
+        }
+      };
+
+      // Actions: Toggle Player Ban
+      const handleToggleBan = async (player) => {
+        if (!window.db || !window.fbTools) return;
+        try {
+          const { doc, updateDoc, serverTimestamp } = window.fbTools;
+          const newBannedState = !player.isBanned;
+          await updateDoc(doc(window.db, 'players', player.id), {
+            isBanned: newBannedState,
+            updatedAt: serverTimestamp()
+          });
+          showToast(newBannedState ? `⛔ تم حظر اللاعب ${player.name}` : `✅ تم فك حظر اللاعب ${player.name}`);
+        } catch (err) {
+          showToast('حدث خطأ: ' + err.message, 'error');
+        }
+      };
+
+      // Actions: Delete Player
+      const handleDeletePlayer = async (playerId, name) => {
+        if (!confirm(`هل أنت متأكد من حذف اللاعب "${name}" نهائياً من قاعدة البيانات؟`)) return;
+        try {
+          const { doc, deleteDoc } = window.fbTools;
+          await deleteDoc(doc(window.db, 'players', playerId));
+          showToast(`🗑️ تم حذف اللاعب "${name}" بنجاح.`);
+        } catch (err) {
+          showToast('خطأ أثناء الحذف: ' + err.message, 'error');
+        }
+      };
+
+      // Actions: Create New Player
+      const handleCreatePlayer = async (e) => {
+        e.preventDefault();
+        if (!newPlayerData.name.trim()) {
+          showToast('يرجى كتابة اسم اللاعب', 'error');
+          return;
+        }
+        try {
+          const { collection, addDoc, serverTimestamp } = window.fbTools;
+          await addDoc(collection(window.db, 'players'), {
+            name: newPlayerData.name.trim(),
+            chips: Number(newPlayerData.chips) || 1250,
+            rating: Number(newPlayerData.rating) || 1200,
+            level: Number(newPlayerData.level) || 1,
+            wins: 0,
+            losses: 0,
+            isBanned: false,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          });
+          setShowAddPlayerModal(false);
+          setNewPlayerData({ name: '', chips: 5000, rating: 1200, level: 1 });
+          showToast('🎉 تم إضافة اللاعب الجديد بنجاح!');
+        } catch (err) {
+          showToast('فشل في إضافة اللاعب: ' + err.message, 'error');
+        }
+      };
+
+      // Actions: Give Bonus to All
+      const handleGrantAllBonus = async (amount) => {
+        if (!confirm(`هل تريد حقاً منح جميع اللاعبين المسجلين (+${amount.toLocaleString()} رقاقة) كهدية؟`)) return;
+        try {
+          const { doc, updateDoc, serverTimestamp } = window.fbTools;
+          let count = 0;
+          for (const p of players) {
+            await updateDoc(doc(window.db, 'players', p.id), {
+              chips: (Number(p.chips) || 0) + amount,
+              updatedAt: serverTimestamp()
+            });
+            count++;
+          }
+          showToast(`🎁 تم توزيع ${amount.toLocaleString()} رقاقة على ${count} لاعب بنجاح!`);
+        } catch (err) {
+          showToast('حدث خطأ: ' + err.message, 'error');
+        }
+      };
+
+      // Filtered players
+      const filteredPlayers = useMemo(() => {
+        return players.filter(p => {
+          const matchesSearch = (p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                (p.id || '').toLowerCase().includes(searchQuery.toLowerCase());
+          if (statusFilter === 'banned') return matchesSearch && p.isBanned;
+          if (statusFilter === 'active') return matchesSearch && !p.isBanned;
+          return matchesSearch;
+        });
+      }, [players, searchQuery, statusFilter]);
+
+      // Computed metrics
+      const totalChips = useMemo(() => {
+        return players.reduce((sum, p) => sum + (Number(p.chips) || 0), 0);
+      }, [players]);
+
+      // Authentication Screen
+      if (!isAuthenticated) {
+        return (
+          <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-dark-900 via-slate-900 to-black">
+            <div className="glass-card max-w-md w-full rounded-2xl p-8 shadow-2xl relative border border-emerald-500/20">
+              <div className="text-center mb-8">
+                <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 p-0.5 shadow-lg shadow-emerald-500/30 flex items-center justify-center">
+                  <div className="w-full h-full bg-dark-900 rounded-2xl flex items-center justify-center">
+                    <span className="text-3xl">🛡️</span>
+                  </div>
+                </div>
+                <h1 className="text-2xl font-black text-white mb-2">لوحة الإدارة الرئيسية</h1>
+                <p className="text-gray-400 text-sm">Twity Game Hub • نظام التحكم السحابي الشامل</p>
+              </div>
+
+              <form onSubmit={handleLogin} className="space-y-5">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">رمز مرور المسؤول (Admin PIN)</label>
+                  <input
+                    type="password"
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value)}
+                    placeholder="أدخل رمز المرور السري..."
+                    className="w-full px-4 py-3 bg-dark-800 border border-gray-700 rounded-xl text-center text-xl tracking-widest text-emerald-400 placeholder-gray-500 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                    autoFocus
+                  />
+                  {pinError && (
+                    <p className="mt-2 text-xs text-rose-400 text-center font-medium">{pinError}</p>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setPin('123456'); }}
+                    className="flex-1 py-1.5 px-3 text-xs bg-dark-800 hover:bg-dark-700 text-gray-300 rounded-lg border border-gray-700 transition"
+                  >
+                    تجربة رمز: 123456
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setPin('admin2026'); }}
+                    className="flex-1 py-1.5 px-3 text-xs bg-dark-800 hover:bg-dark-700 text-gray-300 rounded-lg border border-gray-700 transition"
+                  >
+                    رمز: admin2026
+                  </button>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/25 transition duration-200 transform hover:-translate-y-0.5 active:translate-y-0"
+                >
+                  دخول لوحة التحكم 🚀
+                </button>
+              </form>
+
+              <div className="mt-6 pt-6 border-t border-gray-800 text-center">
+                <a href="../" className="text-xs text-gray-400 hover:text-emerald-400 transition flex items-center justify-center gap-1">
+                  <span>← العودة إلى تطبيق الألعاب الرئيسي</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="min-h-screen flex flex-col md:flex-row bg-dark-900 text-gray-200">
+          
+          {/* Toast Notification */}
+          {toastMsg && (
+            <div className={`fixed bottom-6 left-6 z-50 px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 border text-sm font-semibold transition-all transform animate-bounce ${
+              toastMsg.type === 'error' 
+                ? 'bg-rose-950/90 text-rose-200 border-rose-500/40' 
+                : 'bg-emerald-950/90 text-emerald-200 border-emerald-500/40'
+            }`}>
+              <span>{toastMsg.type === 'error' ? '⚠️' : '✅'}</span>
+              <span>{toastMsg.text}</span>
+            </div>
+          )}
+
+          {/* Desktop Sidebar */}
+          <aside className="w-full md:w-64 bg-dark-800 border-l border-gray-800/80 flex flex-col justify-between shrink-0">
+            <div>
+              {/* Brand Header */}
+              <div className="p-6 border-b border-gray-800/80 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 text-white font-black text-xl">
+                    T
+                  </div>
+                  <div>
+                    <h2 className="text-base font-extrabold text-white tracking-wide">Twity Hub</h2>
+                    <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                      مدير النظام العام
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Navigation Links */}
+              <nav className="p-4 space-y-1.5">
+                {[
+                  { id: 'overview', label: 'لوحة الإحصائيات العامة', icon: 'layout-dashboard' },
+                  { id: 'players', label: 'إدارة اللاعبين والحسابات', icon: 'users', badge: players.length },
+                  { id: 'economy', label: 'الاقتصاد والرقائق والجوائز', icon: 'coins' },
+                  { id: 'settings', label: 'إعدادات اللعبة والسيرفر', icon: 'sliders-horizontal' },
+                  { id: 'history', label: 'سجل المباريات المباشر', icon: 'history', badge: gameLogs.length },
+                ].map((item) => {
+                  const isActive = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveTab(item.id)}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+                        isActive
+                          ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-sm'
+                          : 'text-gray-400 hover:text-white hover:bg-dark-700/60'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <i data-lucide={item.icon} className="w-4 h-4"></i>
+                        <span>{item.label}</span>
+                      </div>
+                      {item.badge !== undefined && (
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                          isActive ? 'bg-emerald-500/20 text-emerald-300' : 'bg-dark-700 text-gray-400'
+                        }`}>
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+
+            {/* Sidebar Bottom Controls */}
+            <div className="p-4 border-t border-gray-800/80 space-y-3">
+              <a
+                href="../"
+                target="_blank"
+                rel="noreferrer"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-dark-700/80 hover:bg-dark-700 text-gray-300 hover:text-white text-xs font-semibold border border-gray-700 transition"
+              >
+                <span>فتح اللعبة في تبويب جديد 🎮</span>
+              </a>
+
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-bold border border-rose-500/20 transition"
+              >
+                <span>قفل وتسجيل الخروج 🔒</span>
+              </button>
+            </div>
+          </aside>
+
+          {/* Main Content Area */}
+          <main className="flex-1 flex flex-col overflow-y-auto">
+            
+            {/* Top Navigation Bar */}
+            <header className="h-20 bg-dark-800/60 backdrop-blur-md border-b border-gray-800 px-6 flex items-center justify-between sticky top-0 z-30">
+              <div>
+                <h1 className="text-xl font-black text-white">
+                  {activeTab === 'overview' && 'نظرة عامة على النظام'}
+                  {activeTab === 'players' && 'إدارة حسابات اللاعبين'}
+                  {activeTab === 'economy' && 'التحكم بالاقتصاد وتوزيع الرقائق'}
+                  {activeTab === 'settings' && 'إعدادات السيرفر والألعاب'}
+                  {activeTab === 'history' && 'سجل الجولات والمباريات'}
+                </h1>
+                <p className="text-xs text-gray-400 mt-0.5">سحابة Firebase متصلة ومتزامنة مباشرة في الوقت الحقيقي</p>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-xs font-bold text-emerald-400">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  قاعدة البيانات: متصلة وفعّالة
+                </div>
+
+                {gameSettings.maintenanceMode && (
+                  <div className="px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-xs font-bold text-amber-300 animate-pulse">
+                    ⚠️ وضع الصيانة مفعل حالياً!
+                  </div>
+                )}
+              </div>
+            </header>
+
+            {/* View Container */}
+            <div className="p-6 md:p-8 space-y-8 flex-1 max-w-7xl mx-auto w-full">
+
+              {/* TAB 1: OVERVIEW */}
+              {activeTab === 'overview' && (
+                <div className="space-y-8">
+                  {/* Metric Cards Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                    <div className="glass-card glass-card-hover p-6 rounded-2xl relative overflow-hidden">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-wider text-gray-400">إجمالي اللاعبين</p>
+                          <h3 className="text-3xl font-black text-white mt-1">{players.length}</h3>
+                        </div>
+                        <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center text-xl">
+                          👥
+                        </div>
+                      </div>
+                      <p className="text-xs text-emerald-400 mt-4 font-semibold">متاحين في قاعدة بيانات Firestore</p>
+                    </div>
+
+                    <div className="glass-card glass-card-hover p-6 rounded-2xl relative overflow-hidden">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-wider text-gray-400">إجمالي الرقائق المتداولة</p>
+                          <h3 className="text-3xl font-black text-amber-400 glow-gold mt-1">
+                            {totalChips.toLocaleString()}
+                          </h3>
+                        </div>
+                        <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl">
+                          🪙
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-4 font-semibold">متوسط {players.length ? Math.round(totalChips / players.length).toLocaleString() : 0} لكل لاعب</p>
+                    </div>
+
+                    <div className="glass-card glass-card-hover p-6 rounded-2xl relative overflow-hidden">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-wider text-gray-400">المباريات المسجلة</p>
+                          <h3 className="text-3xl font-black text-white mt-1">{gameLogs.length}</h3>
+                        </div>
+                        <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center text-xl">
+                          🏆
+                        </div>
+                      </div>
+                      <p className="text-xs text-purple-400 mt-4 font-semibold">سجل مباريات تركيش أوكي</p>
+                    </div>
+
+                    <div className="glass-card glass-card-hover p-6 rounded-2xl relative overflow-hidden">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-wider text-gray-400">حالة السيرفر</p>
+                          <h3 className="text-2xl font-black mt-1 text-emerald-400">
+                            {gameSettings.maintenanceMode ? 'صيانة 🛠️' : 'جاهز للعب 🚀'}
+                          </h3>
+                        </div>
+                        <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl">
+                          ⚡
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-4 font-semibold">وقت الدور: {gameSettings.defaultTurnTimer} ثانية</p>
+                    </div>
+                  </div>
+
+                  {/* Announcement Banner Display & Quick Action */}
+                  <div className="glass-card p-6 rounded-2xl border border-emerald-500/20 bg-gradient-to-r from-emerald-950/20 to-teal-950/20 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <span className="text-xs font-extrabold text-emerald-400 uppercase tracking-widest">📢 شريط الإعلانات النشط حالياً للمستخدمين</span>
+                      <p className="text-base text-gray-200 font-bold">"{gameSettings.announcement}"</p>
+                    </div>
+                    <button
+                      onClick={() => setActiveTab('settings')}
+                      className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-lg shadow-emerald-500/20 transition whitespace-nowrap"
+                    >
+                      تعديل الإعلان والبث ✏️
+                    </button>
+                  </div>
+
+                  {/* Quick Controls Section */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="glass-card p-6 rounded-2xl space-y-4">
+                      <h4 className="text-base font-bold text-white flex items-center gap-2">
+                        <span>⚡ إجراءات سريعة وفورية</span>
+                      </h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          onClick={() => handleGrantAllBonus(10000)}
+                          className="p-4 rounded-xl bg-dark-700 hover:bg-dark-600 border border-gray-700 text-right space-y-1 transition group"
+                        >
+                          <p className="text-sm font-bold text-amber-400 group-hover:text-amber-300">🎁 توزيع 10,000 رقاقة</p>
+                          <p className="text-xs text-gray-400">إرسال منحة لجميع اللاعبين المسجلين دفعة واحدة</p>
+                        </button>
+
+                        <button
+                          onClick={() => setShowAddPlayerModal(true)}
+                          className="p-4 rounded-xl bg-dark-700 hover:bg-dark-600 border border-gray-700 text-right space-y-1 transition group"
+                        >
+                          <p className="text-sm font-bold text-emerald-400 group-hover:text-emerald-300">➕ إضافة لاعب جديد</p>
+                          <p className="text-xs text-gray-400">إنشاء حساب يدوي برصيد محدد فوراً</p>
+                        </button>
+
+                        <button
+                          onClick={() => handleSaveSettings({ maintenanceMode: !gameSettings.maintenanceMode })}
+                          className={`p-4 rounded-xl border text-right space-y-1 transition group ${
+                            gameSettings.maintenanceMode 
+                              ? 'bg-rose-950/40 border-rose-500/40 text-rose-300' 
+                              : 'bg-dark-700 hover:bg-dark-600 border-gray-700 text-gray-300'
+                          }`}
+                        >
+                          <p className="text-sm font-bold">
+                            {gameSettings.maintenanceMode ? '🟢 إيقاف وضع الصيانة' : '🔴 تفعيل وضع الصيانة'}
+                          </p>
+                          <p className="text-xs text-gray-400">قفل أو فتح الدخول للعبة لجميع المستخدمين</p>
+                        </button>
+
+                        <button
+                          onClick={() => setActiveTab('players')}
+                          className="p-4 rounded-xl bg-dark-700 hover:bg-dark-600 border border-gray-700 text-right space-y-1 transition group"
+                        >
+                          <p className="text-sm font-bold text-blue-400 group-hover:text-blue-300">🔍 فحص الحسابات</p>
+                          <p className="text-xs text-gray-400">تعديل أرصدة اللاعبين وحظر المشاغبين</p>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Top Players Preview */}
+                    <div className="glass-card p-6 rounded-2xl space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-base font-bold text-white flex items-center gap-2">
+                          <span>🏆 كبار المتصدرين (الأعلى رصيداً)</span>
+                        </h4>
+                        <button onClick={() => setActiveTab('players')} className="text-xs text-emerald-400 hover:underline">عرض الكل</button>
+                      </div>
+
+                      <div className="space-y-2.5">
+                        {[...players]
+                          .sort((a, b) => (Number(b.chips) || 0) - (Number(a.chips) || 0))
+                          .slice(0, 4)
+                          .map((player, idx) => (
+                            <div key={player.id} className="p-3 bg-dark-800/80 rounded-xl flex items-center justify-between border border-gray-800">
+                              <div className="flex items-center gap-3">
+                                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${
+                                  idx === 0 ? 'bg-amber-400 text-black' : idx === 1 ? 'bg-slate-300 text-black' : idx === 2 ? 'bg-amber-700 text-white' : 'bg-dark-700 text-gray-400'
+                                }`}>
+                                  {idx + 1}
+                                </span>
+                                <div>
+                                  <p className="text-sm font-bold text-white">{player.name || 'مستخدم'}</p>
+                                  <p className="text-xs text-gray-400">مستوى {player.level || 1} • تقييم {player.rating || 1200}</p>
+                                </div>
+                              </div>
+                              <span className="text-sm font-extrabold text-amber-400">
+                                {(Number(player.chips) || 0).toLocaleString()} 🪙
+                              </span>
+                            </div>
+                          ))}
+                        {players.length === 0 && (
+                          <p className="text-xs text-gray-500 text-center py-6">لا يوجد لاعبين مسجلين بعد في قاعدة البيانات.</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: PLAYERS MANAGEMENT */}
+              {activeTab === 'players' && (
+                <div className="space-y-6">
+                  {/* Filter & Action Bar */}
+                  <div className="glass-card p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 w-full md:w-auto flex-1">
+                      <div className="relative flex-1 max-w-md">
+                        <input
+                          type="text"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          placeholder="بحث بالاسم أو المعرف (ID)..."
+                          className="w-full pl-4 pr-10 py-2.5 bg-dark-800 border border-gray-700 rounded-xl text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition"
+                        />
+                        <span className="absolute right-3.5 top-3 text-gray-500 text-sm">🔍</span>
+                      </div>
+
+                      <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="bg-dark-800 border border-gray-700 text-gray-300 text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-emerald-500"
+                      >
+                        <option value="all">جميع الحسابات ({players.length})</option>
+                        <option value="active">النشطين فقط</option>
+                        <option value="banned">المحظورين ⛔</option>
+                      </select>
+                    </div>
+
+                    <button
+                      onClick={() => setShowAddPlayerModal(true)}
+                      className="w-full md:w-auto px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2"
+                    >
+                      <span>➕ إضافة حساب لاعب جديد</span>
+                    </button>
+                  </div>
+
+                  {/* Players Table */}
+                  <div className="glass-card rounded-2xl overflow-hidden border border-gray-800">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-right text-sm">
+                        <thead className="bg-dark-800/90 text-gray-400 text-xs uppercase font-extrabold border-b border-gray-800">
+                          <tr>
+                            <th className="px-6 py-4">اللاعب</th>
+                            <th className="px-6 py-4">الرصيد (الرقائق)</th>
+                            <th className="px-6 py-4">التقييم والمستوى</th>
+                            <th className="px-6 py-4">سجل الانتصارات</th>
+                            <th className="px-6 py-4">الحالة</th>
+                            <th className="px-6 py-4 text-center">الإجراءات</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-800/60 font-medium">
+                          {filteredPlayers.map((player) => (
+                            <tr key={player.id} className="hover:bg-dark-800/40 transition">
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-slate-700 to-slate-600 flex items-center justify-center text-base font-bold text-white">
+                                    {(player.name || 'U').charAt(0).toUpperCase()}
+                                  </div>
+                                  <div>
+                                    <div className="font-bold text-white text-base">{player.name || 'بدون اسم'}</div>
+                                    <div className="text-xs text-gray-500 font-mono">ID: {player.id.substring(0, 10)}...</div>
+                                  </div>
+                                </div>
+                              </td>
+
+                              <td className="px-6 py-4">
+                                <span className="inline-flex items-center gap-1.5 font-bold text-amber-400 bg-amber-500/10 px-3 py-1 rounded-lg border border-amber-500/20 text-sm">
+                                  🪙 {(Number(player.chips) || 0).toLocaleString()}
+                                </span>
+                              </td>
+
+                              <td className="px-6 py-4">
+                                <div className="text-gray-300">مستوى {player.level || 1}</div>
+                                <div className="text-xs text-gray-400">تقييم {player.rating || 1200} نقطة</div>
+                              </td>
+
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-2 text-xs">
+                                  <span className="text-emerald-400 font-bold">{player.wins || 0} فوز</span>
+                                  <span className="text-gray-600">/</span>
+                                  <span className="text-rose-400 font-bold">{player.losses || 0} خسارة</span>
+                                </div>
+                              </td>
+
+                              <td className="px-6 py-4">
+                                {player.isBanned ? (
+                                  <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                                    ⛔ محظور
+                                  </span>
+                                ) : (
+                                  <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                    نشط
+                                  </span>
+                                )}
+                              </td>
+
+                              <td className="px-6 py-4">
+                                <div className="flex items-center justify-center gap-2">
+                                  <button
+                                    onClick={() => setEditingPlayer(player)}
+                                    className="px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 font-bold text-xs border border-emerald-500/30 transition"
+                                  >
+                                    💰 تعديل الرصيد
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleToggleBan(player)}
+                                    className={`px-3 py-1.5 rounded-lg font-bold text-xs transition border ${
+                                      player.isBanned
+                                        ? 'bg-blue-500/15 text-blue-300 border-blue-500/30 hover:bg-blue-500/25'
+                                        : 'bg-rose-500/15 text-rose-300 border-rose-500/30 hover:bg-rose-500/25'
+                                    }`}
+                                  >
+                                    {player.isBanned ? 'فك الحظر' : 'حظر'}
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleDeletePlayer(player.id, player.name)}
+                                    className="p-1.5 rounded-lg bg-gray-800 hover:bg-rose-950 text-gray-400 hover:text-rose-300 transition"
+                                    title="حذف نهائي"
+                                  >
+                                    🗑️
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+
+                          {filteredPlayers.length === 0 && (
+                            <tr>
+                              <td colSpan="6" className="text-center py-12 text-gray-500 text-sm">
+                                لم يتم العثور على أي لاعبين مطابقين للبحث.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: ECONOMY & CHIPS */}
+              {activeTab === 'economy' && (
+                <div className="space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="glass-card p-6 rounded-2xl space-y-4">
+                      <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-2xl">
+                        🎁
+                      </div>
+                      <h3 className="text-lg font-bold text-white">مكافأة التسجيل الأولى</h3>
+                      <p className="text-xs text-gray-400">الرصيد التلقائي الذي يحصل عليه أي لاعب جديد عند فتح الحساب.</p>
+                      <div className="pt-2">
+                        <label className="text-xs text-gray-400 block mb-1">الرصيد الافتراضي الحالي</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            value={gameSettings.startingChips}
+                            onChange={(e) => setGameSettings(prev => ({ ...prev, startingChips: Number(e.target.value) }))}
+                            className="bg-dark-800 border border-gray-700 rounded-xl px-4 py-2 text-amber-400 font-bold text-base w-full focus:outline-none focus:border-amber-500"
+                          />
+                          <button
+                            onClick={() => handleSaveSettings({ startingChips: gameSettings.startingChips })}
+                            className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs rounded-xl transition"
+                          >
+                            حفظ
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="glass-card p-6 rounded-2xl space-y-4">
+                      <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-2xl">
+                        🚀
+                      </div>
+                      <h3 className="text-lg font-bold text-white">إرسال رقائق جماعية</h3>
+                      <p className="text-xs text-gray-400">منح جميع اللاعبين النشطين رصيداً كهدية احتفالية أو تعويض صيانة.</p>
+                      <div className="grid grid-cols-2 gap-2 pt-2">
+                        <button
+                          onClick={() => handleGrantAllBonus(5000)}
+                          className="py-2.5 px-3 bg-dark-700 hover:bg-emerald-600 hover:text-white text-emerald-400 text-xs font-bold rounded-xl border border-gray-700 transition"
+                        >
+                          +5,000 رقاقة
+                        </button>
+                        <button
+                          onClick={() => handleGrantAllBonus(25000)}
+                          className="py-2.5 px-3 bg-dark-700 hover:bg-amber-600 hover:text-white text-amber-400 text-xs font-bold rounded-xl border border-gray-700 transition"
+                        >
+                          +25,000 رقاقة
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="glass-card p-6 rounded-2xl space-y-4">
+                      <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center text-2xl">
+                        📊
+                      </div>
+                      <h3 className="text-lg font-bold text-white">إحصائيات الثروة</h3>
+                      <p className="text-xs text-gray-400">توزيع الثروة والسيولة الحالية في اللعبة.</p>
+                      <div className="space-y-2 text-xs pt-1">
+                        <div className="flex justify-between py-1 border-b border-gray-800">
+                          <span className="text-gray-400">إجمالي الرقائق:</span>
+                          <span className="font-bold text-amber-400">{totalChips.toLocaleString()} 🪙</span>
+                        </div>
+                        <div className="flex justify-between py-1 border-b border-gray-800">
+                          <span className="text-gray-400">متوسط الحساب:</span>
+                          <span className="font-bold text-white">{players.length ? Math.round(totalChips / players.length).toLocaleString() : 0} 🪙</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 4: SETTINGS & SERVER */}
+              {activeTab === 'settings' && (
+                <div className="glass-card p-8 rounded-2xl space-y-8 max-w-4xl border border-gray-800">
+                  <div className="border-b border-gray-800 pb-4">
+                    <h3 className="text-lg font-black text-white">إعدادات اللعبة والبث السحابي</h3>
+                    <p className="text-xs text-gray-400">يتم بث هذه الإعدادات مباشرة عبر Firestore لجميع اللاعبين المتصلين دون الحاجة لإعادة تشغيل اللعبة.</p>
+                  </div>
+
+                  {/* Maintenance Switch */}
+                  <div className="flex items-center justify-between p-4 bg-dark-800/80 rounded-xl border border-gray-800">
+                    <div>
+                      <h4 className="text-sm font-bold text-white">وضع الصيانة الشامل (Maintenance Mode)</h4>
+                      <p className="text-xs text-gray-400">عند تفعيله، سيتم إشعار اللاعبين بوجود صيانة مؤقتة للسيرفر.</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={gameSettings.maintenanceMode}
+                        onChange={(e) => setGameSettings(prev => ({ ...prev, maintenanceMode: e.target.checked }))}
+                        className="sr-only peer"
+                      />
+                      <div className="w-14 h-7 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-rose-500"></div>
+                    </label>
+                  </div>
+
+                  {/* Announcement Input */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-300">رسالة الإعلان المباشر (Announcement)</label>
+                    <textarea
+                      rows="3"
+                      value={gameSettings.announcement}
+                      onChange={(e) => setGameSettings(prev => ({ ...prev, announcement: e.target.value }))}
+                      className="w-full bg-dark-800 border border-gray-700 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-emerald-500 transition"
+                      placeholder="اكتب الإعلان الذي يظهر في أعلى شاشة اللعبة لجميع المستخدمين..."
+                    />
+                    <div className="p-3 bg-dark-900 rounded-lg text-xs text-gray-400 border border-gray-800">
+                      معاينة: <span className="text-emerald-400 font-bold">{gameSettings.announcement}</span>
+                    </div>
+                  </div>
+
+                  {/* Sliders: Timer & Bot Level */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <label className="font-bold text-gray-300">مهلة دور اللاعب (ثواني)</label>
+                        <span className="font-bold text-emerald-400">{gameSettings.defaultTurnTimer} ثانية</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="15"
+                        max="120"
+                        step="1"
+                        value={gameSettings.defaultTurnTimer}
+                        onChange={(e) => setGameSettings(prev => ({ ...prev, defaultTurnTimer: Number(e.target.value) }))}
+                        className="w-full accent-emerald-500 cursor-pointer"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="font-bold text-gray-300 text-sm">مستوى ذكاء البوتات الافتراضي (AI Level)</label>
+                      <select
+                        value={gameSettings.botDifficulty}
+                        onChange={(e) => setGameSettings(prev => ({ ...prev, botDifficulty: e.target.value }))}
+                        className="w-full bg-dark-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-gray-200 focus:outline-none focus:border-emerald-500"
+                      >
+                        <option value="easy">سهل (Easy)</option>
+                        <option value="medium">متوسط متوازن (Medium - موصى به)</option>
+                        <option value="hard">صعب ومحترف (Hard)</option>
+                        <option value="master">أسطوري خبير (Grandmaster)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Save Button */}
+                  <div className="pt-4 flex justify-end">
+                    <button
+                      onClick={() => handleSaveSettings(gameSettings)}
+                      className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-sm rounded-xl shadow-lg shadow-emerald-500/25 transition"
+                    >
+                      💾 حفظ ونشر الإعدادات إلى السيرفر
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 5: GAME HISTORY */}
+              {activeTab === 'history' && (
+                <div className="space-y-6">
+                  <div className="glass-card rounded-2xl overflow-hidden border border-gray-800">
+                    <div className="p-4 border-b border-gray-800 flex items-center justify-between">
+                      <h4 className="font-bold text-white text-base">سجل نتائج الجولات والمباريات المكتملة</h4>
+                      <span className="text-xs text-gray-400">آخر 50 مباراة مسجلة في Firestore</span>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-right text-sm">
+                        <thead className="bg-dark-800/90 text-gray-400 text-xs uppercase font-extrabold border-b border-gray-800">
+                          <tr>
+                            <th className="px-6 py-4">اللعبة</th>
+                            <th className="px-6 py-4">الفائز بالمركز الأول</th>
+                            <th className="px-6 py-4">طريقة الفوز</th>
+                            <th className="px-6 py-4">مدة الجولة</th>
+                            <th className="px-6 py-4">التوقيت</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-800/60 font-medium">
+                          {gameLogs.map((log) => {
+                            const dateStr = log.timestamp && log.timestamp.toDate 
+                              ? log.timestamp.toDate().toLocaleString('ar-EG') 
+                              : 'الآن';
+                            return (
+                              <tr key={log.id} className="hover:bg-dark-800/40 transition">
+                                <td className="px-6 py-4 font-bold text-white flex items-center gap-2">
+                                  <span>🀄</span>
+                                  <span>{log.game || 'Turkish Okey'}</span>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <span className="text-emerald-400 font-bold bg-emerald-500/10 px-3 py-1 rounded-lg border border-emerald-500/20">
+                                    👑 {log.winner || 'مجهول'}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 text-gray-300">
+                                  {log.winType || 'فوز اعتيادي'}
+                                </td>
+                                <td className="px-6 py-4 text-gray-400 font-mono text-xs">
+                                  {log.durationSeconds ? `${log.durationSeconds} ثانية` : 'غير محدد'}
+                                </td>
+                                <td className="px-6 py-4 text-xs text-gray-500">
+                                  {dateStr}
+                                </td>
+                              </tr>
+                            );
+                          })}
+
+                          {gameLogs.length === 0 && (
+                            <tr>
+                              <td colSpan="5" className="text-center py-12 text-gray-500 text-sm">
+                                لم يتم تسجيل أي مباريات مكتملة بعد. العب جولة في اللعبة وسيتم تسجيلها تلقائياً هنا!
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </main>
+
+          {/* MODAL: EDIT PLAYER CHIPS */}
+          {editingPlayer && (
+            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="glass-card max-w-md w-full rounded-2xl p-6 border border-emerald-500/30 space-y-5 animate-scale-up">
+                <div className="flex items-center justify-between border-b border-gray-800 pb-3">
+                  <h3 className="text-base font-black text-white flex items-center gap-2">
+                    <span>🪙 تعديل رصيد اللاعب</span>
+                    <span className="text-emerald-400">({editingPlayer.name})</span>
+                  </h3>
+                  <button onClick={() => setEditingPlayer(null)} className="text-gray-400 hover:text-white">✕</button>
+                </div>
+
+                <div className="bg-dark-800 p-4 rounded-xl text-center space-y-1">
+                  <p className="text-xs text-gray-400">الرصيد الحالي في الحساب</p>
+                  <p className="text-2xl font-black text-amber-400">{(Number(editingPlayer.chips) || 0).toLocaleString()} 🪙</p>
+                </div>
+
+                {/* Quick Add Presets */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 block">إضافة سريعة للرصيد (+)</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      onClick={() => handleUpdatePlayerChips(editingPlayer.id, 1000)}
+                      className="py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 font-bold rounded-xl text-xs border border-emerald-500/30 transition"
+                    >
+                      +1,000
+                    </button>
+                    <button
+                      onClick={() => handleUpdatePlayerChips(editingPlayer.id, 5000)}
+                      className="py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 font-bold rounded-xl text-xs border border-emerald-500/30 transition"
+                    >
+                      +5,000
+                    </button>
+                    <button
+                      onClick={() => handleUpdatePlayerChips(editingPlayer.id, 25000)}
+                      className="py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold rounded-xl text-xs border border-amber-500/30 transition"
+                    >
+                      +25,000
+                    </button>
+                  </div>
+                </div>
+
+                {/* Custom Value Setting */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 block">أو تعيين قيمة رصيد محددة يدوياً</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      id="customChipInput"
+                      defaultValue={editingPlayer.chips}
+                      className="flex-1 bg-dark-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white font-bold focus:outline-none focus:border-emerald-500 text-sm"
+                    />
+                    <button
+                      onClick={() => {
+                        const val = document.getElementById('customChipInput').value;
+                        if (val !== '') {
+                          handleUpdatePlayerChips(editingPlayer.id, val, true);
+                        }
+                      }}
+                      className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl transition"
+                    >
+                      تطبيق
+                    </button>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <button
+                    onClick={() => setEditingPlayer(null)}
+                    className="px-4 py-2 text-xs text-gray-400 hover:text-white font-bold"
+                  >
+                    إغلاق
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL: ADD NEW PLAYER */}
+          {showAddPlayerModal && (
+            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="glass-card max-w-md w-full rounded-2xl p-6 border border-emerald-500/30 space-y-5">
+                <div className="flex items-center justify-between border-b border-gray-800 pb-3">
+                  <h3 className="text-base font-black text-white">➕ إضافة حساب لاعب جديد</h3>
+                  <button onClick={() => setShowAddPlayerModal(false)} className="text-gray-400 hover:text-white">✕</button>
+                </div>
+
+                <form onSubmit={handleCreatePlayer} className="space-y-4">
+                  <div>
+                    <label className="text-xs font-bold text-gray-300 block mb-1">اسم اللاعب الكامل</label>
+                    <input
+                      type="text"
+                      required
+                      value={newPlayerData.name}
+                      onChange={(e) => setNewPlayerData(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="مثال: أحمد المحترف"
+                      className="w-full bg-dark-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-bold text-gray-300 block mb-1">رصيد الرقائق الأولي</label>
+                      <input
+                        type="number"
+                        value={newPlayerData.chips}
+                        onChange={(e) => setNewPlayerData(prev => ({ ...prev, chips: e.target.value }))}
+                        className="w-full bg-dark-800 border border-gray-700 rounded-xl px-4 py-2.5 text-amber-400 font-bold text-sm focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-gray-300 block mb-1">التقييم الأولي</label>
+                      <input
+                        type="number"
+                        value={newPlayerData.rating}
+                        onChange={(e) => setNewPlayerData(prev => ({ ...prev, rating: e.target.value }))}
+                        className="w-full bg-dark-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white font-bold text-sm focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddPlayerModal(false)}
+                      className="px-4 py-2.5 text-xs text-gray-400 hover:text-white font-bold rounded-xl"
+                    >
+                      إلغاء
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition"
+                    >
+                      إنشاء الحساب الآن
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<AdminApp />);
+  </script>
+</body>
+</html>
