@@ -7,12 +7,12 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDpjvk1w1MvT7iy9Pgsh7-9QEoHWiLAD9k',
-    appId: '1:562034251468:web:5b9f55755906bc9152d469',
-    messagingSenderId: '562034251468',
-    projectId: 'game-hub-a674f',
-    authDomain: 'game-hub-a674f.firebaseapp.com',
-    storageBucket: 'game-hub-a674f.firebasestorage.app',
-    measurementId: 'G-S5YL3W6L92',
+    apiKey: 'AIzaSyBZ1GzN3LUvWxmSf1ZRVC9wDstNNzgJpmw',
+    appId: '1:882641594444:web:177374244ae0d874886ce9',
+    messagingSenderId: '882641594444',
+    projectId: 'game-651a3',
+    authDomain: 'game-651a3.firebaseapp.com',
+    storageBucket: 'game-651a3.firebasestorage.app',
+    measurementId: 'G-BJ3SDN2NBK',
   );
 }
