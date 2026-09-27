@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 class TitleBanner extends StatelessWidget {
@@ -12,6 +13,35 @@ class TitleBanner extends StatelessWidget {
         clipBehavior: Clip.hardEdge,
         alignment: Alignment.topCenter,
         children: [
+          Positioned(
+            top: 42,
+            left: 28,
+            right: 28,
+            height: 82,
+            child: IgnorePointer(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.white.withOpacity(0.12),
+                          const Color(0xFF6D5DFF).withOpacity(0.08),
+                          const Color(0xFF061126).withOpacity(0.20),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: Colors.white.withOpacity(0.14)),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
           // Main Title & Subtitle Column
           Column(
             mainAxisSize: MainAxisSize.min,
@@ -183,36 +213,40 @@ class TitleBanner extends StatelessWidget {
               const SizedBox(height: 8),
 
               // Subtitle dark capsule
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xEE2A1646),
-                      Color(0xEE1E0E35),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: const Color(0x40D8B4FE),
-                    width: 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.4),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(22),
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.white.withOpacity(0.18),
+                          const Color(0xFF253A72).withOpacity(0.46),
+                          const Color(0xFF111B3E).withOpacity(0.62),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(color: Colors.white.withOpacity(0.28)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF7C5CFF).withOpacity(0.16),
+                          blurRadius: 14,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: const Text(
-                  'اختر لعبتك المفضلة واستمتع بالوقت!',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Color(0xFFEDE9FE),
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.2,
+                    child: const Text(
+                      'اختر لعبتك المفضلة واستمتع بالوقت!',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Color(0xFFF4F5FF),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -254,8 +288,7 @@ class _CrownPainter extends CustomPainter {
       ..quadraticBezierTo(w * 0.5, h * 0.96, w * 0.1, h * 0.9)
       ..close();
 
-    final shadowPaint = Paint()
-      ..color = const Color(0xFF6B4300);
+    final shadowPaint = Paint()..color = const Color(0xFF6B4300);
     canvas.drawPath(crownPath.shift(const Offset(0, 2)), shadowPaint);
 
     final crownPaint = Paint()
@@ -337,66 +370,80 @@ class _StickyNoteWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 66,
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFBE4B5),
-        borderRadius: BorderRadius.circular(4),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 6,
-            offset: const Offset(2, 3),
-          ),
-        ],
-      ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.topCenter,
-        children: [
-          Positioned(
-            top: -10,
-            child: Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFE53935), Color(0xFFB71C1C)],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.4),
-                    blurRadius: 3,
-                    offset: const Offset(1, 1),
-                  ),
-                ],
-              ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          width: 70,
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white.withOpacity(0.72),
+                const Color(0xFFFFE8A3).withOpacity(0.54),
+                Colors.white.withOpacity(0.24),
+              ],
             ),
-          ),
-          const Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(height: 3),
-              Text(
-                'الـلـعـب\nمـتـعـة\nلا تنتهي',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Color(0xFF42210B),
-                  fontSize: 9.5,
-                  fontWeight: FontWeight.w800,
-                  height: 1.15,
-                ),
-              ),
-              SizedBox(height: 2),
-              Text(
-                '❤️',
-                style: TextStyle(fontSize: 8),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.white.withOpacity(0.72)),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFFD76A).withOpacity(0.18),
+                blurRadius: 12,
               ),
             ],
           ),
-        ],
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.topCenter,
+            children: [
+              Positioned(
+                top: -10,
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFE53935), Color(0xFFB71C1C)],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.4),
+                        blurRadius: 3,
+                        offset: const Offset(1, 1),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(height: 3),
+                  Text(
+                    'الـلـعـب\nمـتـعـة\nلا تنتهي',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Color(0xFF42210B),
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                      height: 1.15,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    '❤️',
+                    style: TextStyle(fontSize: 8),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

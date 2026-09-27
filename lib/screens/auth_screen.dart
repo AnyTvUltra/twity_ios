@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme.dart';
 import '../services/auth_service.dart';
 import '../utils/haptics.dart';
 
@@ -25,6 +26,7 @@ class _AuthScreenState extends State<AuthScreen> {
     setState(() => _isLoading = true);
 
     final success = await AuthService().signInWithGoogle();
+    if (!mounted) return;
     setState(() => _isLoading = false);
 
     if (success) {
@@ -41,6 +43,7 @@ class _AuthScreenState extends State<AuthScreen> {
     setState(() => _isLoading = true);
 
     final success = await AuthService().signInAsGuest();
+    if (!mounted) return;
     setState(() => _isLoading = false);
 
     if (success) {
@@ -54,12 +57,14 @@ class _AuthScreenState extends State<AuthScreen> {
 
   void _checkUsernameAndProceed() {
     final user = AuthService().currentUser;
-    if (user != null) {
-      if (user.username.startsWith('user_') || user.username.startsWith('player_')) {
-        _showUsernameSetupDialog();
-      } else {
-        widget.onAuthenticated();
-      }
+    if (user == null) return;
+    if (user.username.startsWith('user_') ||
+        user.username.startsWith('player_')) {
+      AuthService().beginUsernameSetup();
+      _showUsernameSetupDialog();
+    } else {
+      AuthService().completeUsernameSetup();
+      widget.onAuthenticated();
     }
   }
 
@@ -77,7 +82,7 @@ class _AuthScreenState extends State<AuthScreen> {
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF2E174D), Color(0xFF1B0B30)],
+                colors: [Color(0xF5FFFFFF), Color(0xEAF0F5FC)],
               ),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(color: const Color(0xFFFFD54F), width: 1.5),
@@ -95,34 +100,34 @@ class _AuthScreenState extends State<AuthScreen> {
               children: [
                 const Row(
                   children: [
-                    Icon(Icons.badge_rounded, color: Color(0xFFFFD54F), size: 26),
+                    Icon(Icons.badge_rounded, color: Color(0xFFD97706), size: 26),
                     SizedBox(width: 10),
                     Text(
                       'اختر اسم المستخدم الفريد',
-                      style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: LightGlass.text, fontSize: 17, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
                 const SizedBox(height: 10),
                 const Text(
                   'اسم المستخدم هو هويتك الخاصة التي يستطيع أصدقاؤك البحث عنك وإضافتك من خلالها.',
-                  style: TextStyle(color: Colors.white70, fontSize: 12.5, height: 1.4),
+                  style: TextStyle(color: LightGlass.textMuted, fontSize: 12.5, height: 1.4),
                 ),
                 const SizedBox(height: 18),
                 TextField(
                   controller: _usernameController,
-                  style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                  style: const TextStyle(color: LightGlass.text, fontSize: 15, fontWeight: FontWeight.bold),
                   decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.alternate_email_rounded, color: Color(0xFFFFD54F)),
+                    prefixIcon: const Icon(Icons.alternate_email_rounded, color: Color(0xFFD97706)),
                     hintText: 'مثال: okey_king',
-                    hintStyle: const TextStyle(color: Colors.white38),
+                    hintStyle: const TextStyle(color: LightGlass.textFaint),
                     errorText: _usernameError,
                     filled: true,
-                    fillColor: Colors.black26,
+                    fillColor: LightGlass.inputFill,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: Colors.white24),
+                      borderSide: const BorderSide(color: LightGlass.borderDim),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -160,11 +165,17 @@ class _AuthScreenState extends State<AuthScreen> {
                             return;
                           }
 
-                          await AuthService().updateUsername(input);
-                          if (mounted) {
-                            Navigator.of(ctx).pop();
-                            widget.onAuthenticated();
+                          final updated = await AuthService().updateUsername(input);
+                          if (!updated) {
+                            setDialogState(() {
+                              _isCheckingUsername = false;
+                              _usernameError = 'تعذر حفظ اسم المستخدم، حاول مرة أخرى';
+                            });
+                            return;
                           }
+                          Navigator.of(ctx).pop();
+                          AuthService().completeUsernameSetup();
+                          widget.onAuthenticated();
                         },
                   child: _isCheckingUsername
                       ? const SizedBox(
@@ -185,8 +196,9 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF160926),
+      backgroundColor: const Color(0xFFE8EDF5),
       body: AppBackground(
+        light: true,
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -221,22 +233,20 @@ class _AuthScreenState extends State<AuthScreen> {
 
                   // Game Title
                   const Text(
-                    'مجموعة الألعاب الممتعة',
+                    'یەڵا یاری — Yalla Yari',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Colors.white,
+                      color: LightGlass.text,
                       fontSize: 26,
                       fontWeight: FontWeight.w900,
-                      shadows: [Shadow(color: Colors.black87, blurRadius: 10, offset: Offset(0, 3))],
-
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Text(
+                  const Text(
                     'تركيش أوكي • شطرنج • لودو • طاولي • سوليتر',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
+                      color: LightGlass.textMuted,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
@@ -250,13 +260,13 @@ class _AuthScreenState extends State<AuthScreen> {
                       gradient: const LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [Color(0xFF2E174D), Color(0xFF1F0C35)],
+                        colors: [Color(0xF5FFFFFF), Color(0xEAF0F5FC)],
                       ),
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(color: const Color(0x50FFD54F), width: 1.2),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.5),
+                          color: const Color(0xFF64748B).withOpacity(0.18),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
@@ -268,13 +278,13 @@ class _AuthScreenState extends State<AuthScreen> {
                         const Text(
                           'تسجيل الدخول للمتابعة',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                          style: TextStyle(color: LightGlass.text, fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
                         const Text(
                           'سجّل لحفظ رصيدك، أصدقائك، مستواك، والتنافس أونلاين ضد لاعبين حقيقيين!',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.white60, fontSize: 12, height: 1.4),
+                          style: TextStyle(color: LightGlass.textMuted, fontSize: 12, height: 1.4),
                         ),
                         const SizedBox(height: 24),
 
@@ -312,8 +322,8 @@ class _AuthScreenState extends State<AuthScreen> {
                         // Guest Mode Button
                         OutlinedButton.icon(
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.white70,
-                            side: const BorderSide(color: Colors.white24, width: 1.2),
+                            foregroundColor: LightGlass.textSoft,
+                            side: const BorderSide(color: LightGlass.borderDim, width: 1.2),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           ),
@@ -335,11 +345,11 @@ class _AuthScreenState extends State<AuthScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.lock_outline_rounded, color: Colors.white38, size: 14),
+                        const Icon(Icons.lock_outline_rounded, color: LightGlass.textFaint, size: 14),
                         const SizedBox(width: 5),
                         Text(
                           'اتصال سحابي آمن ومشفر عبر Firebase',
-                          style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11),
+                          style: TextStyle(color: LightGlass.textMuted, fontSize: 11),
                         ),
                       ],
                     ),

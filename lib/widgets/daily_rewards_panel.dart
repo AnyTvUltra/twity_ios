@@ -1,0 +1,1375 @@
+import 'dart:math' as math;
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
+import '../services/rewards_service.dart';
+import '../utils/haptics.dart';
+import '../utils/top_notification.dart';
+
+/// لوحة المكافآت اليومية الكاملة:
+/// شريط الهدايا الأسبوعي (جوائز متنوعة تتبدل كل أسبوع)
+/// + شريط اشتراك VIP أسفله + بطاقة عجلة الحظ اليومية
+class DailyRewardsPanel extends StatelessWidget {
+  const DailyRewardsPanel({super.key});
+
+  static const _gold = Color(0xFFFFD54F);
+  static const _emerald = Color(0xFF34D399);
+  static const _textWhite = Color(0xFFF1F5FF);
+  static const _textDim = Color(0xFF8EA3C8);
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: AuthService(),
+      builder: (context, _) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: const [
+          _WeeklyStrip(),
+          SizedBox(height: 12),
+          _VipStrip(),
+          SizedBox(height: 12),
+          _LootBoxCard(),
+          SizedBox(height: 12),
+          _WheelCard(),
+        ],
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// 1) الشريط الأسبوعي — 7 أيام بجوائز متنوعة تتبدل كل أسبوع
+// ══════════════════════════════════════════════════════════════
+class _WeeklyStrip extends StatelessWidget {
+  const _WeeklyStrip();
+
+  Future<void> _claim(BuildContext context) async {
+    AppHaptics.medium();
+    final res = await AuthService().claimDailyGift();
+    if (context.mounted) {
+      TopNotification.show(
+        context,
+        res['message'] as String,
+        icon: res['success'] == true
+            ? Icons.card_giftcard_rounded
+            : Icons.lock_clock_rounded,
+      );
+    }
+  }
+
+  String _rewardEmoji(DailyReward r) {
+    switch (r.type) {
+      case RewardType.chips:
+        return '🪙';
+      case RewardType.gems:
+        return '💎';
+      case RewardType.skin:
+        return '🎨';
+    }
+  }
+
+  String _rewardLabel(DailyReward r) {
+    switch (r.type) {
+      case RewardType.skin:
+        return 'سكن!';
+      default:
+        return '+${r.amount}';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final user = AuthService().currentUser;
+    final lastClaim = user?.lastDailyGiftClaim;
+    final now = DateTime.now();
+    final rewards = RewardsService.currentWeekRewards;
+
+    bool claimable = lastClaim == null ||
+        now.difference(lastClaim).inHours >= 24;
+    int remH = 0, remM = 0;
+    if (!claimable) {
+      final diff = now.difference(lastClaim);
+      remH = math.max(0, 23 - diff.inHours);
+      remM = math.max(0, 59 - (diff.inMinutes % 60));
+    }
+
+    final streak = user?.dailyGiftStreak ?? 0;
+    final targetIndex =
+        claimable ? (streak % 7) : ((streak - 1).clamp(0, 6));
+    final isVip = user?.isVip ?? false;
+    final weekNames = [
+      'الأسبوع الذهبي ✨',
+      'أسبوع الجواهر 💎',
+      'أسبوع الثروة 🪙',
+      'الأسبوع الملكي 👑',
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(26),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFF1B2A5E).withOpacity(0.5),
+                  const Color(0xFF101838).withOpacity(0.4),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(26),
+              border: Border.all(
+                  color: DailyRewardsPanel._gold.withOpacity(0.45),
+                  width: 1.2),
+              boxShadow: [
+                BoxShadow(
+                    color: DailyRewardsPanel._gold.withOpacity(0.13),
+                    blurRadius: 22,
+                    spreadRadius: -4),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          const Text('🎁', style: TextStyle(fontSize: 20)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'الهدايا اليومية',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: DailyRewardsPanel._textWhite,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                Text(
+                                  '${weekNames[RewardsService.weekIndex]} — جوائز جديدة كل أسبوع',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: DailyRewardsPanel._textDim,
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: (claimable
+                                ? DailyRewardsPanel._emerald
+                                : DailyRewardsPanel._gold)
+                            .withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(9),
+                        border: Border.all(
+                          color: (claimable
+                                  ? DailyRewardsPanel._emerald
+                                  : DailyRewardsPanel._gold)
+                              .withOpacity(0.5),
+                          width: 0.9,
+                        ),
+                      ),
+                      child: Text(
+                        claimable
+                            ? 'جاهزة للاستلام! 🎉'
+                            : 'متبقي: ${remH}س ${remM}د',
+                        style: TextStyle(
+                          color: claimable
+                              ? DailyRewardsPanel._emerald
+                              : DailyRewardsPanel._gold,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: List.generate(7, (index) {
+                    final isPast =
+                        !claimable ? index <= targetIndex : index < targetIndex;
+                    final isCurrent = claimable && index == targetIndex;
+                    final reward = rewards[index];
+                    final isSkin = reward.type == RewardType.skin;
+                    final emoji = _rewardEmoji(reward);
+                    final label = _rewardLabel(reward);
+
+                    return GestureDetector(
+                      onTap: isCurrent
+                          ? () => _claim(context)
+                          : () {
+                              if (isPast) {
+                                TopNotification.show(
+                                    context,
+                                    'تم استلام هدية اليوم ${index + 1} بالفعل!',
+                                    icon: Icons.check_circle_rounded);
+                              } else {
+                                TopNotification.show(
+                                    context,
+                                    'هذه الهدية مقفلة! تفتح بعد إتمام الأيام السابقة',
+                                    icon: Icons.lock_rounded);
+                              }
+                            },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: 42,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          gradient: isCurrent
+                              ? const LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Color(0xFFFFE082),
+                                    DailyRewardsPanel._gold,
+                                    Color(0xFFE8A820),
+                                  ],
+                                )
+                              : null,
+                          color: isPast
+                              ? DailyRewardsPanel._emerald.withOpacity(0.18)
+                              : (isCurrent
+                                  ? null
+                                  : const Color(0x2E141C3C)),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isCurrent
+                                ? const Color(0xFFFFE9A8)
+                                : (isPast
+                                    ? DailyRewardsPanel._emerald
+                                        .withOpacity(0.7)
+                                    : const Color(0x26FFFFFF)),
+                            width: isCurrent ? 1.6 : 1,
+                          ),
+                          boxShadow: isCurrent
+                              ? [
+                                  BoxShadow(
+                                    color: DailyRewardsPanel._gold
+                                        .withOpacity(0.5),
+                                    blurRadius: 12,
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'يوم ${index + 1}',
+                              style: TextStyle(
+                                color: isCurrent
+                                    ? const Color(0xFF1B0B30)
+                                    : DailyRewardsPanel._textDim,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              isPast ? '✔' : (isCurrent ? '🎁' : emoji),
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: isPast
+                                    ? DailyRewardsPanel._emerald
+                                    : null,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              isPast ? '' : label,
+                              maxLines: 1,
+                              style: TextStyle(
+                                color: isCurrent
+                                    ? const Color(0xFF1B0B30)
+                                    : isSkin
+                                        ? const Color(0xFFC084FC)
+                                        : reward.type == RewardType.gems
+                                            ? const Color(0xFF7DD3FC)
+                                            : DailyRewardsPanel._gold,
+                                fontSize: 8,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+                if (isVip) ...[
+                  const SizedBox(height: 8),
+                  Center(
+                    child: Text(
+                      user?.isVipPlus == true
+                          ? '👑 VIP+: مكافآتك معزّزة +50%'
+                          : '👑 VIP: مكافآتك معزّزة +25%',
+                      style: const TextStyle(
+                        color: DailyRewardsPanel._gold,
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+                // حماية السلسلة — انقطعت خلال آخر 4 أيام؟ استرجعها بـ10💎
+                if (AuthService().canRestoreStreak) ...[
+                  const SizedBox(height: 10),
+                  GestureDetector(
+                    onTap: () async {
+                      AppHaptics.medium();
+                      final res =
+                          await AuthService().buyStreakProtection();
+                      if (context.mounted) {
+                        TopNotification.show(
+                          context,
+                          res['message'] as String,
+                          icon: res['success'] == true
+                              ? Icons.local_fire_department_rounded
+                              : Icons.warning_rounded,
+                        );
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(colors: [
+                          Color(0xFF7F1D1D),
+                          Color(0xFF450A0A),
+                        ]),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                            color: const Color(0xFFFB923C)
+                                .withOpacity(0.6)),
+                        boxShadow: [
+                          BoxShadow(
+                              color: const Color(0xFFFB923C)
+                                  .withOpacity(0.25),
+                              blurRadius: 10),
+                        ],
+                      ),
+                      child: const Row(
+                        mainAxisAlignment:
+                            MainAxisAlignment.center,
+                        children: [
+                          Text('🔥', style: TextStyle(fontSize: 14)),
+                          SizedBox(width: 6),
+                          Text(
+                            'سلسلتك انقطعت! استرجعها الآن بـ10💎',
+                            style: TextStyle(
+                                color: Color(0xFFFED7AA),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w900),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// 2) شريط اشتراك VIP — 10$ شهرياً
+// ══════════════════════════════════════════════════════════════
+class _VipStrip extends StatelessWidget {
+  const _VipStrip();
+
+  Future<void> _subscribe(BuildContext context) async {
+    AppHaptics.medium();
+    final confirm = await showDialog<Object?>(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          backgroundColor: const Color(0xFF141C34),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(
+                  color: DailyRewardsPanel._gold.withOpacity(0.5))),
+          title: const Row(
+            children: [
+              Text('👑', style: TextStyle(fontSize: 24)),
+              SizedBox(width: 8),
+              Text('اشتراك VIP',
+                  style: TextStyle(
+                      color: DailyRewardsPanel._textWhite,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 17)),
+            ],
+          ),
+          content: const Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('👑 VIP — 10\$ شهرياً:',
+                  style: TextStyle(
+                      color: DailyRewardsPanel._gold,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w900)),
+              SizedBox(height: 6),
+              _VipPerk('🎡 لفتان يومياً على العجلة'),
+              _VipPerk('🪙 +25% على مكافآت الهدايا'),
+              _VipPerk('�️ إطار VIP الذهبي تلقائياً'),
+              SizedBox(height: 12),
+              Text('💎 VIP+ — 20\$ شهرياً:',
+                  style: TextStyle(
+                      color: Color(0xFFC084FC),
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w900)),
+              SizedBox(height: 6),
+              _VipPerk('🎡 3 لفات يومياً على العجلة'),
+              _VipPerk('🪙 +50% على مكافآت الهدايا'),
+              _VipPerk('⚡ أولوية قصوى في الدعم'),
+              SizedBox(height: 10),
+              Text(
+                'سيتم التفعيل خلال 24 ساعة بعد تأكيد الدفع من الإدارة.',
+                style: TextStyle(
+                    color: DailyRewardsPanel._textDim, fontSize: 11),
+              ),
+            ],
+          ),
+          actionsAlignment: MainAxisAlignment.spaceBetween,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('إلغاء',
+                  style: TextStyle(color: DailyRewardsPanel._textDim)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: DailyRewardsPanel._gold,
+                foregroundColor: const Color(0xFF1B0B30),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('VIP — 10\$',
+                  style: TextStyle(fontWeight: FontWeight.w900)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFC084FC),
+                foregroundColor: const Color(0xFF2E1065),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () => Navigator.of(ctx).pop('plus'),
+              child: const Text('VIP+ — 20\$',
+                  style: TextStyle(fontWeight: FontWeight.w900)),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirm == null || confirm == false || !context.mounted) {
+      return;
+    }
+    final res = await AuthService().submitVipRequest(
+        plan: confirm == 'plus' ? 'vipPlus' : 'vip');
+    if (context.mounted) {
+      TopNotification.show(
+        context,
+        res['message'] as String,
+        icon: res['success'] == true
+            ? Icons.workspace_premium_rounded
+            : Icons.warning_rounded,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final user = AuthService().currentUser;
+    final isVip = user?.isVip ?? false;
+    final isVipPlus = user?.isVipPlus ?? false;
+    final vipUntil = user?.vipUntil;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: isVip
+                    ? [
+                        const Color(0xFF4A3200).withOpacity(0.85),
+                        const Color(0xFF2A1E00).withOpacity(0.8),
+                      ]
+                    : [
+                        const Color(0xFF2A1A4E).withOpacity(0.75),
+                        const Color(0xFF1A1040).withOpacity(0.7),
+                      ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                  color: DailyRewardsPanel._gold.withOpacity(0.55),
+                  width: 1.2),
+              boxShadow: [
+                BoxShadow(
+                    color: DailyRewardsPanel._gold.withOpacity(0.15),
+                    blurRadius: 18,
+                    spreadRadius: -4),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFFFFF3C4),
+                        DailyRewardsPanel._gold,
+                        Color(0xFFB8860B),
+                      ],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                          color:
+                              DailyRewardsPanel._gold.withOpacity(0.45),
+                          blurRadius: 10),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Text('👑', style: TextStyle(fontSize: 22)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isVipPlus
+                            ? 'اشتراك VIP+ الشهري'
+                            : 'اشتراك VIP الشهري',
+                        style: TextStyle(
+                          color: DailyRewardsPanel._textWhite,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 13.5,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        isVip && vipUntil != null
+                            ? 'عضويتك فعّالة حتى ${vipUntil.day}/${vipUntil.month} — لفتان يومياً + مكافآت +25% 👑'
+                            : 'لفّتان يومياً + مكافآت +25% + شارة ملكية — 10\$ فقط',
+                        maxLines: 2,
+                        style: TextStyle(
+                          color: isVip
+                              ? DailyRewardsPanel._gold
+                              : DailyRewardsPanel._textDim,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                if (isVip)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: DailyRewardsPanel._emerald.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                          color: DailyRewardsPanel._emerald
+                              .withOpacity(0.6)),
+                    ),
+                    child: const Text(
+                      'مُفعّل ✓',
+                      style: TextStyle(
+                          color: DailyRewardsPanel._emerald,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900),
+                    ),
+                  )
+                else
+                  GestureDetector(
+                    onTap: () => _subscribe(context),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(colors: [
+                          Color(0xFFFFE082),
+                          DailyRewardsPanel._gold,
+                          Color(0xFFE8A820),
+                        ]),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                              color: DailyRewardsPanel._gold
+                                  .withOpacity(0.4),
+                              blurRadius: 10),
+                        ],
+                      ),
+                      child: const Text(
+                        'اشترك 10\$',
+                        style: TextStyle(
+                            color: Color(0xFF1B0B30),
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w900),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _VipPerk extends StatelessWidget {
+  final String text;
+  const _VipPerk(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 5),
+      child: Text(
+        text,
+        style: const TextStyle(
+            color: DailyRewardsPanel._textWhite,
+            fontSize: 12.5,
+            fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// 3) بطاقة عجلة الحظ اليومية
+// ══════════════════════════════════════════════════════════════
+class _WheelCard extends StatelessWidget {
+  const _WheelCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final spinsLeft = AuthService().wheelSpinsRemaining;
+    final isVip = AuthService().currentUser?.isVip ?? false;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFF1E3A5F).withOpacity(0.6),
+                  const Color(0xFF101C38).withOpacity(0.5),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                  color: const Color(0xFF38BDF8).withOpacity(0.45),
+                  width: 1.1),
+              boxShadow: [
+                BoxShadow(
+                    color: const Color(0xFF38BDF8).withOpacity(0.12),
+                    blurRadius: 16,
+                    spreadRadius: -4),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const RadialGradient(colors: [
+                      Color(0xFFBAE6FD),
+                      Color(0xFF38BDF8),
+                      Color(0xFF075985),
+                    ]),
+                    boxShadow: [
+                      BoxShadow(
+                          color:
+                              const Color(0xFF38BDF8).withOpacity(0.4),
+                          blurRadius: 10),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Text('🎡', style: TextStyle(fontSize: 21)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'عجلة الحظ اليومية',
+                        style: TextStyle(
+                          color: DailyRewardsPanel._textWhite,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 13.5,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        spinsLeft > 0
+                            ? 'عندك $spinsLeft ${spinsLeft == 1 ? 'لفة' : 'لفات'} — أموال 🪙 وجواهر 💎 وسكن نادر 🎨'
+                            : 'استخدمت لفات اليوم — عُد غداً!${isVip ? '' : ' VIP = لفتان إضافيتان'}',
+                        maxLines: 2,
+                        style: const TextStyle(
+                          color: DailyRewardsPanel._textDim,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () async {
+                    AppHaptics.medium();
+                    if (AuthService().currentUser == null) {
+                      TopNotification.show(context, 'سجّل الدخول أولاً!',
+                          icon: Icons.warning_rounded);
+                      return;
+                    }
+                    if (spinsLeft <= 0) {
+                      TopNotification.show(
+                          context,
+                          'استخدمت لفات اليوم! عُد غداً 🎡',
+                          icon: Icons.lock_clock_rounded);
+                      return;
+                    }
+                    await showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (_) => const DailyWheelDialog(),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      gradient: spinsLeft > 0
+                          ? const LinearGradient(colors: [
+                              Color(0xFF7DD3FC),
+                              Color(0xFF38BDF8),
+                              Color(0xFF0284C7),
+                            ])
+                          : null,
+                      color: spinsLeft > 0 ? null : const Color(0x2EFFFFFF),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: spinsLeft > 0
+                          ? [
+                              BoxShadow(
+                                  color: const Color(0xFF38BDF8)
+                                      .withOpacity(0.4),
+                                  blurRadius: 10),
+                            ]
+                          : null,
+                    ),
+                    child: Text(
+                      spinsLeft > 0 ? 'أدر الآن' : 'انتهت',
+                      style: TextStyle(
+                          color: spinsLeft > 0
+                              ? const Color(0xFF082F49)
+                              : DailyRewardsPanel._textDim,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// 3b) بطاقة صندوق الغنائم اليومي 📦 — مجاني كل 24 ساعة
+// ══════════════════════════════════════════════════════════════
+class _LootBoxCard extends StatelessWidget {
+  const _LootBoxCard();
+
+  Future<void> _open(BuildContext context) async {
+    AppHaptics.medium();
+    final res = await AuthService().claimLootBox();
+    if (!context.mounted) return;
+    TopNotification.show(
+      context,
+      res['message'] as String,
+      icon: res['success'] == true
+          ? Icons.inventory_2_rounded
+          : Icons.lock_clock_rounded,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final canOpen = AuthService().canClaimLootBox;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+          child: Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFF4A1D5F).withOpacity(0.6),
+                  const Color(0xFF1E0F38).withOpacity(0.5),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                  color: const Color(0xFFC084FC).withOpacity(0.45),
+                  width: 1.1),
+              boxShadow: [
+                BoxShadow(
+                    color: const Color(0xFFC084FC).withOpacity(0.12),
+                    blurRadius: 16,
+                    spreadRadius: -4),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const RadialGradient(colors: [
+                      Color(0xFFE9D5FF),
+                      Color(0xFFC084FC),
+                      Color(0xFF6B21A8),
+                    ]),
+                    boxShadow: [
+                      BoxShadow(
+                          color:
+                              const Color(0xFFC084FC).withOpacity(0.4),
+                          blurRadius: 10),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Text('📦', style: TextStyle(fontSize: 21)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'صندوق الغنائم اليومي',
+                        style: TextStyle(
+                          color: DailyRewardsPanel._textWhite,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 13.5,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        canOpen
+                            ? 'مجاني! أموال 🪙 وجواهر 💎 وسكن نادر 🎨'
+                            : 'افتُتح — يتجدد كل 24 ساعة ⏳',
+                        maxLines: 2,
+                        style: const TextStyle(
+                          color: DailyRewardsPanel._textDim,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => _open(context),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      gradient: canOpen
+                          ? const LinearGradient(colors: [
+                              Color(0xFFE9D5FF),
+                              Color(0xFFC084FC),
+                              Color(0xFF9333EA),
+                            ])
+                          : null,
+                      color: canOpen ? null : const Color(0x2EFFFFFF),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: canOpen
+                          ? [
+                              BoxShadow(
+                                  color: const Color(0xFFC084FC)
+                                      .withOpacity(0.4),
+                                  blurRadius: 10),
+                            ]
+                          : null,
+                    ),
+                    child: Text(
+                      canOpen ? 'افتح مجاناً' : 'غداً',
+                      style: TextStyle(
+                          color: canOpen
+                              ? const Color(0xFF2E1065)
+                              : DailyRewardsPanel._textDim,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// حوار عجلة الحظ — دوران متحرك يهبط على المقطع الفائز
+// ══════════════════════════════════════════════════════════════
+class DailyWheelDialog extends StatefulWidget {
+  const DailyWheelDialog({super.key});
+
+  @override
+  State<DailyWheelDialog> createState() => _DailyWheelDialogState();
+}
+
+class _DailyWheelDialogState extends State<DailyWheelDialog>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+  late Animation<double> _angle;
+  Map<String, dynamic>? _result;
+  bool _done = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 5200));
+    _angle = const AlwaysStoppedAnimation(0);
+    _spin();
+  }
+
+  Future<void> _spin() async {
+    final res = await AuthService().spinDailyWheel();
+    if (!mounted) return;
+    if (res['success'] != true) {
+      setState(() => _error = res['message'] as String);
+      return;
+    }
+    final seg = res['segmentIndex'] as int;
+    // المؤشر أعلى العجلة — نوجّه مركز المقطع الفائز إليه + 6 دورات + اهتزازة
+    final step = math.pi * 2 / RewardsService.wheel.length;
+    final jitter = (math.Random().nextDouble() - 0.5) * step * 0.55;
+    final target = math.pi * 2 * 6 - (seg + 0.5) * step + jitter;
+    _angle = Tween(begin: 0.0, end: target)
+        .animate(CurvedAnimation(parent: _c, curve: Curves.easeOutQuart));
+    setState(() => _result = res);
+    _c.forward().whenComplete(() {
+      if (mounted) {
+        AppHaptics.heavy();
+        setState(() => _done = true);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Dialog(
+        backgroundColor: Colors.transparent,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(26),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    const Color(0xFF16204A).withOpacity(0.92),
+                    const Color(0xFF0A0F24).withOpacity(0.95),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(26),
+                border: Border.all(
+                    color: DailyRewardsPanel._gold.withOpacity(0.5),
+                    width: 1.3),
+                boxShadow: [
+                  BoxShadow(
+                      color: DailyRewardsPanel._gold.withOpacity(0.15),
+                      blurRadius: 30),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    '🎡 عجلة الحظ اليومية',
+                    style: TextStyle(
+                      color: DailyRewardsPanel._textWhite,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'الأموال الأكثر حظاً 🪙 — جواهر قليلة 💎 — سكن نادر 🎨',
+                    style: TextStyle(
+                        color: DailyRewardsPanel._textDim, fontSize: 10.5),
+                  ),
+                  const SizedBox(height: 18),
+                  if (_error != null)
+                    Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(
+                        _error!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                            color: Color(0xFFFCA5A5), fontSize: 13),
+                      ),
+                    )
+                  else
+                    SizedBox(
+                      width: 250,
+                      height: 250,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          AnimatedBuilder(
+                            animation: _angle,
+                            builder: (_, child) => Transform.rotate(
+                              angle: _angle.value,
+                              child: child,
+                            ),
+                            child: CustomPaint(
+                              size: const Size(240, 240),
+                              painter: const _WheelPainter(),
+                            ),
+                          ),
+                          // المؤشر العلوي
+                          const Positioned(
+                            top: 0,
+                            child: _WheelPointer(),
+                          ),
+                          // محور العجلة
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: const RadialGradient(colors: [
+                                Color(0xFFFFF3C4),
+                                DailyRewardsPanel._gold,
+                                Color(0xFF8B5E00),
+                              ]),
+                              border: Border.all(
+                                  color: const Color(0xFF3E2C00),
+                                  width: 2),
+                              boxShadow: [
+                                BoxShadow(
+                                    color: Colors.black.withOpacity(0.4),
+                                    blurRadius: 8),
+                              ],
+                            ),
+                            child: const Center(
+                              child: Text('🎡',
+                                  style: TextStyle(fontSize: 17)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: 16),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 400),
+                    child: _done && _result != null
+                        ? Container(
+                            key: const ValueKey('win'),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 18, vertical: 10),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(colors: [
+                                Color(0xFFFFF3C4),
+                                DailyRewardsPanel._gold,
+                              ]),
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: [
+                                BoxShadow(
+                                    color: DailyRewardsPanel._gold
+                                        .withOpacity(0.5),
+                                    blurRadius: 16),
+                              ],
+                            ),
+                            child: Text(
+                              _result!['message'] as String,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                  color: Color(0xFF1B0B30),
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 13),
+                            ),
+                          )
+                        : Text(
+                            _error != null
+                                ? ''
+                                : 'العجلة تدور...',
+                            key: const ValueKey('spin'),
+                            style: const TextStyle(
+                                color: DailyRewardsPanel._textDim,
+                                fontSize: 12),
+                          ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: (_done || _error != null)
+                          ? () => Navigator.of(context).pop()
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: DailyRewardsPanel._gold,
+                        disabledBackgroundColor:
+                            Colors.white.withOpacity(0.08),
+                        foregroundColor: const Color(0xFF1B0B30),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('إغلاق',
+                          style: TextStyle(fontWeight: FontWeight.w900)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// المؤشر الذهبي أعلى العجلة
+class _WheelPointer extends StatelessWidget {
+  const _WheelPointer();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: const Size(26, 18),
+      painter: _PointerPainter(),
+    );
+  }
+}
+
+class _PointerPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..moveTo(size.width / 2, size.height)
+      ..lineTo(0, 0)
+      ..lineTo(size.width, 0)
+      ..close();
+    canvas.drawPath(
+      path,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFFFE082), DailyRewardsPanel._gold],
+        ).createShader(Offset.zero & size)
+        ..style = PaintingStyle.fill,
+    );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.4
+        ..color = const Color(0xFF3E2C00),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter old) => false;
+}
+
+/// رسم مقاطع العجلة الثمانية بألوانها ونصوصها
+class _WheelPainter extends CustomPainter {
+  const _WheelPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final c = size.center(Offset.zero);
+    final r = size.shortestSide / 2;
+    final segs = RewardsService.wheel;
+    final step = math.pi * 2 / segs.length;
+
+    // ظل خارجي
+    canvas.drawCircle(
+      c.translate(0, 3),
+      r,
+      Paint()..color = Colors.black.withOpacity(0.45),
+    );
+
+    // المقاطع
+    for (int i = 0; i < segs.length; i++) {
+      final seg = segs[i];
+      final start = -math.pi / 2 + i * step;
+      final paint = Paint()
+        ..shader = RadialGradient(
+          colors: [
+            Color(seg.color).withOpacity(0.95),
+            Color(seg.color).withOpacity(0.55),
+          ],
+        ).createShader(Rect.fromCircle(center: c, radius: r));
+      canvas.drawArc(
+          Rect.fromCircle(center: c, radius: r - 6), start, step - 0.02,
+          true, paint);
+
+      // فاصل بين المقاطع
+      canvas.drawLine(
+        Offset(c.dx + math.cos(start) * (r - 6),
+            c.dy + math.sin(start) * (r - 6)),
+        c,
+        Paint()
+          ..color = const Color(0xFF0A0F24)
+          ..strokeWidth = 2,
+      );
+
+      // النص + الإيموجي عند منتصف المقطع
+      final mid = start + step / 2;
+      final tx = c.dx + math.cos(mid) * (r - 6) * 0.68;
+      final ty = c.dy + math.sin(mid) * (r - 6) * 0.68;
+
+      canvas.save();
+      canvas.translate(tx, ty);
+      canvas.rotate(mid + math.pi / 2);
+      final tp = TextPainter(
+        text: TextSpan(
+          children: [
+            TextSpan(
+                text: '${seg.emoji}\n', style: const TextStyle(fontSize: 13)),
+            TextSpan(
+              text: seg.label,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w900,
+                  shadows: [Shadow(color: Colors.black54, blurRadius: 3)]),
+            ),
+          ],
+        ),
+        textAlign: TextAlign.center,
+        textDirection: TextDirection.ltr,
+      )..layout();
+      tp.paint(canvas, Offset(-tp.width / 2, -tp.height / 2));
+      canvas.restore();
+    }
+
+    // إطار ذهبي خارجي
+    canvas.drawCircle(
+      c,
+      r - 3,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 5
+        ..shader = const SweepGradient(colors: [
+          Color(0xFFFFE082),
+          DailyRewardsPanel._gold,
+          Color(0xFF8B5E00),
+          DailyRewardsPanel._gold,
+          Color(0xFFFFE082),
+        ]).createShader(Rect.fromCircle(center: c, radius: r)),
+    );
+
+    // نقاط مضيئة على الإطار
+    for (int i = 0; i < 16; i++) {
+      final a = i * math.pi / 8;
+      canvas.drawCircle(
+        Offset(c.dx + math.cos(a) * (r - 3), c.dy + math.sin(a) * (r - 3)),
+        2.2,
+        Paint()..color = const Color(0xFFFFF8DC),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter old) => false;
+}

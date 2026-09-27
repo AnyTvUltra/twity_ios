@@ -1,0 +1,147 @@
+rules_version = '2';
+
+// ═══════════════════════════════════════════════════════════════
+// قواعد أمان Firestore - Twity Game Hub
+//
+// قبل النشر: أنشئ مجموعة admins في Firestore وأضف وثيقة
+// بمعرّف = UID لحساب الأدمن (Authentication ← Users ← UID)
+//   admins/{uid}  →  { role: "admin" }
+// ═══════════════════════════════════════════════════════════════
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // هل المستخدم الحالي مدير؟ (وثيقته موجودة في admins)
+    function isAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // ── صلاحيات الأدمن: تُدار يدويًا من الكونسول فقط ──
+    // أي مستخدم يستطيع قراءة وثيقته فقط ليتحقق هل هو مدير
+    match /admins/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // ── الحسابات ──
+    // قراءة مفتوحة (بحث اللاعبين)، التعديل للمالك أو الأدمن فقط
+    match /users/{uid} {
+      allow read: if true;
+      allow create: if signedIn();
+      allow update, delete: if request.auth.uid == uid || isAdmin();
+
+      // الأصدقاء والمحظورين: كتابة ثنائية الاتجاه (قبول الطلبات)
+      match /{sub=**} {
+        allow read: if signedIn();
+        allow write: if signedIn();
+      }
+    }
+
+    // ── المتجر والإعدادات: قراءة عامة، كتابة للأدمن فقط ──
+    match /store_items/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /config/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ── البلاغات وتذاكر الدعم: إنشاء للمستخدمين، إدارة للأدمن ──
+    match /reports/{id} {
+      allow create: if signedIn();
+      allow read, update, delete: if isAdmin();
+    }
+    match /support_tickets/{id} {
+      allow create: if signedIn();
+      allow read, update, delete: if isAdmin();
+    }
+
+    // ── باقات الشحن: قراءة عامة، إدارة للأدمن فقط ──
+    match /coin_packs/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ── طلبات الشراء: اللاعب ينشئ طلبه ويقرأ طلباته، التأكيد للأدمن ──
+    match /orders/{id} {
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.status == 'pending';
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.uid == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    // ── المطالبات: إهداء/إحالة — لا يجوز إنشاء مطالبة لنفسك ──
+    match /claims/{id} {
+      allow create: if signedIn()
+        && request.resource.data.claimed == false
+        && request.resource.data.toUid != request.auth.uid
+        && request.resource.data.fromUid == request.auth.uid
+        && request.resource.data.chips <= 10000;
+      allow read: if signedIn();
+      allow update: if signedIn()
+        && resource.data.toUid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['claimed']);
+      allow delete: if isAdmin();
+    }
+
+    // ── طلبات اشتراك VIP: نفس نمط طلبات الشراء ──
+    match /vip_requests/{id} {
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.status == 'pending';
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.uid == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    // ── الراديو: قراءة عامة، إدارة للأدمن فقط ──
+    match /radio_groups/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /radio_songs/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ── الاجتماعي: يتطلب تسجيل دخول ──
+    match /friend_requests/{id} {
+      allow read, write: if signedIn();
+    }
+    match /notifications/{id} {
+      allow read, write: if signedIn();
+    }
+    match /conversations/{id} {
+      allow read, write: if signedIn();
+      match /messages/{m} {
+        allow read, write: if signedIn();
+      }
+    }
+
+    // ── اللعب ──
+    match /rooms/{id} {
+      allow read, write: if signedIn();
+    }
+    match /players/{id} {
+      allow read: if true;
+      allow write: if signedIn();
+    }
+    match /game_history/{id} {
+      allow read: if true;
+      allow write: if signedIn();
+    }
+
+    // ── أي شيء آخر: مرفوض ──
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

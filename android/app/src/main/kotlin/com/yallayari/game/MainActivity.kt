@@ -1,4 +1,4 @@
-package com.gamehub.game_hub
+package com.yallayari.game
 
 import io.flutter.embedding.android.FlutterActivity
 

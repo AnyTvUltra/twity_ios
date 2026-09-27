@@ -41,6 +41,7 @@ class ConversationSummary {
   final String lastMessage;
   final DateTime lastTime;
   final bool isOnline;
+  final int unreadCount;
 
   ConversationSummary({
     required this.id,
@@ -51,7 +52,44 @@ class ConversationSummary {
     required this.lastMessage,
     required this.lastTime,
     this.isOnline = false,
+    this.unreadCount = 0,
   });
+}
+
+/// طلب صداقة معلّق
+class FriendRequest {
+  final String id;
+  final String fromUid;
+  final String fromName;
+  final String fromUsername;
+  final String fromPhoto;
+  final String toUid;
+  final DateTime createdAt;
+
+  FriendRequest({
+    required this.id,
+    required this.fromUid,
+    required this.fromName,
+    required this.fromUsername,
+    required this.fromPhoto,
+    required this.toUid,
+    required this.createdAt,
+  });
+
+  factory FriendRequest.fromDoc(DocumentSnapshot doc) {
+    final d = doc.data() as Map<String, dynamic>;
+    return FriendRequest(
+      id: doc.id,
+      fromUid: d['fromUid'] ?? '',
+      fromName: d['fromName'] ?? 'لاعب',
+      fromUsername: d['fromUsername'] ?? '',
+      fromPhoto: d['fromPhoto'] ?? '',
+      toUid: d['toUid'] ?? '',
+      createdAt: d['createdAt'] is Timestamp
+          ? (d['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
+    );
+  }
 }
 
 class SocialService {
@@ -91,7 +129,7 @@ class SocialService {
         .map((snap) => snap.docs.map((d) => {'uid': d.id, ...d.data()}).toList());
   }
 
-  /// إضافة صديق
+  /// إضافة صديق مباشرة (تُستخدم داخلياً عند قبول الطلب)
   Future<void> addFriend(String myUid, AppUser friend) async {
     try {
       await _firestore.collection('users').doc(myUid).collection('friends').doc(friend.uid).set({
@@ -102,6 +140,172 @@ class SocialService {
       });
     } catch (e) {
       debugPrint('Error adding friend: $e');
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // طلبات الصداقة (إرسال → إشعار → قبول/رفض)
+  // ══════════════════════════════════════════════════════════
+
+  /// بثّ الطلبات الواردة المعلّقة للمستخدم
+  Stream<List<FriendRequest>> getIncomingRequestsStream(String uid) {
+    return _firestore
+        .collection('friend_requests')
+        .where('toUid', isEqualTo: uid)
+        .where('status', isEqualTo: 'pending')
+        .snapshots()
+        .map((snap) {
+      final list =
+          snap.docs.map(FriendRequest.fromDoc).toList();
+      list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return list;
+    });
+  }
+
+  /// بثّ الطلبات الصادرة المعلّقة (لمعرفة حالة "تم الإرسال" في نتائج البحث)
+  Stream<Set<String>> getOutgoingRequestsStream(String uid) {
+    return _firestore
+        .collection('friend_requests')
+        .where('fromUid', isEqualTo: uid)
+        .where('status', isEqualTo: 'pending')
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((d) => (d.data())['toUid'] as String? ?? '')
+            .where((s) => s.isNotEmpty)
+            .toSet());
+  }
+
+  /// إرسال طلب صداقة — يعيد رسالة خطأ أو null عند النجاح
+  Future<String?> sendFriendRequest(AppUser me, AppUser target) async {
+    if (me.uid == target.uid) return 'لا يمكنك إضافة نفسك';
+    final reqId = '${me.uid}_${target.uid}';
+    final reverseId = '${target.uid}_${me.uid}';
+    try {
+      // هل هو صديق بالفعل؟
+      final existing = await _firestore
+          .collection('users')
+          .doc(me.uid)
+          .collection('friends')
+          .doc(target.uid)
+          .get();
+      if (existing.exists) return 'هذا اللاعب صديقك بالفعل';
+
+      // هل يوجد طلب معلّق سابق؟
+      final pending = await _firestore
+          .collection('friend_requests')
+          .doc(reqId)
+          .get();
+      if (pending.exists &&
+          (pending.data()?['status'] == 'pending')) {
+        return 'أرسلت طلباً لهذا اللاعب بالفعل — بانتظار موافقته';
+      }
+
+      // إذا كان الطرف الآخر أرسل لي طلباً → قبول متبادل فوري
+      final reverse = await _firestore
+          .collection('friend_requests')
+          .doc(reverseId)
+          .get();
+      if (reverse.exists && reverse.data()?['status'] == 'pending') {
+        await acceptFriendRequest(reverseId);
+        return null;
+      }
+
+      await _firestore.collection('friend_requests').doc(reqId).set({
+        'fromUid': me.uid,
+        'fromName': me.displayName,
+        'fromUsername': me.username,
+        'fromPhoto': me.photoUrl,
+        'toUid': target.uid,
+        'status': 'pending',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      return null;
+    } catch (e) {
+      debugPrint('Error sending friend request: $e');
+      return 'تعذر إرسال الطلب، حاول مرة أخرى';
+    }
+  }
+
+  /// قبول طلب صداقة: إضافة الطرفين لقوائم بعضهما وحذف الطلب
+  Future<void> acceptFriendRequest(String requestId) async {
+    try {
+      final doc = await _firestore
+          .collection('friend_requests')
+          .doc(requestId)
+          .get();
+      if (!doc.exists) return;
+      final d = doc.data()!;
+      final fromUid = d['fromUid'] as String;
+      final toUid = d['toUid'] as String;
+
+      // بيانات الطرف المُرسِل محفوظة في الطلب
+      final fromData = {
+        'username': d['fromUsername'] ?? '',
+        'displayName': d['fromName'] ?? 'لاعب',
+        'photoUrl': d['fromPhoto'] ?? '',
+        'addedAt': FieldValue.serverTimestamp(),
+      };
+
+      // بيانات المستقبِل (الذي وافق) نجلبها من حسابه
+      final toDoc =
+          await _firestore.collection('users').doc(toUid).get();
+      final toData = toDoc.exists
+          ? {
+              'username': toDoc.data()?['username'] ?? '',
+              'displayName': toDoc.data()?['displayName'] ?? 'لاعب',
+              'photoUrl': toDoc.data()?['photoUrl'] ?? '',
+              'addedAt': FieldValue.serverTimestamp(),
+            }
+          : {
+              'username': '',
+              'displayName': 'لاعب',
+              'photoUrl': '',
+              'addedAt': FieldValue.serverTimestamp(),
+            };
+
+      final batch = _firestore.batch();
+      batch.set(
+          _firestore
+              .collection('users')
+              .doc(toUid)
+              .collection('friends')
+              .doc(fromUid),
+          fromData);
+      batch.set(
+          _firestore
+              .collection('users')
+              .doc(fromUid)
+              .collection('friends')
+              .doc(toUid),
+          toData);
+      batch.update(doc.reference, {'status': 'accepted'});
+      await batch.commit();
+    } catch (e) {
+      debugPrint('Error accepting friend request: $e');
+    }
+  }
+
+  /// رفض/حذف طلب صداقة
+  Future<void> declineFriendRequest(String requestId) async {
+    try {
+      await _firestore
+          .collection('friend_requests')
+          .doc(requestId)
+          .update({'status': 'declined'});
+    } catch (e) {
+      debugPrint('Error declining friend request: $e');
+    }
+  }
+
+  /// إلغاء طلب أرسلته أنا
+  Future<void> cancelFriendRequest(String myUid, String targetUid) async {
+    try {
+      await _firestore
+          .collection('friend_requests')
+          .doc('${myUid}_$targetUid')
+          .delete();
+    } catch (e) {
+      debugPrint('Error canceling friend request: $e');
     }
   }
 
@@ -155,12 +359,66 @@ class SocialService {
         .map((snap) => snap.docs.map((d) => ChatMessage.fromMap(d.id, d.data(), myUid)).toList());
   }
 
+  /// بث قائمة محادثاتي الحقيقية مع آخر رسالة وعدد غير المقروء
+  Stream<List<ConversationSummary>> getConversationsStream(String myUid) {
+    return _firestore
+        .collection('conversations')
+        .where('participants', arrayContains: myUid)
+        .snapshots()
+        .map((snap) {
+      final list = snap.docs.map((doc) {
+        final d = doc.data();
+        final participants =
+            (d['participants'] as List?)?.cast<String>() ?? [];
+        final otherUid = participants.firstWhere(
+          (p) => p != myUid,
+          orElse: () => '',
+        );
+        final pdata =
+            (d['participantData'] as Map?)?.cast<String, dynamic>() ?? {};
+        final other =
+            (pdata[otherUid] as Map?)?.cast<String, dynamic>() ?? {};
+        return ConversationSummary(
+          id: doc.id,
+          otherUid: otherUid,
+          otherName: other['name'] ?? 'لاعب',
+          otherUsername: other['username'] ?? '',
+          otherPhoto: other['photo'] ?? '',
+          lastMessage: d['lastMessage'] ?? '',
+          lastTime: d['lastUpdated'] is Timestamp
+              ? (d['lastUpdated'] as Timestamp).toDate()
+              : DateTime.now(),
+          unreadCount:
+              (d['unread_$myUid'] as num?)?.toInt() ?? 0,
+        );
+      }).where((c) => c.otherUid.isNotEmpty).toList();
+      list.sort((a, b) => b.lastTime.compareTo(a.lastTime));
+      return list;
+    });
+  }
+
+  /// تصفير عدّاد الرسائل غير المقروءة عند فتح المحادثة
+  Future<void> markConversationRead(String convId, String myUid) async {
+    try {
+      await _firestore
+          .collection('conversations')
+          .doc(convId)
+          .set({'unread_$myUid': 0}, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('Error marking read: $e');
+    }
+  }
+
   /// إرسال رسالة في الشات
   Future<void> sendMessage({
     required String senderUid,
     required String senderName,
+    required String senderUsername,
+    required String senderPhoto,
     required String receiverUid,
     required String receiverName,
+    required String receiverUsername,
+    required String receiverPhoto,
     required String text,
   }) async {
     final cleanText = text.trim();
@@ -177,15 +435,25 @@ class SocialService {
         'timestamp': FieldValue.serverTimestamp(),
       });
 
-      // 2. تحديث ملخص المحادثة
+      // 2. تحديث ملخص المحادثة + زيادة عدّاد غير المقروء عند المستقبِل
       await _firestore.collection('conversations').doc(convId).set({
         'participants': [senderUid, receiverUid],
         'lastMessage': cleanText,
         'lastSenderId': senderUid,
         'lastUpdated': FieldValue.serverTimestamp(),
+        'unread_$receiverUid': FieldValue.increment(1),
+        'unread_$senderUid': 0,
         'participantData': {
-          senderUid: {'name': senderName},
-          receiverUid: {'name': receiverName},
+          senderUid: {
+            'name': senderName,
+            'username': senderUsername,
+            'photo': senderPhoto,
+          },
+          receiverUid: {
+            'name': receiverName,
+            'username': receiverUsername,
+            'photo': receiverPhoto,
+          },
         },
       }, SetOptions(merge: true));
     } catch (e) {

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../okey_models.dart';
+import '../../../services/store_service.dart';
+import '../../../widgets/animated_skin_effect.dart';
+import '../../../widgets/skin_image.dart';
 
 /// مكون حجر الأوكي ثلاثي الأبعاد - مطابق تماماً لأحجار الصورة المرجعية
 class OkeyTileWidget extends StatelessWidget {
@@ -11,6 +14,9 @@ class OkeyTileWidget extends StatelessWidget {
   final double width;
   final double height;
 
+  /// كسنة معروضة بدل المجهزة — لمعاينات المتجر بنفس شكل اللعبة
+  final StoreItem? skinOverride;
+
   const OkeyTileWidget({
     super.key,
     required this.tile,
@@ -20,22 +26,23 @@ class OkeyTileWidget extends StatelessWidget {
     this.onTap,
     this.width = 28,
     this.height = 38,
+    this.skinOverride,
   });
 
 
   @override
   Widget build(BuildContext context) {
     if (tile == null) {
-      // خانة فارغة - تجويف ناعم داخل الرف الخشبي
+      // خانة فارغة - تجويف زجاجي ناعم داخل الاستكانة
       return Container(
         width: width,
         height: height,
         margin: const EdgeInsets.symmetric(horizontal: 1.0),
         decoration: BoxDecoration(
-          color: const Color(0x18000000),
-          borderRadius: BorderRadius.circular(3.5),
+          color: const Color(0x14FFFFFF),
+          borderRadius: BorderRadius.circular(4.5),
           border: Border.all(
-            color: const Color(0x22FFFFFF),
+            color: const Color(0x1AFFFFFF),
             width: 0.6,
           ),
         ),
@@ -45,6 +52,10 @@ class OkeyTileWidget extends StatelessWidget {
     final t = tile!;
     final isOkey = t.isRealOkey;
     final isFake = t.isFalseJoker;
+    final skinItem =
+        skinOverride ?? StoreService().equippedFor(StoreCategory.tile);
+    final hasAnimatedSkin =
+        skinItem != null && skinEffectOf(skinItem) != SkinEffect.none;
 
     Widget tileWidget = AnimatedContainer(
       duration: const Duration(milliseconds: 140),
@@ -54,18 +65,20 @@ class OkeyTileWidget extends StatelessWidget {
       height: height,
       margin: const EdgeInsets.symmetric(horizontal: 1.0),
       decoration: BoxDecoration(
-        // لون عاجي كلاسيكي مع تدرج إضاءة ناعم
-        gradient: const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFFFFFDF8),
-            Color(0xFFFBF6EA),
-            Color(0xFFF3EAD5),
-          ],
-          stops: [0.0, 0.45, 1.0],
-        ),
-        borderRadius: BorderRadius.circular(3.5),
+        gradient: skinItem == null
+            ? const LinearGradient(
+                // عاج فاخر شبه لامع (Premium Ivory Glass)
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFFFFFFFF),
+                  Color(0xFFFBF6EA),
+                  Color(0xFFF0E5CC),
+                ],
+                stops: [0.0, 0.45, 1.0],
+              )
+            : null,
+        borderRadius: BorderRadius.circular(4.5),
         border: Border.all(
           color: isSelected
               ? const Color(0xFFFFD54F)
@@ -73,7 +86,7 @@ class OkeyTileWidget extends StatelessWidget {
                   ? const Color(0xFF60A5FA)
                   : (isHighlighted
                       ? const Color(0xFF10B981)
-                      : (isOkey ? const Color(0xFFFFB300) : const Color(0xFFD8CFBA))),
+                      : (isOkey ? const Color(0xFFFFB300) : const Color(0xFFCFC4A4))),
           width: isSelected ? 2.0 : (isHighlighted ? 1.6 : (isOkey ? 1.6 : 0.8)),
         ),
         boxShadow: [
@@ -93,10 +106,21 @@ class OkeyTileWidget extends StatelessWidget {
       ),
 
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(4),
         child: Stack(
           alignment: Alignment.center,
           children: [
+            // كسنة الحجر مع التحويل (تغطي كامل الوجه) — أو تأثير متحرك
+            if (skinItem != null)
+              Positioned.fill(
+                child: hasAnimatedSkin
+                    ? AnimatedSkinLayer(
+                        effect: skinEffectOf(skinItem),
+                        intensity: isDragging ? 0.6 : (isSelected ? 0.3 : 0),
+                      )
+                    : SkinTransformImage.fromItem(skinItem),
+              ),
+
             // لمعان علوي خفيف
             Positioned(
               top: 0,
@@ -148,25 +172,57 @@ class OkeyTileWidget extends StatelessWidget {
                     style: TextStyle(
                       fontSize: width * 0.52,
                       fontWeight: FontWeight.w900,
-                      color: t.color.color,
+                      // على السكنات المتحركة: بأليت ألوان مضيئة تحافظ على
+                      // تمييز لون الحجر (الأسود→فضّي أبيض)
+                      color: hasAnimatedSkin
+                          ? t.color.brightColor
+                          : t.color.color,
                       height: 1.0,
-                      shadows: [
-                        Shadow(
-                          color: t.color.color.withOpacity(0.2),
-                          blurRadius: 1,
-                          offset: const Offset(0.5, 0.5),
-                        ),
-                      ],
+                      shadows: hasAnimatedSkin
+                          ? [
+                              // هالة ملونة + حدود داكنة = وضوح كامل
+                              Shadow(
+                                color: t.color.brightColor.withOpacity(0.55),
+                                blurRadius: 6,
+                              ),
+                              const Shadow(
+                                color: Color(0xDD000000),
+                                blurRadius: 1.5,
+                                offset: Offset(0.6, 0.6),
+                              ),
+                            ]
+                          : [
+                              Shadow(
+                                color: t.color.color.withOpacity(0.2),
+                                blurRadius: 1,
+                                offset: const Offset(0.5, 0.5),
+                              ),
+                            ],
                     ),
                   ),
                   const SizedBox(height: 2),
-                  // نقطة دائرية ملونة أسفل الرقم مثل الصورة
+                  // نقطة لون الحجر — أكبر وأوضح على السكنات الداكنة
                   Container(
-                    width: width * 0.14,
-                    height: width * 0.14,
+                    width: width * (hasAnimatedSkin ? 0.20 : 0.14),
+                    height: width * (hasAnimatedSkin ? 0.20 : 0.14),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: t.color.color,
+                      color: hasAnimatedSkin
+                          ? t.color.brightColor
+                          : t.color.color,
+                      border: hasAnimatedSkin
+                          ? Border.all(
+                              color: Colors.black.withOpacity(0.55),
+                              width: 0.8)
+                          : null,
+                      boxShadow: hasAnimatedSkin
+                          ? [
+                              BoxShadow(
+                                color: t.color.brightColor.withOpacity(0.6),
+                                blurRadius: 4,
+                              ),
+                            ]
+                          : null,
                     ),
                   ),
                 ],

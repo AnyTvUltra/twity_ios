@@ -12,8 +12,8 @@ import 'game_screen.dart';
 import 'achievements_screen.dart';
 import 'chat_screen.dart';
 import 'profile_screen.dart';
-import 'okey_lobby_screen.dart';
-
+import 'okey_rules_screen.dart';
+import 'store_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -80,7 +80,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   void _navigateToGame(String gameId) {
     AppHaptics.medium();
-    final Widget destination = gameId == 'okey' ? const OkeyLobbyScreen() : GameScreen(gameId: gameId);
+    final Widget destination =
+        gameId == 'okey' ? const OkeyRulesScreen() : GameScreen(gameId: gameId);
     Navigator.of(context).push(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) => destination,
@@ -88,17 +89,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           const begin = Offset(0.0, 0.08);
           const end = Offset.zero;
           const curve = Curves.easeOutCubic;
-          final tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          final tween =
+              Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
           return FadeTransition(
             opacity: animation,
-            child: SlideTransition(position: animation.drive(tween), child: child),
+            child:
+                SlideTransition(position: animation.drive(tween), child: child),
           );
         },
         transitionDuration: const Duration(milliseconds: 220),
       ),
     );
   }
-
 
   void _showNotice(String message, {IconData? icon}) {
     TopNotification.show(context, message, icon: icon);
@@ -153,6 +155,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     required Animation<double> animation,
     required GameModel game,
     double? cardWidth,
+    double? cardHeight,
   }) {
     return AnimatedBuilder(
       animation: animation,
@@ -170,7 +173,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         child: GameCard(
           game: game,
           width: cardWidth,
-          height: 205,
+          height: cardHeight ?? 220,
           onTap: () => _navigateToGame(game.id),
         ),
       ),
@@ -202,12 +205,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     AppHaptics.selection();
                     setState(() => _currentNavIndex = 3);
                   },
-                  onCoinTap: () => _showNotice('رصيدك الحالي: 1250 عملة ذهبية!'),
-                  onGiftTap: () {
-                    AppHaptics.medium();
-                    setState(() => _currentNavIndex = 1);
+                  onCoinTap: () =>
+                      _showNotice('رصيدك الحالي: 1250 عملة ذهبية!'),
+                  onStoreTap: () {
+                    AppHaptics.selection();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => const StoreScreen()),
+                    );
                   },
-                  onSettingsTap: () => _showNotice('الإعدادات قيد التطوير'),
                 ),
               ),
             ),
@@ -215,7 +221,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             // Main Scrollable Content with smooth physics
             Expanded(
               child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics()),
                 padding: const EdgeInsets.only(bottom: 95),
                 child: Column(
                   children: [
@@ -242,65 +249,51 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     // GAME CARDS (2 + 2 + 1 Layout) Fully Responsive with Expanded
                     // ----------------------------------------------------
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      child: Column(
-                        children: [
-                          // Row 1: Chess & Solitaire
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildAnimatedCard(
-                                  animation: _cardAnimations[0],
-                                  game: GamesData.games[0],
-                                ),
-                              ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: _buildAnimatedCard(
-                                  animation: _cardAnimations[1],
-                                  game: GamesData.games[1],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 18),
-
-                          // Row 2: Ludo & Okey
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildAnimatedCard(
-                                  animation: _cardAnimations[2],
-                                  game: GamesData.games[2],
-                                ),
-                              ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: _buildAnimatedCard(
-                                  animation: _cardAnimations[3],
-                                  game: GamesData.games[3],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 18),
-
-                          // Row 3: Backgammon (centered at 50% width)
-                          LayoutBuilder(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 760),
+                          child: LayoutBuilder(
                             builder: (context, constraints) {
-                              final cardWidth = (constraints.maxWidth - 14) / 2;
-                              return Center(
-                                child: SizedBox(
-                                  width: cardWidth,
-                                  child: _buildAnimatedCard(
-                                    animation: _cardAnimations[4],
-                                    game: GamesData.games[4],
+                              final gap =
+                                  constraints.maxWidth < 380 ? 10.0 : 16.0;
+                              final cardWidth =
+                                  (constraints.maxWidth - gap) / 2;
+                              final cardHeight =
+                                  (cardWidth * 1.24).clamp(194.0, 260.0);
+                              Widget card(int index) => SizedBox(
+                                    width: cardWidth,
+                                    child: _buildAnimatedCard(
+                                      animation: _cardAnimations[index],
+                                      game: GamesData.games[index],
+                                      cardWidth: cardWidth,
+                                      cardHeight: cardHeight,
+                                    ),
+                                  );
+                              return Column(
+                                children: [
+                                  Row(
+                                    children: [
+                                      card(0),
+                                      SizedBox(width: gap),
+                                      card(1),
+                                    ],
                                   ),
-                                ),
+                                  const SizedBox(height: 18),
+                                  Row(
+                                    children: [
+                                      card(2),
+                                      SizedBox(width: gap),
+                                      card(3),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 18),
+                                  Center(child: card(4)),
+                                ],
                               );
                             },
                           ),
-                        ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -313,14 +306,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         return Opacity(
                           opacity: _bannerAnimation.value.clamp(0.0, 1.0),
                           child: Transform.translate(
-                            offset: Offset(0, 15 * (1 - _bannerAnimation.value)),
+                            offset:
+                                Offset(0, 15 * (1 - _bannerAnimation.value)),
                             child: child,
                           ),
                         );
                       },
                       child: RepaintBoundary(
                         child: MoreGamesBanner(
-                          onTap: () => _showNotice('ألعاب جديدة قادمة قريباً! 🎮'),
+                          onTap: () =>
+                              _showNotice('ألعاب جديدة قادمة قريباً! 🎮'),
                         ),
                       ),
                     ),

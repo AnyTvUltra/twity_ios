@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'okey_models.dart';
+import 'okey_rules.dart';
 import 'utils/okey_audio.dart';
 import '../../services/firebase_service.dart';
 
@@ -22,9 +23,11 @@ class OkeyEngine extends ChangeNotifier {
 
   // Discard piles for each player (0: Human, 1: Right, 2: Top, 3: Left)
   late List<List<OkeyTile>> discardPiles;
+  late List<OkeyGroup> tableMelds;
 
   int currentTurnIndex = 0; // 0: Bottom (Human), 1: Right, 2: Top, 3: Left
-  OkeyTurnPhase turnPhase = OkeyTurnPhase.awaitingDiscard; // Start player has 15 tiles
+  OkeyTurnPhase turnPhase =
+      OkeyTurnPhase.awaitingDiscard; // Start player has 15 tiles
   OkeyGameState gameState = OkeyGameState.yourTurn;
   int? selectedTileIndex; // Index in human rack (0-27)
 
@@ -39,7 +42,13 @@ class OkeyEngine extends ChangeNotifier {
   OkeyPlayer? winner;
   WinType? winType;
 
-  OkeyEngine() {
+  /// قناة إشعارات للواجهة (نزول لاعب، فتح اللعب، إعادة أحجار...)
+  void Function(String message)? onNotice;
+
+  /// قانون الكونكان المختار (سليمانية / أربيل / تركي)
+  final OkeyRules rules;
+
+  OkeyEngine({this.rules = OkeyRules.turkish}) {
     initGame();
   }
 
@@ -156,8 +165,14 @@ class OkeyEngine extends ChangeNotifier {
       ),
     ];
 
+    for (final p in players) {
+      p.hasOpened = false;
+      p.openedPoints = 0;
+    }
+
     // Discard piles
     discardPiles = List.generate(4, (_) => <OkeyTile>[]);
+    tableMelds = <OkeyGroup>[];
 
     // 4. Deal: Starter (Player 0) gets 15 tiles, others get 14 tiles
     for (int i = 0; i < 4; i++) {
@@ -179,23 +194,7 @@ class OkeyEngine extends ChangeNotifier {
     // Auto sort human hand initially for a clean presentation
     sortHumanTiles();
     _startTurnTimer();
-    _loadFirebaseProfile();
     notifyListeners();
-  }
-
-  void _loadFirebaseProfile() async {
-    final profile = await FirebaseService().getOrCreatePlayerProfile(
-      playerId: 'p_0',
-      defaultName: players[0].name,
-      defaultChips: players[0].chips,
-      defaultRating: players[0].rating,
-      defaultLevel: players[0].level,
-    );
-    if (!isDisposed) {
-      players[0].chips = (profile['chips'] as num?)?.toInt() ?? players[0].chips;
-      players[0].rating = (profile['rating'] as num?)?.toInt() ?? players[0].rating;
-      notifyListeners();
-    }
   }
 
   // ── TURN TIMER ──
@@ -246,8 +245,8 @@ class OkeyEngine extends ChangeNotifier {
     if (selectedTileIndex == slotIndex) {
       selectedTileIndex = null;
     } else if (selectedTileIndex != null) {
-      swapTiles(selectedTileIndex!, slotIndex);
-      selectedTileIndex = null;
+      insertTile(selectedTileIndex!, slotIndex);
+      return;
     } else {
       selectedTileIndex = slotIndex;
       OkeyAudio.playTilePickup();
@@ -256,10 +255,83 @@ class OkeyEngine extends ChangeNotifier {
   }
 
   void moveTile(int fromSlot, int toSlot) {
-    if (fromSlot == toSlot) return;
-    final tile = players[0].rackTiles[fromSlot];
-    players[0].rackTiles[fromSlot] = null;
-    players[0].rackTiles[toSlot] = tile;
+    insertTile(fromSlot, toSlot);
+  }
+
+  /// إدراج/وضع حر: خانة فارغة تستقبل الحجر في مكانها (الفجوات مسموحة)،
+  /// وخانة مشغولة تُزيح الأحجار نحو الفراغ بدون دفعها بعيداً
+  void insertTile(int fromSlot, int toSlot) {
+    if (fromSlot == toSlot ||
+        fromSlot < 0 ||
+        fromSlot >= 28 ||
+        toSlot < 0 ||
+        toSlot >= 28) return;
+    final rack = players[0].rackTiles;
+    final tile = rack[fromSlot];
+    if (tile == null) return;
+
+    final fromRow = fromSlot ~/ 14;
+    final toRow = toSlot ~/ 14;
+
+    if (rack[toSlot] == null) {
+      // خانة فارغة: ضع الحجر فيها مباشرة وتبقى الخانة المصدر فارغة
+      rack[fromSlot] = null;
+      rack[toSlot] = tile;
+    } else if (fromRow == toRow) {
+      // نفس الصف: أزح الأحجار نحو الفراغ الذي تركه الحجر المسحوب
+      rack[fromSlot] = null;
+      if (fromSlot < toSlot) {
+        for (int i = fromSlot; i < toSlot - 1; i++) {
+          rack[i] = rack[i + 1];
+        }
+        rack[toSlot - 1] = tile;
+      } else {
+        for (int i = fromSlot; i > toSlot; i--) {
+          rack[i] = rack[i - 1];
+        }
+        rack[toSlot] = tile;
+      }
+    } else {
+      // صف مختلف: أزح داخل صف الهدف نحو أقرب خانة فارغة
+      rack[fromSlot] = null;
+      final rs = toRow * 14;
+      int? rightEmpty;
+      for (int i = toSlot + 1; i < rs + 14; i++) {
+        if (rack[i] == null) {
+          rightEmpty = i;
+          break;
+        }
+      }
+      int? leftEmpty;
+      for (int i = toSlot - 1; i >= rs; i--) {
+        if (rack[i] == null) {
+          leftEmpty = i;
+          break;
+        }
+      }
+      if (rightEmpty != null) {
+        for (int i = rightEmpty; i > toSlot; i--) {
+          rack[i] = rack[i - 1];
+        }
+        rack[toSlot] = tile;
+      } else if (leftEmpty != null) {
+        for (int i = leftEmpty; i < toSlot - 1; i++) {
+          rack[i] = rack[i + 1];
+        }
+        rack[toSlot - 1] = tile;
+      } else {
+        // الصف الهدف ممتلئ: بدّل مع الهدف وأعد حجره إلى صف المصدر
+        final displaced = rack[toSlot]!;
+        rack[toSlot] = tile;
+        final srs = fromRow * 14;
+        int target = srs;
+        while (target < srs + 14 && rack[target] != null) {
+          target++;
+        }
+        rack[target < srs + 14 ? target : fromSlot] = displaced;
+      }
+    }
+
     selectedTileIndex = null;
     OkeyAudio.playTilePickup();
     notifyListeners();
@@ -273,9 +345,26 @@ class OkeyEngine extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// عند نفاد رزمة السحب: تُنقل كل الأحجار المرمية وتُخلط من جديد
+  void _refillDeckFromDiscards() {
+    final recycled = <OkeyTile>[];
+    for (final pile in discardPiles) {
+      recycled.addAll(pile);
+      pile.clear();
+    }
+    if (recycled.isEmpty) return;
+    recycled.shuffle(_random);
+    drawDeck.addAll(recycled);
+    onNotice?.call(
+        '🔄 نفدت رزمة السحب — أُعيد خلط ${recycled.length} حجراً مرموياً');
+  }
+
   /// Draw from center stock
   bool drawFromDeck() {
-    if (currentTurnIndex != 0 || turnPhase != OkeyTurnPhase.awaitingDraw) return false;
+    if (currentTurnIndex != 0 || turnPhase != OkeyTurnPhase.awaitingDraw) {
+      return false;
+    }
+    if (drawDeck.isEmpty) _refillDeckFromDiscards();
     if (drawDeck.isEmpty) return false;
 
     final emptySlot = players[0].rackTiles.indexOf(null);
@@ -293,7 +382,9 @@ class OkeyEngine extends ChangeNotifier {
 
   /// Take the latest discarded tile from previous player (Left Bot, index 3)
   bool drawFromDiscard() {
-    if (currentTurnIndex != 0 || turnPhase != OkeyTurnPhase.awaitingDraw) return false;
+    if (currentTurnIndex != 0 || turnPhase != OkeyTurnPhase.awaitingDraw) {
+      return false;
+    }
     final leftPlayerDiscards = discardPiles[3];
     if (leftPlayerDiscards.isEmpty) return false;
 
@@ -318,18 +409,31 @@ class OkeyEngine extends ChangeNotifier {
 
   /// Discard specific slot
   bool discardSlot(int slotIndex) {
-    if (currentTurnIndex != 0 || turnPhase != OkeyTurnPhase.awaitingDiscard) return false;
+    if (currentTurnIndex != 0 || turnPhase != OkeyTurnPhase.awaitingDiscard) {
+      return false;
+    }
     final tile = players[0].rackTiles[slotIndex];
     if (tile == null) return false;
 
+    // إذا أنزل أحجاراً ولم تكتمل نقاط الافتتاح (101) تُعاد إلى الرف
+    if (!players[0].hasOpened) {
+      _retractPendingMelds(0);
+    }
+
     players[0].rackTiles[slotIndex] = null;
+    // لا نضغط الصف — الفجوات تحافظ على تجميعات اللاعب منفصلة
     discardPiles[0].add(tile);
     selectedTileIndex = null;
     OkeyAudio.playTileDiscard();
 
     // Check if human won by discarding!
-    if (isWinningHand(players[0].activeTiles)) {
-      _declareWinner(players[0], tile.isRealOkey ? WinType.discardOkey : WinType.normal);
+    final remaining = players[0].activeTiles;
+    final won = players[0].hasOpened
+        ? _remainingAllMeldable(remaining)
+        : isWinningHand(remaining);
+    if (won) {
+      _declareWinner(
+          players[0], tile.isRealOkey ? WinType.discardOkey : WinType.normal);
       return true;
     }
 
@@ -338,7 +442,8 @@ class OkeyEngine extends ChangeNotifier {
   }
 
   void discardSelectedOrLastTile() {
-    if (selectedTileIndex != null && players[0].rackTiles[selectedTileIndex!] != null) {
+    if (selectedTileIndex != null &&
+        players[0].rackTiles[selectedTileIndex!] != null) {
       discardSlot(selectedTileIndex!);
       return;
     }
@@ -362,7 +467,9 @@ class OkeyEngine extends ChangeNotifier {
   void _advanceTurn() {
     currentTurnIndex = (currentTurnIndex + 1) % 4;
     turnPhase = OkeyTurnPhase.awaitingDraw;
-    gameState = (currentTurnIndex == 0) ? OkeyGameState.yourTurn : OkeyGameState.opponentTurn;
+    gameState = (currentTurnIndex == 0)
+        ? OkeyGameState.yourTurn
+        : OkeyGameState.opponentTurn;
     _startTurnTimer();
 
     if (currentTurnIndex == 0) {
@@ -385,21 +492,9 @@ class OkeyEngine extends ChangeNotifier {
     _botTimer?.cancel();
 
     if (p.isHuman) {
-      p.chips += 140;
-      p.rating += 25;
       OkeyAudio.playWin();
-    } else {
-      players[0].chips = math.max(0, players[0].chips - 35);
-      players[0].rating = math.max(1000, players[0].rating - 15);
     }
 
-    // مزامنة رصيد اللاعب وتقييمه سحابياً في قاعدة بيانات Firebase
-    FirebaseService().updatePlayerScore(
-      playerId: players[0].id,
-      chips: players[0].chips,
-      rating: players[0].rating,
-      isWin: p.isHuman,
-    );
     FirebaseService().logGameResult(
       winnerName: p.name,
       winType: type.name,
@@ -431,22 +526,27 @@ class OkeyEngine extends ChangeNotifier {
       if (prevDiscards.isNotEmpty && bot.botDifficulty != BotDifficulty.easy) {
         final candidate = prevDiscards.last;
         final currentHand = bot.activeTiles;
-        // Test if adding candidate improves hand runs/sets
-        if (_tileUsefulForHand(currentHand, candidate)) {
+        // البوت قد لا يلاحظ حجراً مفيداً أحياناً (واقعية — لا لعب مثالي)
+        if (_tileUsefulForHand(currentHand, candidate) &&
+            _random.nextDouble() >= _mistakeChance(bot.botDifficulty)) {
           takeDiscard = true;
         }
       }
 
       if (takeDiscard && prevDiscards.isNotEmpty) {
         drawnTile = prevDiscards.removeLast();
-      } else if (drawDeck.isNotEmpty) {
-        drawnTile = drawDeck.removeAt(0);
       } else {
-        // Deck empty -> Draw round end
-        gameState = OkeyGameState.roundEnd;
-        turnPhase = OkeyTurnPhase.gameOver;
-        notifyListeners();
-        return;
+        // رزمة فارغة؟ أعد خلط المرميات أولاً
+        if (drawDeck.isEmpty) _refillDeckFromDiscards();
+        if (drawDeck.isNotEmpty) {
+          drawnTile = drawDeck.removeAt(0);
+        } else {
+          // Deck empty -> Draw round end
+          gameState = OkeyGameState.roundEnd;
+          turnPhase = OkeyTurnPhase.gameOver;
+          notifyListeners();
+          return;
+        }
       }
 
       // Place tile in bot rack
@@ -458,6 +558,9 @@ class OkeyEngine extends ChangeNotifier {
       }
       notifyListeners();
 
+      // البوت يحاول النزول بمجموعة إن أمكن (يحترم شرط الافتتاح 101)
+      _botTryLayMeld(bot, currentTurnIndex);
+
       // Check if bot has winning 15 tiles (discard one to win)
       Timer(const Duration(milliseconds: 900), () {
         if (isDisposed || currentTurnIndex == 0) return;
@@ -467,17 +570,24 @@ class OkeyEngine extends ChangeNotifier {
         for (int i = 0; i < active.length; i++) {
           final candidateDiscard = active[i];
           final remaining14 = List<OkeyTile>.from(active)..removeAt(i);
-          if (isWinningHand(remaining14)) {
+          final botWon = bot.hasOpened
+              ? _remainingAllMeldable(remaining14)
+              : isWinningHand(remaining14);
+          if (botWon) {
             final slot = bot.rackTiles.indexOf(candidateDiscard);
             if (slot != -1) bot.rackTiles[slot] = null;
             discardPiles[currentTurnIndex].add(candidateDiscard);
-            _declareWinner(bot, candidateDiscard.isRealOkey ? WinType.discardOkey : WinType.normal);
+            _declareWinner(
+                bot,
+                candidateDiscard.isRealOkey
+                    ? WinType.discardOkey
+                    : WinType.normal);
             return;
           }
         }
 
         // Strategic discard
-        final discardTile = _chooseBotDiscard(active);
+        final discardTile = _chooseBotDiscard(active, bot.botDifficulty);
         final slot = bot.rackTiles.indexOf(discardTile);
         if (slot != -1) {
           bot.rackTiles[slot] = null;
@@ -496,7 +606,8 @@ class OkeyEngine extends ChangeNotifier {
     int sameNumberDiffColor = 0;
 
     for (final t in hand) {
-      if (t.color == candidate.color && (t.value == candidate.value - 1 || t.value == candidate.value + 1)) {
+      if (t.color == candidate.color &&
+          (t.value == candidate.value - 1 || t.value == candidate.value + 1)) {
         sameColorAdjacent++;
       }
       if (t.value == candidate.value && t.color != candidate.color) {
@@ -506,10 +617,28 @@ class OkeyEngine extends ChangeNotifier {
     return sameColorAdjacent >= 1 || sameNumberDiffColor >= 1;
   }
 
-  OkeyTile _chooseBotDiscard(List<OkeyTile> tiles) {
+  /// احتمال خطأ البوت حسب الصعوبة — حتى لا يلعب دائماً بشكل مثالي
+  double _mistakeChance(BotDifficulty d) {
+    switch (d) {
+      case BotDifficulty.easy:
+        return 0.45;
+      case BotDifficulty.medium:
+        return 0.25;
+      case BotDifficulty.hard:
+        return 0.10;
+    }
+  }
+
+  OkeyTile _chooseBotDiscard(List<OkeyTile> tiles, BotDifficulty difficulty) {
     // Never discard real Okey if possible
     final nonOkeys = tiles.where((t) => !t.isRealOkey).toList();
     if (nonOkeys.isEmpty) return tiles.last;
+
+    // أحياناً يرمي حجراً عشوائياً بدل الأمثل — لعب واقعي منصف
+    if (_random.nextDouble() < _mistakeChance(difficulty) &&
+        nonOkeys.length > 1) {
+      return nonOkeys[_random.nextInt(nonOkeys.length)];
+    }
 
     // Find the most isolated tile (no adjacent colors, no matching numbers)
     OkeyTile bestDiscard = nonOkeys.first;
@@ -519,7 +648,8 @@ class OkeyEngine extends ChangeNotifier {
       int conn = 0;
       for (final other in nonOkeys) {
         if (other == t) continue;
-        if (other.color == t.color && (other.value == t.value - 1 || other.value == t.value + 1)) {
+        if (other.color == t.color &&
+            (other.value == t.value - 1 || other.value == t.value + 1)) {
           conn += 2;
         }
         if (other.value == t.value && other.color != t.color) {
@@ -542,8 +672,8 @@ class OkeyEngine extends ChangeNotifier {
   bool isWinningHand(List<OkeyTile> tiles) {
     if (tiles.length != 14) return false;
 
-    // 1. Check Seven Pairs (Çift)
-    if (_checkSevenPairs(tiles)) return true;
+    // 1. Check Seven Pairs (Çift) — قانون أربيل لا يسمح بها
+    if (rules.allowSevenPairs && _checkSevenPairs(tiles)) return true;
 
     // 2. Check Runs and Sets partition via recursive backtracking
     return _canPartitionIntoValidMelds(tiles);
@@ -603,12 +733,14 @@ class OkeyEngine extends ChangeNotifier {
     return false;
   }
 
-  List<List<OkeyTile>> _findMeldsContaining(List<OkeyTile> pool, OkeyTile target) {
+  List<List<OkeyTile>> _findMeldsContaining(
+      List<OkeyTile> pool, OkeyTile target) {
     final results = <List<OkeyTile>>[];
     final okeys = pool.where((t) => t.isRealOkey).toList();
 
     // 1. Check Sets of size 3 and 4 (same number, different colors)
-    final sameNumber = pool.where((t) => !t.isRealOkey && t.value == target.value).toList();
+    final sameNumber =
+        pool.where((t) => !t.isRealOkey && t.value == target.value).toList();
     // Unique colors
     final byColor = <OkeyTileColor, OkeyTile>{};
     for (final t in sameNumber) {
@@ -628,12 +760,18 @@ class OkeyEngine extends ChangeNotifier {
       results.add(uniqueColorTiles.sublist(0, 4));
     }
     if (uniqueColorTiles.length == 3 && okeys.isNotEmpty) {
-      results.add([uniqueColorTiles[0], uniqueColorTiles[1], uniqueColorTiles[2], okeys[0]]);
+      results.add([
+        uniqueColorTiles[0],
+        uniqueColorTiles[1],
+        uniqueColorTiles[2],
+        okeys[0]
+      ]);
     }
 
     // 2. Check Runs of size 3, 4, 5 (same color, consecutive values)
     // Runs for normal values 1..13 plus 12-13-1
-    final sameColor = pool.where((t) => !t.isRealOkey && t.color == target.color).toList();
+    final sameColor =
+        pool.where((t) => !t.isRealOkey && t.color == target.color).toList();
 
     for (int len = 3; len <= 5; len++) {
       for (int start = 1; start <= 13 - len + 1; start++) {
@@ -643,10 +781,15 @@ class OkeyEngine extends ChangeNotifier {
         }
       }
       // Check 12-13-1 special run
-      if (len == 3 && (target.value == 12 || target.value == 13 || target.value == 1)) {
+      if (len == 3 &&
+          (target.value == 12 || target.value == 13 || target.value == 1)) {
         _tryBuildRun([12, 13, 1], sameColor, okeys, results);
       }
-      if (len == 4 && (target.value == 11 || target.value == 12 || target.value == 13 || target.value == 1)) {
+      if (len == 4 &&
+          (target.value == 11 ||
+              target.value == 12 ||
+              target.value == 13 ||
+              target.value == 1)) {
         _tryBuildRun([11, 12, 13, 1], sameColor, okeys, results);
       }
     }
@@ -664,7 +807,8 @@ class OkeyEngine extends ChangeNotifier {
     final usedOkeys = <OkeyTile>[];
 
     for (final v in sequence) {
-      final match = colorPool.where((t) => t.value == v && !meld.contains(t)).toList();
+      final match =
+          colorPool.where((t) => t.value == v && !meld.contains(t)).toList();
       if (match.isNotEmpty) {
         meld.add(match.first);
       } else if (usedOkeys.length < okeys.length) {
@@ -679,6 +823,311 @@ class OkeyEngine extends ChangeNotifier {
     if (meld.length == sequence.length) {
       results.add(meld);
     }
+  }
+
+  /// الفوز بعد فتح اللعب: كل أحجار الرف المتبقية يجب أن تتقسم
+  /// بالكامل إلى مجموعات صحيحة (أو لا يبقى شيء بعد الرمي)
+  bool _remainingAllMeldable(List<OkeyTile> tiles) {
+    if (tiles.isEmpty) return true;
+    if (tiles.length < 3) return false;
+    return _canPartitionIntoValidMelds(tiles);
+  }
+
+  /// المجموعات الجاهزة على رف اللاعب البشري (كتل متجاورة صحيحة)
+  /// — لعرض النقاط/البيرات لحظياً قبل النزول
+  List<List<OkeyTile>> get rackReadyGroups {
+    final groups = <List<OkeyTile>>[];
+    final rack = players[0].rackTiles;
+    for (final rowStart in [0, 14]) {
+      int i = rowStart;
+      while (i < rowStart + 14) {
+        if (rack[i] == null) {
+          i++;
+          continue;
+        }
+        int j = i;
+        while (j < rowStart + 14 && rack[j] != null) {
+          j++;
+        }
+        final block =
+            rack.sublist(i, j).whereType<OkeyTile>().toList();
+        if (block.length >= 3 &&
+            (_isValidRun(block) || _isValidSet(block))) {
+          groups.add(block);
+        }
+        i = j;
+      }
+    }
+    return groups;
+  }
+
+  /// نقاط المجموعات الجاهزة على الرف + المنزولة على الطاولة
+  int get livePoints =>
+      meldPointsFor(0) +
+      rackReadyGroups.fold(
+          0, (sum, g) => sum + g.fold(0, (s, t) => s + t.value));
+
+  /// عدد البيرات: المنزولة + الجاهزة على الرف
+  int get liveGroupCount =>
+      tableMelds.where((m) => m.ownerIndex == 0).length +
+      rackReadyGroups.length;
+
+  /// أزواج متطابقة على الرف (لقانون الأزواج السبعة)
+  int get rackPairCount {
+    final counts = <String, int>{};
+    for (final t in players[0].activeTiles) {
+      if (t.isRealOkey) continue;
+      final k = '${t.color.name}_${t.value}';
+      counts[k] = (counts[k] ?? 0) + 1;
+    }
+    return counts.values.fold(0, (sum, c) => sum + c ~/ 2);
+  }
+
+  int get tableMeldPoints => tableMelds.fold(
+        0,
+        (sum, meld) =>
+            sum + meld.tiles.fold(0, (tileSum, tile) => tileSum + tile.value),
+      );
+
+  /// نقاط البيرات التي أنزلها لاعب معين على الطاولة
+  int meldPointsFor(int playerIndex) => tableMelds
+      .where((m) => m.ownerIndex == playerIndex)
+      .fold(0, (sum, m) => sum + m.points);
+
+  /// النقاط المعلّقة للاعب البشري (لم تُحتسب بعد لعدم اكتمال الافتتاح)
+  int get pendingOpenPoints => tableMelds
+      .where((m) => m.ownerIndex == 0 && m.pending)
+      .fold(0, (sum, m) => sum + m.points);
+
+  bool get hasPendingMelds =>
+      tableMelds.any((m) => m.ownerIndex == 0 && m.pending);
+
+  // ── الصرف على بيرات الطاولة (Layoff) ──
+
+  /// هل يمكن إضافة الحجر إلى بير نازل على الطاولة؟
+  /// يعمل على بيرات أي لاعب — لكن يشترط أن يكون اللاعب فاتحاً اللعب
+  bool canLayOffTile(OkeyTile tile, OkeyGroup meld) {
+    if (tile.isRealOkey) return true; // الأوكي يمثّل أي حجر
+
+    if (meld.isRun) {
+      // سلسلة: نفس اللون ويمدّ الطرف الأدنى أو الأعلى
+      final nonOkey = meld.tiles.where((t) => !t.isRealOkey).toList();
+      if (nonOkey.isEmpty) return true;
+      if (tile.color != nonOkey.first.color) return false;
+      final values = nonOkey.map((t) => t.value).toList()..sort();
+      final lo = values.first;
+      final hi = values.last;
+      if (tile.value == lo - 1) return true;
+      if (tile.value == hi + 1) return true;
+      // التفاف 12-13-1: الواحد يمدّ سلسلة تنتهي بـ13
+      if (hi == 13 && tile.value == 1 && !values.contains(1)) return true;
+      return false;
+    }
+
+    // مجموعة (Set): نفس القيمة، لون غير مكرر، وبحد أقصى 4 أحجار
+    if (meld.tiles.length >= 4) return false;
+    final nonOkey = meld.tiles.where((t) => !t.isRealOkey).toList();
+    if (nonOkey.isNotEmpty && tile.value != nonOkey.first.value) return false;
+    return !nonOkey.any((t) => t.color == tile.color);
+  }
+
+  /// صرف حجر من رف اللاعب البشري على بير نازل على الطاولة
+  /// يشترط أن يكون اللاعب قد فتح اللعب (نازل ببيراته الخاصة)
+  bool layTileOnMeld(int slotIndex, int meldIndex) {
+    final human = players[0];
+    if (!human.hasOpened) return false;
+    if (slotIndex < 0 ||
+        slotIndex >= 28 ||
+        meldIndex < 0 ||
+        meldIndex >= tableMelds.length) return false;
+    final tile = human.rackTiles[slotIndex];
+    if (tile == null) return false;
+    final meld = tableMelds[meldIndex];
+    if (!canLayOffTile(tile, meld)) return false;
+
+    human.rackTiles[slotIndex] = null;
+
+    // الإدراج في الموضع الصحيح للعرض المرتب
+    if (meld.isRun && !tile.isRealOkey) {
+      final values =
+          meld.tiles.where((t) => !t.isRealOkey).map((t) => t.value).toList()
+            ..sort();
+      if (tile.value == 1 && values.isNotEmpty && values.last == 13) {
+        meld.tiles.add(tile); // التفاف 12-13-1
+      } else {
+        int pos = meld.tiles.length;
+        for (int i = 0; i < meld.tiles.length; i++) {
+          final t2 = meld.tiles[i];
+          if (!t2.isRealOkey && t2.value > tile.value) {
+            pos = i;
+            break;
+          }
+        }
+        meld.tiles.insert(pos, tile);
+      }
+    } else {
+      meld.tiles.add(tile);
+    }
+
+    selectedTileIndex = null;
+    OkeyAudio.playTileDiscard();
+    final ownerName =
+        meld.ownerIndex == 0 ? 'بيرك' : 'بير ${players[meld.ownerIndex].name}';
+    onNotice?.call('✨ صرفت حجراً على $ownerName (+${tile.value} نقطة)');
+    notifyListeners();
+    return true;
+  }
+
+  int get remainingOpeningPoints => players[0].hasOpened
+      ? 0
+      : math.max(0, rules.openingPoints - meldPointsFor(0));
+
+  /// إعادة الأحجار المعلّقة إلى رف اللاعب عند عدم اكتمال الافتتاح
+  void _retractPendingMelds(int playerIndex) {
+    final pending =
+        tableMelds.where((m) => m.ownerIndex == playerIndex && m.pending);
+    if (pending.isEmpty) return;
+
+    final rack = players[playerIndex].rackTiles;
+    int returned = 0;
+    for (final meld in pending.toList()) {
+      for (final tile in meld.tiles) {
+        final emptySlot = rack.indexOf(null);
+        if (emptySlot != -1) {
+          rack[emptySlot] = tile;
+          returned++;
+        }
+      }
+      tableMelds.remove(meld);
+    }
+    if (returned > 0) {
+      onNotice?.call(
+          'لم تكتمل نقاط الافتتاح (${rules.openingPoints}) — أُعيدت الأحجار إلى رفّك');
+    }
+  }
+
+  /// محاولة البوت إنزال أطول مجموعة صالحة من رفّه
+  void _botTryLayMeld(OkeyPlayer bot, int playerIndex) {
+    final rack = bot.rackTiles;
+
+    // ترتيب رف البوت داخلياً حتى تظهر المجموعات الصالحة متجاورة
+    final sorted = rack.whereType<OkeyTile>().toList()
+      ..sort((a, b) {
+        final c = a.color.index.compareTo(b.color.index);
+        return c != 0 ? c : a.value.compareTo(b.value);
+      });
+    for (int i = 0; i < 28; i++) {
+      rack[i] = i < sorted.length ? sorted[i] : null;
+    }
+
+    List<int>? bestSlots;
+    bool bestIsRun = false;
+
+    for (final rowStart in [0, 14]) {
+      final rowEnd = rowStart + 14;
+      for (int start = rowStart; start < rowEnd; start++) {
+        if (rack[start] == null) continue;
+        for (int end = start + 3; end <= rowEnd; end++) {
+          final slots = List.generate(end - start, (i) => start + i);
+          if (slots.any((i) => rack[i] == null)) break;
+          final tiles = slots.map((i) => rack[i]!).toList();
+          final isRun = _isValidRun(tiles);
+          final isSet = _isValidSet(tiles);
+          if ((isRun || isSet) &&
+              (bestSlots == null || slots.length > bestSlots.length)) {
+            bestSlots = slots;
+            bestIsRun = isRun;
+          }
+        }
+      }
+    }
+
+    if (bestSlots == null) return;
+    // البوت قد يتأخر في ملاحظة مجموعة جاهزة (واقعية اللعب)
+    if (_random.nextDouble() < _mistakeChance(bot.botDifficulty) * 0.5) return;
+    final tiles = bestSlots.map((i) => rack[i]!).toList();
+    final points = tiles.fold(0, (sum, t) => sum + t.value);
+
+    // لا يُسمح بالنزول قبل اكتمال نقاط الافتتاح المطلوبة
+    if (!bot.hasOpened && points < rules.openingPoints) return;
+
+    tableMelds.add(OkeyGroup(
+      tiles: tiles,
+      isRun: bestIsRun,
+      ownerIndex: playerIndex,
+    ));
+    for (final slot in bestSlots) {
+      rack[slot] = null;
+    }
+    if (!bot.hasOpened) {
+      bot.hasOpened = true;
+      bot.openedPoints = points;
+    }
+    onNotice?.call('🀄 ${bot.name} أنزل مجموعة على الطاولة (+$points نقطة)');
+    notifyListeners();
+  }
+
+  bool layMeldContainingSlot(int slotIndex) {
+    if (slotIndex < 0 ||
+        slotIndex >= 28 ||
+        players[0].rackTiles[slotIndex] == null) return false;
+    final rack = players[0].rackTiles;
+    final rowStart = slotIndex < 14 ? 0 : 14;
+    final rowEnd = rowStart + 14;
+    List<int>? bestSlots;
+    bool bestIsRun = false;
+
+    for (int start = rowStart; start <= slotIndex; start++) {
+      if (rack[start] == null) continue;
+      for (int end = slotIndex + 1; end <= rowEnd; end++) {
+        final slots = List.generate(end - start, (i) => start + i);
+        if (slots.length < 3 || slots.any((i) => rack[i] == null)) continue;
+        final tiles = slots.map((i) => rack[i]!).toList();
+        final isRun = _isValidRun(tiles);
+        final isSet = _isValidSet(tiles);
+        if ((isRun || isSet) &&
+            (bestSlots == null || slots.length > bestSlots.length)) {
+          bestSlots = slots;
+          bestIsRun = isRun;
+        }
+      }
+    }
+
+    if (bestSlots == null) return false;
+    final tiles = bestSlots.map((i) => rack[i]!).toList();
+
+    final human = players[0];
+    // النزول معلّق حتى تكتمل نقاط الافتتاح (101) في نفس الدور
+    final group = OkeyGroup(
+      tiles: tiles,
+      isRun: bestIsRun,
+      ownerIndex: 0,
+      pending: !human.hasOpened,
+    );
+    tableMelds.add(group);
+    for (final slot in bestSlots) {
+      rack[slot] = null;
+    }
+    selectedTileIndex = null;
+    OkeyAudio.playTileDiscard();
+
+    if (!human.hasOpened) {
+      final total = meldPointsFor(0);
+      if (total >= rules.openingPoints) {
+        human.hasOpened = true;
+        human.openedPoints = total;
+        for (final m in tableMelds.where((m) => m.ownerIndex == 0)) {
+          m.pending = false;
+        }
+        onNotice?.call('🎉 فتحت اللعب بـ $total نقطة!');
+      } else {
+        onNotice?.call(
+            'مجموعتك ${group.points} نقطة — المجموع $total/${rules.openingPoints}. أنزل المزيد قبل الرمي وإلا ستُعاد الأحجار');
+      }
+    }
+
+    notifyListeners();
+    return true;
   }
 
   // ── SORTING ALGORITHMS ──
@@ -783,10 +1232,26 @@ class OkeyEngine extends ChangeNotifier {
   }
 
   /// هل يستطيع اللاعب البشري إعلان الفوز بالأوكي الآن؟
+  /// يفحص كل الأحجار كمرشحات للرمي — لا يفترض أن أول 14 خانة هي اليد
   bool get canDeclareOkeyOut {
-    final active = players[0].activeTiles;
-    if (active.length >= 14) {
-      return isWinningHand(active.sublist(0, 14));
+    final player = players[0];
+    final active = player.activeTiles;
+
+    // بعد فتح اللعب: الفوز إذا بقي كل شيء قابلاً للتقسيم بعد رمي حجر
+    if (player.hasOpened) {
+      for (int i = 0; i < active.length; i++) {
+        final rest = List<OkeyTile>.from(active)..removeAt(i);
+        if (_remainingAllMeldable(rest)) return true;
+      }
+      return false;
+    }
+
+    if (active.length == 14) return isWinningHand(active);
+    if (active.length == 15) {
+      for (int i = 0; i < active.length; i++) {
+        final rest = List<OkeyTile>.from(active)..removeAt(i);
+        if (isWinningHand(rest)) return true;
+      }
     }
     return false;
   }
@@ -848,7 +1313,8 @@ class OkeyEngine extends ChangeNotifier {
       final current = tiles[k];
       final next = tiles[k + 1];
       if (!current.isRealOkey && !next.isRealOkey) {
-        if (next.value != current.value + 1 && !(current.value == 13 && next.value == 1)) {
+        if (next.value != current.value + 1 &&
+            !(current.value == 13 && next.value == 1)) {
           return false;
         }
       }
@@ -879,4 +1345,3 @@ class OkeyEngine extends ChangeNotifier {
     super.dispose();
   }
 }
-

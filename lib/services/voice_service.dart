@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
+
+import 'voice_service_platform.dart'
+    if (dart.library.html) 'voice_service_web.dart' as platform;
 
 class VoiceService extends ChangeNotifier {
   static final VoiceService _instance = VoiceService._internal();
@@ -48,11 +49,7 @@ class VoiceService extends ChangeNotifier {
     }
 
     try {
-      final mediaDevices = html.window.navigator.mediaDevices;
-      if (mediaDevices != null) {
-        final stream = await mediaDevices.getUserMedia({'audio': true, 'video': false});
-        _localStream = stream;
-      }
+      _localStream = await platform.requestAudioStream();
       _isMicOn = true;
 
       // Realtime speaking activity simulation/detection
@@ -86,10 +83,7 @@ class VoiceService extends ChangeNotifier {
 
     if (kIsWeb && _localStream != null) {
       try {
-        final tracks = _localStream.getAudioTracks();
-        for (final track in tracks) {
-          track.stop();
-        }
+        platform.stopAudioStream(_localStream);
       } catch (_) {}
       _localStream = null;
     }

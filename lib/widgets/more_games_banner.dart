@@ -38,18 +38,18 @@ class MoreGamesBanner extends StatelessWidget {
                 height: 42,
                 child: Container(
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
+                    gradient: LinearGradient(
                       begin: Alignment.centerLeft,
                       end: Alignment.centerRight,
                       colors: [
-                        Color(0xFF311B92),
-                        Color(0xFF1E1B4B),
-                        Color(0xFF2E1065),
+                        const Color(0xFF5B48C8).withOpacity(0.52),
+                        const Color(0xFF15254D).withOpacity(0.76),
+                        const Color(0xFF251451).withOpacity(0.66),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(21),
                     border: Border.all(
-                      color: const Color(0x60A78BFA),
+                      color: Colors.white.withOpacity(0.24),
                       width: 1,
                     ),
                     boxShadow: [
@@ -181,12 +181,16 @@ class _CoinStackWithCrownPainter extends CustomPainter {
     );
     canvas.drawPath(crownPath, crownPaint);
 
-    canvas.drawCircle(Offset(w * 0.60, h * 0.32), 2, Paint()..color = const Color(0xFFD32F2F));
+    canvas.drawCircle(Offset(w * 0.60, h * 0.32), 2,
+        Paint()..color = const Color(0xFFD32F2F));
   }
 
   void _drawCoin(Canvas canvas, Offset center, double width, double thickness) {
     canvas.drawOval(
-      Rect.fromCenter(center: center.translate(0, thickness), width: width, height: thickness * 1.4),
+      Rect.fromCenter(
+          center: center.translate(0, thickness),
+          width: width,
+          height: thickness * 1.4),
       Paint()..color = Colors.black.withOpacity(0.3),
     );
 
@@ -195,7 +199,8 @@ class _CoinStackWithCrownPainter extends CustomPainter {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [Color(0xFFFFB300), Color(0xFFC67D00)],
-      ).createShader(Rect.fromCenter(center: center, width: width, height: thickness));
+      ).createShader(
+          Rect.fromCenter(center: center, width: width, height: thickness));
     canvas.drawRect(
       Rect.fromCenter(center: center, width: width, height: thickness),
       edgePaint,
@@ -206,14 +211,21 @@ class _CoinStackWithCrownPainter extends CustomPainter {
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [Color(0xFFFFF9C4), Color(0xFFFFD54F), Color(0xFFFF8F00)],
-      ).createShader(Rect.fromCenter(center: center.translate(0, -thickness * 0.5), width: width, height: thickness * 1.5));
+      ).createShader(Rect.fromCenter(
+          center: center.translate(0, -thickness * 0.5),
+          width: width,
+          height: thickness * 1.5));
 
     canvas.drawOval(
-      Rect.fromCenter(center: center.translate(0, -thickness * 0.5), width: width, height: thickness * 1.5),
+      Rect.fromCenter(
+          center: center.translate(0, -thickness * 0.5),
+          width: width,
+          height: thickness * 1.5),
       topPaint,
     );
 
-    canvas.drawCircle(center.translate(0, -thickness * 0.5), 2.5, Paint()..color = const Color(0xFFBF360C));
+    canvas.drawCircle(center.translate(0, -thickness * 0.5), 2.5,
+        Paint()..color = const Color(0xFFBF360C));
   }
 
   @override

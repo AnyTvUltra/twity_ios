@@ -55,6 +55,7 @@ class OkeyRoomPlayer {
 class OkeyRoom {
   final String id;
   final int stakes;
+  final String variant; // قانون الكونكان: sulaymaniyah / erbil / turkish
   final String status; // 'waiting', 'playing', 'finished'
   final String hostUid;
   final List<OkeyRoomPlayer> players;
@@ -71,6 +72,7 @@ class OkeyRoom {
   OkeyRoom({
     required this.id,
     required this.stakes,
+    this.variant = 'turkish',
     required this.status,
     required this.hostUid,
     required this.players,
@@ -104,6 +106,7 @@ class OkeyRoom {
     return OkeyRoom(
       id: doc.id,
       stakes: data['stakes'] ?? 50,
+      variant: data['variant'] ?? 'turkish',
       status: data['status'] ?? 'waiting',
       hostUid: data['hostUid'] ?? '',
       players: playersList,
@@ -112,11 +115,15 @@ class OkeyRoom {
       turnStartTime: turnStart,
       turnDurationSeconds: data['turnDurationSeconds'] ?? 30,
       drawDeckCount: data['drawDeckCount'] ?? 48,
-      indicatorTile: data['indicatorTile'] != null ? Map<String, dynamic>.from(data['indicatorTile']) : null,
+      indicatorTile: data['indicatorTile'] != null
+          ? Map<String, dynamic>.from(data['indicatorTile'])
+          : null,
       centerDiscards: (data['centerDiscards'] as List<dynamic>? ?? [])
           .map((item) => Map<String, dynamic>.from(item))
           .toList(),
-      winner: data['winner'] != null ? Map<String, dynamic>.from(data['winner']) : null,
+      winner: data['winner'] != null
+          ? Map<String, dynamic>.from(data['winner'])
+          : null,
       createdAt: created,
     );
   }
@@ -131,28 +138,37 @@ class OkeyRoomService {
 
   /// بث حالة الغرفة الحالية
   Stream<OkeyRoom> getRoomStream(String roomId) {
-    return _firestore.collection('rooms').doc(roomId).snapshots().map((doc) => OkeyRoom.fromDoc(doc));
+    return _firestore
+        .collection('rooms')
+        .doc(roomId)
+        .snapshots()
+        .map((doc) => OkeyRoom.fromDoc(doc));
   }
 
   /// الانضمام السريع إلى غرفة أو إنشاء غرفة جديدة إذا لم تتوفر
-  Future<OkeyRoom?> quickMatch({required int stakes, required AppUser user}) async {
+  Future<OkeyRoom?> quickMatch(
+      {required int stakes,
+      required AppUser user,
+      String variant = 'turkish'}) async {
     // 1. خصم رسوم الرهان مقدماً
     if (user.chips < stakes) {
       return null;
     }
 
     try {
-      // ابحث عن غرف في حالة الانتظار بنفس قيمة الرهان
+      // ابحث عن غرف في حالة الانتظار بنفس قيمة الرهان ونفس القانون
       final query = await _firestore
           .collection('rooms')
           .where('stakes', isEqualTo: stakes)
+          .where('variant', isEqualTo: variant)
           .where('status', isEqualTo: 'waiting')
           .limit(5)
           .get();
 
       for (final doc in query.docs) {
         final room = OkeyRoom.fromDoc(doc);
-        if (room.players.length < 4 && !room.players.any((p) => p.uid == user.uid)) {
+        if (room.players.length < 4 &&
+            !room.players.any((p) => p.uid == user.uid)) {
           // انضم لهذه الغرفة
           final seatIndex = room.players.length;
           final newPlayer = OkeyRoomPlayer(
@@ -168,7 +184,12 @@ class OkeyRoomService {
           });
 
           // خصم العملات
-          await AuthService().updateMatchResult(chipChange: -stakes, ratingChange: 0, isWin: false);
+          await AuthService().updateMatchResult(
+            chipChange: -stakes,
+            ratingChange: 0,
+            isWin: false,
+            recordResult: false,
+          );
 
           return OkeyRoom.fromDoc(await doc.reference.get());
         }
@@ -186,6 +207,7 @@ class OkeyRoomService {
 
       final newRoomData = {
         'stakes': stakes,
+        'variant': variant,
         'status': 'waiting',
         'hostUid': user.uid,
         'players': [hostPlayer.toMap()],
@@ -199,7 +221,12 @@ class OkeyRoomService {
       await docRef.set(newRoomData);
 
       // خصم العملات
-      await AuthService().updateMatchResult(chipChange: -stakes, ratingChange: 0, isWin: false);
+      await AuthService().updateMatchResult(
+        chipChange: -stakes,
+        ratingChange: 0,
+        isWin: false,
+        recordResult: false,
+      );
 
       final createdDoc = await docRef.get();
       return OkeyRoom.fromDoc(createdDoc);
@@ -219,7 +246,12 @@ class OkeyRoomService {
       final room = OkeyRoom.fromDoc(doc);
       final currentPlayers = List<OkeyRoomPlayer>.from(room.players);
 
-      final botNames = ['سارة (Bot)', 'أحمد (Bot)', 'كابتن طارق (Bot)', 'أمير النرد (Bot)'];
+      final botNames = [
+        'سارة (Bot)',
+        'أحمد (Bot)',
+        'كابتن طارق (Bot)',
+        'أمير النرد (Bot)'
+      ];
       int botIndex = 0;
 
       while (currentPlayers.length < 4) {
@@ -257,7 +289,8 @@ class OkeyRoomService {
   }
 
   /// تسجيل رمي حجر في الغرفة
-  Future<void> recordDiscard(String roomId, Map<String, dynamic> tile, int currentSeat) async {
+  Future<void> recordDiscard(
+      String roomId, Map<String, dynamic> tile, int currentSeat) async {
     try {
       final nextSeat = (currentSeat + 1) % 4;
       await _firestore.collection('rooms').doc(roomId).update({
@@ -303,7 +336,8 @@ class OkeyRoomService {
 
       // إضافة جائزة الجولة للفائز
       if (AuthService().currentUser?.uid == winnerUid) {
-        await AuthService().updateMatchResult(chipChange: potPrize, ratingChange: 25, isWin: true);
+        await AuthService().updateMatchResult(
+            chipChange: potPrize, ratingChange: 25, isWin: true);
       }
     } catch (e) {
       debugPrint('Error declaring win: $e');

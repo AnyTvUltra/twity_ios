@@ -1,5 +1,5 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import '../theme.dart';
 
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -11,135 +11,185 @@ class BottomNavBar extends StatelessWidget {
     required this.onIndexChanged,
   });
 
+  static const List<_NavEntry> _entries = [
+    _NavEntry(
+      index: 3,
+      icon: Icons.person_outline_rounded,
+      activeIcon: Icons.person_rounded,
+      label: 'الملف الشخصي',
+      accent: Color(0xFF34D399),
+      accentDeep: Color(0xFF0F766E),
+    ),
+    _NavEntry(
+      index: 2,
+      icon: Icons.forum_outlined,
+      activeIcon: Icons.forum_rounded,
+      label: 'الدردشة',
+      accent: Color(0xFF38BDF8),
+      accentDeep: Color(0xFF0C4A6E),
+    ),
+    _NavEntry(
+      index: 1,
+      icon: Icons.military_tech_outlined,
+      activeIcon: Icons.military_tech_rounded,
+      label: 'الإنجازات',
+      accent: Color(0xFFFBBF24),
+      accentDeep: Color(0xFF92400E),
+    ),
+    _NavEntry(
+      index: 0,
+      icon: Icons.grid_view_rounded,
+      activeIcon: Icons.grid_view_rounded,
+      label: 'الرئيسية',
+      accent: Color(0xFFF472B6),
+      accentDeep: Color(0xFF831843),
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.navBarBg,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        border: const Border(
-          top: BorderSide(
-            color: Color(0x33A78BFA),
-            width: 1.2,
-          ),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.6),
-            blurRadius: 16,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              Expanded(
-                child: _buildNavItem(
-                  index: 0,
-                  icon: Icons.home_rounded,
-                  label: 'الرئيسية',
+    return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(30),
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 26, sigmaY: 26),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.white.withValues(alpha: 0.12),
+                      const Color(0xFF0B1220).withValues(alpha: 0.66),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.42),
+                      blurRadius: 26,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 8),
+                  child: Row(
+                    children: [
+                      for (final entry in _entries)
+                        Expanded(child: _buildNavItem(entry)),
+                    ],
+                  ),
                 ),
               ),
-              Expanded(
-                child: _buildNavItem(
-                  index: 1,
-                  icon: Icons.emoji_events_outlined,
-                  activeIcon: Icons.emoji_events_rounded,
-                  label: 'الإنجازات',
-                ),
-              ),
-              Expanded(
-                child: _buildNavItem(
-                  index: 2,
-                  icon: Icons.chat_bubble_outline_rounded,
-                  activeIcon: Icons.chat_bubble_rounded,
-                  label: 'الدردشة',
-                ),
-              ),
-              Expanded(
-                child: _buildNavItem(
-                  index: 3,
-                  icon: Icons.person_outline_rounded,
-                  activeIcon: Icons.person_rounded,
-                  label: 'الملف الشخصي',
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildNavItem({
-    required int index,
-    required IconData icon,
-    IconData? activeIcon,
-    required String label,
-  }) {
-    final isSelected = currentIndex == index;
+  Widget _buildNavItem(_NavEntry entry) {
+    final isSelected = currentIndex == entry.index;
 
     return GestureDetector(
-      onTap: () => onIndexChanged(index),
+      onTap: () => onIndexChanged(entry.index),
       behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 4),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        margin: const EdgeInsets.symmetric(horizontal: 3),
+        padding: const EdgeInsets.symmetric(vertical: 7),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          gradient: isSelected
+              ? LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    entry.accent.withValues(alpha: 0.34),
+                    entry.accentDeep.withValues(alpha: 0.30),
+                  ],
+                )
+              : null,
+          border: Border.all(
+            color: isSelected
+                ? entry.accent.withValues(alpha: 0.55)
+                : Colors.transparent,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: entry.accent.withValues(alpha: 0.24),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Icon container with active glowing aura
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                if (isSelected)
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFC026D3).withOpacity(0.65),
-                          blurRadius: 14,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                  ),
-
-                Icon(
-                  isSelected ? (activeIcon ?? icon) : icon,
-                  color: isSelected ? Colors.white : AppColors.navInactiveText,
-                  size: isSelected ? 26 : 24,
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSelected
+                    ? Colors.white.withValues(alpha: 0.14)
+                    : Colors.white.withValues(alpha: 0.05),
+                border: Border.all(
+                  color: isSelected
+                      ? entry.accent.withValues(alpha: 0.75)
+                      : Colors.white.withValues(alpha: 0.10),
                 ),
-              ],
+              ),
+              child: Icon(
+                isSelected ? entry.activeIcon : entry.icon,
+                color: isSelected
+                    ? entry.accent
+                    : const Color(0xFF94A3B8),
+                size: isSelected ? 19 : 18,
+              ),
             ),
-            const SizedBox(height: 3),
-
-            // Arabic Label
+            const SizedBox(height: 5),
             FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                label,
+                entry.label,
                 maxLines: 1,
                 style: TextStyle(
-                  color: isSelected ? Colors.white : AppColors.navInactiveText,
-                  fontSize: 11,
-                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-                  shadows: isSelected
-                      ? const [
-                          Shadow(
-                            color: Color(0xFFC026D3),
-                            blurRadius: 8,
-                          ),
-                        ]
-                      : null,
+                  color: isSelected ? Colors.white : const Color(0xFF94A3B8),
+                  fontSize: 10.5,
+                  height: 1,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                 ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              height: 3,
+              width: isSelected ? 22 : 0,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(3),
+                color: entry.accent,
+                boxShadow: [
+                  if (isSelected)
+                    BoxShadow(
+                      color: entry.accent.withValues(alpha: 0.6),
+                      blurRadius: 8,
+                    ),
+                ],
               ),
             ),
           ],
@@ -147,4 +197,22 @@ class BottomNavBar extends StatelessWidget {
       ),
     );
   }
+}
+
+class _NavEntry {
+  final int index;
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  final Color accent;
+  final Color accentDeep;
+
+  const _NavEntry({
+    required this.index,
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    required this.accent,
+    required this.accentDeep,
+  });
 }

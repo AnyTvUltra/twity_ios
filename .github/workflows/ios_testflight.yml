@@ -1,0 +1,92 @@
+name: iOS Build + TestFlight
+
+# تشغيل يدوي من GitHub ← Actions ← iOS Build + TestFlight ← Run workflow
+# - upload_to_testflight=false : يبني IPA موقّعاً ويحفظه كملف للتحميل فقط
+# - upload_to_testflight=true  : يبني ويرفع مباشرة إلى TestFlight
+on:
+  workflow_dispatch:
+    inputs:
+      upload_to_testflight:
+        description: 'رفع النسخة إلى TestFlight بعد البناء؟'
+        type: boolean
+        default: false
+
+jobs:
+  testflight:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: |
+          flutter pub get
+          cd ios && pod install --repo-update
+
+      - name: Write App Store Connect API key
+        run: |
+          mkdir -p ~/private_keys
+          echo "${{ secrets.ASC_KEY_P8 }}" > ~/private_keys/AuthKey_${ASC_KEY_ID}.p8
+
+      - name: Prepare Flutter build
+        run: flutter build ios --release --no-codesign --build-number=${{ github.run_number }}
+
+      - name: Archive (automatic signing via API key)
+        run: |
+          xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner \
+            -configuration Release -destination 'generic/platform=iOS' \
+            -archivePath build/Runner.xcarchive \
+            DEVELOPMENT_TEAM=$TEAM_ID CODE_SIGN_STYLE=Automatic \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${ASC_KEY_ID}.p8 \
+            -authenticationKeyID $ASC_KEY_ID \
+            -authenticationKeyIssuerID $ASC_ISSUER_ID \
+            archive
+
+      - name: Export IPA
+        run: |
+          cat > ExportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>teamID</key><string>${TEAM_ID}</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>uploadSymbols</key><true/>
+          </dict></plist>
+          EOF
+          xcodebuild -exportArchive -archivePath build/Runner.xcarchive \
+            -exportPath build/ipa -exportOptionsPlist ExportOptions.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${ASC_KEY_ID}.p8 \
+            -authenticationKeyID $ASC_KEY_ID \
+            -authenticationKeyIssuerID $ASC_ISSUER_ID
+          ls -lh build/ipa
+
+      - name: Save IPA as downloadable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: YallaYari-iOS-signed
+          path: build/ipa/*.ipa
+          retention-days: 14
+
+      - name: Upload to TestFlight (only if selected)
+        if: ${{ inputs.upload_to_testflight }}
+        run: |
+          xcodebuild -exportArchive -archivePath build/Runner.xcarchive \
+            -exportPath build/upload -exportOptionsPlist ExportOptions.plist \
+            -destination upload \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${ASC_KEY_ID}.p8 \
+            -authenticationKeyID $ASC_KEY_ID \
+            -authenticationKeyIssuerID $ASC_ISSUER_ID

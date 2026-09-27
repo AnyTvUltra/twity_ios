@@ -1,6 +1,10 @@
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
+
+import 'firebase_service.dart';
+import 'radio_service_platform.dart'
+    if (dart.library.html) 'radio_service_web.dart' as platform;
 
 class RadioStation {
   final String id;
@@ -8,6 +12,7 @@ class RadioStation {
   final String genre;
   final String url;
   final String flag;
+  final String groupId;
 
   const RadioStation({
     required this.id,
@@ -15,7 +20,17 @@ class RadioStation {
     required this.genre,
     required this.url,
     required this.flag,
+    this.groupId = '',
   });
+}
+
+/// مجموعة أغاني/محطات في الراديو — تُدار من لوحة الأدمن
+class RadioGroup {
+  final String id;
+  final String name;
+  final String flag;
+
+  const RadioGroup({required this.id, required this.name, this.flag = '🎵'});
 }
 
 class RadioService extends ChangeNotifier {
@@ -23,13 +38,15 @@ class RadioService extends ChangeNotifier {
   factory RadioService() => _instance;
   RadioService._internal();
 
-  static const List<RadioStation> stations = [
+  /// محطات احتياطية تُستخدم إن لم توجد بيانات في Firestore
+  static const List<RadioStation> _fallbackStations = [
     RadioStation(
       id: 'quran',
       name: 'إذاعة القرآن الكريم (القاهرة)',
       genre: 'قرآن وتلاوات',
       url: 'https://stream.radiojar.com/8s5u5tpdtwzuv',
       flag: '📖',
+      groupId: '_default',
     ),
     RadioStation(
       id: 'rotana_tarab',
@@ -37,6 +54,7 @@ class RadioService extends ChangeNotifier {
       genre: 'طرب وأصالة',
       url: 'https://stream.zeno.fm/f3wvbbqmdg8uv',
       flag: '🎶',
+      groupId: '_default',
     ),
     RadioStation(
       id: 'mc_doualiya',
@@ -44,6 +62,7 @@ class RadioService extends ChangeNotifier {
       genre: 'منوعات وأخبار',
       url: 'https://montecarlodoualiyaaudio.akacdn.perfora.net/mcd/all/mcd-128k.mp3',
       flag: '🌍',
+      groupId: '_default',
     ),
     RadioStation(
       id: 'kral_pop',
@@ -51,6 +70,7 @@ class RadioService extends ChangeNotifier {
       genre: 'موسيقى تركية حماسية',
       url: 'https://kralwmedia.radyotvonline.net/kralpop/chunklist.m3u8',
       flag: '🇹🇷',
+      groupId: '_default',
     ),
     RadioStation(
       id: 'lofi_gaming',
@@ -58,8 +78,95 @@ class RadioService extends ChangeNotifier {
       genre: 'موسيقى هادئة للتركيز',
       url: 'https://stream.zeno.fm/0r0xa792kwzuv',
       flag: '🎧',
+      groupId: '_default',
     ),
   ];
+
+  static const List<RadioGroup> _fallbackGroups = [
+    RadioGroup(id: '_default', name: 'محطات عامة', flag: '📻'),
+  ];
+
+  List<RadioStation> _stations = _fallbackStations;
+  List<RadioGroup> _groups = _fallbackGroups;
+
+  List<RadioStation> get stations => _stations;
+  List<RadioGroup> get groups => _groups;
+
+  /// محطات مجموعة محددة (أو الكل عند تمرير 'all')
+  List<RadioStation> stationsFor(String groupId) {
+    if (groupId == 'all') return _stations;
+    return _stations.where((s) => s.groupId == groupId).toList();
+  }
+
+  StreamSubscription<QuerySnapshot>? _groupsSub;
+  StreamSubscription<QuerySnapshot>? _songsSub;
+  List<RadioGroup> _remoteGroups = [];
+  List<RadioStation> _remoteStations = [];
+  bool _fsInitialized = false;
+
+  /// الاشتراك في مجموعات وأغاني الراديو من Firestore (تُدار من لوحة الأدمن)
+  void initialize() {
+    if (_fsInitialized) return;
+    _fsInitialized = true;
+    final fb = FirebaseService();
+    if (!fb.isInitialized) return;
+
+    _groupsSub = fb.firestore
+        .collection('radio_groups')
+        .where('active', isEqualTo: true)
+        .snapshots()
+        .listen((snap) {
+      _remoteGroups = snap.docs.map((d) {
+        final data = d.data();
+        return RadioGroup(
+          id: d.id,
+          name: data['name'] ?? 'مجموعة',
+          flag: data['flag'] ?? '🎵',
+        );
+      }).toList();
+      _rebuild();
+    }, onError: (Object e) {
+      debugPrint('Radio groups stream error: $e');
+    });
+
+    _songsSub = fb.firestore
+        .collection('radio_songs')
+        .where('active', isEqualTo: true)
+        .snapshots()
+        .listen((snap) {
+      _remoteStations = snap.docs.map((d) {
+        final data = d.data();
+        final gid = data['groupId'] ?? '';
+        final group = _remoteGroups.cast<RadioGroup?>().firstWhere(
+              (g) => g?.id == gid,
+              orElse: () => null,
+            );
+        return RadioStation(
+          id: d.id,
+          name: data['name'] ?? 'أغنية',
+          genre: data['genre'] ?? (group?.name ?? ''),
+          url: data['url'] ?? '',
+          flag: group?.flag ?? '🎵',
+          groupId: gid,
+        );
+      }).toList();
+      _rebuild();
+    }, onError: (Object e) {
+      debugPrint('Radio songs stream error: $e');
+    });
+  }
+
+  void _rebuild() {
+    if (_remoteStations.isNotEmpty) {
+      _stations = _remoteStations;
+      _groups = _remoteGroups.isNotEmpty ? _remoteGroups : _fallbackGroups;
+    } else {
+      _stations = _fallbackStations;
+      _groups = _fallbackGroups;
+    }
+    if (_currentStationIndex >= _stations.length) _currentStationIndex = 0;
+    notifyListeners();
+  }
 
   dynamic _audioElement;
   bool _isPlaying = false;
@@ -67,7 +174,14 @@ class RadioService extends ChangeNotifier {
 
   int _currentStationIndex = 0;
   int get currentStationIndex => _currentStationIndex;
-  RadioStation get currentStation => stations[_currentStationIndex];
+  RadioStation get currentStation =>
+      _stations[_currentStationIndex.clamp(0, _stations.length - 1)];
+
+  /// تشغيل محطة عبر معرفها (يُستخدم من واجهة المجموعات)
+  void playStationById(String id) {
+    final index = _stations.indexWhere((s) => s.id == id);
+    if (index >= 0) playStation(index);
+  }
 
   double _volume = 0.7;
   double get volume => _volume;
@@ -75,25 +189,22 @@ class RadioService extends ChangeNotifier {
   void init() {
     if (kIsWeb) {
       try {
-        _audioElement = html.AudioElement()
-          ..preload = 'none'
-          ..volume = _volume;
-
-        _audioElement.onPlay.listen((_) {
-          _isPlaying = true;
-          notifyListeners();
-        });
-
-        _audioElement.onPause.listen((_) {
-          _isPlaying = false;
-          notifyListeners();
-        });
-
-        _audioElement.onError.listen((e) {
-          debugPrint('Radio stream error: $e');
-          _isPlaying = false;
-          notifyListeners();
-        });
+        _audioElement = platform.createRadioAudioElement(
+          volume: _volume,
+          onPlay: () {
+            _isPlaying = true;
+            notifyListeners();
+          },
+          onPause: () {
+            _isPlaying = false;
+            notifyListeners();
+          },
+          onError: (e) {
+            debugPrint('Radio stream error: $e');
+            _isPlaying = false;
+            notifyListeners();
+          },
+        );
       } catch (e) {
         debugPrint('Error creating HTML Audio element: $e');
       }
@@ -106,8 +217,7 @@ class RadioService extends ChangeNotifier {
     if (kIsWeb) {
       if (_audioElement == null) init();
       try {
-        _audioElement.src = stations[index].url;
-        _audioElement.play();
+        platform.playRadioAudio(_audioElement, stations[index].url);
         _isPlaying = true;
         notifyListeners();
       } catch (e) {
@@ -124,7 +234,7 @@ class RadioService extends ChangeNotifier {
       if (_audioElement == null) init();
       if (_isPlaying) {
         try {
-          _audioElement.pause();
+          platform.pauseRadioAudio(_audioElement);
         } catch (_) {}
         _isPlaying = false;
       } else {
@@ -145,7 +255,7 @@ class RadioService extends ChangeNotifier {
     _volume = vol.clamp(0.0, 1.0);
     if (kIsWeb && _audioElement != null) {
       try {
-        _audioElement.volume = _volume;
+        platform.setRadioAudioVolume(_audioElement, _volume);
       } catch (_) {}
     }
     notifyListeners();
@@ -154,8 +264,7 @@ class RadioService extends ChangeNotifier {
   void stop() {
     if (kIsWeb && _audioElement != null) {
       try {
-        _audioElement.pause();
-        _audioElement.src = '';
+        platform.stopRadioAudio(_audioElement);
       } catch (_) {}
     }
     _isPlaying = false;

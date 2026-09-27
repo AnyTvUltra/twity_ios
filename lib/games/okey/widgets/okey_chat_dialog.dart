@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:game_hub/utils/haptics.dart';
-import 'package:game_hub/utils/top_notification.dart';
 import '../utils/okey_audio.dart';
+import 'game_notice.dart';
 
 class OkeyChatDialog extends StatefulWidget {
   const OkeyChatDialog({super.key});
 
   static Future<void> show(BuildContext context) {
-    return showDialog(
-      context: context,
+    return showOkeyLandscapeDialog(
+      context,
       barrierColor: Colors.black.withOpacity(0.6),
       builder: (_) => const OkeyChatDialog(),
     );
@@ -34,7 +34,7 @@ class _OkeyChatDialogState extends State<OkeyChatDialog> {
     AppHaptics.selection();
     OkeyAudio.playButtonClick();
     Navigator.of(context).pop();
-    TopNotification.show(context, '💬 أرسلت: $msg');
+    GameNotice.show(context, '💬 أرسلت: $msg');
   }
 
   @override

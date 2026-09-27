@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../models.dart';
 import '../utils/haptics.dart';
@@ -21,9 +22,11 @@ class GameCard extends StatefulWidget {
   State<GameCard> createState() => _GameCardState();
 }
 
-class _GameCardState extends State<GameCard> with SingleTickerProviderStateMixin {
+class _GameCardState extends State<GameCard>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animController;
   late Animation<double> _scaleAnimation;
+  bool _isHovered = false;
 
   @override
   void initState() {
@@ -64,167 +67,179 @@ class _GameCardState extends State<GameCard> with SingleTickerProviderStateMixin
       animation: _scaleAnimation,
       builder: (context, child) {
         return Transform.scale(
-          scale: _scaleAnimation.value,
+          scale: _scaleAnimation.value * (_isHovered ? 1.018 : 1.0),
           child: child,
         );
       },
-      child: GestureDetector(
-        onTapDown: _onTapDown,
-        onTapUp: _onTapUp,
-        onTapCancel: _onTapCancel,
-        child: SizedBox(
-          width: widget.width ?? double.infinity,
-          height: widget.height ?? 205,
-          child: Stack(
-            clipBehavior: Clip.none,
-            alignment: Alignment.topCenter,
-            children: [
-              // Main Card Body with Custom Arched Shape
-              Positioned.fill(
-                bottom: 14, // leave room for overlapping play button
-                child: CustomPaint(
-                  painter: _CardShapePainter(
-                    gradient: widget.game.gradient,
-                    borderColor: widget.game.borderColor,
-                    borderLightColor: widget.game.borderLightColor,
-                    glowColor: widget.game.glowColor,
-                  ),
-                  child: ClipPath(
-                    clipper: _CardClipper(),
-                    child: Stack(
-                      children: [
-                        // Glossy top-to-bottom sheen
-                        Positioned.fill(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.white.withOpacity(0.18),
-                                  Colors.transparent,
-                                  Colors.black.withOpacity(0.25),
-                                ],
-                                stops: const [0.0, 0.35, 1.0],
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // Card Content
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
+        child: GestureDetector(
+          onTapDown: _onTapDown,
+          onTapUp: _onTapUp,
+          onTapCancel: _onTapCancel,
+          child: SizedBox(
+            width: widget.width ?? double.infinity,
+            height: widget.height ?? 205,
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.topCenter,
+              children: [
+                // Main Card Body with Custom Arched Shape
+                Positioned.fill(
+                  bottom: 14, // leave room for overlapping play button
+                  child: CustomPaint(
+                    painter: _CardShapePainter(
+                      gradient: widget.game.gradient,
+                      borderColor: widget.game.borderColor,
+                      borderLightColor: widget.game.borderLightColor,
+                      glowColor: widget.game.glowColor,
+                    ),
+                    child: ClipPath(
+                      clipper: _CardClipper(),
+                      child: BackdropFilter(
+                        filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                        child: Stack(
                           children: [
-                            // 1. Artwork area (top 58%)
-                            Expanded(
-                              flex: 58,
-                              child: Padding(
-                                padding: const EdgeInsets.only(top: 14, left: 6, right: 6),
-                                child: GameArtwork(gameId: widget.game.id),
+                            // Glossy top-to-bottom sheen
+                            Positioned.fill(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Colors.white.withOpacity(0.18),
+                                      Colors.transparent,
+                                      Colors.black.withOpacity(0.25),
+                                    ],
+                                    stops: const [0.0, 0.35, 1.0],
+                                  ),
+                                ),
                               ),
                             ),
 
-                            // 2. Info area (bottom 42%)
-                            Expanded(
-                              flex: 42,
-                              child: Padding(
-                                padding: const EdgeInsets.fromLTRB(8, 0, 8, 14),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    // Game Title
-                                    FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      child: Text(
-                                        widget.game.title,
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w900,
-                                          letterSpacing: 0.2,
-                                          shadows: [
-                                            Shadow(
-                                              color: Colors.black54,
-                                              blurRadius: 4,
-                                              offset: Offset(0, 1.5),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-
-                                    // Subtitle / Description
-                                    Text(
-                                      widget.game.description,
-                                      textAlign: TextAlign.center,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: Colors.white.withOpacity(0.85),
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w500,
-                                        shadows: const [
-                                          Shadow(
-                                            color: Colors.black45,
-                                            blurRadius: 3,
-                                            offset: Offset(0, 1),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
+                            // Card Content
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // 1. Artwork area (top 58%)
+                                Expanded(
+                                  flex: 58,
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(
+                                        top: 14, left: 6, right: 6),
+                                    child: GameArtwork(gameId: widget.game.id),
+                                  ),
                                 ),
+
+                                // 2. Info area (bottom 42%)
+                                Expanded(
+                                  flex: 42,
+                                  child: Padding(
+                                    padding:
+                                        const EdgeInsets.fromLTRB(8, 0, 8, 14),
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        // Game Title
+                                        FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Text(
+                                            widget.game.title,
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.w900,
+                                              letterSpacing: 0.2,
+                                              shadows: [
+                                                Shadow(
+                                                  color: Colors.black54,
+                                                  blurRadius: 4,
+                                                  offset: Offset(0, 1.5),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+
+                                        // Subtitle / Description
+                                        Text(
+                                          widget.game.description,
+                                          textAlign: TextAlign.center,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color:
+                                                Colors.white.withOpacity(0.85),
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w500,
+                                            shadows: const [
+                                              Shadow(
+                                                color: Colors.black45,
+                                                blurRadius: 3,
+                                                offset: Offset(0, 1),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            // Corner Doodle details (small white sketch lines)
+                            Positioned(
+                              top: 10,
+                              left: 8,
+                              child: Icon(
+                                Icons.auto_awesome_rounded,
+                                size: 11,
+                                color: Colors.white.withOpacity(0.4),
+                              ),
+                            ),
+                            Positioned(
+                              top: 10,
+                              right: 8,
+                              child: Icon(
+                                Icons.auto_awesome_rounded,
+                                size: 11,
+                                color: Colors.white.withOpacity(0.4),
                               ),
                             ),
                           ],
                         ),
-
-                        // Corner Doodle details (small white sketch lines)
-                        Positioned(
-                          top: 10,
-                          left: 8,
-                          child: Icon(
-                            Icons.auto_awesome_rounded,
-                            size: 11,
-                            color: Colors.white.withOpacity(0.4),
-                          ),
-                        ),
-                        Positioned(
-                          top: 10,
-                          right: 8,
-                          child: Icon(
-                            Icons.auto_awesome_rounded,
-                            size: 11,
-                            color: Colors.white.withOpacity(0.4),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
-              ),
 
-              // 3D Golden Crown on top of card (if flagged)
-              if (widget.game.hasCrown)
+                // 3D Golden Crown on top of card (if flagged)
+                if (widget.game.hasCrown)
+                  Positioned(
+                    top: -14,
+                    right: 12,
+                    child: CustomPaint(
+                      size: const Size(36, 26),
+                      painter: _MiniCrownPainter(),
+                    ),
+                  ),
+
+                // Circular Play Button overlapping the bottom center
                 Positioned(
-                  top: -14,
-                  right: 12,
-                  child: CustomPaint(
-                    size: const Size(36, 26),
-                    painter: _MiniCrownPainter(),
+                  bottom: 0,
+                  child: _PlayButton(
+                    glowColor: widget.game.glowColor,
                   ),
                 ),
-
-              // Circular Play Button overlapping the bottom center
-              Positioned(
-                bottom: 0,
-                child: _PlayButton(
-                  glowColor: widget.game.glowColor,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -238,25 +253,11 @@ class _GameCardState extends State<GameCard> with SingleTickerProviderStateMixin
 class _CardClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
-    final w = size.width;
-    final h = size.height;
-    const r = 16.0;
-
-    final path = Path();
-    path.moveTo(r, h);
-    path.lineTo(w - r, h);
-    path.quadraticBezierTo(w, h, w, h - r);
-    path.lineTo(w, 24);
-    path.quadraticBezierTo(w, 14, w - 10, 14);
-    path.quadraticBezierTo(w - 20, 14, w - 24, 8);
-    path.quadraticBezierTo(w * 0.5, 0, 24, 8);
-    path.quadraticBezierTo(20, 14, 10, 14);
-    path.quadraticBezierTo(0, 14, 0, 24);
-    path.lineTo(0, h - r);
-    path.quadraticBezierTo(0, h, r, h);
-    path.close();
-
-    return path;
+    return Path()
+      ..addRRect(RRect.fromRectAndRadius(
+        Offset.zero & size,
+        const Radius.circular(24),
+      ));
   }
 
   @override
@@ -283,45 +284,43 @@ class _CardShapePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
-    const r = 16.0;
-
-    final path = Path();
-    path.moveTo(r, h);
-    path.lineTo(w - r, h);
-    path.quadraticBezierTo(w, h, w, h - r);
-    path.lineTo(w, 24);
-    path.quadraticBezierTo(w, 14, w - 10, 14);
-    path.quadraticBezierTo(w - 20, 14, w - 24, 8);
-    path.quadraticBezierTo(w * 0.5, 0, 24, 8);
-    path.quadraticBezierTo(20, 14, 10, 14);
-    path.quadraticBezierTo(0, 14, 0, 24);
-    path.lineTo(0, h - r);
-    path.quadraticBezierTo(0, h, r, h);
-    path.close();
+    final path = Path()
+      ..addRRect(RRect.fromRectAndRadius(
+        Offset.zero & size,
+        const Radius.circular(24),
+      ));
 
     // 1. Drop Shadow under card (hardware accelerated)
-    canvas.drawPath(path.shift(const Offset(0, 6)), Paint()..color = Colors.black.withOpacity(0.4));
-    canvas.drawPath(path.shift(const Offset(0, 3)), Paint()..color = Colors.black.withOpacity(0.2));
+    canvas.drawPath(path.shift(const Offset(0, 7)),
+        Paint()..color = Colors.black.withOpacity(0.28));
+    canvas.drawPath(path.shift(const Offset(0, 2)),
+        Paint()..color = glowColor.withOpacity(0.10));
 
     // 2. Outer Glow around card (fast vector stroke)
     canvas.drawPath(
       path,
       Paint()
-        ..color = glowColor.withOpacity(0.35)
+        ..color = glowColor.withOpacity(0.20)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 6.0,
+        ..strokeWidth = 4.0,
     );
 
     // 3. Card Base Gradient Fill
     final fillPaint = Paint()
-      ..shader = gradient.createShader(Rect.fromLTWH(0, 0, w, h));
+      ..shader = LinearGradient(
+        begin: gradient.begin,
+        end: gradient.end,
+        stops: gradient.stops,
+        colors:
+            gradient.colors.map((color) => color.withOpacity(0.54)).toList(),
+      ).createShader(Rect.fromLTWH(0, 0, w, h));
     canvas.drawPath(path, fillPaint);
 
     // 4. Outer Colored Border
     final borderPaint = Paint()
-      ..color = borderColor
+      ..color = borderLightColor.withOpacity(0.72)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.5;
+      ..strokeWidth = 1.4;
     canvas.drawPath(path, borderPaint);
 
     // 5. Inner Highlight Rim on top edge
@@ -358,13 +357,13 @@ class _PlayButton extends StatelessWidget {
       height: 38,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFFFF7A45),
-            Color(0xFFFF3D00),
-            Color(0xFFD82800),
+            Colors.white.withOpacity(0.38),
+            glowColor.withOpacity(0.72),
+            glowColor.withOpacity(0.34),
           ],
         ),
         border: Border.all(
@@ -378,7 +377,7 @@ class _PlayButton extends StatelessWidget {
             offset: const Offset(0, 3),
           ),
           BoxShadow(
-            color: const Color(0xFFFF3D00).withOpacity(0.6),
+            color: glowColor.withOpacity(0.55),
             blurRadius: 8,
           ),
         ],
@@ -429,7 +428,8 @@ class _MiniCrownPainter extends CustomPainter {
     canvas.drawPath(crownPath, crownPaint);
 
     // Jewel
-    canvas.drawCircle(Offset(w * 0.5, h * 0.18), 2.2, Paint()..color = const Color(0xFFD32F2F));
+    canvas.drawCircle(Offset(w * 0.5, h * 0.18), 2.2,
+        Paint()..color = const Color(0xFFD32F2F));
   }
 
   @override

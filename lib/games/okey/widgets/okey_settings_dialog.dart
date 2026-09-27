@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:game_hub/utils/haptics.dart';
-import 'package:game_hub/utils/top_notification.dart';
+import 'game_notice.dart';
 import '../utils/okey_audio.dart';
+import '../okey_skins.dart';
 
 class OkeySettingsDialog extends StatefulWidget {
   final VoidCallback onStateChanged;
 
   const OkeySettingsDialog({super.key, required this.onStateChanged});
 
-  static Future<void> show(BuildContext context, {required VoidCallback onStateChanged}) {
-    return showDialog(
-      context: context,
+  static Future<void> show(BuildContext context,
+      {required VoidCallback onStateChanged}) {
+    return showOkeyLandscapeDialog(
+      context,
       barrierColor: Colors.black.withOpacity(0.65),
       builder: (_) => OkeySettingsDialog(onStateChanged: onStateChanged),
     );
@@ -26,6 +28,7 @@ class _OkeySettingsDialogState extends State<OkeySettingsDialog> {
   double _volume = OkeyAudio.sfxVolume;
   String _selectedLang = 'العربية';
   int _selectedTimer = 72;
+  final OkeySkinController _skins = OkeySkinController();
 
   final List<String> _languages = ['English', 'Türkçe', 'العربية', 'کوردی'];
   final List<int> _timerOptions = [30, 60, 72, 90];
@@ -60,7 +63,8 @@ class _OkeySettingsDialogState extends State<OkeySettingsDialog> {
               children: [
                 const Row(
                   children: [
-                    Icon(Icons.settings_rounded, color: Color(0xFF4ADE80), size: 20),
+                    Icon(Icons.settings_rounded,
+                        color: Color(0xFF4ADE80), size: 20),
                     SizedBox(width: 8),
                     Text(
                       'إعدادات اللعبة (Settings)',
@@ -80,7 +84,8 @@ class _OkeySettingsDialogState extends State<OkeySettingsDialog> {
                       color: Color(0x33FFFFFF),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.close, color: Colors.white70, size: 16),
+                    child: const Icon(Icons.close,
+                        color: Colors.white70, size: 16),
                   ),
                 ),
               ],
@@ -120,7 +125,10 @@ class _OkeySettingsDialogState extends State<OkeySettingsDialog> {
                 const SizedBox(width: 10),
                 const Text(
                   'مستوى الصوت',
-                  style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600),
                 ),
                 Expanded(
                   child: SliderTheme(
@@ -154,7 +162,10 @@ class _OkeySettingsDialogState extends State<OkeySettingsDialog> {
                     SizedBox(width: 10),
                     Text(
                       'مدة الدور (Turn Timer)',
-                      style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
@@ -169,9 +180,12 @@ class _OkeySettingsDialogState extends State<OkeySettingsDialog> {
                       },
                       child: Container(
                         margin: const EdgeInsets.only(left: 4),
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 7, vertical: 4),
                         decoration: BoxDecoration(
-                          color: isSel ? const Color(0xFF22C55E) : const Color(0x22FFFFFF),
+                          color: isSel
+                              ? const Color(0xFF22C55E)
+                              : const Color(0x22FFFFFF),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -179,7 +193,8 @@ class _OkeySettingsDialogState extends State<OkeySettingsDialog> {
                           style: TextStyle(
                             color: isSel ? Colors.white : Colors.white70,
                             fontSize: 11,
-                            fontWeight: isSel ? FontWeight.w800 : FontWeight.w500,
+                            fontWeight:
+                                isSel ? FontWeight.w800 : FontWeight.w500,
                           ),
                         ),
                       ),
@@ -196,11 +211,15 @@ class _OkeySettingsDialogState extends State<OkeySettingsDialog> {
               children: [
                 const Row(
                   children: [
-                    Icon(Icons.language_rounded, color: Colors.white70, size: 18),
+                    Icon(Icons.language_rounded,
+                        color: Colors.white70, size: 18),
                     SizedBox(width: 10),
                     Text(
                       'اللغة (Language)',
-                      style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
@@ -212,13 +231,16 @@ class _OkeySettingsDialogState extends State<OkeySettingsDialog> {
                       onTap: () {
                         AppHaptics.selection();
                         setState(() => _selectedLang = lang);
-                        TopNotification.show(context, 'تم اختيار اللغة: $lang');
+                        GameNotice.show(context, 'تم اختيار اللغة: $lang');
                       },
                       child: Container(
                         margin: const EdgeInsets.only(left: 4),
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 7, vertical: 4),
                         decoration: BoxDecoration(
-                          color: isSel ? const Color(0xFF22C55E) : const Color(0x22FFFFFF),
+                          color: isSel
+                              ? const Color(0xFF22C55E)
+                              : const Color(0x22FFFFFF),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -226,7 +248,8 @@ class _OkeySettingsDialogState extends State<OkeySettingsDialog> {
                           style: TextStyle(
                             color: isSel ? Colors.white : Colors.white70,
                             fontSize: 10.5,
-                            fontWeight: isSel ? FontWeight.w800 : FontWeight.w500,
+                            fontWeight:
+                                isSel ? FontWeight.w800 : FontWeight.w500,
                           ),
                         ),
                       ),
@@ -235,8 +258,95 @@ class _OkeySettingsDialogState extends State<OkeySettingsDialog> {
                 ),
               ],
             ),
+            const Divider(color: Color(0x22FFFFFF), height: 16),
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildSkinDropdown(
+                  label: 'Table',
+                  value: _skins.table.id,
+                  options: {
+                    for (final skin in OkeySkinCatalog.tables)
+                      skin.id: skin.name
+                  },
+                  onChanged: (id) {
+                    _skins.selectTable(OkeySkinCatalog.tables
+                        .firstWhere((skin) => skin.id == id));
+                    widget.onStateChanged();
+                  },
+                ),
+                _buildSkinDropdown(
+                  label: 'Rack',
+                  value: _skins.rack.id,
+                  options: {
+                    for (final skin in OkeySkinCatalog.racks) skin.id: skin.name
+                  },
+                  onChanged: (id) {
+                    _skins.selectRack(OkeySkinCatalog.racks
+                        .firstWhere((skin) => skin.id == id));
+                    widget.onStateChanged();
+                  },
+                ),
+                _buildSkinDropdown(
+                  label: 'Tiles',
+                  value: _skins.tile.id,
+                  options: {
+                    for (final skin in OkeySkinCatalog.tiles) skin.id: skin.name
+                  },
+                  onChanged: (id) {
+                    _skins.selectTile(OkeySkinCatalog.tiles
+                        .firstWhere((skin) => skin.id == id));
+                    widget.onStateChanged();
+                  },
+                ),
+              ],
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSkinDropdown({
+    required String label,
+    required String value,
+    required Map<String, String> options,
+    required ValueChanged<String> onChanged,
+  }) {
+    return Container(
+      width: 120,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0x221EA7FD),
+        borderRadius: BorderRadius.circular(9),
+        border: Border.all(color: const Color(0x444ADE80)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style: const TextStyle(color: Colors.white54, fontSize: 9)),
+          DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: value,
+              isDense: true,
+              dropdownColor: const Color(0xFF161C28),
+              style: const TextStyle(color: Colors.white, fontSize: 10.5),
+              items: options.entries
+                  .map((entry) => DropdownMenuItem(
+                      value: entry.key, child: Text(entry.value)))
+                  .toList(),
+              onChanged: (selected) {
+                if (selected == null) return;
+                AppHaptics.selection();
+                onChanged(selected);
+                setState(() {});
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -256,7 +366,10 @@ class _OkeySettingsDialogState extends State<OkeySettingsDialog> {
             const SizedBox(width: 10),
             Text(
               title,
-              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600),
             ),
           ],
         ),

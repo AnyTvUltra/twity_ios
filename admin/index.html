@@ -1,0 +1,2436 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة التحكم الإدارية المتكاملة | Yalla Yari Admin</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            cairo: ['Cairo', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+            },
+            dark: {
+              900: '#0b0f19',
+              800: '#111827',
+              700: '#1f2937',
+              600: '#374151',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React 18 & Babel for standalone modern dashboard -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    body {
+      font-family: 'Cairo', sans-serif;
+      background-color: #0b0f19;
+      color: #f3f4f6;
+      margin: 0;
+      overflow-x: hidden;
+    }
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #111827;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #374151;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #4b5563;
+    }
+    .glass-card {
+      background: rgba(17, 24, 39, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card-hover:hover {
+      border-color: rgba(34, 197, 94, 0.3);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(34, 197, 94, 0.1);
+    }
+    .glow-gold {
+      text-shadow: 0 0 12px rgba(234, 179, 8, 0.4);
+    }
+  </style>
+</head>
+<body class="bg-dark-900 text-gray-100 min-h-screen">
+  <div id="root"></div>
+
+  <!-- Firebase v10 Modular SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { 
+      getFirestore, 
+      collection, 
+      doc, 
+      getDoc, 
+      getDocs, 
+      setDoc, 
+      updateDoc, 
+      deleteDoc, 
+      addDoc, 
+      onSnapshot, 
+      serverTimestamp, 
+      query, 
+      orderBy, 
+      limit,
+      increment,
+      where 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBZ1GzN3LUvWxmSf1ZRVC9wDstNNzgJpmw",
+      authDomain: "game-651a3.firebaseapp.com",
+      projectId: "game-651a3",
+      storageBucket: "game-651a3.firebasestorage.app",
+      messagingSenderId: "882641594444",
+      appId: "1:882641594444:web:177374244ae0d874886ce9",
+      measurementId: "G-BJ3SDN2NBK"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    // Export to window for React component access
+    window.db = db;
+    window.fbAuth = auth;
+    window.fbAuthTools = { signInWithEmailAndPassword, onAuthStateChanged, signOut };
+    window.fbTools = {
+      collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, onSnapshot, serverTimestamp, query, orderBy, limit, increment, where
+    };
+    window.firebaseReady = true;
+    window.dispatchEvent(new Event('firebase-ready'));
+  </script>
+
+  <!-- React Application -->
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    // موك اب ثلاثي الأبعاد: معاينة شكل التصميم على القطعة الفعلية حسب الفئة
+    // zoom/ox/oy: تكبير وإزاحة الصورة (مطابق لتطبيق اللعبة)
+    function SkinPreview({ category, uri, zoom = 1, ox = 0, oy = 0 }) {
+      const Img = ({ fallback }) => uri
+        ? <img src={uri} alt="" draggable="false" className="w-full h-full block select-none" style={{ objectFit: 'cover', transform: `translate(${ox * 50}%, ${oy * 50}%) scale(${zoom})` }} />
+        : <div className="w-full h-full" style={{ background: fallback }}></div>;
+
+      if (category === 'tile') {
+        // حجر ثلاثي الأبعاد: وجه + سماكة سفلية + ظل
+        const Tile = ({ n, c, tilt }) => (
+          <div style={{ transform: `rotate(${tilt}deg)` }} className="flex flex-col items-center">
+            <div className="w-12 h-[68px] rounded-t-lg rounded-b-sm border border-[#cbbfa6] relative overflow-hidden" style={{ boxShadow: '2px 4px 8px rgba(0,0,0,.55)' }}>
+              <div className="absolute inset-0"><Img fallback="linear-gradient(180deg,#fffdf8,#f3ead5)" /></div>
+              <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg,rgba(255,255,255,.35),transparent 45%,rgba(0,0,0,.12))' }}></div>
+              <div className="absolute inset-0 flex items-center justify-center font-black text-lg" style={{ color: c, textShadow: '0 0 3px rgba(255,255,255,.7),0 1px 1px rgba(0,0,0,.3)' }}>{n}</div>
+            </div>
+            <div className="w-12 h-[5px] rounded-b" style={{ background: 'linear-gradient(180deg,#6b5c40,#3a3020)' }}></div>
+          </div>
+        );
+        return (
+          <div className="flex items-end justify-center gap-3 h-full pb-3">
+            <Tile n="7" c="#d32f2f" tilt={-4} />
+            <Tile n="8" c="#1565c0" tilt={0} />
+            <Tile n="9" c="#2e7d32" tilt={4} />
+          </div>
+        );
+      }
+
+      if (category === 'table') {
+        // طاولة: إطار خشبي شبه منحرف + سطح الكسنة + أحجار مصغرة
+        return (
+          <div className="flex items-center justify-center h-full relative">
+            <div className="w-44 h-24" style={{ clipPath: 'polygon(14% 0,86% 0,100% 100%,0 100%)', background: 'linear-gradient(180deg,#6b3a1c,#4a2410,#2c1205)', boxShadow: '0 8px 16px rgba(0,0,0,.6)' }}>
+              <div className="w-full h-full relative" style={{ clipPath: 'polygon(18% 8%,82% 8%,94% 92%,6% 92%)' }}>
+                <div className="absolute inset-0"><Img fallback="radial-gradient(circle,#1e5c38,#0b2b18)" /></div>
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg,rgba(255,255,255,.1),transparent 40%,rgba(0,0,0,.35))' }}></div>
+              </div>
+            </div>
+            <div className="absolute flex gap-1" style={{ top: '30%' }}>
+              {['5', '6', '7'].map(n => (
+                <div key={n} className="w-3.5 h-5 rounded-sm bg-[#fffdf8] border border-[#cbbfa6] flex items-center justify-center text-[9px] font-black text-red-600" style={{ boxShadow: '0 1px 2px rgba(0,0,0,.45)' }}>{n}</div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      if (category === 'rack') {
+        // استكانة: الكسنة تغطي كامل الجسم + لوح علوي + أحجار واقفة + حافة سفلية
+        const nums = ['3', '4', '5', '7', '7', '9', '11'];
+        const cols = ['#1565c0', '#1565c0', '#1565c0', '#d32f2f', '#2e7d32', '#2e7d32', '#e65100'];
+        return (
+          <div className="flex items-end justify-center h-full pb-2">
+            <div className="w-48 h-24 rounded-md relative overflow-hidden" style={{ boxShadow: '0 6px 14px rgba(0,0,0,.6)' }}>
+              <div className="absolute inset-0"><Img fallback="linear-gradient(180deg,#5a2e16,#45220f,#241006)" /></div>
+              {uri && <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,.12)' }}></div>}
+              <div className="absolute top-0 inset-x-0 h-7" style={{ background: 'linear-gradient(180deg,rgba(66,32,14,.55),rgba(46,21,8,.7))', borderBottom: '1.5px solid #1b0b04' }}></div>
+              <div className="absolute inset-x-2 bottom-1.5 flex gap-1 items-stretch" style={{ top: '30px' }}>
+                {nums.map((n, i) => (
+                  <div key={i} className="flex-1 h-full rounded-sm bg-[#fffdf8] border border-[#cbbfa6] flex items-center justify-center text-[10px] font-black" style={{ color: cols[i], boxShadow: '0 2px 2px rgba(0,0,0,.35)' }}>{n}</div>
+                ))}
+              </div>
+              <div className="absolute bottom-0 inset-x-0 h-1" style={{ background: 'linear-gradient(90deg,rgba(25,8,2,.7),rgba(56,25,10,.7),rgba(25,8,2,.7))' }}></div>
+            </div>
+          </div>
+        );
+      }
+
+      if (category === 'frame') {
+        // إطار الصورة الشخصية: صورة رمزية + إطار الكسنة حولها
+        return (
+          <div className="flex items-center justify-center h-full">
+            <div className="relative w-24 h-24 flex items-center justify-center">
+              <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl" style={{ background: 'linear-gradient(135deg,#60a5fa,#3b82f6)', boxShadow: '0 4px 10px rgba(0,0,0,.4)' }}>🀄</div>
+              <div className="absolute inset-0">
+                {uri
+                  ? <img src={uri} alt="" draggable="false" className="w-full h-full block select-none" style={{ objectFit: 'cover', transform: `translate(${ox * 50}%, ${oy * 50}%) scale(${zoom})` }} />
+                  : <div className="w-full h-full rounded-full border-4 border-amber-400"></div>}
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      if (category === 'chessBoard') {
+        // لوحة شطرنج: إطار خشبي + نسيج الكسنة + تناوب المربعات فوقه
+        return (
+          <div className="flex items-center justify-center h-full">
+            <div className="w-32 h-32 rounded-md p-2 relative" style={{ background: 'linear-gradient(135deg,#6b4423,#3a2110,#241505)', boxShadow: '0 8px 18px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,217,160,.4)' }}>
+              <div className="w-full h-full relative overflow-hidden rounded-sm">
+                <div className="absolute inset-0"><Img fallback="linear-gradient(135deg,#f0d9b5,#b07b4a)" /></div>
+                <div className="absolute inset-0" style={{ background: 'conic-gradient(rgba(245,230,196,.30) 0 25%, rgba(36,21,5,.55) 0 50%, rgba(245,230,196,.30) 0 75%, rgba(36,21,5,.55) 0)', backgroundSize: '50% 50%' }}></div>
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg,rgba(255,255,255,.14),transparent 50%,rgba(0,0,0,.18))' }}></div>
+              </div>
+              <div className="absolute -bottom-1 inset-x-2 h-2 rounded-b" style={{ background: 'linear-gradient(180deg,#3a2110,#1a0d04)' }}></div>
+            </div>
+          </div>
+        );
+      }
+
+      if (category === 'chessPieces') {
+        // أحجار شطرنج: الرموز تُملأ بنسيج الكسنة
+        const piece = (g, tint) => (
+          <span style={{
+            fontSize: '64px', lineHeight: 1, fontWeight: '900',
+            backgroundImage: uri ? `url(${uri})` : 'none',
+            backgroundSize: 'cover', backgroundPosition: 'center',
+            WebkitBackgroundClip: uri ? 'text' : 'border-box',
+            backgroundClip: uri ? 'text' : 'border-box',
+            color: uri ? 'transparent' : tint,
+            filter: `drop-shadow(0 3px 2px rgba(0,0,0,.6))${uri ? ` drop-shadow(0 0 0 ${tint})` : ''}`,
+          }}>{g}</span>
+        );
+        return (
+          <div className="flex items-center justify-center gap-6 h-full">
+            <div className="relative">
+              {piece('♞', '#fff6dc')}
+              {!uri && <span className="absolute inset-0 flex items-center justify-center" style={{ color: '#fff6dc', fontSize: '64px' }}></span>}
+            </div>
+            {piece('♛', '#4a1f30')}
+          </div>
+        );
+      }
+
+      // background: مشهد كامل — الخلفية + طاولة مصغرة + استكانة
+      return (
+        <div className="absolute inset-0 rounded-xl overflow-hidden">
+          <div className="absolute inset-0"><Img fallback="radial-gradient(circle,#17171b,#030509)" /></div>
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.45))' }}></div>
+          <div className="absolute inset-x-0 top-1/3 flex justify-center">
+            <div className="w-28 h-14" style={{ clipPath: 'polygon(14% 0,86% 0,100% 100%,0 100%)', background: 'linear-gradient(180deg,#6b3a1c,#2c1205)' }}></div>
+          </div>
+          <div className="absolute inset-x-0 bottom-2 flex justify-center">
+            <div className="w-32 h-4 rounded" style={{ background: 'linear-gradient(180deg,#5a2e16,#241006)' }}></div>
+          </div>
+        </div>
+      );
+    }
+
+    function AdminApp() {
+      const [isAuthenticated, setIsAuthenticated] = useState(false);
+      const [authChecking, setAuthChecking] = useState(true);
+      const [email, setEmail] = useState('');
+      const [password, setPassword] = useState('');
+      const [pinError, setPinError] = useState('');
+      const [loggingIn, setLoggingIn] = useState(false);
+      const [activeTab, setActiveTab] = useState('overview'); // overview, players, economy, settings, history
+      const [fbStatus, setFbStatus] = useState('connecting'); // connecting, ready, error
+
+      // Data states
+      const [players, setPlayers] = useState([]);
+      const [gameSettings, setGameSettings] = useState({
+        startingChips: 1250,
+        defaultTurnTimer: 72,
+        botDifficulty: 'medium',
+        maintenanceMode: false,
+        announcement: 'مرحباً بكم في مجتمع الألعاب الممتعة!'
+      });
+      const [gameLogs, setGameLogs] = useState([]);
+      const [searchQuery, setSearchQuery] = useState('');
+      const [statusFilter, setStatusFilter] = useState('all');
+      const [storeItems, setStoreItems] = useState([]);
+      const [reports, setReports] = useState([]);
+      const [tickets, setTickets] = useState([]);
+      const [skinFilter, setSkinFilter] = useState('all');
+      const [showAddSkinModal, setShowAddSkinModal] = useState(false);
+      const [newSkin, setNewSkin] = useState({ name: '', category: 'tile', price: 500, currency: 'chips', zoom: 1, ox: 0, oy: 0 });
+      const skinDragRef = React.useRef(null);
+      const [skinImageB64, setSkinImageB64] = useState('');
+      const [skinImageDataUri, setSkinImageDataUri] = useState('');
+      const [savingSkin, setSavingSkin] = useState(false);
+
+      // الشحن والباقات + الراديو
+      const [coinPacks, setCoinPacks] = useState([]);
+      const [orders, setOrders] = useState([]);
+      const [showAddPackModal, setShowAddPackModal] = useState(false);
+      const [newPack, setNewPack] = useState({ title: '', type: 'chips', amount: 5000, priceUsd: 4.99 });
+      const [savingPack, setSavingPack] = useState(false);
+      const [radioGroups, setRadioGroups] = useState([]);
+      const [radioSongs, setRadioSongs] = useState([]);
+      const [showAddGroupModal, setShowAddGroupModal] = useState(false);
+      const [showAddSongModal, setShowAddSongModal] = useState(false);
+      const [newGroup, setNewGroup] = useState({ name: '', flag: '🎵' });
+      const [newSong, setNewSong] = useState({ groupId: '', name: '', genre: '', url: '' });
+      const [selectedRadioGroup, setSelectedRadioGroup] = useState('all');
+
+      // Modals
+      const [editingPlayer, setEditingPlayer] = useState(null);
+      const [editCurrency, setEditCurrency] = useState('chips');
+      const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
+      const [newPlayerData, setNewPlayerData] = useState({ name: '', chips: 5000, rating: 1200, level: 1 });
+      const [toastMsg, setToastMsg] = useState(null);
+
+      const showToast = (text, type = 'success') => {
+        setToastMsg({ text, type });
+        setTimeout(() => setToastMsg(null), 3500);
+      };
+
+      // استعادة الجلسة + التحقق من صلاحية الأدمن عبر مجموعة admins
+      useEffect(() => {
+        if (!window.fbAuth || !window.fbAuthTools) return;
+        const { onAuthStateChanged } = window.fbAuthTools;
+        const { doc, getDoc } = window.fbTools;
+        const unsub = onAuthStateChanged(window.fbAuth, async (u) => {
+          if (u) {
+            try {
+              const adminDoc = await getDoc(doc(window.db, 'admins', u.uid));
+              setIsAuthenticated(adminDoc.exists());
+              if (!adminDoc.exists()) window.fbAuthTools.signOut(window.fbAuth);
+            } catch (e) {
+              setIsAuthenticated(false);
+            }
+          } else {
+            setIsAuthenticated(false);
+          }
+          setAuthChecking(false);
+        });
+        return () => unsub();
+      }, []);
+
+      // تسجيل دخول حقيقي: إيميل + كلمة مرور + التحقق من مجموعة admins
+      const handleLogin = async (e) => {
+        e && e.preventDefault();
+        if (!email.trim() || !password) {
+          setPinError('أدخل البريد الإلكتروني وكلمة المرور');
+          return;
+        }
+        setLoggingIn(true);
+        setPinError('');
+        try {
+          const { signInWithEmailAndPassword, signOut } = window.fbAuthTools;
+          const { doc, getDoc } = window.fbTools;
+          const cred = await signInWithEmailAndPassword(window.fbAuth, email.trim(), password);
+          const adminDoc = await getDoc(doc(window.db, 'admins', cred.user.uid));
+          if (adminDoc.exists()) {
+            setIsAuthenticated(true);
+            showToast('تم تسجيل الدخول بنجاح! مرحباً بالمدير.');
+          } else {
+            await signOut(window.fbAuth);
+            setPinError('⛔ هذا الحساب لا يملك صلاحيات الإدارة');
+          }
+        } catch (err) {
+          setPinError('بيانات الدخول غير صحيحة أو الحساب غير موجود');
+        } finally {
+          setLoggingIn(false);
+        }
+      };
+
+      const handleLogout = () => {
+        if (window.fbAuthTools) window.fbAuthTools.signOut(window.fbAuth);
+        setIsAuthenticated(false);
+        setEmail('');
+        setPassword('');
+      };
+
+      // Set up Realtime Firebase listeners
+      useEffect(() => {
+        if (!isAuthenticated) return;
+
+        const initFirebaseListeners = () => {
+          if (!window.db || !window.fbTools) return;
+          const { collection, doc, onSnapshot, query, orderBy, limit } = window.fbTools;
+          setFbStatus('ready');
+
+          // 1. Users listener (الحسابات الحقيقية في مجموعة users)
+          try {
+            const playersRef = collection(window.db, 'users');
+            const unsubPlayers = onSnapshot(playersRef, (snapshot) => {
+              const list = [];
+              snapshot.forEach((doc) => {
+                const d = doc.data();
+                list.push({ id: doc.id, ...d, name: d.displayName || d.username || d.name || 'لاعب' });
+              });
+              setPlayers(list);
+            }, (err) => {
+              console.error("Users listener error:", err);
+            });
+
+            // 2. Settings listener
+            const settingsDoc = doc(window.db, 'config', 'game_settings');
+            const unsubSettings = onSnapshot(settingsDoc, (docSnap) => {
+              if (docSnap.exists()) {
+                setGameSettings(prev => ({ ...prev, ...docSnap.data() }));
+              }
+            }, (err) => {
+              console.error("Settings listener error:", err);
+            });
+
+            // 3. Game history listener
+            try {
+              const historyQuery = query(collection(window.db, 'game_history'), orderBy('timestamp', 'desc'), limit(50));
+              const unsubHistory = onSnapshot(historyQuery, (snapshot) => {
+                const logs = [];
+                snapshot.forEach((doc) => {
+                  logs.push({ id: doc.id, ...doc.data() });
+                });
+                setGameLogs(logs);
+              }, (err) => {
+                // If index not ready, fall back to simple collection listener
+                const fallbackRef = collection(window.db, 'game_history');
+                onSnapshot(fallbackRef, (snap) => {
+                  const fallbackLogs = [];
+                  snap.forEach(d => fallbackLogs.push({ id: d.id, ...d.data() }));
+                  setGameLogs(fallbackLogs.reverse());
+                });
+              });
+            } catch (e) {
+              console.warn(e);
+            }
+
+            // 4. Store items listener (المتجر والسكنات)
+            const unsubStore = onSnapshot(collection(window.db, 'store_items'), (snap) => {
+              const list = [];
+              snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
+              list.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+              setStoreItems(list);
+            }, (err) => console.error("Store listener error:", err));
+
+            // 5. Reports listener (البلاغات)
+            const unsubReports = onSnapshot(collection(window.db, 'reports'), (snap) => {
+              const list = [];
+              snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
+              list.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+              setReports(list);
+            }, (err) => console.error("Reports listener error:", err));
+
+            // 6. Support tickets listener (تذاكر الدعم)
+            const unsubTickets = onSnapshot(collection(window.db, 'support_tickets'), (snap) => {
+              const list = [];
+              snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
+              list.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+              setTickets(list);
+            }, (err) => console.error("Tickets listener error:", err));
+
+            // 7. باقات الشحن (coin_packs)
+            const unsubPacks = onSnapshot(collection(window.db, 'coin_packs'), (snap) => {
+              const list = [];
+              snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
+              list.sort((a, b) => (a.sort ?? 999) - (b.sort ?? 999));
+              setCoinPacks(list);
+            }, (err) => console.error("Packs listener error:", err));
+
+            // 8. طلبات الشحن (orders)
+            const unsubOrders = onSnapshot(collection(window.db, 'orders'), (snap) => {
+              const list = [];
+              snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
+              list.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+              setOrders(list);
+            }, (err) => console.error("Orders listener error:", err));
+
+            // 9. مجموعات الراديو + الأغاني
+            const unsubRadioGroups = onSnapshot(collection(window.db, 'radio_groups'), (snap) => {
+              const list = [];
+              snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
+              list.sort((a, b) => (a.sort ?? 999) - (b.sort ?? 999));
+              setRadioGroups(list);
+            }, (err) => console.error("Radio groups listener error:", err));
+
+            const unsubRadioSongs = onSnapshot(collection(window.db, 'radio_songs'), (snap) => {
+              const list = [];
+              snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
+              list.sort((a, b) => (a.sort ?? 999) - (b.sort ?? 999));
+              setRadioSongs(list);
+            }, (err) => console.error("Radio songs listener error:", err));
+
+            return () => {
+              unsubPlayers();
+              unsubSettings();
+              unsubStore();
+              unsubReports();
+              unsubTickets();
+              unsubPacks();
+              unsubOrders();
+              unsubRadioGroups();
+              unsubRadioSongs();
+            };
+          } catch (e) {
+            console.error("Firebase init failed:", e);
+            setFbStatus('error');
+          }
+        };
+
+        if (window.firebaseReady) {
+          initFirebaseListeners();
+        } else {
+          window.addEventListener('firebase-ready', initFirebaseListeners);
+          return () => window.removeEventListener('firebase-ready', initFirebaseListeners);
+        }
+      }, [isAuthenticated]);
+
+      // Re-trigger icons after DOM changes
+      useEffect(() => {
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      });
+
+      // Actions: Update Game Settings
+      const handleSaveSettings = async (newConfig) => {
+        if (!window.db || !window.fbTools) return;
+        try {
+          const { doc, setDoc, serverTimestamp } = window.fbTools;
+          await setDoc(doc(window.db, 'config', 'game_settings'), {
+            ...gameSettings,
+            ...newConfig,
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+          setGameSettings(prev => ({ ...prev, ...newConfig }));
+          showToast('✅ تم حفظ الإعدادات وتطبيقها على جميع الأجهزة فوراً!');
+        } catch (err) {
+          showToast('فشل في حفظ الإعدادات: ' + err.message, 'error');
+        }
+      };
+
+      // Actions: Update Player (عملات 🪙 أو جواهر 💎)
+      const handleUpdatePlayerBalance = async (playerId, deltaOrNewValue, isAbsolute = false, field = 'chips') => {
+        if (!window.db || !window.fbTools) return;
+        try {
+          const { doc, updateDoc, serverTimestamp } = window.fbTools;
+          const player = players.find(p => p.id === playerId);
+          if (!player) return;
+
+          const current = Number(player[field]) || 0;
+          const target = isAbsolute ? Number(deltaOrNewValue) : Math.max(0, current + Number(deltaOrNewValue));
+          const icon = field === 'gems' ? '💎' : '🪙';
+
+          await updateDoc(doc(window.db, 'users', playerId), {
+            [field]: target,
+            updatedAt: serverTimestamp()
+          });
+
+          showToast(`✅ تم تعديل رصيد اللاعب (${player.name || playerId}) إلى ${target.toLocaleString()} ${icon}`);
+          if (editingPlayer && editingPlayer.id === playerId) {
+            setEditingPlayer(prev => ({ ...prev, [field]: target }));
+          }
+        } catch (err) {
+          showToast('خطأ في تعديل الرصيد: ' + err.message, 'error');
+        }
+      };
+      const handleUpdatePlayerChips = (playerId, val, isAbsolute) =>
+        handleUpdatePlayerBalance(playerId, val, isAbsolute, 'chips');
+
+      // Actions: Toggle Player Ban
+      const handleToggleBan = async (player) => {
+        if (!window.db || !window.fbTools) return;
+        try {
+          const { doc, updateDoc, serverTimestamp } = window.fbTools;
+          const newBannedState = !player.isBanned;
+          await updateDoc(doc(window.db, 'users', player.id), {
+            isBanned: newBannedState,
+            updatedAt: serverTimestamp()
+          });
+          showToast(newBannedState ? `⛔ تم حظر اللاعب ${player.name}` : `✅ تم فك حظر اللاعب ${player.name}`);
+        } catch (err) {
+          showToast('حدث خطأ: ' + err.message, 'error');
+        }
+      };
+
+      // Actions: Delete Player
+      const handleDeletePlayer = async (playerId, name) => {
+        if (!confirm(`هل أنت متأكد من حذف اللاعب "${name}" نهائياً من قاعدة البيانات؟`)) return;
+        try {
+          const { doc, deleteDoc } = window.fbTools;
+          await deleteDoc(doc(window.db, 'users', playerId));
+          showToast(`🗑️ تم حذف اللاعب "${name}" بنجاح.`);
+        } catch (err) {
+          showToast('خطأ أثناء الحذف: ' + err.message, 'error');
+        }
+      };
+
+      // Actions: Create New Player
+      const handleCreatePlayer = async (e) => {
+        e.preventDefault();
+        if (!newPlayerData.name.trim()) {
+          showToast('يرجى كتابة اسم اللاعب', 'error');
+          return;
+        }
+        try {
+          const { collection, addDoc, serverTimestamp } = window.fbTools;
+          const cleanName = newPlayerData.name.trim();
+          await addDoc(collection(window.db, 'users'), {
+            email: '',
+            displayName: cleanName,
+            username: cleanName.replace(/\s+/g, '_').toLowerCase() + '_' + Math.floor(Math.random() * 10000),
+            photoUrl: '',
+            chips: Number(newPlayerData.chips) || 1250,
+            rating: Number(newPlayerData.rating) || 1200,
+            level: Number(newPlayerData.level) || 1,
+            wins: 0,
+            losses: 0,
+            isOnline: false,
+            isBanned: false,
+            ownedSkins: [],
+            equippedSkins: {},
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          });
+          setShowAddPlayerModal(false);
+          setNewPlayerData({ name: '', chips: 5000, rating: 1200, level: 1 });
+          showToast('🎉 تم إضافة اللاعب الجديد بنجاح!');
+        } catch (err) {
+          showToast('فشل في إضافة اللاعب: ' + err.message, 'error');
+        }
+      };
+
+      // Actions: Give Bonus to All (عملات 🪙 أو جواهر 💎)
+      const handleGrantAllBonus = async (amount, field = 'chips') => {
+        const icon = field === 'gems' ? '💎' : '🪙';
+        const label = field === 'gems' ? 'مجوهرة' : 'رقاقة';
+        if (!confirm(`هل تريد حقاً منح جميع اللاعبين المسجلين (+${amount.toLocaleString()} ${label} ${icon}) كهدية؟`)) return;
+        try {
+          const { doc, updateDoc, serverTimestamp } = window.fbTools;
+          let count = 0;
+          for (const p of players) {
+            await updateDoc(doc(window.db, 'users', p.id), {
+              [field]: (Number(p[field]) || 0) + amount,
+              updatedAt: serverTimestamp()
+            });
+            count++;
+          }
+          showToast(`🎁 تم توزيع ${amount.toLocaleString()} ${label} ${icon} على ${count} لاعب بنجاح!`);
+        } catch (err) {
+          showToast('حدث خطأ: ' + err.message, 'error');
+        }
+      };
+
+      // ═══════════ المتجر والسكنات ═══════════
+      const categoryLabels = { tile: 'الأحجار 🀄', table: 'الطاولة 🟫', rack: 'الاستكانة 🪵', background: 'الخلفية 🖼️', frame: 'إطار الصورة 🖼️', chessBoard: 'لوحة الشطرنج ♞', chessPieces: 'أحجار الشطرنج ♟️' };
+
+      const handleSkinImagePick = (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUri = reader.result;
+          setSkinImageDataUri(dataUri);
+          setSkinImageB64(String(dataUri).split(',')[1] || '');
+        };
+        reader.readAsDataURL(file);
+      };
+
+      const handleAddSkin = async (e) => {
+        e && e.preventDefault();
+        if (!newSkin.name.trim()) { showToast('اكتب اسم التصميم أولاً', 'error'); return; }
+        if (!skinImageB64) { showToast('ارفع صورة التصميم أولاً', 'error'); return; }
+        try {
+          setSavingSkin(true);
+          const { collection, addDoc, serverTimestamp } = window.fbTools;
+          await addDoc(collection(window.db, 'store_items'), {
+            name: newSkin.name.trim(),
+            category: newSkin.category,
+            price: Number(newSkin.price) || 0,
+            currency: newSkin.currency,
+            imageBase64: skinImageB64,
+            active: true,
+            zoom: newSkin.zoom,
+            offsetX: newSkin.ox,
+            offsetY: newSkin.oy,
+            createdAt: serverTimestamp()
+          });
+          setShowAddSkinModal(false);
+          setNewSkin({ name: '', category: 'tile', price: 500, currency: 'chips', zoom: 1, ox: 0, oy: 0 });
+          setSkinImageB64('');
+          setSkinImageDataUri('');
+          showToast('🎉 تم نشر التصميم في المتجر وظهر للاعبين فوراً!');
+        } catch (err) {
+          showToast('فشل النشر: ' + err.message, 'error');
+        } finally {
+          setSavingSkin(false);
+        }
+      };
+
+      const handleToggleSkinActive = async (item) => {
+        try {
+          const { doc, updateDoc } = window.fbTools;
+          await updateDoc(doc(window.db, 'store_items', item.id), { active: !item.active });
+          showToast(item.active ? `تم إخفاء "${item.name}" من المتجر` : `تم إظهار "${item.name}" في المتجر`);
+        } catch (err) {
+          showToast('خطأ: ' + err.message, 'error');
+        }
+      };
+
+      const handleDeleteSkin = async (item) => {
+        if (!confirm(`حذف التصميم "${item.name}" نهائياً من المتجر؟`)) return;
+        try {
+          const { doc, deleteDoc } = window.fbTools;
+          await deleteDoc(doc(window.db, 'store_items', item.id));
+          showToast(`🗑️ تم حذف "${item.name}"`);
+        } catch (err) {
+          showToast('خطأ أثناء الحذف: ' + err.message, 'error');
+        }
+      };
+
+      // ═══════════ باقات الشحن والطلبات ═══════════
+      const handleAddPack = async (e) => {
+        e && e.preventDefault();
+        if (!newPack.title.trim()) { showToast('اكتب اسم الباقة', 'error'); return; }
+        try {
+          setSavingPack(true);
+          const { collection, addDoc, serverTimestamp } = window.fbTools;
+          await addDoc(collection(window.db, 'coin_packs'), {
+            title: newPack.title.trim(),
+            type: newPack.type,
+            amount: Number(newPack.amount) || 0,
+            priceUsd: Number(newPack.priceUsd) || 0,
+            active: true,
+            sort: coinPacks.length,
+            createdAt: serverTimestamp()
+          });
+          setShowAddPackModal(false);
+          setNewPack({ title: '', type: 'chips', amount: 5000, priceUsd: 4.99 });
+          showToast('🎉 تم إنشاء الباقة — ظهرت في المتجر فوراً!');
+        } catch (err) {
+          showToast('فشل إنشاء الباقة: ' + err.message, 'error');
+        } finally {
+          setSavingPack(false);
+        }
+      };
+
+      const handleTogglePackActive = async (p) => {
+        try {
+          const { doc, updateDoc } = window.fbTools;
+          await updateDoc(doc(window.db, 'coin_packs', p.id), { active: !p.active });
+          showToast(p.active ? `تم إخفاء "${p.title}"` : `تم إظهار "${p.title}"`);
+        } catch (err) {
+          showToast('خطأ: ' + err.message, 'error');
+        }
+      };
+
+      const handleDeletePack = async (p) => {
+        if (!confirm(`حذف الباقة "${p.title}" نهائياً؟`)) return;
+        try {
+          const { doc, deleteDoc } = window.fbTools;
+          await deleteDoc(doc(window.db, 'coin_packs', p.id));
+          showToast(`🗑️ تم حذف "${p.title}"`);
+        } catch (err) {
+          showToast('خطأ: ' + err.message, 'error');
+        }
+      };
+
+      /// تأكيد طلب شراء — إضافة الرصيد للاعب وإغلاق الطلب
+      const handleApproveOrder = async (o) => {
+        try {
+          const { doc, updateDoc, increment, serverTimestamp } = window.fbTools;
+          const field = o.type === 'gems' ? 'gems' : 'chips';
+          await updateDoc(doc(window.db, 'users', o.uid), {
+            [field]: increment(Number(o.amount) || 0),
+            updatedAt: serverTimestamp()
+          });
+          await updateDoc(doc(window.db, 'orders', o.id), {
+            status: 'approved',
+            processedAt: serverTimestamp()
+          });
+          showToast(`✅ تم إضافة ${o.amount} ${o.type === 'gems' ? '💎' : '🪙'} إلى ${o.displayName || o.username}`);
+        } catch (err) {
+          showToast('فشل تأكيد الطلب: ' + err.message, 'error');
+        }
+      };
+
+      const handleRejectOrder = async (o) => {
+        if (!confirm(`رفض طلب "${o.packTitle}" من ${o.displayName || o.username}؟`)) return;
+        try {
+          const { doc, updateDoc, serverTimestamp } = window.fbTools;
+          await updateDoc(doc(window.db, 'orders', o.id), {
+            status: 'rejected',
+            processedAt: serverTimestamp()
+          });
+          showToast('تم رفض الطلب');
+        } catch (err) {
+          showToast('خطأ: ' + err.message, 'error');
+        }
+      };
+
+      // ═══════════ الراديو: مجموعات وأغاني ═══════════
+      const handleAddRadioGroup = async (e) => {
+        e && e.preventDefault();
+        if (!newGroup.name.trim()) { showToast('اكتب اسم المجموعة', 'error'); return; }
+        try {
+          const { collection, addDoc, serverTimestamp } = window.fbTools;
+          await addDoc(collection(window.db, 'radio_groups'), {
+            name: newGroup.name.trim(),
+            flag: newGroup.flag || '🎵',
+            active: true,
+            sort: radioGroups.length,
+            createdAt: serverTimestamp()
+          });
+          setShowAddGroupModal(false);
+          setNewGroup({ name: '', flag: '🎵' });
+          showToast('🎵 تم إنشاء مجموعة الراديو!');
+        } catch (err) {
+          showToast('فشل: ' + err.message, 'error');
+        }
+      };
+
+      const handleDeleteRadioGroup = async (g) => {
+        if (!confirm(`حذف مجموعة "${g.name}" وكل أغانيها؟`)) return;
+        try {
+          const { doc, deleteDoc } = window.fbTools;
+          await deleteDoc(doc(window.db, 'radio_groups', g.id));
+          for (const s of radioSongs.filter(x => x.groupId === g.id)) {
+            await deleteDoc(doc(window.db, 'radio_songs', s.id));
+          }
+          showToast(`🗑️ تم حذف "${g.name}"`);
+        } catch (err) {
+          showToast('خطأ: ' + err.message, 'error');
+        }
+      };
+
+      const handleToggleRadioGroup = async (g) => {
+        try {
+          const { doc, updateDoc } = window.fbTools;
+          await updateDoc(doc(window.db, 'radio_groups', g.id), { active: !g.active });
+          showToast(g.active ? `تم إيقاف "${g.name}"` : `تم تفعيل "${g.name}"`);
+        } catch (err) {
+          showToast('خطأ: ' + err.message, 'error');
+        }
+      };
+
+      const handleAddRadioSong = async (e) => {
+        e && e.preventDefault();
+        if (!newSong.groupId) { showToast('اختر المجموعة أولاً', 'error'); return; }
+        if (!newSong.name.trim() || !newSong.url.trim()) { showToast('اكتب اسم الأغنية ورابطها', 'error'); return; }
+        try {
+          const { collection, addDoc, serverTimestamp } = window.fbTools;
+          await addDoc(collection(window.db, 'radio_songs'), {
+            groupId: newSong.groupId,
+            name: newSong.name.trim(),
+            genre: newSong.genre.trim(),
+            url: newSong.url.trim(),
+            active: true,
+            sort: radioSongs.filter(s => s.groupId === newSong.groupId).length,
+            createdAt: serverTimestamp()
+          });
+          setShowAddSongModal(false);
+          setNewSong({ groupId: '', name: '', genre: '', url: '' });
+          showToast('🎶 تمت إضافة الأغنية للراديو!');
+        } catch (err) {
+          showToast('فشل: ' + err.message, 'error');
+        }
+      };
+
+      const handleToggleRadioSong = async (s) => {
+        try {
+          const { doc, updateDoc } = window.fbTools;
+          await updateDoc(doc(window.db, 'radio_songs', s.id), { active: !s.active });
+          showToast(s.active ? `تم إيقاف "${s.name}"` : `تم تفعيل "${s.name}"`);
+        } catch (err) {
+          showToast('خطأ: ' + err.message, 'error');
+        }
+      };
+
+      const handleDeleteRadioSong = async (s) => {
+        if (!confirm(`حذف الأغنية "${s.name}"؟`)) return;
+        try {
+          const { doc, deleteDoc } = window.fbTools;
+          await deleteDoc(doc(window.db, 'radio_songs', s.id));
+          showToast(`🗑️ تم حذف "${s.name}"`);
+        } catch (err) {
+          showToast('خطأ: ' + err.message, 'error');
+        }
+      };
+
+      // ═══════════ البلاغات والدعم ═══════════
+      const handleSetReportStatus = async (rep, status) => {
+        try {
+          const { doc, updateDoc } = window.fbTools;
+          await updateDoc(doc(window.db, 'reports', rep.id), { status });
+          showToast(status === 'resolved' ? '✅ تم إغلاق البلاغ كمحلول' : 'تم تجاهل البلاغ');
+        } catch (err) {
+          showToast('خطأ: ' + err.message, 'error');
+        }
+      };
+
+      const handleCloseTicket = async (t) => {
+        try {
+          const { doc, updateDoc } = window.fbTools;
+          await updateDoc(doc(window.db, 'support_tickets', t.id), { status: 'closed' });
+          showToast('✅ تم إغلاق التذكرة');
+        } catch (err) {
+          showToast('خطأ: ' + err.message, 'error');
+        }
+      };
+
+      const filteredStoreItems = useMemo(() => {
+        if (skinFilter === 'all') return storeItems;
+        return storeItems.filter(i => i.category === skinFilter);
+      }, [storeItems, skinFilter]);
+
+      // Filtered players
+      const filteredPlayers = useMemo(() => {
+        return players.filter(p => {
+          const matchesSearch = (p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                (p.id || '').toLowerCase().includes(searchQuery.toLowerCase());
+          if (statusFilter === 'banned') return matchesSearch && p.isBanned;
+          if (statusFilter === 'active') return matchesSearch && !p.isBanned;
+          return matchesSearch;
+        });
+      }, [players, searchQuery, statusFilter]);
+
+      // Computed metrics
+      const totalChips = useMemo(() => {
+        return players.reduce((sum, p) => sum + (Number(p.chips) || 0), 0);
+      }, [players]);
+
+      // شاشة التحقق الأولية من الجلسة
+      if (authChecking) {
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-dark-900">
+            <div className="text-center space-y-3">
+              <div className="text-4xl animate-bounce">🛡️</div>
+              <p className="text-gray-400 text-sm font-bold">جارٍ التحقق من جلسة الإدارة...</p>
+            </div>
+          </div>
+        );
+      }
+
+      // Authentication Screen
+      if (!isAuthenticated) {
+        return (
+          <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-dark-900 via-slate-900 to-black">
+            <div className="glass-card max-w-md w-full rounded-2xl p-8 shadow-2xl relative border border-emerald-500/20">
+              <div className="text-center mb-8">
+                <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 p-0.5 shadow-lg shadow-emerald-500/30 flex items-center justify-center">
+                  <div className="w-full h-full bg-dark-900 rounded-2xl flex items-center justify-center">
+                    <span className="text-3xl">🛡️</span>
+                  </div>
+                </div>
+                <h1 className="text-2xl font-black text-white mb-2">لوحة الإدارة الرئيسية</h1>
+                <p className="text-gray-400 text-sm">Yalla Yari • نظام التحكم السحابي الشامل</p>
+              </div>
+
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">البريد الإلكتروني للمدير</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="admin@example.com"
+                    dir="ltr"
+                    className="w-full px-4 py-3 bg-dark-800 border border-gray-700 rounded-xl text-left text-sm text-emerald-400 placeholder-gray-500 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">كلمة المرور</label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    dir="ltr"
+                    className="w-full px-4 py-3 bg-dark-800 border border-gray-700 rounded-xl text-left text-sm text-emerald-400 placeholder-gray-500 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                  />
+                  {pinError && (
+                    <p className="mt-2 text-xs text-rose-400 text-center font-medium">{pinError}</p>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loggingIn}
+                  className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 disabled:opacity-50 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/25 transition duration-200 transform hover:-translate-y-0.5 active:translate-y-0"
+                >
+                  {loggingIn ? 'جارٍ التحقق...' : 'دخول لوحة التحكم �'}
+                </button>
+
+                <p className="text-[11px] text-gray-500 text-center">
+                  الدخول مقيّد لحسابات Firebase المسجلة في مجموعة admins فقط
+                </p>
+              </form>
+
+              <div className="mt-6 pt-6 border-t border-gray-800 text-center">
+                <a href="https://twity-game-hub.pages.dev" className="text-xs text-gray-400 hover:text-emerald-400 transition flex items-center justify-center gap-1">
+                  <span>← العودة إلى تطبيق الألعاب الرئيسي</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="min-h-screen flex flex-col md:flex-row bg-dark-900 text-gray-200">
+          
+          {/* Toast Notification */}
+          {toastMsg && (
+            <div className={`fixed bottom-6 left-6 z-50 px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 border text-sm font-semibold transition-all transform animate-bounce ${
+              toastMsg.type === 'error' 
+                ? 'bg-rose-950/90 text-rose-200 border-rose-500/40' 
+                : 'bg-emerald-950/90 text-emerald-200 border-emerald-500/40'
+            }`}>
+              <span>{toastMsg.type === 'error' ? '⚠️' : '✅'}</span>
+              <span>{toastMsg.text}</span>
+            </div>
+          )}
+
+          {/* Desktop Sidebar */}
+          <aside className="w-full md:w-64 bg-dark-800 border-l border-gray-800/80 flex flex-col justify-between shrink-0">
+            <div>
+              {/* Brand Header */}
+              <div className="p-6 border-b border-gray-800/80 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 text-white font-black text-xl">
+                    T
+                  </div>
+                  <div>
+                    <h2 className="text-base font-extrabold text-white tracking-wide">Yalla Yari</h2>
+                    <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                      مدير النظام العام
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Navigation Links */}
+              <nav className="p-4 space-y-1.5">
+                {[
+                  { id: 'overview', label: 'لوحة الإحصائيات العامة', icon: 'layout-dashboard' },
+                  { id: 'players', label: 'إدارة اللاعبين والحسابات', icon: 'users', badge: players.length },
+                  { id: 'economy', label: 'الاقتصاد والرقائق والجوائز', icon: 'coins' },
+                  { id: 'store', label: 'المتجر والسكنات', icon: 'store', badge: storeItems.length },
+                  { id: 'topup', label: 'باقات الشحن والطلبات', icon: 'banknote', badge: orders.filter(o => o.status === 'pending').length },
+                  { id: 'radio', label: 'الراديو والأغاني', icon: 'radio', badge: radioSongs.length },
+                  { id: 'reports', label: 'البلاغات والدعم', icon: 'flag', badge: reports.filter(r => r.status === 'pending').length },
+                  { id: 'settings', label: 'إعدادات اللعبة والسيرفر', icon: 'sliders-horizontal' },
+                  { id: 'history', label: 'سجل المباريات المباشر', icon: 'history', badge: gameLogs.length },
+                ].map((item) => {
+                  const isActive = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveTab(item.id)}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+                        isActive
+                          ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-sm'
+                          : 'text-gray-400 hover:text-white hover:bg-dark-700/60'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <i data-lucide={item.icon} className="w-4 h-4"></i>
+                        <span>{item.label}</span>
+                      </div>
+                      {item.badge !== undefined && (
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                          isActive ? 'bg-emerald-500/20 text-emerald-300' : 'bg-dark-700 text-gray-400'
+                        }`}>
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+
+            {/* Sidebar Bottom Controls */}
+            <div className="p-4 border-t border-gray-800/80 space-y-3">
+              <a
+                href="https://twity-game-hub.pages.dev"
+                target="_blank"
+                rel="noreferrer"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-dark-700/80 hover:bg-dark-700 text-gray-300 hover:text-white text-xs font-semibold border border-gray-700 transition"
+              >
+                <span>فتح اللعبة في تبويب جديد 🎮</span>
+              </a>
+
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-bold border border-rose-500/20 transition"
+              >
+                <span>قفل وتسجيل الخروج 🔒</span>
+              </button>
+            </div>
+          </aside>
+
+          {/* Main Content Area */}
+          <main className="flex-1 flex flex-col overflow-y-auto">
+            
+            {/* Top Navigation Bar */}
+            <header className="h-20 bg-dark-800/60 backdrop-blur-md border-b border-gray-800 px-6 flex items-center justify-between sticky top-0 z-30">
+              <div>
+                <h1 className="text-xl font-black text-white">
+                  {activeTab === 'overview' && 'نظرة عامة على النظام'}
+                  {activeTab === 'players' && 'إدارة حسابات اللاعبين'}
+                  {activeTab === 'economy' && 'التحكم بالاقتصاد وتوزيع الرقائق'}
+                  {activeTab === 'store' && 'إدارة المتجر وتصاميم السكنات'}
+                  {activeTab === 'topup' && 'باقات شحن الرصيد وطلبات الشراء'}
+                  {activeTab === 'radio' && 'إدارة مجموعات الراديو والأغاني'}
+                  {activeTab === 'reports' && 'بلاغات اللاعبين وتذاكر الدعم'}
+                  {activeTab === 'settings' && 'إعدادات السيرفر والألعاب'}
+                  {activeTab === 'history' && 'سجل الجولات والمباريات'}
+                </h1>
+                <p className="text-xs text-gray-400 mt-0.5">سحابة Firebase متصلة ومتزامنة مباشرة في الوقت الحقيقي</p>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-xs font-bold text-emerald-400">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  قاعدة البيانات: متصلة وفعّالة
+                </div>
+
+                {gameSettings.maintenanceMode && (
+                  <div className="px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-xs font-bold text-amber-300 animate-pulse">
+                    ⚠️ وضع الصيانة مفعل حالياً!
+                  </div>
+                )}
+              </div>
+            </header>
+
+            {/* View Container */}
+            <div className="p-6 md:p-8 space-y-8 flex-1 max-w-7xl mx-auto w-full">
+
+              {/* TAB 1: OVERVIEW */}
+              {activeTab === 'overview' && (
+                <div className="space-y-8">
+                  {/* Metric Cards Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                    <div className="glass-card glass-card-hover p-6 rounded-2xl relative overflow-hidden">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-wider text-gray-400">إجمالي اللاعبين</p>
+                          <h3 className="text-3xl font-black text-white mt-1">{players.length}</h3>
+                        </div>
+                        <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center text-xl">
+                          👥
+                        </div>
+                      </div>
+                      <p className="text-xs text-emerald-400 mt-4 font-semibold">متاحين في قاعدة بيانات Firestore</p>
+                    </div>
+
+                    <div className="glass-card glass-card-hover p-6 rounded-2xl relative overflow-hidden">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-wider text-gray-400">إجمالي الرقائق المتداولة</p>
+                          <h3 className="text-3xl font-black text-amber-400 glow-gold mt-1">
+                            {totalChips.toLocaleString()}
+                          </h3>
+                        </div>
+                        <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl">
+                          🪙
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-4 font-semibold">متوسط {players.length ? Math.round(totalChips / players.length).toLocaleString() : 0} لكل لاعب</p>
+                    </div>
+
+                    <div className="glass-card glass-card-hover p-6 rounded-2xl relative overflow-hidden">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-wider text-gray-400">المباريات المسجلة</p>
+                          <h3 className="text-3xl font-black text-white mt-1">{gameLogs.length}</h3>
+                        </div>
+                        <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center text-xl">
+                          🏆
+                        </div>
+                      </div>
+                      <p className="text-xs text-purple-400 mt-4 font-semibold">سجل مباريات تركيش أوكي</p>
+                    </div>
+
+                    <div className="glass-card glass-card-hover p-6 rounded-2xl relative overflow-hidden">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-wider text-gray-400">حالة السيرفر</p>
+                          <h3 className="text-2xl font-black mt-1 text-emerald-400">
+                            {gameSettings.maintenanceMode ? 'صيانة 🛠️' : 'جاهز للعب 🚀'}
+                          </h3>
+                        </div>
+                        <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl">
+                          ⚡
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-4 font-semibold">وقت الدور: {gameSettings.defaultTurnTimer} ثانية</p>
+                    </div>
+                  </div>
+
+                  {/* Announcement Banner Display & Quick Action */}
+                  <div className="glass-card p-6 rounded-2xl border border-emerald-500/20 bg-gradient-to-r from-emerald-950/20 to-teal-950/20 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <span className="text-xs font-extrabold text-emerald-400 uppercase tracking-widest">📢 شريط الإعلانات النشط حالياً للمستخدمين</span>
+                      <p className="text-base text-gray-200 font-bold">"{gameSettings.announcement}"</p>
+                    </div>
+                    <button
+                      onClick={() => setActiveTab('settings')}
+                      className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-lg shadow-emerald-500/20 transition whitespace-nowrap"
+                    >
+                      تعديل الإعلان والبث ✏️
+                    </button>
+                  </div>
+
+                  {/* Quick Controls Section */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="glass-card p-6 rounded-2xl space-y-4">
+                      <h4 className="text-base font-bold text-white flex items-center gap-2">
+                        <span>⚡ إجراءات سريعة وفورية</span>
+                      </h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          onClick={() => handleGrantAllBonus(10000)}
+                          className="p-4 rounded-xl bg-dark-700 hover:bg-dark-600 border border-gray-700 text-right space-y-1 transition group"
+                        >
+                          <p className="text-sm font-bold text-amber-400 group-hover:text-amber-300">🎁 توزيع 10,000 رقاقة</p>
+                          <p className="text-xs text-gray-400">إرسال منحة لجميع اللاعبين المسجلين دفعة واحدة</p>
+                        </button>
+
+                        <button
+                          onClick={() => setShowAddPlayerModal(true)}
+                          className="p-4 rounded-xl bg-dark-700 hover:bg-dark-600 border border-gray-700 text-right space-y-1 transition group"
+                        >
+                          <p className="text-sm font-bold text-emerald-400 group-hover:text-emerald-300">➕ إضافة لاعب جديد</p>
+                          <p className="text-xs text-gray-400">إنشاء حساب يدوي برصيد محدد فوراً</p>
+                        </button>
+
+                        <button
+                          onClick={() => handleSaveSettings({ maintenanceMode: !gameSettings.maintenanceMode })}
+                          className={`p-4 rounded-xl border text-right space-y-1 transition group ${
+                            gameSettings.maintenanceMode 
+                              ? 'bg-rose-950/40 border-rose-500/40 text-rose-300' 
+                              : 'bg-dark-700 hover:bg-dark-600 border-gray-700 text-gray-300'
+                          }`}
+                        >
+                          <p className="text-sm font-bold">
+                            {gameSettings.maintenanceMode ? '🟢 إيقاف وضع الصيانة' : '🔴 تفعيل وضع الصيانة'}
+                          </p>
+                          <p className="text-xs text-gray-400">قفل أو فتح الدخول للعبة لجميع المستخدمين</p>
+                        </button>
+
+                        <button
+                          onClick={() => setActiveTab('players')}
+                          className="p-4 rounded-xl bg-dark-700 hover:bg-dark-600 border border-gray-700 text-right space-y-1 transition group"
+                        >
+                          <p className="text-sm font-bold text-blue-400 group-hover:text-blue-300">🔍 فحص الحسابات</p>
+                          <p className="text-xs text-gray-400">تعديل أرصدة اللاعبين وحظر المشاغبين</p>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Top Players Preview */}
+                    <div className="glass-card p-6 rounded-2xl space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-base font-bold text-white flex items-center gap-2">
+                          <span>🏆 كبار المتصدرين (الأعلى رصيداً)</span>
+                        </h4>
+                        <button onClick={() => setActiveTab('players')} className="text-xs text-emerald-400 hover:underline">عرض الكل</button>
+                      </div>
+
+                      <div className="space-y-2.5">
+                        {[...players]
+                          .sort((a, b) => (Number(b.chips) || 0) - (Number(a.chips) || 0))
+                          .slice(0, 4)
+                          .map((player, idx) => (
+                            <div key={player.id} className="p-3 bg-dark-800/80 rounded-xl flex items-center justify-between border border-gray-800">
+                              <div className="flex items-center gap-3">
+                                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${
+                                  idx === 0 ? 'bg-amber-400 text-black' : idx === 1 ? 'bg-slate-300 text-black' : idx === 2 ? 'bg-amber-700 text-white' : 'bg-dark-700 text-gray-400'
+                                }`}>
+                                  {idx + 1}
+                                </span>
+                                <div>
+                                  <p className="text-sm font-bold text-white">{player.name || 'مستخدم'}</p>
+                                  <p className="text-xs text-gray-400">مستوى {player.level || 1} • تقييم {player.rating || 1200}</p>
+                                </div>
+                              </div>
+                              <span className="text-sm font-extrabold text-amber-400">
+                                {(Number(player.chips) || 0).toLocaleString()} 🪙
+                              </span>
+                            </div>
+                          ))}
+                        {players.length === 0 && (
+                          <p className="text-xs text-gray-500 text-center py-6">لا يوجد لاعبين مسجلين بعد في قاعدة البيانات.</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: PLAYERS MANAGEMENT */}
+              {activeTab === 'players' && (
+                <div className="space-y-6">
+                  {/* Filter & Action Bar */}
+                  <div className="glass-card p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 w-full md:w-auto flex-1">
+                      <div className="relative flex-1 max-w-md">
+                        <input
+                          type="text"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          placeholder="بحث بالاسم أو المعرف (ID)..."
+                          className="w-full pl-4 pr-10 py-2.5 bg-dark-800 border border-gray-700 rounded-xl text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition"
+                        />
+                        <span className="absolute right-3.5 top-3 text-gray-500 text-sm">🔍</span>
+                      </div>
+
+                      <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="bg-dark-800 border border-gray-700 text-gray-300 text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-emerald-500"
+                      >
+                        <option value="all">جميع الحسابات ({players.length})</option>
+                        <option value="active">النشطين فقط</option>
+                        <option value="banned">المحظورين ⛔</option>
+                      </select>
+                    </div>
+
+                    <button
+                      onClick={() => setShowAddPlayerModal(true)}
+                      className="w-full md:w-auto px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2"
+                    >
+                      <span>➕ إضافة حساب لاعب جديد</span>
+                    </button>
+                  </div>
+
+                  {/* Players Table */}
+                  <div className="glass-card rounded-2xl overflow-hidden border border-gray-800">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-right text-sm">
+                        <thead className="bg-dark-800/90 text-gray-400 text-xs uppercase font-extrabold border-b border-gray-800">
+                          <tr>
+                            <th className="px-6 py-4">اللاعب</th>
+                            <th className="px-6 py-4">الرصيد (الرقائق)</th>
+                            <th className="px-6 py-4">التقييم والمستوى</th>
+                            <th className="px-6 py-4">سجل الانتصارات</th>
+                            <th className="px-6 py-4">الحالة</th>
+                            <th className="px-6 py-4 text-center">الإجراءات</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-800/60 font-medium">
+                          {filteredPlayers.map((player) => (
+                            <tr key={player.id} className="hover:bg-dark-800/40 transition">
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-3">
+                                  {player.photoUrl ? (
+                                    <img src={player.photoUrl} alt="" className="w-10 h-10 rounded-xl object-cover border border-gray-700" />
+                                  ) : (
+                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-slate-700 to-slate-600 flex items-center justify-center text-base font-bold text-white">
+                                      {(player.name || 'U').charAt(0).toUpperCase()}
+                                    </div>
+                                  )}
+                                  <div>
+                                    <div className="font-bold text-white text-base">{player.name || 'بدون اسم'}</div>
+                                    <div className="text-xs text-gray-500">@{player.username || '—'} {player.email ? `• ${player.email}` : ''}</div>
+                                  </div>
+                                </div>
+                              </td>
+
+                              <td className="px-6 py-4">
+                                <div className="flex flex-col gap-1">
+                                  <span className="inline-flex items-center gap-1.5 font-bold text-amber-400 bg-amber-500/10 px-3 py-1 rounded-lg border border-amber-500/20 text-sm w-fit">
+                                    🪙 {(Number(player.chips) || 0).toLocaleString()}
+                                  </span>
+                                  <span className="inline-flex items-center gap-1.5 font-bold text-sky-300 bg-sky-500/10 px-3 py-1 rounded-lg border border-sky-500/20 text-sm w-fit">
+                                    💎 {(Number(player.gems) || 0).toLocaleString()}
+                                  </span>
+                                </div>
+                              </td>
+
+                              <td className="px-6 py-4">
+                                <div className="text-gray-300">مستوى {player.level || 1}</div>
+                                <div className="text-xs text-gray-400">تقييم {player.rating || 1200} نقطة</div>
+                              </td>
+
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-2 text-xs">
+                                  <span className="text-emerald-400 font-bold">{player.wins || 0} فوز</span>
+                                  <span className="text-gray-600">/</span>
+                                  <span className="text-rose-400 font-bold">{player.losses || 0} خسارة</span>
+                                </div>
+                              </td>
+
+                              <td className="px-6 py-4">
+                                {player.isBanned ? (
+                                  <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                                    ⛔ محظور
+                                  </span>
+                                ) : (
+                                  <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                    نشط
+                                  </span>
+                                )}
+                              </td>
+
+                              <td className="px-6 py-4">
+                                <div className="flex items-center justify-center gap-2">
+                                  <button
+                                    onClick={() => setEditingPlayer(player)}
+                                    className="px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 font-bold text-xs border border-emerald-500/30 transition"
+                                  >
+                                    💰 تعديل الرصيد
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleToggleBan(player)}
+                                    className={`px-3 py-1.5 rounded-lg font-bold text-xs transition border ${
+                                      player.isBanned
+                                        ? 'bg-blue-500/15 text-blue-300 border-blue-500/30 hover:bg-blue-500/25'
+                                        : 'bg-rose-500/15 text-rose-300 border-rose-500/30 hover:bg-rose-500/25'
+                                    }`}
+                                  >
+                                    {player.isBanned ? 'فك الحظر' : 'حظر'}
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleDeletePlayer(player.id, player.name)}
+                                    className="p-1.5 rounded-lg bg-gray-800 hover:bg-rose-950 text-gray-400 hover:text-rose-300 transition"
+                                    title="حذف نهائي"
+                                  >
+                                    🗑️
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+
+                          {filteredPlayers.length === 0 && (
+                            <tr>
+                              <td colSpan="6" className="text-center py-12 text-gray-500 text-sm">
+                                لم يتم العثور على أي لاعبين مطابقين للبحث.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: ECONOMY & CHIPS */}
+              {activeTab === 'economy' && (
+                <div className="space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="glass-card p-6 rounded-2xl space-y-4">
+                      <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-2xl">
+                        🎁
+                      </div>
+                      <h3 className="text-lg font-bold text-white">مكافأة التسجيل الأولى</h3>
+                      <p className="text-xs text-gray-400">الرصيد التلقائي الذي يحصل عليه أي لاعب جديد عند فتح الحساب.</p>
+                      <div className="pt-2">
+                        <label className="text-xs text-gray-400 block mb-1">الرصيد الافتراضي الحالي</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            value={gameSettings.startingChips}
+                            onChange={(e) => setGameSettings(prev => ({ ...prev, startingChips: Number(e.target.value) }))}
+                            className="bg-dark-800 border border-gray-700 rounded-xl px-4 py-2 text-amber-400 font-bold text-base w-full focus:outline-none focus:border-amber-500"
+                          />
+                          <button
+                            onClick={() => handleSaveSettings({ startingChips: gameSettings.startingChips })}
+                            className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs rounded-xl transition"
+                          >
+                            حفظ
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="glass-card p-6 rounded-2xl space-y-4">
+                      <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-2xl">
+                        🚀
+                      </div>
+                      <h3 className="text-lg font-bold text-white">إرسال رقائق جماعية</h3>
+                      <p className="text-xs text-gray-400">منح جميع اللاعبين النشطين رصيداً كهدية احتفالية أو تعويض صيانة.</p>
+                      <div className="grid grid-cols-2 gap-2 pt-2">
+                        <button
+                          onClick={() => handleGrantAllBonus(5000)}
+                          className="py-2.5 px-3 bg-dark-700 hover:bg-emerald-600 hover:text-white text-emerald-400 text-xs font-bold rounded-xl border border-gray-700 transition"
+                        >
+                          +5,000 🪙 رقاقة
+                        </button>
+                        <button
+                          onClick={() => handleGrantAllBonus(25000)}
+                          className="py-2.5 px-3 bg-dark-700 hover:bg-amber-600 hover:text-white text-amber-400 text-xs font-bold rounded-xl border border-gray-700 transition"
+                        >
+                          +25,000 🪙 رقاقة
+                        </button>
+                        <button
+                          onClick={() => handleGrantAllBonus(10, 'gems')}
+                          className="py-2.5 px-3 bg-dark-700 hover:bg-sky-600 hover:text-white text-sky-300 text-xs font-bold rounded-xl border border-gray-700 transition"
+                        >
+                          +10 💎 جواهر
+                        </button>
+                        <button
+                          onClick={() => handleGrantAllBonus(50, 'gems')}
+                          className="py-2.5 px-3 bg-dark-700 hover:bg-sky-600 hover:text-white text-sky-300 text-xs font-bold rounded-xl border border-gray-700 transition"
+                        >
+                          +50 💎 جواهر
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="glass-card p-6 rounded-2xl space-y-4">
+                      <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center text-2xl">
+                        📊
+                      </div>
+                      <h3 className="text-lg font-bold text-white">إحصائيات الثروة</h3>
+                      <p className="text-xs text-gray-400">توزيع الثروة والسيولة الحالية في اللعبة.</p>
+                      <div className="space-y-2 text-xs pt-1">
+                        <div className="flex justify-between py-1 border-b border-gray-800">
+                          <span className="text-gray-400">إجمالي الرقائق:</span>
+                          <span className="font-bold text-amber-400">{totalChips.toLocaleString()} 🪙</span>
+                        </div>
+                        <div className="flex justify-between py-1 border-b border-gray-800">
+                          <span className="text-gray-400">متوسط الحساب:</span>
+                          <span className="font-bold text-white">{players.length ? Math.round(totalChips / players.length).toLocaleString() : 0} 🪙</span>
+                        </div>
+                        <div className="flex justify-between py-1 border-b border-gray-800">
+                          <span className="text-gray-400">إجمالي الجواهر:</span>
+                          <span className="font-bold text-sky-300">{players.reduce((s, p) => s + (Number(p.gems) || 0), 0).toLocaleString()} 💎</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: STORE & SKINS */}
+              {activeTab === 'store' && (
+                <div className="space-y-6">
+                  {/* Filter & Action Bar */}
+                  <div className="glass-card p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-bold text-gray-300">🎨 تصاميم السكنات المنشورة</span>
+                      <select
+                        value={skinFilter}
+                        onChange={(e) => setSkinFilter(e.target.value)}
+                        className="bg-dark-800 border border-gray-700 text-gray-300 text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-emerald-500"
+                      >
+                        <option value="all">كل الفئات ({storeItems.length})</option>
+                        <option value="tile">🀄 الأحجار</option>
+                        <option value="table">🟫 الطاولة</option>
+                        <option value="rack">🪵 الاستكانة</option>
+                        <option value="background">🖼️ الخلفية</option>
+                        <option value="frame">👤 إطار الصورة</option>
+                        <option value="chessBoard">♞ لوحة الشطرنج</option>
+                        <option value="chessPieces">♟️ أحجار الشطرنج</option>
+                      </select>
+                    </div>
+
+                    <button
+                      onClick={() => setShowAddSkinModal(true)}
+                      className="w-full md:w-auto px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2"
+                    >
+                      <span>➕ إضافة تصميم جديد (موك اب)</span>
+                    </button>
+                  </div>
+
+                  {/* Store Items Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                    {filteredStoreItems.map((item) => {
+                      const uri = item.imageBase64 ? `data:image/png;base64,${item.imageBase64}` : '';
+                      return (
+                        <div key={item.id} className={`glass-card rounded-2xl overflow-hidden border transition ${item.active ? 'border-gray-800' : 'border-rose-500/30 opacity-60'}`}>
+                          <div className="relative h-36 bg-dark-900/80">
+                            <SkinPreview category={item.category} uri={uri} zoom={item.zoom || 1} ox={item.offsetX || 0} oy={item.offsetY || 0} />
+                            {!item.active && (
+                              <span className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30">مخفي</span>
+                            )}
+                          </div>
+                          <div className="p-4 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-bold text-white">{item.name}</p>
+                                <p className="text-xs text-gray-400">{categoryLabels[item.category] || item.category}</p>
+                              </div>
+                              <span className={`text-sm font-extrabold ${item.currency === 'gems' ? 'text-sky-300' : 'text-amber-400'}`}>{(Number(item.price) || 0).toLocaleString()} {item.currency === 'gems' ? '💎' : '🪙'}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleToggleSkinActive(item)}
+                                className={`flex-1 py-1.5 rounded-lg font-bold text-xs border transition ${
+                                  item.active
+                                    ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 hover:bg-amber-500/25'
+                                    : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25'
+                                }`}
+                              >
+                                {item.active ? 'إخفاء من المتجر' : 'إظهار في المتجر'}
+                              </button>
+                              <button
+                                onClick={() => handleDeleteSkin(item)}
+                                className="p-1.5 rounded-lg bg-gray-800 hover:bg-rose-950 text-gray-400 hover:text-rose-300 transition"
+                                title="حذف نهائي"
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {filteredStoreItems.length === 0 && (
+                      <div className="col-span-full glass-card rounded-2xl p-12 text-center text-gray-500 text-sm">
+                        لا توجد تصاميم في هذه الفئة. اضغط "إضافة تصميم جديد" لرفع أول سكن! 🎨
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: TOPUP PACKS & ORDERS */}
+              {activeTab === 'topup' && (
+                <div className="space-y-8">
+                  {/* طلبات الشراء المعلقة */}
+                  <div className="glass-card rounded-2xl overflow-hidden border border-gray-800">
+                    <div className="p-4 border-b border-gray-800 flex items-center justify-between">
+                      <h3 className="font-bold text-white">طلبات شحن الرصيد</h3>
+                      <span className="text-xs text-gray-500">{orders.filter(o => o.status === 'pending').length} طلب معلق</span>
+                    </div>
+                    <div className="divide-y divide-gray-800">
+                      {orders.length === 0 && (
+                        <div className="p-8 text-center text-gray-500 text-sm">لا توجد طلبات شراء بعد</div>
+                      )}
+                      {orders.map(o => (
+                        <div key={o.id} className="p-4 flex items-center gap-4 flex-wrap">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${o.type === 'gems' ? 'bg-sky-500/15 border border-sky-500/30' : 'bg-amber-500/15 border border-amber-500/30'}`}>
+                            {o.type === 'gems' ? '💎' : '🪙'}
+                          </div>
+                          <div className="flex-1 min-w-[160px]">
+                            <p className="text-sm font-bold text-white">{o.packTitle} — {o.amount} {o.type === 'gems' ? '💎' : '🪙'}</p>
+                            <p className="text-xs text-gray-400">{o.displayName || o.username} • ${Number(o.priceUsd || 0).toFixed(2)} • {o.createdAt?.seconds ? new Date(o.createdAt.seconds * 1000).toLocaleString('ar') : ''}</p>
+                          </div>
+                          {o.status === 'pending' ? (
+                            <div className="flex gap-2">
+                              <button onClick={() => handleApproveOrder(o)} className="px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-xs font-bold hover:bg-emerald-500/25 transition">✅ تأكيد وإضافة الرصيد</button>
+                              <button onClick={() => handleRejectOrder(o)} className="px-3 py-1.5 rounded-lg bg-rose-500/15 text-rose-300 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/25 transition">رفض</button>
+                            </div>
+                          ) : (
+                            <span className={`px-3 py-1 rounded-lg text-xs font-bold ${o.status === 'approved' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-rose-500/15 text-rose-300'}`}>
+                              {o.status === 'approved' ? '✅ مؤكد' : '❌ مرفوض'}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* الباقات */}
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-bold text-white">باقات الشحن المتاحة في المتجر</h3>
+                      <button onClick={() => setShowAddPackModal(true)} className="px-4 py-2 rounded-xl bg-emerald-500 text-white text-sm font-bold hover:bg-emerald-600 transition">+ باقة جديدة</button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {coinPacks.map(p => (
+                        <div key={p.id} className={`glass-card rounded-2xl p-4 border ${p.active ? (p.type === 'gems' ? 'border-sky-500/30' : 'border-amber-500/30') : 'border-gray-800 opacity-60'}`}>
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className={`w-11 h-11 rounded-full flex items-center justify-center text-xl ${p.type === 'gems' ? 'bg-gradient-to-br from-sky-300 to-sky-700' : 'bg-gradient-to-br from-amber-300 to-amber-600'}`}>
+                              {p.type === 'gems' ? '💎' : '🪙'}
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-bold text-white text-sm">{p.title}</p>
+                              <p className={`text-sm font-extrabold ${p.type === 'gems' ? 'text-sky-300' : 'text-amber-400'}`}>{Number(p.amount || 0).toLocaleString()} {p.type === 'gems' ? '💎' : '🪙'} — ${Number(p.priceUsd || 0).toFixed(2)}</p>
+                            </div>
+                            {!p.active && <span className="text-[10px] px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">مخفية</span>}
+                          </div>
+                          <div className="flex gap-2">
+                            <button onClick={() => handleTogglePackActive(p)} className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition ${p.active ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 hover:bg-amber-500/25' : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25'}`}>
+                              {p.active ? 'إخفاء' : 'إظهار'}
+                            </button>
+                            <button onClick={() => handleDeletePack(p)} className="px-3 py-1.5 rounded-lg bg-rose-500/15 text-rose-300 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/25 transition">🗑️</button>
+                          </div>
+                        </div>
+                      ))}
+                      {coinPacks.length === 0 && (
+                        <div className="col-span-full glass-card rounded-2xl p-10 text-center text-gray-500 text-sm">لا توجد باقات — أنشئ أول باقة شحن 💰</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: RADIO */}
+              {activeTab === 'radio' && (
+                <div className="space-y-8">
+                  {/* المجموعات */}
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-bold text-white">مجموعات الراديو</h3>
+                      <button onClick={() => setShowAddGroupModal(true)} className="px-4 py-2 rounded-xl bg-emerald-500 text-white text-sm font-bold hover:bg-emerald-600 transition">+ مجموعة جديدة</button>
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                      <button onClick={() => setSelectedRadioGroup('all')} className={`px-4 py-2 rounded-xl text-sm font-bold border transition ${selectedRadioGroup === 'all' ? 'bg-indigo-500/20 text-indigo-300 border-indigo-400' : 'bg-dark-800 text-gray-400 border-gray-700'}`}>الكل ({radioSongs.length})</button>
+                      {radioGroups.map(g => (
+                        <div key={g.id} className={`flex items-center gap-1 px-3 py-1.5 rounded-xl border text-sm font-bold transition ${selectedRadioGroup === g.id ? 'bg-indigo-500/20 text-indigo-300 border-indigo-400' : 'bg-dark-800 text-gray-400 border-gray-700'} ${!g.active ? 'opacity-50' : ''}`}>
+                          <button onClick={() => setSelectedRadioGroup(g.id)}>{g.flag} {g.name} ({radioSongs.filter(s => s.groupId === g.id).length})</button>
+                          <button onClick={() => handleToggleRadioGroup(g)} title={g.active ? 'إيقاف' : 'تفعيل'} className="text-xs opacity-70 hover:opacity-100">{g.active ? '⏸' : '▶'}</button>
+                          <button onClick={() => handleDeleteRadioGroup(g)} title="حذف" className="text-xs opacity-70 hover:opacity-100">🗑</button>
+                        </div>
+                      ))}
+                      {radioGroups.length === 0 && <span className="text-gray-500 text-sm py-2">لا توجد مجموعات — أنشئ أول مجموعة أغانٍ</span>}
+                    </div>
+                  </div>
+
+                  {/* الأغاني */}
+                  <div className="glass-card rounded-2xl overflow-hidden border border-gray-800">
+                    <div className="p-4 border-b border-gray-800 flex items-center justify-between">
+                      <h3 className="font-bold text-white">الأغاني {selectedRadioGroup !== 'all' ? `— ${radioGroups.find(g => g.id === selectedRadioGroup)?.name || ''}` : ''}</h3>
+                      <button onClick={() => { setNewSong(prev => ({ ...prev, groupId: selectedRadioGroup !== 'all' ? selectedRadioGroup : (radioGroups[0]?.id || '') })); setShowAddSongModal(true); }} className="px-4 py-2 rounded-xl bg-emerald-500 text-white text-sm font-bold hover:bg-emerald-600 transition">+ أغنية جديدة</button>
+                    </div>
+                    <div className="divide-y divide-gray-800">
+                      {radioSongs.filter(s => selectedRadioGroup === 'all' || s.groupId === selectedRadioGroup).map(s => {
+                        const group = radioGroups.find(g => g.id === s.groupId);
+                        return (
+                          <div key={s.id} className={`p-4 flex items-center gap-4 ${!s.active ? 'opacity-50' : ''}`}>
+                            <div className="w-9 h-9 rounded-full bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center">🎵</div>
+                            <div className="flex-1 min-w-[160px]">
+                              <p className="text-sm font-bold text-white">{s.name}</p>
+                              <p className="text-xs text-gray-400">{group ? `${group.flag} ${group.name}` : 'بدون مجموعة'} {s.genre ? `• ${s.genre}` : ''}</p>
+                            </div>
+                            <audio controls preload="none" src={s.url} className="h-8 w-48 max-w-full" />
+                            <button onClick={() => handleToggleRadioSong(s)} className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition ${s.active ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'}`}>{s.active ? 'إيقاف' : 'تفعيل'}</button>
+                            <button onClick={() => handleDeleteRadioSong(s)} className="px-3 py-1.5 rounded-lg bg-rose-500/15 text-rose-300 border border-rose-500/30 text-xs font-bold">🗑️</button>
+                          </div>
+                        );
+                      })}
+                      {radioSongs.filter(s => selectedRadioGroup === 'all' || s.groupId === selectedRadioGroup).length === 0 && (
+                        <div className="p-8 text-center text-gray-500 text-sm">لا توجد أغاني في هذه المجموعة</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: REPORTS & SUPPORT */}
+              {activeTab === 'reports' && (
+                <div className="space-y-8">
+                  {/* Reports Table */}
+                  <div className="glass-card rounded-2xl overflow-hidden border border-gray-800">
+                    <div className="p-4 border-b border-gray-800 flex items-center justify-between">
+                      <h4 className="font-bold text-white text-base">🚩 بلاغات اللاعبين</h4>
+                      <span className="text-xs text-gray-400">{reports.filter(r => r.status === 'pending').length} بلاغ بانتظار المراجعة</span>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-right text-sm">
+                        <thead className="bg-dark-800/90 text-gray-400 text-xs uppercase font-extrabold border-b border-gray-800">
+                          <tr>
+                            <th className="px-6 py-4">المبلّغ</th>
+                            <th className="px-6 py-4">المبلّغ عنه</th>
+                            <th className="px-6 py-4">السبب</th>
+                            <th className="px-6 py-4">التفاصيل</th>
+                            <th className="px-6 py-4">الحالة</th>
+                            <th className="px-6 py-4 text-center">إجراء</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-800/60 font-medium">
+                          {reports.map((rep) => (
+                            <tr key={rep.id} className="hover:bg-dark-800/40 transition">
+                              <td className="px-6 py-4 text-gray-300">{rep.reporterName || 'مجهول'}</td>
+                              <td className="px-6 py-4 font-bold text-white">@{rep.reportedUsername || rep.reportedUid || '—'}</td>
+                              <td className="px-6 py-4">
+                                <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-rose-500/15 text-rose-300 border border-rose-500/30">{rep.reason || '—'}</span>
+                              </td>
+                              <td className="px-6 py-4 text-xs text-gray-400 max-w-[220px] truncate" title={rep.details}>{rep.details || '—'}</td>
+                              <td className="px-6 py-4">
+                                <span className={`px-2.5 py-1 text-xs font-bold rounded-lg border ${
+                                  rep.status === 'resolved' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                                  : rep.status === 'dismissed' ? 'bg-gray-500/10 text-gray-400 border-gray-600'
+                                  : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                                }`}>
+                                  {rep.status === 'resolved' ? 'تمت المعالجة' : rep.status === 'dismissed' ? 'متجاهَل' : '⏳ معلّق'}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4">
+                                {rep.status === 'pending' ? (
+                                  <div className="flex items-center justify-center gap-2">
+                                    <button onClick={() => handleSetReportStatus(rep, 'resolved')} className="px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 font-bold text-xs border border-emerald-500/30 transition">معالجة</button>
+                                    <button onClick={() => handleSetReportStatus(rep, 'dismissed')} className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 font-bold text-xs transition">تجاهل</button>
+                                  </div>
+                                ) : (
+                                  <span className="block text-center text-xs text-gray-600">مغلق</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                          {reports.length === 0 && (
+                            <tr><td colSpan="6" className="text-center py-12 text-gray-500 text-sm">لا توجد بلاغات مسجلة 🎉</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Support Tickets */}
+                  <div className="glass-card rounded-2xl overflow-hidden border border-gray-800">
+                    <div className="p-4 border-b border-gray-800 flex items-center justify-between">
+                      <h4 className="font-bold text-white text-base">🎫 تذاكر الدعم والاقتراحات</h4>
+                      <span className="text-xs text-gray-400">{tickets.filter(t => t.status === 'open').length} تذكرة مفتوحة</span>
+                    </div>
+                    <div className="divide-y divide-gray-800/60">
+                      {tickets.map((t) => (
+                        <div key={t.id} className="p-4 flex items-start justify-between gap-4 hover:bg-dark-800/40 transition">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-white text-sm">{t.subject || 'بدون موضوع'}</span>
+                              <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-blue-500/15 text-blue-300 border border-blue-500/30">{t.category || 'عام'}</span>
+                            </div>
+                            <p className="text-xs text-gray-400">{t.message}</p>
+                            <p className="text-[11px] text-gray-500">من: {t.username || t.uid}</p>
+                          </div>
+                          {t.status === 'open' ? (
+                            <button onClick={() => handleCloseTicket(t)} className="shrink-0 px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 font-bold text-xs border border-emerald-500/30 transition">إغلاق التذكرة</button>
+                          ) : (
+                            <span className="shrink-0 text-xs text-gray-500 font-bold">مغلقة ✅</span>
+                          )}
+                        </div>
+                      ))}
+                      {tickets.length === 0 && (
+                        <p className="text-center py-10 text-gray-500 text-sm">لا توجد تذاكر دعم حالياً.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 4: SETTINGS & SERVER */}
+              {activeTab === 'settings' && (
+                <div className="glass-card p-8 rounded-2xl space-y-8 max-w-4xl border border-gray-800">
+                  <div className="border-b border-gray-800 pb-4">
+                    <h3 className="text-lg font-black text-white">إعدادات اللعبة والبث السحابي</h3>
+                    <p className="text-xs text-gray-400">يتم بث هذه الإعدادات مباشرة عبر Firestore لجميع اللاعبين المتصلين دون الحاجة لإعادة تشغيل اللعبة.</p>
+                  </div>
+
+                  {/* Maintenance Switch */}
+                  <div className="flex items-center justify-between p-4 bg-dark-800/80 rounded-xl border border-gray-800">
+                    <div>
+                      <h4 className="text-sm font-bold text-white">وضع الصيانة الشامل (Maintenance Mode)</h4>
+                      <p className="text-xs text-gray-400">عند تفعيله، سيتم إشعار اللاعبين بوجود صيانة مؤقتة للسيرفر.</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={gameSettings.maintenanceMode}
+                        onChange={(e) => setGameSettings(prev => ({ ...prev, maintenanceMode: e.target.checked }))}
+                        className="sr-only peer"
+                      />
+                      <div className="w-14 h-7 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-rose-500"></div>
+                    </label>
+                  </div>
+
+                  {/* Announcement Input */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-300">رسالة الإعلان المباشر (Announcement)</label>
+                    <textarea
+                      rows="3"
+                      value={gameSettings.announcement}
+                      onChange={(e) => setGameSettings(prev => ({ ...prev, announcement: e.target.value }))}
+                      className="w-full bg-dark-800 border border-gray-700 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-emerald-500 transition"
+                      placeholder="اكتب الإعلان الذي يظهر في أعلى شاشة اللعبة لجميع المستخدمين..."
+                    />
+                    <div className="p-3 bg-dark-900 rounded-lg text-xs text-gray-400 border border-gray-800">
+                      معاينة: <span className="text-emerald-400 font-bold">{gameSettings.announcement}</span>
+                    </div>
+                  </div>
+
+                  {/* Sliders: Timer & Bot Level */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <label className="font-bold text-gray-300">مهلة دور اللاعب (ثواني)</label>
+                        <span className="font-bold text-emerald-400">{gameSettings.defaultTurnTimer} ثانية</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="15"
+                        max="120"
+                        step="1"
+                        value={gameSettings.defaultTurnTimer}
+                        onChange={(e) => setGameSettings(prev => ({ ...prev, defaultTurnTimer: Number(e.target.value) }))}
+                        className="w-full accent-emerald-500 cursor-pointer"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="font-bold text-gray-300 text-sm">مستوى ذكاء البوتات الافتراضي (AI Level)</label>
+                      <select
+                        value={gameSettings.botDifficulty}
+                        onChange={(e) => setGameSettings(prev => ({ ...prev, botDifficulty: e.target.value }))}
+                        className="w-full bg-dark-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-gray-200 focus:outline-none focus:border-emerald-500"
+                      >
+                        <option value="easy">سهل (Easy)</option>
+                        <option value="medium">متوسط متوازن (Medium - موصى به)</option>
+                        <option value="hard">صعب ومحترف (Hard)</option>
+                        <option value="master">أسطوري خبير (Grandmaster)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Save Button */}
+                  <div className="pt-4 flex justify-end">
+                    <button
+                      onClick={() => handleSaveSettings(gameSettings)}
+                      className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-sm rounded-xl shadow-lg shadow-emerald-500/25 transition"
+                    >
+                      💾 حفظ ونشر الإعدادات إلى السيرفر
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 5: GAME HISTORY */}
+              {activeTab === 'history' && (
+                <div className="space-y-6">
+                  <div className="glass-card rounded-2xl overflow-hidden border border-gray-800">
+                    <div className="p-4 border-b border-gray-800 flex items-center justify-between">
+                      <h4 className="font-bold text-white text-base">سجل نتائج الجولات والمباريات المكتملة</h4>
+                      <span className="text-xs text-gray-400">آخر 50 مباراة مسجلة في Firestore</span>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-right text-sm">
+                        <thead className="bg-dark-800/90 text-gray-400 text-xs uppercase font-extrabold border-b border-gray-800">
+                          <tr>
+                            <th className="px-6 py-4">اللعبة</th>
+                            <th className="px-6 py-4">الفائز بالمركز الأول</th>
+                            <th className="px-6 py-4">طريقة الفوز</th>
+                            <th className="px-6 py-4">مدة الجولة</th>
+                            <th className="px-6 py-4">التوقيت</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-800/60 font-medium">
+                          {gameLogs.map((log) => {
+                            const dateStr = log.timestamp && log.timestamp.toDate 
+                              ? log.timestamp.toDate().toLocaleString('ar-EG') 
+                              : 'الآن';
+                            return (
+                              <tr key={log.id} className="hover:bg-dark-800/40 transition">
+                                <td className="px-6 py-4 font-bold text-white flex items-center gap-2">
+                                  <span>🀄</span>
+                                  <span>{log.game || 'Turkish Okey'}</span>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <span className="text-emerald-400 font-bold bg-emerald-500/10 px-3 py-1 rounded-lg border border-emerald-500/20">
+                                    👑 {log.winner || 'مجهول'}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 text-gray-300">
+                                  {log.winType || 'فوز اعتيادي'}
+                                </td>
+                                <td className="px-6 py-4 text-gray-400 font-mono text-xs">
+                                  {log.durationSeconds ? `${log.durationSeconds} ثانية` : 'غير محدد'}
+                                </td>
+                                <td className="px-6 py-4 text-xs text-gray-500">
+                                  {dateStr}
+                                </td>
+                              </tr>
+                            );
+                          })}
+
+                          {gameLogs.length === 0 && (
+                            <tr>
+                              <td colSpan="5" className="text-center py-12 text-gray-500 text-sm">
+                                لم يتم تسجيل أي مباريات مكتملة بعد. العب جولة في اللعبة وسيتم تسجيلها تلقائياً هنا!
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </main>
+
+          {/* MODAL: EDIT PLAYER CHIPS */}
+          {editingPlayer && (
+            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="glass-card max-w-md w-full rounded-2xl p-6 border border-emerald-500/30 space-y-5 animate-scale-up">
+                <div className="flex items-center justify-between border-b border-gray-800 pb-3">
+                  <h3 className="text-base font-black text-white flex items-center gap-2">
+                    <span>💰 تعديل رصيد اللاعب</span>
+                    <span className="text-emerald-400">({editingPlayer.name})</span>
+                  </h3>
+                  <button onClick={() => setEditingPlayer(null)} className="text-gray-400 hover:text-white">✕</button>
+                </div>
+
+                {/* اختيار العملة */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditCurrency('chips')}
+                    className={`py-2.5 rounded-xl font-bold text-sm border transition ${editCurrency === 'chips' ? 'bg-amber-500/15 text-amber-300 border-amber-400' : 'bg-dark-800 text-gray-400 border-gray-700 hover:border-gray-500'}`}
+                  >
+                    🪙 عملات ذهبية
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditCurrency('gems')}
+                    className={`py-2.5 rounded-xl font-bold text-sm border transition ${editCurrency === 'gems' ? 'bg-sky-500/15 text-sky-300 border-sky-400' : 'bg-dark-800 text-gray-400 border-gray-700 hover:border-gray-500'}`}
+                  >
+                    💎 مجوهرات زرقاء
+                  </button>
+                </div>
+
+                <div className="bg-dark-800 p-4 rounded-xl text-center space-y-1">
+                  <p className="text-xs text-gray-400">الرصيد الحالي في الحساب</p>
+                  <p className={`text-2xl font-black ${editCurrency === 'gems' ? 'text-sky-300' : 'text-amber-400'}`}>
+                    {(Number(editingPlayer[editCurrency]) || 0).toLocaleString()} {editCurrency === 'gems' ? '💎' : '🪙'}
+                  </p>
+                </div>
+
+                {/* Quick Add Presets */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 block">إضافة سريعة للرصيد (+)</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(editCurrency === 'gems' ? [10, 50, 250] : [1000, 5000, 25000]).map(v => (
+                      <button
+                        key={v}
+                        onClick={() => handleUpdatePlayerBalance(editingPlayer.id, v, false, editCurrency)}
+                        className={`py-2 font-bold rounded-xl text-xs border transition ${editCurrency === 'gems' ? 'bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border-sky-500/30' : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/30'}`}
+                      >
+                        +{v.toLocaleString()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Custom Value Setting */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 block">أو تعيين قيمة رصيد محددة يدوياً</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      id="customBalanceInput"
+                      key={editCurrency}
+                      defaultValue={editingPlayer[editCurrency]}
+                      className={`flex-1 bg-dark-800 border border-gray-700 rounded-xl px-4 py-2.5 font-bold focus:outline-none text-sm ${editCurrency === 'gems' ? 'text-sky-300 focus:border-sky-500' : 'text-white focus:border-emerald-500'}`}
+                    />
+                    <button
+                      onClick={() => {
+                        const val = document.getElementById('customBalanceInput').value;
+                        if (val !== '') {
+                          handleUpdatePlayerBalance(editingPlayer.id, val, true, editCurrency);
+                        }
+                      }}
+                      className={`px-5 py-2.5 text-white font-bold text-xs rounded-xl transition ${editCurrency === 'gems' ? 'bg-sky-500 hover:bg-sky-600' : 'bg-emerald-500 hover:bg-emerald-600'}`}
+                    >
+                      تطبيق
+                    </button>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <button
+                    onClick={() => setEditingPlayer(null)}
+                    className="px-4 py-2 text-xs text-gray-400 hover:text-white font-bold"
+                  >
+                    إغلاق
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL: ADD NEW PLAYER */}
+          {showAddPlayerModal && (
+            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="glass-card max-w-md w-full rounded-2xl p-6 border border-emerald-500/30 space-y-5">
+                <div className="flex items-center justify-between border-b border-gray-800 pb-3">
+                  <h3 className="text-base font-black text-white">➕ إضافة حساب لاعب جديد</h3>
+                  <button onClick={() => setShowAddPlayerModal(false)} className="text-gray-400 hover:text-white">✕</button>
+                </div>
+
+                <form onSubmit={handleCreatePlayer} className="space-y-4">
+                  <div>
+                    <label className="text-xs font-bold text-gray-300 block mb-1">اسم اللاعب الكامل</label>
+                    <input
+                      type="text"
+                      required
+                      value={newPlayerData.name}
+                      onChange={(e) => setNewPlayerData(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="مثال: أحمد المحترف"
+                      className="w-full bg-dark-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-bold text-gray-300 block mb-1">رصيد الرقائق الأولي</label>
+                      <input
+                        type="number"
+                        value={newPlayerData.chips}
+                        onChange={(e) => setNewPlayerData(prev => ({ ...prev, chips: e.target.value }))}
+                        className="w-full bg-dark-800 border border-gray-700 rounded-xl px-4 py-2.5 text-amber-400 font-bold text-sm focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-gray-300 block mb-1">التقييم الأولي</label>
+                      <input
+                        type="number"
+                        value={newPlayerData.rating}
+                        onChange={(e) => setNewPlayerData(prev => ({ ...prev, rating: e.target.value }))}
+                        className="w-full bg-dark-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white font-bold text-sm focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddPlayerModal(false)}
+                      className="px-4 py-2.5 text-xs text-gray-400 hover:text-white font-bold rounded-xl"
+                    >
+                      إلغاء
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition"
+                    >
+                      إنشاء الحساب الآن
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL: ADD NEW SKIN (موك اب) */}
+          {showAddSkinModal && (
+            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="glass-card max-w-lg w-full rounded-2xl p-6 border border-emerald-500/30 space-y-5 max-h-[90vh] overflow-y-auto">
+                <div className="flex items-center justify-between border-b border-gray-800 pb-3">
+                  <h3 className="text-base font-black text-white">🎨 إضافة تصميم سكن جديد للمتجر</h3>
+                  <button onClick={() => setShowAddSkinModal(false)} className="text-gray-400 hover:text-white">✕</button>
+                </div>
+
+                <form onSubmit={handleAddSkin} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-bold text-gray-300 block mb-1">اسم التصميم</label>
+                      <input
+                        type="text"
+                        value={newSkin.name}
+                        onChange={(e) => setNewSkin(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="مثال: رخام ذهبي"
+                        className="w-full bg-dark-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-gray-300 block mb-1">السعر</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={newSkin.price}
+                        onChange={(e) => setNewSkin(prev => ({ ...prev, price: e.target.value }))}
+                        className={`w-full bg-dark-800 border border-gray-700 rounded-xl px-4 py-2.5 font-bold text-sm focus:outline-none ${newSkin.currency === 'gems' ? 'text-sky-300 focus:border-sky-500' : 'text-amber-400 focus:border-amber-500'}`}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-gray-300 block mb-1">عملة البيع</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setNewSkin(prev => ({ ...prev, currency: 'chips' }))}
+                        className={`py-2.5 rounded-xl font-bold text-sm border transition ${newSkin.currency === 'chips' ? 'bg-amber-500/15 text-amber-300 border-amber-400' : 'bg-dark-800 text-gray-400 border-gray-700 hover:border-gray-500'}`}
+                      >
+                        🪙 عملات ذهبية
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNewSkin(prev => ({ ...prev, currency: 'gems' }))}
+                        className={`py-2.5 rounded-xl font-bold text-sm border transition ${newSkin.currency === 'gems' ? 'bg-sky-500/15 text-sky-300 border-sky-400' : 'bg-dark-800 text-gray-400 border-gray-700 hover:border-gray-500'}`}
+                      >
+                        💎 مجوهرات زرقاء
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-gray-300 block mb-1">فئة القطعة</label>
+                    <select
+                      value={newSkin.category}
+                      onChange={(e) => setNewSkin(prev => ({ ...prev, category: e.target.value }))}
+                      className="w-full bg-dark-800 border border-gray-700 text-gray-200 text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-emerald-500"
+                    >
+                      <option value="tile">🀄 الأحجار (وجه الحجر)</option>
+                      <option value="table">🟫 الطاولة (سطح اللعب)</option>
+                      <option value="rack">🪵 الاستكانة (الخشبة الحاملة)</option>
+                      <option value="background">🖼️ خلفية المشهد</option>
+                      <option value="frame">👤 إطار الصورة الشخصية</option>
+                      <option value="chessBoard">♞ لوحة الشطرنج (الخشبة والمربعات)</option>
+                      <option value="chessPieces">♟️ أحجار الشطرنج (نسيج القطع)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-gray-300 block mb-1">صورة التصميم</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleSkinImagePick}
+                      className="w-full text-xs text-gray-400 file:ml-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-emerald-500/20 file:text-emerald-300 file:font-bold file:text-xs hover:file:bg-emerald-500/30 file:cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Live Mockup Preview — اسحب الصورة لتحريكها */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-emerald-400 block">معاينة الموك اب على القطعة:</label>
+                    <div
+                      className="relative h-44 rounded-2xl bg-gradient-to-b from-dark-800 to-black border border-gray-700 overflow-hidden"
+                      style={{ cursor: skinImageDataUri ? 'grab' : 'default', touchAction: 'none' }}
+                      onPointerDown={(e) => {
+                        if (!skinImageDataUri) return;
+                        skinDragRef.current = { x: e.clientX, y: e.clientY, ox: newSkin.ox, oy: newSkin.oy };
+                        e.currentTarget.setPointerCapture(e.pointerId);
+                      }}
+                      onPointerMove={(e) => {
+                        const d = skinDragRef.current;
+                        if (!d) return;
+                        const r = e.currentTarget.getBoundingClientRect();
+                        const clamp = (v) => Math.max(-1, Math.min(1, v));
+                        setNewSkin(s => ({
+                          ...s,
+                          ox: clamp(d.ox + (e.clientX - d.x) / (r.width / 2)),
+                          oy: clamp(d.oy + (e.clientY - d.y) / (r.height / 2)),
+                        }));
+                      }}
+                      onPointerUp={() => { skinDragRef.current = null; }}
+                      onPointerCancel={() => { skinDragRef.current = null; }}
+                    >
+                      <SkinPreview
+                        category={newSkin.category}
+                        uri={skinImageDataUri}
+                        zoom={newSkin.zoom}
+                        ox={newSkin.ox}
+                        oy={newSkin.oy}
+                      />
+                      {!skinImageDataUri && (
+                        <div className="absolute inset-0 flex items-center justify-center text-gray-600 text-xs">ارفع صورة لرؤية المعاينة</div>
+                      )}
+                    </div>
+                    {skinImageDataUri && (
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-gray-400 w-14">تكبير 🔍</span>
+                          <input
+                            type="range" min="0.6" max="3" step="0.05"
+                            value={newSkin.zoom}
+                            onChange={(e) => setNewSkin(s => ({ ...s, zoom: Number(e.target.value) }))}
+                            className="flex-1 accent-emerald-500"
+                          />
+                          <span className="text-[10px] text-emerald-400 font-bold w-10 text-center">{Math.round(newSkin.zoom * 100)}%</span>
+                          <button
+                            type="button"
+                            onClick={() => setNewSkin(s => ({ ...s, zoom: 1, ox: 0, oy: 0 }))}
+                            className="px-2 py-1 text-[10px] font-bold rounded-lg bg-gray-700/60 text-gray-300 hover:bg-gray-600 transition"
+                          >
+                            ↺ إعادة ضبط
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-gray-500">اسحب الصورة فوق المعاينة لتحريكها • استخدم المنزلق للتكبير والتصغير — الصورة تغطي كامل القطعة</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-2 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddSkinModal(false)}
+                      className="px-4 py-2.5 text-xs text-gray-400 hover:text-white font-bold rounded-xl"
+                    >
+                      إلغاء
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={savingSkin}
+                      className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition"
+                    >
+                      {savingSkin ? 'جارٍ النشر...' : '🚀 نشر التصميم في المتجر'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL: ADD COIN/GEM PACK */}
+          {showAddPackModal && (
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="glass-card rounded-2xl w-full max-w-md border border-gray-700 shadow-2xl">
+                <div className="p-5 border-b border-gray-800 flex items-center justify-between">
+                  <h3 className="font-bold text-white">باقة شحن جديدة 💰</h3>
+                  <button onClick={() => setShowAddPackModal(false)} className="text-gray-400 hover:text-white">✕</button>
+                </div>
+                <form onSubmit={handleAddPack} className="p-5 space-y-4">
+                  <div>
+                    <label className="text-xs font-bold text-gray-300 block mb-1">اسم الباقة</label>
+                    <input type="text" value={newPack.title} onChange={(e) => setNewPack(prev => ({ ...prev, title: e.target.value }))} placeholder="مثال: باقة الملك الكبرى" className="w-full bg-dark-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-gray-300 block mb-1">نوع الرصيد</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button type="button" onClick={() => setNewPack(prev => ({ ...prev, type: 'chips' }))} className={`py-2.5 rounded-xl font-bold text-sm border transition ${newPack.type === 'chips' ? 'bg-amber-500/15 text-amber-300 border-amber-400' : 'bg-dark-800 text-gray-400 border-gray-700'}`}>🪙 عملات ذهبية</button>
+                      <button type="button" onClick={() => setNewPack(prev => ({ ...prev, type: 'gems' }))} className={`py-2.5 rounded-xl font-bold text-sm border transition ${newPack.type === 'gems' ? 'bg-sky-500/15 text-sky-300 border-sky-400' : 'bg-dark-800 text-gray-400 border-gray-700'}`}>💎 مجوهرات زرقاء</button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-bold text-gray-300 block mb-1">الكمية ({newPack.type === 'gems' ? 'جواهر 💎' : 'عملات 🪙'})</label>
+                      <input type="number" min="1" value={newPack.amount} onChange={(e) => setNewPack(prev => ({ ...prev, amount: e.target.value }))} className={`w-full bg-dark-800 border border-gray-700 rounded-xl px-4 py-2.5 font-bold text-sm focus:outline-none ${newPack.type === 'gems' ? 'text-sky-300' : 'text-amber-400'}`} />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-gray-300 block mb-1">السعر بالدولار $</label>
+                      <input type="number" min="0" step="0.01" value={newPack.priceUsd} onChange={(e) => setNewPack(prev => ({ ...prev, priceUsd: e.target.value }))} className="w-full bg-dark-800 border border-gray-700 rounded-xl px-4 py-2.5 text-emerald-400 font-bold text-sm focus:outline-none focus:border-emerald-500" />
+                    </div>
+                  </div>
+                  <div className="pt-2 flex justify-end gap-2">
+                    <button type="button" onClick={() => setShowAddPackModal(false)} className="px-4 py-2.5 text-xs text-gray-400 hover:text-white font-bold rounded-xl">إلغاء</button>
+                    <button type="submit" disabled={savingPack} className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-bold text-xs rounded-xl transition">{savingPack ? 'جارٍ الإنشاء...' : '🚀 إنشاء الباقة'}</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL: ADD RADIO GROUP */}
+          {showAddGroupModal && (
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="glass-card rounded-2xl w-full max-w-md border border-gray-700 shadow-2xl">
+                <div className="p-5 border-b border-gray-800 flex items-center justify-between">
+                  <h3 className="font-bold text-white">مجموعة راديو جديدة 📻</h3>
+                  <button onClick={() => setShowAddGroupModal(false)} className="text-gray-400 hover:text-white">✕</button>
+                </div>
+                <form onSubmit={handleAddRadioGroup} className="p-5 space-y-4">
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-xs font-bold text-gray-300 block mb-1">الأيقونة</label>
+                      <input type="text" value={newGroup.flag} onChange={(e) => setNewGroup(prev => ({ ...prev, flag: e.target.value }))} className="w-full bg-dark-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-center text-lg focus:outline-none focus:border-emerald-500" />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="text-xs font-bold text-gray-300 block mb-1">اسم المجموعة</label>
+                      <input type="text" value={newGroup.name} onChange={(e) => setNewGroup(prev => ({ ...prev, name: e.target.value }))} placeholder="مثال: أغاني الطرب" className="w-full bg-dark-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500" />
+                    </div>
+                  </div>
+                  <div className="pt-2 flex justify-end gap-2">
+                    <button type="button" onClick={() => setShowAddGroupModal(false)} className="px-4 py-2.5 text-xs text-gray-400 hover:text-white font-bold rounded-xl">إلغاء</button>
+                    <button type="submit" className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl transition">إنشاء المجموعة</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL: ADD RADIO SONG */}
+          {showAddSongModal && (
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="glass-card rounded-2xl w-full max-w-md border border-gray-700 shadow-2xl">
+                <div className="p-5 border-b border-gray-800 flex items-center justify-between">
+                  <h3 className="font-bold text-white">أغنية جديدة 🎶</h3>
+                  <button onClick={() => setShowAddSongModal(false)} className="text-gray-400 hover:text-white">✕</button>
+                </div>
+                <form onSubmit={handleAddRadioSong} className="p-5 space-y-4">
+                  <div>
+                    <label className="text-xs font-bold text-gray-300 block mb-1">المجموعة</label>
+                    <select value={newSong.groupId} onChange={(e) => setNewSong(prev => ({ ...prev, groupId: e.target.value }))} className="w-full bg-dark-800 border border-gray-700 text-gray-200 text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-emerald-500">
+                      <option value="">اختر المجموعة...</option>
+                      {radioGroups.map(g => <option key={g.id} value={g.id}>{g.flag} {g.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-gray-300 block mb-1">اسم الأغنية / المحطة</label>
+                    <input type="text" value={newSong.name} onChange={(e) => setNewSong(prev => ({ ...prev, name: e.target.value }))} placeholder="مثال: إذاعة القرآن الكريم" className="w-full bg-dark-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-gray-300 block mb-1">النوع / الوصف (اختياري)</label>
+                    <input type="text" value={newSong.genre} onChange={(e) => setNewSong(prev => ({ ...prev, genre: e.target.value }))} placeholder="مثال: طرب، ديني، أخبار" className="w-full bg-dark-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-gray-300 block mb-1">رابط البث / الأغنية (URL)</label>
+                    <input type="url" value={newSong.url} onChange={(e) => setNewSong(prev => ({ ...prev, url: e.target.value }))} placeholder="https://...stream.mp3" dir="ltr" className="w-full bg-dark-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sky-300 text-sm focus:outline-none focus:border-sky-500" />
+                  </div>
+                  <div className="pt-2 flex justify-end gap-2">
+                    <button type="button" onClick={() => setShowAddSongModal(false)} className="px-4 py-2.5 text-xs text-gray-400 hover:text-white font-bold rounded-xl">إلغاء</button>
+                    <button type="submit" className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl transition">إضافة الأغنية</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<AdminApp />);
+  </script>
+</body>
+</html>

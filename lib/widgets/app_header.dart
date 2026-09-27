@@ -1,141 +1,164 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../services/social_service.dart';
+import '../screens/chat_screen.dart';
 import 'radio_player_widget.dart';
-
+import 'user_avatar.dart';
+import 'gem_icon.dart';
+import '../utils/format.dart';
 
 class AppHeader extends StatelessWidget {
   final VoidCallback? onProfileTap;
   final VoidCallback? onCoinTap;
-  final VoidCallback? onGiftTap;
-  final VoidCallback? onSettingsTap;
+  final VoidCallback? onStoreTap;
 
   const AppHeader({
     super.key,
     this.onProfileTap,
     this.onCoinTap,
-    this.onGiftTap,
-    this.onSettingsTap,
+    this.onStoreTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Left side: Avatar + Coin Pill
-          Row(
-            mainAxisSize: MainAxisSize.min,
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 900),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Avatar
-              GestureDetector(
-                onTap: onProfileTap,
-                child: _AvatarWidget(),
-              ),
-              const SizedBox(width: 8),
-
-              // Coin Balance Pill
-              GestureDetector(
-                onTap: onCoinTap,
-                child: _CoinBadgeWidget(),
-              ),
-            ],
-          ),
-
-          // Right side: Radio Button + Gift Icon + Settings Button
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Radio Button
-              GestureDetector(
-                onTap: () => RadioPlayerSheet.show(context),
-                child: Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: const Color(0xE625143E),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0x40FFD54F), width: 1),
+              // Left side: Avatar + Coin Pill
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Avatar
+                  GestureDetector(
+                    onTap: onProfileTap,
+                    child: _AvatarWidget(),
                   ),
-                  child: const Center(child: Icon(Icons.radio_rounded, color: Color(0xFFFFD54F), size: 20)),
-                ),
-              ),
-              const SizedBox(width: 8),
+                  const SizedBox(width: 8),
 
-              // Gift Box
-              GestureDetector(
-                onTap: onGiftTap,
-                child: _GiftBoxWidget(),
+                  // Coin Balance Pill
+                  GestureDetector(
+                    onTap: onCoinTap,
+                    child: _CoinBadgeWidget(),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
 
-              // Settings Gear
-              GestureDetector(
-                onTap: onSettingsTap,
-                child: _SettingsGearWidget(),
+              // Right side: Radio Button + Gift Icon + Settings Button
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Store Button
+                  GestureDetector(
+                    onTap: onStoreTap,
+                    child: const _HeaderGlassButton(
+                      child: Icon(Icons.storefront_rounded,
+                          color: Color(0xFFA78BFA), size: 20),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+
+                  // Radio Button
+                  GestureDetector(
+                    onTap: () => RadioPlayerSheet.show(context),
+                    child: const _HeaderGlassButton(
+                      child: Icon(Icons.radio_rounded,
+                          color: Color(0xFFFFD76A), size: 20),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+
+                  // Notifications Bell (طلبات الصداقة + الرسائل غير المقروءة)
+                  GestureDetector(
+                    onTap: () => NotificationsSheet.show(context),
+                    child: const _HeaderGlassButton(
+                      child: _NotificationBellWidget(),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
+class _HeaderGlassButton extends StatelessWidget {
+  final Widget child;
 
-class _AvatarWidget extends StatelessWidget {
+  const _HeaderGlassButton({required this.child});
+
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: AuthService(),
-      builder: (context, _) {
-        final photo = AuthService().currentUser?.photoUrl ?? '';
-        final isEmoji = photo.isNotEmpty && photo.length <= 4;
-
-        return Container(
-          width: 44,
-          height: 44,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(13),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          width: 40,
+          height: 40,
           decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFFFFEEA0),
-                Color(0xFFFFD54F),
-                Color(0xFFE58E00),
+                Colors.white.withOpacity(0.20),
+                const Color(0xFF6C63FF).withOpacity(0.10),
+                const Color(0xFF07142F).withOpacity(0.34),
               ],
             ),
+            borderRadius: BorderRadius.circular(13),
+            border: Border.all(color: Colors.white.withOpacity(0.26)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.4),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-              BoxShadow(
-                color: const Color(0xFFFFD54F).withOpacity(0.35),
-                blurRadius: 8,
+                color: const Color(0xFF719BFF).withOpacity(0.12),
+                blurRadius: 12,
               ),
             ],
           ),
-          padding: const EdgeInsets.all(2.5),
-          child: ClipOval(
-            child: Container(
-              color: const Color(0xFF5B3A82),
-              child: isEmoji
-                  ? Center(child: Text(photo, style: const TextStyle(fontSize: 20)))
-                  : CustomPaint(
-                      painter: _BoyAvatarPainter(),
-                    ),
-            ),
-          ),
-        );
-      },
+          child: Center(child: child),
+        ),
+      ),
     );
   }
 }
 
+class _AvatarWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final user = AuthService().currentUser;
+    final photo = user?.photoUrl ?? '';
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.4),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+          BoxShadow(
+            color: const Color(0xFFFFD54F).withOpacity(0.35),
+            blurRadius: 8,
+          ),
+        ],
+      ),
+      child: UserAvatar(
+        photoUrl: photo,
+        name: user?.displayName ?? '',
+        size: 44,
+        showEquippedFrame: true,
+      ),
+    );
+  }
+}
 
 class _BoyAvatarPainter extends CustomPainter {
   @override
@@ -162,11 +185,13 @@ class _BoyAvatarPainter extends CustomPainter {
 
     // Neck
     final skinPaint = Paint()..color = const Color(0xFFFFDCB5);
-    canvas.drawRect(Rect.fromLTWH(w * 0.4, h * 0.52, w * 0.2, h * 0.2), skinPaint);
+    canvas.drawRect(
+        Rect.fromLTWH(w * 0.4, h * 0.52, w * 0.2, h * 0.2), skinPaint);
 
     // Face
     final faceRect = RRect.fromRectAndRadius(
-      Rect.fromCenter(center: Offset(w * 0.5, h * 0.45), width: w * 0.52, height: h * 0.5),
+      Rect.fromCenter(
+          center: Offset(w * 0.5, h * 0.45), width: w * 0.52, height: h * 0.5),
       const Radius.circular(12),
     );
     canvas.drawRRect(faceRect, skinPaint);
@@ -209,131 +234,23 @@ class _BoyAvatarPainter extends CustomPainter {
 class _CoinBadgeWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 34,
-      padding: const EdgeInsets.only(left: 4, right: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xE625143E),
-        borderRadius: BorderRadius.circular(17),
-        border: Border.all(
-          color: const Color(0x40FFD54F),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.35),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // 3D Gold Coin
-          Container(
-            width: 26,
-            height: 26,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFFFFF9C4),
-                  Color(0xFFFFD54F),
-                  Color(0xFFFF8F00),
-                ],
-              ),
-              border: Border.all(color: const Color(0xFFFFF59D), width: 1),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFFF8F00).withOpacity(0.6),
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
-                ),
-              ],
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.star_rounded,
-                color: Color(0xFFBF360C),
-                size: 16,
-              ),
-            ),
-          ),
-          const SizedBox(width: 6),
-
-          // Balance Text
-          AnimatedBuilder(
-            animation: AuthService(),
-            builder: (context, _) {
-              final chips = AuthService().currentUser?.chips ?? 1500;
-              return Text(
-                '$chips',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 14,
-                  letterSpacing: 0.5,
-                  shadows: [
-                    Shadow(
-                      color: Colors.black45,
-                      blurRadius: 3,
-                      offset: Offset(0, 1),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-
-          const SizedBox(width: 6),
-
-          // Purple "+" button
-          Container(
-            width: 20,
-            height: 20,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF8B5CF6).withOpacity(0.5),
-                  blurRadius: 4,
-                ),
-              ],
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.add,
-                color: Colors.white,
-                size: 14,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _GiftBoxWidget extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Container(
-          width: 38,
-          height: 38,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          height: 36,
+          padding: const EdgeInsets.only(left: 4, right: 6),
           decoration: BoxDecoration(
-            color: const Color(0xFF2E1B4E),
-            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              colors: [
+                Colors.white.withOpacity(0.16),
+                const Color(0xFF182B59).withOpacity(0.46),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: const Color(0x33FFD54F),
+              color: const Color(0xFFFFD76A).withOpacity(0.52),
               width: 1,
             ),
             boxShadow: [
@@ -344,135 +261,187 @@ class _GiftBoxWidget extends StatelessWidget {
               ),
             ],
           ),
-          child: Center(
-            child: Container(
-              width: 26,
-              height: 26,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFFFFF3CD),
-                    Color(0xFFFFD54F),
-                    Color(0xFFFFB300),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 3D Gold Coin
+              Container(
+                width: 26,
+                height: 26,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFFFFF9C4),
+                      Color(0xFFFFD54F),
+                      Color(0xFFFF8F00),
+                    ],
+                  ),
+                  border: Border.all(color: const Color(0xFFFFF59D), width: 1),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFF8F00).withOpacity(0.6),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
                   ],
                 ),
-                borderRadius: BorderRadius.circular(6),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFFFB300).withOpacity(0.4),
-                    blurRadius: 4,
+                child: const Center(
+                  child: Icon(
+                    Icons.star_rounded,
+                    color: Color(0xFFBF360C),
+                    size: 16,
                   ),
-                ],
+                ),
               ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Vertical red ribbon
-                  Container(
-                    width: 5,
-                    height: 26,
-                    color: const Color(0xFFE53935),
-                  ),
-                  // Horizontal red ribbon
-                  Container(
-                    width: 26,
-                    height: 5,
-                    color: const Color(0xFFE53935),
-                  ),
-                  // Bow on top
-                  Positioned(
-                    top: 1,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 6,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEF5350),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                        const SizedBox(width: 1),
-                        Container(
-                          width: 6,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEF5350),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
+              const SizedBox(width: 6),
+
+              // Balance Text
+              AnimatedBuilder(
+                animation: AuthService(),
+                builder: (context, _) {
+                  final chips = AuthService().currentUser?.chips ?? 1500;
+                  return Text(
+                    formatBalance(chips),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                      letterSpacing: 0.5,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black45,
+                          blurRadius: 3,
+                          offset: Offset(0, 1),
                         ),
                       ],
                     ),
-                  ),
-                ],
+                  );
+                },
               ),
-            ),
-          ),
-        ),
 
-        // Red notification dot at top-right
-        Positioned(
-          top: -2,
-          right: -2,
-          child: Container(
-            width: 10,
-            height: 10,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(0xFFFF1744),
-              border: Border.all(color: Colors.white, width: 1.2),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0xFFFF1744),
-                  blurRadius: 4,
+              const SizedBox(width: 6),
+
+              // Purple "+" button
+              Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF8B5CF6).withOpacity(0.5),
+                      blurRadius: 4,
+                    ),
+                  ],
                 ),
-              ],
-            ),
+                child: const Center(
+                  child: Icon(
+                    Icons.add,
+                    color: Colors.white,
+                    size: 14,
+                  ),
+                ),
+              ),
+
+              // فاصل + عداد المجوهرات 💎
+              Container(
+                width: 1,
+                height: 18,
+                margin: const EdgeInsets.symmetric(horizontal: 6),
+                color: Colors.white.withOpacity(0.18),
+              ),
+              const GemIcon(size: 20),
+              const SizedBox(width: 4),
+              AnimatedBuilder(
+                animation: AuthService(),
+                builder: (context, _) {
+                  final gems = AuthService().currentUser?.gems ?? 25;
+                  return Text(
+                    formatBalance(gems),
+                    style: const TextStyle(
+                      color: Color(0xFF7DD3FC),
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13,
+                      letterSpacing: 0.5,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black45,
+                          blurRadius: 3,
+                          offset: Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 }
 
-class _SettingsGearWidget extends StatelessWidget {
+class _NotificationBellWidget extends StatelessWidget {
+  const _NotificationBellWidget();
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 38,
-      height: 38,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF4A2B78),
-            Color(0xFF311756),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0x33A78BFA),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.35),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: const Center(
-        child: Icon(
-          Icons.settings_rounded,
-          color: Colors.white,
-          size: 20,
-        ),
-      ),
+    final myUid = AuthService().currentUser?.uid ?? '';
+    return StreamBuilder<List<FriendRequest>>(
+      stream: SocialService().getIncomingRequestsStream(myUid),
+      builder: (context, reqSnap) {
+        final reqCount = reqSnap.data?.length ?? 0;
+        return StreamBuilder<List<ConversationSummary>>(
+          stream: SocialService().getConversationsStream(myUid),
+          builder: (context, convSnap) {
+            final unread = (convSnap.data ?? [])
+                .fold<int>(0, (s, c) => s + c.unreadCount);
+            final total = reqCount + unread;
+            return Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                const Icon(Icons.notifications_rounded,
+                    color: Colors.white, size: 20),
+                if (total > 0)
+                  Positioned(
+                    top: -4,
+                    right: -5,
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      constraints:
+                          const BoxConstraints(minWidth: 16, minHeight: 16),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xFFFF1744),
+                        border: Border.all(color: Colors.white, width: 1.2),
+                        boxShadow: const [
+                          BoxShadow(color: Color(0xFFFF1744), blurRadius: 4),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          total > 9 ? '9+' : '$total',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 8,
+                              fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

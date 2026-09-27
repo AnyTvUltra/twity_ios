@@ -2,7 +2,7 @@
 import 'dart:html' as html;
 
 void openAdminWebImpl() {
-  html.window.open('/admin', '_blank');
+  html.window.open('https://twity-admin.pages.dev', '_blank');
 }
 
 bool isWebPlatformImpl() => true;

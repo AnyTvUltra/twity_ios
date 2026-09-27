@@ -1,5 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../../../services/store_service.dart';
+import '../../../widgets/animated_skin_effect.dart';
+import '../../../widgets/skin_image.dart';
 
 enum OpponentPosition { top, left, right }
 
@@ -9,22 +12,40 @@ class OkeyOpponentIstaka extends StatelessWidget {
   final int tileCount;
   final bool isTurn;
 
+  /// كسنة الاستكانة — تُطبق على استكانات الخصوم أيضاً
+  final StoreItem? rackItem;
+
   const OkeyOpponentIstaka({
     super.key,
     required this.position,
     this.tileCount = 14,
     this.isTurn = false,
+    this.rackItem,
   });
+
+  Widget _skinOrWood() {
+    if (rackItem != null) {
+      final eff = skinEffectOf(rackItem);
+      if (eff != SkinEffect.none) {
+        return AnimatedSkinLayer(
+            effect: eff, intensity: 0.1, woodUnderlay: true);
+      }
+      return SkinTransformImage.fromItem(rackItem!);
+    }
+    // الافتراضي: خامة الخشب الحقيقية
+    return SkinTransformImage.fromItem(StoreService.defaultWoodItem);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final rack = _buildTopIstaka();
     switch (position) {
       case OpponentPosition.top:
-        return _buildTopIstaka();
+        return Transform.rotate(angle: math.pi, child: rack);
       case OpponentPosition.left:
-        return _buildSideIstaka(isLeft: true);
+        return RotatedBox(quarterTurns: 1, child: rack);
       case OpponentPosition.right:
-        return _buildSideIstaka(isLeft: false);
+        return RotatedBox(quarterTurns: 3, child: rack);
     }
   }
 
@@ -52,41 +73,41 @@ class OkeyOpponentIstaka extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(6),
-        child: Container(
+        child: Stack(
+          children: [
+            // الكسنة أو الجسم الزجاجي الافتراضي خلف كامل الجسم
+            Positioned.fill(child: _skinOrWood()),
+            if (rackItem != null)
+              Positioned.fill(
+                child: Container(color: Colors.black.withOpacity(0.18)),
+              ),
+            Container(
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFF4E2611),
-                Color(0xFF381A0B),
-                Color(0xFF261006),
-              ],
-            ),
             border: Border.all(
               color: isTurn
                   ? const Color(0xFF4ADE80)
-                  : const Color(0xFF6B3A1C),
+                  : const Color(0x338FA8E8),
               width: isTurn ? 1.5 : 1.0,
             ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // رأس الاستكانة
+              // رأس الاستكانة — شريط زجاجي
               Container(
                 height: 17,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Color(0xFF3B1A0A),
-                      Color(0xFF562810),
-                      Color(0xFF3B1A0A),
+                      Color(0x2EFFFFFF),
+                      Color(0x14FFFFFF),
+                      Color(0x0AFFFFFF),
                     ],
                   ),
                   border: Border(
-                    bottom: BorderSide(color: Color(0xFF1E0A03), width: 1.0),
+                    bottom:
+                        BorderSide(color: Color(0x2E8FA8E8), width: 1.0),
                   ),
                 ),
                 child: Row(
@@ -122,8 +143,7 @@ class OkeyOpponentIstaka extends StatelessWidget {
                       Text(
                         'OKEY',
                         style: TextStyle(
-                          color:
-                              const Color(0xFFD4A373).withOpacity(0.6),
+                          color: const Color(0xFF8FA8E8).withOpacity(0.6),
                           fontSize: 8,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 1.0,
@@ -133,22 +153,22 @@ class OkeyOpponentIstaka extends StatelessWidget {
                 ),
               ),
 
-              // صف الأحجار المقلوبة
+              // صف الأحجار المقلوبة — تجويف زجاجي داكن
               Container(
                 height: 20,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                decoration: const BoxDecoration(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Color(0xFF261006), Color(0xFF1A0A03)],
+                    colors: rackItem != null
+                        ? const [Color(0x99060A18), Color(0x99040815)]
+                        : const [Color(0xFF060A18), Color(0xFF040815)],
                   ),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                      math.min(tileCount, 14), (index) {
+                  children: List.generate(math.min(tileCount, 14), (index) {
                     return Container(
                       width: 11,
                       height: 14,
@@ -182,6 +202,8 @@ class OkeyOpponentIstaka extends StatelessWidget {
               ),
             ],
           ),
+            ),
+          ],
         ),
       ),
     );
@@ -190,7 +212,7 @@ class OkeyOpponentIstaka extends StatelessWidget {
   // ─────────────────────────────────────────────────────────────
   //  الاستكانات الجانبية – رف عمودي بمنظور 3D خفيف
   // ─────────────────────────────────────────────────────────────
-  Widget _buildSideIstaka({required bool isLeft}) {
+  Widget buildSideIstaka({required bool isLeft}) {
     // تحويل 3D خفيف يعطي إحساس العمق بدون تشويه
     final transform = Matrix4.identity()
       ..setEntry(3, 2, 0.0012)
@@ -198,8 +220,7 @@ class OkeyOpponentIstaka extends StatelessWidget {
 
     return Transform(
       transform: transform,
-      alignment:
-          isLeft ? Alignment.centerLeft : Alignment.centerRight,
+      alignment: isLeft ? Alignment.centerLeft : Alignment.centerRight,
       child: Container(
         width: 46,
         decoration: BoxDecoration(
@@ -219,41 +240,35 @@ class OkeyOpponentIstaka extends StatelessWidget {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(6),
-          child: Container(
+          child: Stack(
+            children: [
+              // الكسنة أو الخشب خلف الجسم
+              Positioned.fill(child: _skinOrWood()),
+              if (rackItem != null)
+                Positioned.fill(
+                  child: Container(color: Colors.black.withOpacity(0.18)),
+                ),
+              Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: isLeft
-                    ? Alignment.centerRight
-                    : Alignment.centerLeft,
-                end: isLeft
-                    ? Alignment.centerLeft
-                    : Alignment.centerRight,
-                colors: const [
-                  Color(0xFF562810),
-                  Color(0xFF3E1C0A),
-                  Color(0xFF2B1206),
-                  Color(0xFF1E0A03),
-                ],
-              ),
               border: Border.all(
                 color: isTurn
                     ? const Color(0xFF4ADE80)
-                    : const Color(0xFF6B3A1C),
+                    : const Color(0x338FA8E8),
                 width: isTurn ? 1.5 : 0.8,
               ),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // رأس الاستكانة الجانبية
+                // رأس الاستكانة الجانبية — زجاجي
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 5),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF261006),
-                    border: Border(
-                      bottom: BorderSide(
-                          color: Color(0xFF190702), width: 1),
+                  decoration: BoxDecoration(
+                    color: const Color(0x1AFFFFFF),
+                    border: const Border(
+                      bottom:
+                          BorderSide(color: Color(0x2E8FA8E8), width: 1),
                     ),
                   ),
                   child: Center(
@@ -262,7 +277,7 @@ class OkeyOpponentIstaka extends StatelessWidget {
                       style: TextStyle(
                         color: isTurn
                             ? const Color(0xFF86EFAC)
-                            : const Color(0xFFD4A373),
+                            : const Color(0xFF8FA8E8),
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                       ),
@@ -272,12 +287,11 @@ class OkeyOpponentIstaka extends StatelessWidget {
 
                 // الأحجار العمودية
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                      vertical: 5, horizontal: 4),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
-                    children: List.generate(
-                        math.min(tileCount, 14), (i) {
+                    children: List.generate(math.min(tileCount, 14), (i) {
                       // نعرض كل حجرين متكدسين
                       if (i >= 7) return const SizedBox.shrink();
                       final isEven = i % 2 == 0;
@@ -323,15 +337,15 @@ class OkeyOpponentIstaka extends StatelessWidget {
                   ),
                 ),
 
-                // شارة العدد
+                // شارة العدد — زجاجية
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   decoration: const BoxDecoration(
-                    color: Color(0xFF1E0A03),
+                    color: Color(0x14000000),
                     border: Border(
-                      top: BorderSide(
-                          color: Color(0xFF331607), width: 1),
+                      top:
+                          BorderSide(color: Color(0x2E8FA8E8), width: 1),
                     ),
                   ),
                   child: Center(
@@ -347,6 +361,8 @@ class OkeyOpponentIstaka extends StatelessWidget {
                 ),
               ],
             ),
+              ),
+            ],
           ),
         ),
       ),

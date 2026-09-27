@@ -1,10 +1,15 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../theme.dart';
 import '../models.dart';
+import '../utils/format.dart';
+import '../utils/haptics.dart';
 import '../utils/top_notification.dart';
 import '../widgets/game_artwork.dart';
-import '../widgets/app_background.dart';
+import '../widgets/gem_icon.dart';
+import '../services/auth_service.dart';
 import 'okey_game_screen.dart';
+import 'chess_game_screen.dart';
+import 'backgammon_game_screen.dart';
 
 class GameScreen extends StatefulWidget {
   final String gameId;
@@ -22,193 +27,188 @@ class _GameScreenState extends State<GameScreen> {
   final List<String> _modes = ['أونلاين', 'مع صديق', 'ضد الذكاء الاصطناعي'];
   final List<int> _bets = [100, 250, 500, 1000, 2500];
 
+  static const _bgTop = Color(0xFF0A0F24);
+  static const _bgMid = Color(0xFF070B18);
+  static const _bgBot = Color(0xFF04060F);
+  static const _neonBlue = Color(0xFF3B82F6);
+  static const _cyan = Color(0xFF38BDF8);
+  static const _gold = Color(0xFFFFD54F);
+  static const _textWhite = Color(0xFFF1F5FF);
+  static const _textDim = Color(0xFF8EA3C8);
+
   @override
   Widget build(BuildContext context) {
     final game = GamesData.getGame(widget.gameId);
+    final user = AuthService().currentUser;
 
     return Scaffold(
-      body: AppBackground(
+      backgroundColor: _bgBot,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [_bgTop, _bgMid, _bgBot],
+          ),
+        ),
         child: SafeArea(
           child: Column(
             children: [
-              // Top Bar
+              // ═══ الهيدر الزجاجي ═══
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Back Button
-                    GestureDetector(
-                      onTap: () => Navigator.of(context).pop(),
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: const Color(0xE625143E),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: const Color(0x40FFD54F),
-                            width: 1,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.35),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.arrow_back_ios_new_rounded,
-                            color: Colors.white,
-                            size: 18,
-                          ),
+                    _glassIcon(Icons.arrow_back_ios_new_rounded, _textDim,
+                        () => Navigator.of(context).pop()),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        game.title,
+                        style: const TextStyle(
+                          color: _textWhite,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w900,
                         ),
                       ),
                     ),
-
-                    // Game Title in Top Bar
-                    Text(
-                      game.title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        shadows: [
-                          Shadow(
-                            color: Colors.black54,
-                            blurRadius: 4,
-                            offset: Offset(0, 1),
+                    // رصيد اللاعب في كبسولة زجاجية
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 11, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0x3A16204A),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                                color: const Color(0x33FFFFFF), width: 1),
                           ),
-                        ],
-                      ),
-                    ),
-
-                    // Coin display
-                    Container(
-                      height: 34,
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xE625143E),
-                        borderRadius: BorderRadius.circular(17),
-                        border: Border.all(
-                          color: const Color(0x40FFD54F),
-                          width: 1,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text('🪙',
+                                  style: TextStyle(fontSize: 13)),
+                              const SizedBox(width: 4),
+                              Text(
+                                formatBalance(user?.chips ?? 0),
+                                style: const TextStyle(
+                                    color: _gold,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 12.5),
+                              ),
+                              Container(
+                                width: 1,
+                                height: 13,
+                                margin: const EdgeInsets.symmetric(
+                                    horizontal: 7),
+                                color: const Color(0x33FFFFFF),
+                              ),
+                              const GemIcon(size: 13),
+                              const SizedBox(width: 4),
+                              Text(
+                                formatBalance(user?.gems ?? 0),
+                                style: const TextStyle(
+                                    color: _cyan,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 12.5),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            '💰',
-                            style: TextStyle(fontSize: 14),
-                          ),
-                          SizedBox(width: 4),
-                          Text(
-                            '1250',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
                       ),
                     ),
                   ],
                 ),
               ),
 
-              // Scrollable Body
+              // ═══ المحتوى ═══
               Expanded(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 20, vertical: 8),
                   child: Column(
                     children: [
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
 
-                      // Large 3D Artwork Hero Card
-                      Container(
-                        height: 180,
-                        decoration: BoxDecoration(
-                          gradient: game.gradient,
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                            color: game.borderColor,
-                            width: 3,
+                      // بطاقة العمل الفني الزجاجية
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(26),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                          child: Container(
+                            height: 190,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  const Color(0x401B2A5E),
+                                  const Color(0x2A101838),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(26),
+                              border: Border.all(
+                                  color: const Color(0x33FFFFFF), width: 1.1),
+                              boxShadow: [
+                                BoxShadow(
+                                    color: _neonBlue.withOpacity(0.15),
+                                    blurRadius: 26,
+                                    spreadRadius: -6),
+                              ],
+                            ),
+                            child: Stack(
+                              children: [
+                                Positioned.fill(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(18),
+                                    child: GameArtwork(gameId: game.id),
+                                  ),
+                                ),
+                                if (game.hasCrown)
+                                  const Positioned(
+                                    top: 10,
+                                    right: 14,
+                                    child: Text('👑',
+                                        style: TextStyle(fontSize: 26)),
+                                  ),
+                              ],
+                            ),
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: game.glowColor.withOpacity(0.4),
-                              blurRadius: 20,
-                              offset: const Offset(0, 8),
-                            ),
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.4),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Stack(
-                          children: [
-                            Positioned.fill(
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: GameArtwork(gameId: game.id),
-                              ),
-                            ),
-                            if (game.hasCrown)
-                              const Positioned(
-                                top: 10,
-                                right: 14,
-                                child: Text('👑', style: TextStyle(fontSize: 26)),
-                              ),
-                          ],
                         ),
                       ),
                       const SizedBox(height: 18),
 
-                      // Game Title & Tagline
+                      // العنوان + الوصف
                       Text(
                         game.title,
                         style: const TextStyle(
-                          color: AppColors.gold,
-                          fontSize: 28,
+                          color: _gold,
+                          fontSize: 26,
                           fontWeight: FontWeight.w900,
                           shadows: [
-                            Shadow(
-                              color: AppColors.goldDark,
-                              blurRadius: 10,
-                            ),
+                            Shadow(color: Color(0x66FFB300), blurRadius: 12),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 5),
                       Text(
                         game.description,
+                        textAlign: TextAlign.center,
                         style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 14,
+                          color: _textDim,
+                          fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 22),
 
-                      // Mode Selection
-                      const Align(
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          'اختر نمط اللعب:',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
+                      // اختيار نمط اللعب
+                      _sectionTitle('اختر نمط اللعب:'),
                       const SizedBox(height: 10),
                       Row(
                         children: List.generate(_modes.length, (index) {
@@ -217,25 +217,43 @@ class _GameScreenState extends State<GameScreen> {
                             child: Padding(
                               padding: EdgeInsets.only(
                                 left: index == 0 ? 0 : 4,
-                                right: index == _modes.length - 1 ? 0 : 4,
+                                right:
+                                    index == _modes.length - 1 ? 0 : 4,
                               ),
                               child: GestureDetector(
-                                onTap: () => setState(() => _selectedMode = index),
+                                onTap: () {
+                                  AppHaptics.selection();
+                                  setState(() => _selectedMode = index);
+                                },
                                 child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 150),
-                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                  duration:
+                                      const Duration(milliseconds: 180),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 11),
                                   decoration: BoxDecoration(
-                                    color: isSel ? const Color(0xFF6D28D9) : const Color(0xE625143E),
-                                    borderRadius: BorderRadius.circular(12),
+                                    gradient: isSel
+                                        ? const LinearGradient(colors: [
+                                            Color(0xFF3B82F6),
+                                            Color(0xFF1D4ED8),
+                                          ])
+                                        : null,
+                                    color: isSel
+                                        ? null
+                                        : const Color(0x2E141C3C),
+                                    borderRadius:
+                                        BorderRadius.circular(14),
                                     border: Border.all(
-                                      color: isSel ? const Color(0xFFA78BFA) : const Color(0x33A78BFA),
-                                      width: isSel ? 1.8 : 1,
+                                      color: isSel
+                                          ? _neonBlue
+                                          : const Color(0x26FFFFFF),
+                                      width: isSel ? 1.6 : 1,
                                     ),
                                     boxShadow: isSel
                                         ? [
                                             BoxShadow(
-                                              color: const Color(0xFF6D28D9).withOpacity(0.5),
-                                              blurRadius: 8,
+                                              color: _neonBlue
+                                                  .withOpacity(0.35),
+                                              blurRadius: 12,
                                             ),
                                           ]
                                         : null,
@@ -243,10 +261,15 @@ class _GameScreenState extends State<GameScreen> {
                                   child: Center(
                                     child: Text(
                                       _modes[index],
+                                      textAlign: TextAlign.center,
                                       style: TextStyle(
-                                        color: isSel ? Colors.white : AppColors.textMuted,
-                                        fontSize: 12.5,
-                                        fontWeight: isSel ? FontWeight.w800 : FontWeight.w500,
+                                        color: isSel
+                                            ? Colors.white
+                                            : _textDim,
+                                        fontSize: 11.5,
+                                        fontWeight: isSel
+                                            ? FontWeight.w900
+                                            : FontWeight.w600,
                                       ),
                                     ),
                                   ),
@@ -258,18 +281,8 @@ class _GameScreenState extends State<GameScreen> {
                       ),
                       const SizedBox(height: 20),
 
-                      // Bet Selection
-                      const Align(
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          'قيمة الرهان (عملات):',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
+                      // اختيار الرهان
+                      _sectionTitle('قيمة الرهان (عملات):'),
                       const SizedBox(height: 10),
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
@@ -278,34 +291,60 @@ class _GameScreenState extends State<GameScreen> {
                           children: _bets.map((bet) {
                             final isSel = _selectedBet == bet;
                             return Padding(
-                              padding: const EdgeInsets.only(left: 8),
+                              padding: const EdgeInsets.only(left: 9),
                               child: GestureDetector(
-                                onTap: () => setState(() => _selectedBet = bet),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                onTap: () {
+                                  AppHaptics.selection();
+                                  setState(() => _selectedBet = bet);
+                                },
+                                child: AnimatedContainer(
+                                  duration:
+                                      const Duration(milliseconds: 180),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 9),
                                   decoration: BoxDecoration(
                                     gradient: isSel
-                                        ? const LinearGradient(
-                                            colors: [Color(0xFFFFB300), Color(0xFFE65100)],
-                                          )
+                                        ? const LinearGradient(colors: [
+                                            Color(0xFFFFE082),
+                                            _gold,
+                                            Color(0xFFE8A820),
+                                          ])
                                         : null,
-                                    color: isSel ? null : const Color(0xE625143E),
-                                    borderRadius: BorderRadius.circular(16),
+                                    color: isSel
+                                        ? null
+                                        : const Color(0x2E141C3C),
+                                    borderRadius:
+                                        BorderRadius.circular(16),
                                     border: Border.all(
-                                      color: isSel ? const Color(0xFFFFD54F) : const Color(0x33FFD54F),
+                                      color: isSel
+                                          ? const Color(0xFFFFE9A8)
+                                          : const Color(0x26FFFFFF),
                                       width: isSel ? 1.5 : 1,
                                     ),
+                                    boxShadow: isSel
+                                        ? [
+                                            BoxShadow(
+                                              color: _gold
+                                                  .withOpacity(0.4),
+                                              blurRadius: 12,
+                                            ),
+                                          ]
+                                        : null,
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Text('💰', style: TextStyle(fontSize: 13)),
-                                      const SizedBox(width: 4),
+                                      const Text('🪙',
+                                          style:
+                                              TextStyle(fontSize: 13)),
+                                      const SizedBox(width: 5),
                                       Text(
-                                        '$bet',
+                                        formatBalance(bet),
                                         style: TextStyle(
-                                          color: isSel ? Colors.white : AppColors.gold,
-                                          fontWeight: FontWeight.w800,
+                                          color: isSel
+                                              ? const Color(0xFF1B0B30)
+                                              : _gold,
+                                          fontWeight: FontWeight.w900,
                                           fontSize: 13,
                                         ),
                                       ),
@@ -317,14 +356,35 @@ class _GameScreenState extends State<GameScreen> {
                           }).toList(),
                         ),
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 30),
 
-                      // "العب الآن" (Play Now) Big Button
+                      // زر "العب الآن" الذهبي
                       GestureDetector(
                         onTap: () {
+                          AppHaptics.medium();
                           if (widget.gameId == 'okey') {
                             Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => const OkeyGameScreen()),
+                              MaterialPageRoute(
+                                  builder: (_) =>
+                                      const OkeyGameScreen()),
+                            );
+                          } else if (widget.gameId == 'chess') {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                  builder: (_) => ChessGameScreen(
+                                        vsAI: _selectedMode != 1,
+                                        bet: _selectedBet,
+                                      )),
+                            );
+                          } else if (widget.gameId == 'backgammon') {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                  builder: (_) => BackgammonGameScreen(
+                                        vsAI: _selectedMode != 1,
+                                        bet: _selectedMode == 1
+                                            ? 0
+                                            : _selectedBet,
+                                      )),
                             );
                           } else {
                             TopNotification.show(
@@ -336,58 +396,76 @@ class _GameScreenState extends State<GameScreen> {
                         },
                         child: Container(
                           width: double.infinity,
-                          height: 54,
+                          padding:
+                              const EdgeInsets.symmetric(vertical: 16),
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
                               colors: [
-                                Color(0xFFFF7A45),
-                                Color(0xFFFF3D00),
-                                Color(0xFFD82800),
+                                Color(0xFFFFE082),
+                                _gold,
+                                Color(0xFFE8A820),
+                                Color(0xFFB8860B),
                               ],
+                              stops: [0.0, 0.35, 0.75, 1.0],
                             ),
-                            borderRadius: BorderRadius.circular(27),
+                            borderRadius: BorderRadius.circular(24),
                             border: Border.all(
-                              color: Colors.white.withOpacity(0.8),
-                              width: 1.5,
-                            ),
+                                color: const Color(0xFFFFE9A8),
+                                width: 1.4),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFFFF3D00).withOpacity(0.55),
-                                blurRadius: 16,
-                                offset: const Offset(0, 6),
-                              ),
+                                  color: _gold.withOpacity(0.4),
+                                  blurRadius: 22,
+                                  spreadRadius: -2),
+                              BoxShadow(
+                                  color: Colors.black.withOpacity(0.4),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 6)),
                             ],
                           ),
-                          child: const Center(
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.play_arrow_rounded,
-                                  color: Colors.white,
-                                  size: 28,
-                                ),
-                                SizedBox(width: 6),
-                                Text(
-                                  'العب الآن',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 0.5,
-                                    shadows: [
-                                      Shadow(
-                                        color: Colors.black45,
-                                        blurRadius: 4,
-                                        offset: Offset(0, 1),
-                                      ),
-                                    ],
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Positioned(
+                                top: 0,
+                                left: 30,
+                                right: 30,
+                                height: 13,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius:
+                                        BorderRadius.circular(20),
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Colors.white.withOpacity(0.5),
+                                        Colors.transparent,
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                              const Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.play_arrow_rounded,
+                                      color: Color(0xFF1B0B30),
+                                      size: 26),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'العب الآن',
+                                    style: TextStyle(
+                                      color: Color(0xFF1B0B30),
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 0.3,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -397,6 +475,58 @@ class _GameScreenState extends State<GameScreen> {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionTitle(String text) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Row(
+        children: [
+          Container(
+            width: 22,
+            height: 2,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(2),
+              gradient: LinearGradient(colors: [
+                Colors.transparent,
+                _neonBlue.withOpacity(0.8),
+              ]),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            text,
+            style: const TextStyle(
+              color: _textWhite,
+              fontSize: 14.5,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _glassIcon(IconData icon, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: const Color(0x2E16204A),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0x26FFFFFF), width: 1),
+            ),
+            child: Icon(icon, color: color, size: 17),
           ),
         ),
       ),

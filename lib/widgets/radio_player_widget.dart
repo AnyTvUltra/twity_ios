@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/radio_service.dart';
 import '../utils/haptics.dart';
 
-class RadioPlayerSheet extends StatelessWidget {
+class RadioPlayerSheet extends StatefulWidget {
   const RadioPlayerSheet({super.key});
 
   static void show(BuildContext context) {
@@ -16,8 +16,17 @@ class RadioPlayerSheet extends StatelessWidget {
   }
 
   @override
+  State<RadioPlayerSheet> createState() => _RadioPlayerSheetState();
+}
+
+class _RadioPlayerSheetState extends State<RadioPlayerSheet> {
+  String _selectedGroup = 'all';
+
+  @override
   Widget build(BuildContext context) {
     final radio = RadioService();
+    final groups = radio.groups;
+    final stations = radio.stationsFor(_selectedGroup);
 
     return AnimatedBuilder(
       animation: radio,
@@ -28,7 +37,7 @@ class RadioPlayerSheet extends StatelessWidget {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF2B1347), Color(0xFF160926)],
+              colors: [Color(0xFF1B2338), Color(0xFF0D1424)],
             ),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             border: Border.all(color: const Color(0x40FFD54F), width: 1.2),
@@ -168,48 +177,118 @@ class RadioPlayerSheet extends StatelessWidget {
               // Stations List
               const Align(
                 alignment: Alignment.centerRight,
-                child: Text('اختر محطة إذاعية:', style: TextStyle(color: Colors.white70, fontSize: 12.5, fontWeight: FontWeight.bold)),
+                child: Text('اختر مجموعة ثم محطة:', style: TextStyle(color: Colors.white70, fontSize: 12.5, fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(height: 8),
+
+              // مجموعات الأغاني
+              SizedBox(
+                height: 34,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  children: [
+                    _groupChip('all', '📻', 'الكل'),
+                    ...groups.map(
+                      (g) => _groupChip(g.id, g.flag, g.name),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 8),
 
               SizedBox(
                 height: 140,
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: RadioService.stations.length,
-                  itemBuilder: (context, index) {
-                    final station = RadioService.stations[index];
-                    final isCurrent = radio.currentStationIndex == index;
+                child: stations.isEmpty
+                    ? const Center(
+                        child: Text('لا توجد أغاني في هذه المجموعة',
+                            style: TextStyle(
+                                color: Colors.white38, fontSize: 12)),
+                      )
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: stations.length,
+                        itemBuilder: (context, index) {
+                          final station = stations[index];
+                          final isCurrent =
+                              radio.currentStation.id == station.id;
 
-                    return ListTile(
-                      dense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-                      leading: Text(station.flag, style: const TextStyle(fontSize: 20)),
-                      title: Text(
-                        station.name,
-                        style: TextStyle(
-                          color: isCurrent ? const Color(0xFFFFD54F) : Colors.white,
-                          fontSize: 13,
-                          fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-                        ),
+                          return ListTile(
+                            dense: true,
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 0),
+                            leading: Text(station.flag,
+                                style: const TextStyle(fontSize: 20)),
+                            title: Text(
+                              station.name,
+                              style: TextStyle(
+                                color: isCurrent
+                                    ? const Color(0xFFFFD54F)
+                                    : Colors.white,
+                                fontSize: 13,
+                                fontWeight: isCurrent
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                            subtitle: Text(station.genre,
+                                style: const TextStyle(
+                                    color: Colors.white38, fontSize: 10.5)),
+                            trailing: isCurrent && radio.isPlaying
+                                ? const Icon(Icons.graphic_eq_rounded,
+                                    color: Color(0xFFFFD54F), size: 18)
+                                : null,
+                            onTap: () {
+                              AppHaptics.selection();
+                              radio.playStationById(station.id);
+                            },
+                          );
+                        },
                       ),
-                      subtitle: Text(station.genre, style: const TextStyle(color: Colors.white38, fontSize: 10.5)),
-                      trailing: isCurrent && radio.isPlaying
-                          ? const Icon(Icons.graphic_eq_rounded, color: Color(0xFFFFD54F), size: 18)
-                          : null,
-                      onTap: () {
-                        AppHaptics.selection();
-                        radio.playStation(index);
-                      },
-                    );
-                  },
-                ),
               ),
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _groupChip(String id, String flag, String name) {
+    final sel = _selectedGroup == id;
+    return GestureDetector(
+      onTap: () {
+        AppHaptics.selection();
+        setState(() => _selectedGroup = id);
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        margin: const EdgeInsetsDirectional.only(end: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: sel ? const Color(0x33FFD54F) : Colors.white.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(17),
+          border: Border.all(
+            color: sel ? const Color(0xFFFFD54F) : Colors.white12,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(flag, style: const TextStyle(fontSize: 14)),
+            const SizedBox(width: 5),
+            Text(
+              name,
+              style: TextStyle(
+                color: sel ? const Color(0xFFFFD54F) : Colors.white70,
+                fontSize: 11.5,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

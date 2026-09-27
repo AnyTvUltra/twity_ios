@@ -4,15 +4,19 @@ import 'screens/home_screen.dart';
 import 'screens/game_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/okey_lobby_screen.dart';
+import 'screens/admin_panel_screen.dart';
 import 'services/firebase_service.dart';
 import 'services/auth_service.dart';
 import 'services/radio_service.dart';
+import 'services/store_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await FirebaseService().initialize();
   AuthService().initialize();
+  StoreService().initialize();
   RadioService().init();
+  RadioService().initialize();
   runApp(const GameHubApp());
 }
 
@@ -22,7 +26,7 @@ class GameHubApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'مجموعة الألعاب الممتعة',
+      title: 'Yalla Yari - یەڵا یاری',
       debugShowCheckedModeBanner: false,
       scrollBehavior: const MaterialScrollBehavior().copyWith(
         dragDevices: {
@@ -69,6 +73,7 @@ class GameHubApp extends StatelessWidget {
         '/games/ludo': (context) => const GameScreen(gameId: 'ludo'),
         '/games/okey': (context) => const OkeyLobbyScreen(),
         '/games/backgammon': (context) => const GameScreen(gameId: 'backgammon'),
+        '/admin': (context) => const AdminPanelScreen(),
       },
     );
   }

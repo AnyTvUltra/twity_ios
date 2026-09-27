@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../okey_models.dart';
+import '../../../services/store_service.dart';
+import '../../../widgets/animated_skin_effect.dart';
+import '../../../widgets/skin_image.dart';
 import 'okey_tile_widget.dart';
+import 'okey_rack_model_3d.dart';
 
 /// استكانة اللاعب ثلاثية الأبعاد - مطابقة لشكل الحامل الخشبي بالصورة المرجعية
 class OkeyIstakaWidget extends StatelessWidget {
@@ -11,7 +16,17 @@ class OkeyIstakaWidget extends StatelessWidget {
   final Function(int slotIndex) onTileTap;
   final Function(int fromSlot, int toSlot)? onTileMove;
 
-  const OkeyIstakaWidget({
+  /// معامل تكبير المشهد (FittedBox) ليظهر الحجر المسحوب بنفس حجمه على الشاشة
+  final double dragScaleX;
+  final double dragScaleY;
+
+  /// دوران المشهد (عندما تكون الشاشة عمودية والمشهد مُدار 90°)
+  final int feedbackQuarterTurns;
+
+  /// كسنة الاستكانة (اختيارية) — تغطي كامل الجسم مع دعم التكبير والإزاحة
+  final StoreItem? rackItem;
+
+  OkeyIstakaWidget({
     super.key,
     required this.rackTiles,
     required this.selectedIndex,
@@ -19,8 +34,33 @@ class OkeyIstakaWidget extends StatelessWidget {
     this.highlightedIndices = const {},
     required this.onTileTap,
     this.onTileMove,
+    this.dragScaleX = 1.0,
+    this.dragScaleY = 1.0,
+    this.feedbackQuarterTurns = 0,
+    this.rackItem,
   });
 
+  /// صناديق العرض لكل خانة — لحساب نصف الخانة عند الإفلات
+  final Map<int, RenderBox?> _lastSlotBoxes = {};
+
+  /// أحجار الكتلة المتجاورة التي تحتوي الخانة (لحمل الـ Per كاملاً)
+  List<OkeyTile> _groupForSlot(int slotIndex) {
+    final rowStart = slotIndex < 14 ? 0 : 14;
+    int i = slotIndex;
+    while (i > rowStart && rackTiles[i - 1] != null) {
+      i--;
+    }
+    int j = slotIndex;
+    while (j < rowStart + 13 && rackTiles[j + 1] != null) {
+      j++;
+    }
+    final out = <OkeyTile>[];
+    for (var k = i; k <= j; k++) {
+      final t = rackTiles[k];
+      if (t != null) out.add(t);
+    }
+    return out;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,8 +68,9 @@ class OkeyIstakaWidget extends StatelessWidget {
       builder: (context, constraints) {
         final availableW = constraints.maxWidth;
         // العرض المحسوب للخانة الواحدة بحيث تتسع الـ 14 خانة بداخل الرف مع هوامش مريحة
-        final slotW = ((availableW - 64) / 14).clamp(21.0, 30.0);
-        final tileW = slotW - 2.0; // يضمن وجود مساحة 1.0 بكسل لكل جهة دون أي تداخل
+        final slotW = ((availableW - 64) / 14).clamp(24.0, 40.0);
+        final tileW =
+            slotW - 2.0; // يضمن وجود مساحة 1.0 بكسل لكل جهة دون أي تداخل
         final tileH = tileW * 1.36;
 
         final innerShelfW = slotW * 14;
@@ -48,74 +89,84 @@ class OkeyIstakaWidget extends StatelessWidget {
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(5),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.10),
+                      width: 1.0,
+                    ),
                     boxShadow: [
+                      // عمق + إضاءة محيطية زجاجية خافتة
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.7),
-                        blurRadius: 16,
-                        offset: const Offset(0, 8),
+                        color: Colors.black.withOpacity(0.6),
+                        blurRadius: 18,
+                        offset: const Offset(0, 10),
                       ),
                       BoxShadow(
-                        color: const Color(0xFFD4A373).withOpacity(0.15),
+                        color: const Color(0xFF3FF5A8).withOpacity(0.08),
+                        blurRadius: 14,
+                        spreadRadius: -2,
+                      ),
+                      BoxShadow(
+                        color: Colors.white.withOpacity(0.08),
                         blurRadius: 1,
                         offset: const Offset(0, -1),
                       ),
                     ],
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(5),
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Color(0xFF5A2E16),
-                            Color(0xFF45220F),
-                            Color(0xFF33180A),
-                            Color(0xFF241006),
-                          ],
-                          stops: [0.0, 0.35, 0.75, 1.0],
+                    borderRadius: BorderRadius.circular(12),
+                    child: Stack(
+                      children: [
+                        // الكسنة تغطي كامل جسم الاستكانة (أو الخشب الافتراضي)
+                        // — إن كان للكسنة نموذج GLB ثلاثي الأبعاد يُعرض النموذج نفسه
+                        Positioned.fill(
+                          child: rackItem != null &&
+                                  rackItem!.model3d.isNotEmpty
+                              ? OkeyRack3DModel(modelPath: rackItem!.model3d)
+                              : rackItem != null
+                                  ? (skinEffectOf(rackItem) != SkinEffect.none
+                                      ? AnimatedSkinLayer(
+                                          effect: skinEffectOf(rackItem),
+                                          woodUnderlay: true)
+                                      : SkinTransformImage.fromItem(rackItem!))
+                                  : SkinTransformImage.fromItem(
+                                      StoreService.defaultWoodItem),
                         ),
-                      ),
-                      child: Column(
+                        // تعتيم خفيف فوق الكسنة/الخشب
+                        if (rackItem == null ||
+                            rackItem!.model3d.isEmpty)
+                          Positioned.fill(
+                            child: Container(
+                              color: Colors.black.withOpacity(0.12),
+                            ),
+                          ),
+                        Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // ── اللوح الخلفي العلوي مع نص "YOUR TURN" ──
+                          // ── اللوح الخلفي العلوي — شريط زجاجي ──
                           Container(
                             width: double.infinity,
                             height: 20,
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
-                                colors: [
-                                  Color(0xFF42200E),
-                                  Color(0xFF2E1508),
-                                ],
+                                colors: (rackItem?.model3d.isNotEmpty ?? false)
+                                    ? const [
+                                        Color(0x00000000),
+                                        Color(0x00000000),
+                                      ]
+                                    : const [
+                                        Color(0x2FFFFFFF),
+                                        Color(0x14FFFFFF),
+                                      ],
                               ),
                               border: Border(
                                 bottom: BorderSide(
-                                  color: Color(0xFF1B0B04),
-                                  width: 1.5,
-                                ),
-                              ),
-                            ),
-                            child: Center(
-                              child: Text(
-                                isTurn ? 'YOUR TURN' : 'OPPONENT TURN',
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.92),
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 1.2,
-                                  shadows: [
-                                    Shadow(
-                                      color: Colors.black.withOpacity(0.8),
-                                      blurRadius: 2,
-                                      offset: const Offset(0, 1),
-                                    ),
-                                  ],
+                                  color: (rackItem?.model3d.isNotEmpty ?? false)
+                                      ? const Color(0x00000000)
+                                      : const Color(0x338FA8E8),
+                                  width: 1.0,
                                 ),
                               ),
                             ),
@@ -123,37 +174,57 @@ class OkeyIstakaWidget extends StatelessWidget {
 
                           // ── مساحة الرفين للأحجار ──
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 4),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 // الصف الأول (العلوي)
                                 _buildShelfRow(0, 14, slotW, tileW, tileH),
 
-                                // الحافة الخشبية الفاصلة بين الرفين
+                                // الفاصل المعدني بين الرفين — Glass Metal
                                 Container(
                                   height: 4,
-                                  margin: const EdgeInsets.symmetric(vertical: 2.5),
+                                  margin:
+                                      const EdgeInsets.symmetric(vertical: 2.5),
                                   decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
+                                    gradient: LinearGradient(
                                       begin: Alignment.topCenter,
                                       end: Alignment.bottomCenter,
-                                      colors: [
-                                        Color(0xFF1E0A03),
-                                        Color(0xFF6B3A1C),
-                                        Color(0xFF8B4D26),
-                                        Color(0xFF2C1205),
-                                      ],
-                                      stops: [0.0, 0.3, 0.7, 1.0],
+                                      colors:
+                                          (rackItem?.model3d.isNotEmpty ?? false)
+                                              ? const [
+                                                  Color(0x00000000),
+                                                  Color(0x00000000),
+                                                  Color(0x00000000),
+                                                  Color(0x00000000),
+                                                ]
+                                              : const [
+                                                  Color(0xFF0A0F22),
+                                                  Color(0xFF5C6FA6),
+                                                  Color(0xFF9FB4E8),
+                                                  Color(0xFF1A2444),
+                                                ],
+                                      stops: const [0.0, 0.3, 0.7, 1.0],
                                     ),
-                                    borderRadius: BorderRadius.circular(1),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.5),
-                                        blurRadius: 1.5,
-                                        offset: const Offset(0, 1),
-                                      ),
-                                    ],
+                                    borderRadius: BorderRadius.circular(2),
+                                    boxShadow:
+                                        (rackItem?.model3d.isNotEmpty ?? false)
+                                            ? null
+                                            : [
+                                                BoxShadow(
+                                                  color: Colors.black
+                                                      .withOpacity(0.5),
+                                                  blurRadius: 1.5,
+                                                  offset: const Offset(0, 1),
+                                                ),
+                                                BoxShadow(
+                                                  color: const Color(0xFF8FA8E8)
+                                                      .withOpacity(0.12),
+                                                  blurRadius: 3,
+                                                  spreadRadius: -1,
+                                                ),
+                                              ],
                                   ),
                                 ),
 
@@ -163,21 +234,29 @@ class OkeyIstakaWidget extends StatelessWidget {
                             ),
                           ),
 
-                          // الحافة السفلية للاستكانة (Bottom Lip)
+                          // الشفة السفلية — معدن زجاجي داكن
                           Container(
                             height: 4,
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               gradient: LinearGradient(
-                                colors: [
-                                  Color(0xFF190802),
-                                  Color(0xFF38190A),
-                                  Color(0xFF190802),
-                                ],
+                                colors:
+                                    (rackItem?.model3d.isNotEmpty ?? false)
+                                        ? const [
+                                            Color(0x00000000),
+                                            Color(0x00000000),
+                                            Color(0x00000000),
+                                          ]
+                                        : const [
+                                            Color(0xFF0A0F22),
+                                            Color(0xFF3A4A7A),
+                                            Color(0xFF0A0F22),
+                                          ],
                               ),
                             ),
                           ),
                         ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -215,14 +294,16 @@ class OkeyIstakaWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildShelfRow(int start, int end, double slotW, double tileW, double tileH) {
+  Widget _buildShelfRow(
+      int start, int end, double slotW, double tileW, double tileH) {
     return SizedBox(
       height: tileH,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(end - start, (i) {
           final slotIndex = start + i;
-          final tile = slotIndex < rackTiles.length ? rackTiles[slotIndex] : null;
+          final tile =
+              slotIndex < rackTiles.length ? rackTiles[slotIndex] : null;
           final isSelected = selectedIndex == slotIndex;
 
           if (tile == null) {
@@ -239,16 +320,28 @@ class OkeyIstakaWidget extends StatelessWidget {
                   builder: (context, candidateData, rejectedData) {
                     final isHovering = candidateData.isNotEmpty;
                     return Container(
-                      width: tileW,
+                      width: slotW,
                       height: tileH,
-                      decoration: BoxDecoration(
-                        color: isHovering
-                            ? const Color(0x334ADE80)
-                            : const Color(0x10000000),
-                        borderRadius: BorderRadius.circular(3),
-                        border: isHovering
-                            ? Border.all(color: const Color(0xFF4ADE80), width: 1.2)
-                            : null,
+                      color: Colors.transparent,
+                      child: Center(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          curve: Curves.easeOutCubic,
+                          width: isHovering ? slotW : tileW,
+                          height: tileH,
+                          decoration: BoxDecoration(
+                            color: isHovering
+                                ? const Color(0x334ADE80)
+                                : const Color(0x14FFFFFF),
+                            borderRadius: BorderRadius.circular(3),
+                            border: Border.all(
+                              color: isHovering
+                                  ? const Color(0xFF4ADE80)
+                                  : const Color(0x1AFFFFFF),
+                              width: isHovering ? 1.2 : 0.5,
+                            ),
+                          ),
+                        ),
                       ),
                     );
                   },
@@ -265,46 +358,120 @@ class OkeyIstakaWidget extends StatelessWidget {
               child: DragTarget<int>(
                 onWillAcceptWithDetails: (details) => details.data != slotIndex,
                 onAcceptWithDetails: (details) {
-                  onTileMove?.call(details.data, slotIndex);
+                  // إدراج قبل/بعد الحجر حسب نصف الخانة الذي أفلتّ عليه
+                  // — بدون إزاحة الأحجار المجاورة بعيداً
+                  final rowEnd = end - 1;
+                  var target = slotIndex;
+                  final box = _lastSlotBoxes[slotIndex];
+                  if (box != null && box.attached) {
+                    final local = box.globalToLocal(details.offset);
+                    if (local.dx > box.size.width / 2 &&
+                        slotIndex + 1 <= rowEnd) {
+                      target = slotIndex + 1;
+                    }
+                  }
+                  if (target == details.data) target = slotIndex;
+                  onTileMove?.call(details.data, target);
                 },
                 builder: (context, candidateData, rejectedData) {
-                  return LongPressDraggable<int>(
-                    data: slotIndex,
-                    delay: const Duration(milliseconds: 160),
-                    hapticFeedbackOnStart: true,
-                    feedback: Material(
-                      color: Colors.transparent,
-                      child: Transform.scale(
-                        scale: 1.15,
-                        child: OkeyTileWidget(
-                          tile: tile,
-                          isDragging: true,
-                          width: tileW,
-                          height: tileH,
+                  _lastSlotBoxes[slotIndex] =
+                      context.findRenderObject() as RenderBox?;
+                  final draggedFrom =
+                      candidateData.isEmpty ? null : candidateData.first;
+                  final hoverOffset = draggedFrom == null
+                      ? 0.0
+                      : (draggedFrom < slotIndex
+                          ? -slotW * 0.38
+                          : slotW * 0.38);
+                  // حمل الـ Per كاملاً: إن كان الحجر ضمن مجموعة مميّزة اسحبها كلها
+                  final groupTiles = highlightedIndices.contains(slotIndex)
+                      ? _groupForSlot(slotIndex)
+                      : null;
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOutCubic,
+                    transform: Matrix4.translationValues(hoverOffset, 0, 0),
+                    child: Draggable<int>(
+                      data: slotIndex,
+                      onDragStarted: () =>
+                          HapticFeedback.selectionClick(),
+                      // الحجر يرتفع قليلاً فوق الإصبع ولا يتداخل معه
+                      dragAnchorStrategy: (Draggable<Object> draggable,
+                          BuildContext context, Offset position) {
+                        final w = tileW * dragScaleX * 1.08;
+                        final h = tileH * dragScaleY * 1.08;
+                        if (feedbackQuarterTurns.isOdd) {
+                          // بعد التدوير: العرض المعروض = الارتفاع والعكس
+                          return Offset(h / 2, w + 8);
+                        }
+                        return Offset(w / 2, h + 8);
+                      },
+                      feedback: Material(
+                        color: Colors.transparent,
+                        elevation: 10,
+                        borderRadius: BorderRadius.circular(4),
+                        child: RotatedBox(
+                          quarterTurns: feedbackQuarterTurns,
+                          child: Transform(
+                            alignment: Alignment.center,
+                            transform: Matrix4.diagonal3Values(
+                                dragScaleX * 1.08, dragScaleY * 1.08, 1),
+                            child: groupTiles != null && groupTiles.length > 1
+                                ? Container(
+                                    padding: const EdgeInsets.all(3),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xCC10B981),
+                                      borderRadius:
+                                          BorderRadius.circular(5),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: groupTiles
+                                          .map((t) => Padding(
+                                                padding:
+                                                    const EdgeInsets
+                                                        .symmetric(
+                                                        horizontal: 1),
+                                                child: OkeyTileWidget(
+                                                  tile: t,
+                                                  isDragging: true,
+                                                  width: tileW,
+                                                  height: tileH,
+                                                ),
+                                              ))
+                                          .toList(),
+                                    ),
+                                  )
+                                : OkeyTileWidget(
+                                    tile: tile,
+                                    isDragging: true,
+                                    width: tileW,
+                                    height: tileH,
+                                  ),
+                          ),
                         ),
                       ),
-                    ),
-                    childWhenDragging: Container(
-                      width: tileW,
-                      height: tileH,
-                      decoration: BoxDecoration(
-                        color: const Color(0x22000000),
-                        borderRadius: BorderRadius.circular(3),
-                        border: Border.all(
-                          color: const Color(0x22FFFFFF),
-                          width: 0.8,
+                      childWhenDragging: Container(
+                        width: tileW,
+                        height: tileH,
+                        decoration: BoxDecoration(
+                          color: const Color(0x1AFFFFFF),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: const Color(0x33FFFFFF),
+                            width: 0.8,
+                          ),
                         ),
                       ),
+                      child: OkeyTileWidget(
+                        tile: tile,
+                        isSelected: isSelected,
+                        isHighlighted: highlightedIndices.contains(slotIndex),
+                        width: tileW,
+                        height: tileH,
+                        onTap: () => onTileTap(slotIndex),
+                      ),
                     ),
-                    child: OkeyTileWidget(
-                      tile: tile,
-                      isSelected: isSelected,
-                      isHighlighted: highlightedIndices.contains(slotIndex),
-                      width: tileW,
-                      height: tileH,
-                      onTap: () => onTileTap(slotIndex),
-                    ),
-
                   );
                 },
               ),
@@ -346,9 +513,9 @@ class _TriangularEndCapPainter extends CustomPainter {
         begin: isLeft ? Alignment.centerRight : Alignment.centerLeft,
         end: isLeft ? Alignment.centerLeft : Alignment.centerRight,
         colors: const [
-          Color(0xFF5A2E16),
-          Color(0xFF3D1D0D),
-          Color(0xFF220E05),
+          Color(0xFF22305A),
+          Color(0xFF141E3C),
+          Color(0xFF080D1E),
         ],
       ).createShader(Rect.fromLTWH(0, 0, w, h));
 
@@ -357,7 +524,7 @@ class _TriangularEndCapPainter extends CustomPainter {
     canvas.drawPath(
       path,
       Paint()
-        ..color = const Color(0xFFD4A373).withOpacity(0.25)
+        ..color = const Color(0xFF8FA8E8).withOpacity(0.30)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 0.8,
     );

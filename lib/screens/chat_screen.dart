@@ -1,10 +1,16 @@
+import 'dart:convert';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/social_service.dart';
+import '../theme.dart';
 import '../utils/haptics.dart';
 import '../utils/top_notification.dart';
 import '../widgets/app_background.dart';
+import '../widgets/user_avatar.dart';
 
+/// شاشة الدردشة والأصدقاء — تصميم زجاجي أبيض
+/// تبويبان: الرسائل (محادثات حقيقية بعدّاد غير مقروء) / الأصدقاء (طلبات + بحث)
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
 
@@ -13,7 +19,7 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  int _selectedTab = 0; // 0: Messenger Chats, 1: Friends & Search
+  int _selectedTab = 0;
   final TextEditingController _searchController = TextEditingController();
   List<AppUser> _searchResults = [];
   bool _isSearching = false;
@@ -25,21 +31,773 @@ class _ChatScreenState extends State<ChatScreen> {
     }
     setState(() => _isSearching = true);
     final results = await SocialService().searchUsers(query);
-    setState(() {
-      _searchResults = results;
-      _isSearching = false;
-    });
+    if (mounted) {
+      setState(() {
+        _searchResults = results;
+        _isSearching = false;
+      });
+    }
   }
 
-  void _openChatDialog(AppUser otherUser) {
+  void _openChat(AppUser otherUser) {
     AppHaptics.selection();
+    final myUid = AuthService().currentUser?.uid ?? '';
+    SocialService().markConversationRead(
+        SocialService().getConversationId(myUid, otherUser.uid), myUid);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => _DirectChatModal(otherUser: otherUser),
+      builder: (ctx) => DirectChatModal(otherUser: otherUser),
     );
   }
+
+  @override
+  Widget build(BuildContext context) {
+    final myUid = AuthService().currentUser?.uid ?? '';
+
+    return AppBackground(
+      light: true,
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            // ── الترويسة ──
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'الدردشة والأصدقاء 💬',
+                    style: TextStyle(
+                        color: LightGlass.text,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900),
+                  ),
+                  Row(
+                    children: [
+                      // جرس الإشعارات (طلبات الصداقة + الرسائل غير المقروءة)
+                      _NotificationBell(onOpenChat: _openChat),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0x3310B981),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                              color: const Color(0xFF10B981), width: 1),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.circle,
+                                color: Color(0xFF10B981), size: 8),
+                            SizedBox(width: 5),
+                            Text('أونلاين',
+                                style: TextStyle(
+                                    color: Color(0xFF047857),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // ── مبدّل التبويبات ──
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: LightGlass.cardSoft,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: LightGlass.border),
+                    ),
+                    child: Row(
+                      children: [
+                        _tabButton(0, Icons.chat_bubble_rounded, 'الرسائل'),
+                        _tabButton(1, Icons.people_alt_rounded, 'الأصدقاء'),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 88),
+                child: _selectedTab == 0
+                    ? _buildMessengerTab(myUid)
+                    : _buildFriendsTab(myUid),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _tabButton(int index, IconData icon, String label) {
+    final sel = _selectedTab == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          AppHaptics.selection();
+          setState(() => _selectedTab = index);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 9),
+          decoration: BoxDecoration(
+            color: sel ? LightGlass.cardStrong : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: sel
+                ? [
+                    BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2))
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon,
+                  color: sel ? LightGlass.accentBlue : LightGlass.textMuted,
+                  size: 16),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: sel ? LightGlass.text : LightGlass.textMuted,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // تبويب الرسائل — محادثات حقيقية من Firestore
+  // ══════════════════════════════════════════════════════════
+  Widget _buildMessengerTab(String myUid) {
+    return StreamBuilder<List<ConversationSummary>>(
+      stream: SocialService().getConversationsStream(myUid),
+      builder: (context, snapshot) {
+        final convs = snapshot.data ?? [];
+
+        if (convs.isEmpty) {
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 90),
+            physics: const BouncingScrollPhysics(),
+            children: [
+              _glassCard(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    const Icon(Icons.chat_bubble_outline_rounded,
+                        color: LightGlass.textFaint, size: 48),
+                    const SizedBox(height: 12),
+                    const Text('لا توجد محادثات بعد',
+                        style: TextStyle(
+                            color: LightGlass.text,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15)),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'ابحث عن أصدقاء من تبويب "الأصدقاء" وابدأ محادثتك الأولى!',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          color: LightGlass.textMuted,
+                          fontSize: 12,
+                          height: 1.4),
+                    ),
+                    const SizedBox(height: 14),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: LightGlass.accent,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      icon: const Icon(Icons.person_search_rounded, size: 18),
+                      label: const Text('البحث عن أصدقاء',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      onPressed: () => setState(() => _selectedTab = 1),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        }
+
+        return ListView.separated(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 90),
+          physics: const BouncingScrollPhysics(),
+          itemCount: convs.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          itemBuilder: (context, index) {
+            final c = convs[index];
+            return _conversationTile(c);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _conversationTile(ConversationSummary c) {
+    final hasUnread = c.unreadCount > 0;
+    final time =
+        '${c.lastTime.hour.toString().padLeft(2, '0')}:${c.lastTime.minute.toString().padLeft(2, '0')}';
+
+    return _glassCard(
+      padding: EdgeInsets.zero,
+      child: ListTile(
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        leading: _avatar(c.otherPhoto, c.otherName, radius: 23),
+        title: Text(c.otherName,
+            style: TextStyle(
+                color: LightGlass.text,
+                fontWeight:
+                    hasUnread ? FontWeight.w900 : FontWeight.bold,
+                fontSize: 14)),
+        subtitle: Text(
+          c.lastMessage.isEmpty ? '@${c.otherUsername}' : c.lastMessage,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+              color: hasUnread ? LightGlass.textSoft : LightGlass.textMuted,
+              fontSize: 12,
+              fontWeight: hasUnread ? FontWeight.w700 : FontWeight.normal),
+        ),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(time,
+                style: const TextStyle(
+                    color: LightGlass.textFaint, fontSize: 10)),
+            const SizedBox(height: 4),
+            if (hasUnread)
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF4444),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text('${c.unreadCount}',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900)),
+              )
+            else
+              const Icon(Icons.chat_bubble_outline_rounded,
+                  color: LightGlass.textFaint, size: 16),
+          ],
+        ),
+        onTap: () => _openChat(AppUser(
+          uid: c.otherUid,
+          email: '',
+          displayName: c.otherName,
+          username: c.otherUsername,
+          photoUrl: c.otherPhoto,
+        )),
+      ),
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // تبويب الأصدقاء — طلبات واردة + بحث + قائمة الأصدقاء
+  // ══════════════════════════════════════════════════════════
+  Widget _buildFriendsTab(String myUid) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 90),
+      physics: const BouncingScrollPhysics(),
+      children: [
+        // ── طلبات الصداقة الواردة ──
+        StreamBuilder<List<FriendRequest>>(
+          stream: SocialService().getIncomingRequestsStream(myUid),
+          builder: (context, snapshot) {
+            final requests = snapshot.data ?? [];
+            if (requests.isEmpty) return const SizedBox.shrink();
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text('طلبات الصداقة الواردة',
+                        style: TextStyle(
+                            color: LightGlass.text,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold)),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF4444),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text('${requests.length}',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ...requests.map((r) => _glassCard(
+                      padding: const EdgeInsets.all(10),
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          _avatar(r.fromPhoto, r.fromName, radius: 21),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(r.fromName,
+                                    style: const TextStyle(
+                                        color: LightGlass.text,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13)),
+                                Text('@${r.fromUsername} يريد إضافتك',
+                                    style: const TextStyle(
+                                        color: LightGlass.textMuted,
+                                        fontSize: 11)),
+                              ],
+                            ),
+                          ),
+                          // قبول
+                          IconButton(
+                            icon: const Icon(Icons.check_circle_rounded,
+                                color: Color(0xFF10B981), size: 28),
+                            tooltip: 'قبول',
+                            onPressed: () async {
+                              AppHaptics.medium();
+                              await SocialService()
+                                  .acceptFriendRequest(r.id);
+                              if (mounted) {
+                                TopNotification.show(context,
+                                    'أصبح ${r.fromName} صديقك! 🤝',
+                                    icon: Icons.check_circle);
+                              }
+                            },
+                          ),
+                          // رفض
+                          IconButton(
+                            icon: const Icon(Icons.cancel_rounded,
+                                color: Color(0xFFEF4444), size: 26),
+                            tooltip: 'رفض',
+                            onPressed: () async {
+                              AppHaptics.light();
+                              await SocialService()
+                                  .declineFriendRequest(r.id);
+                            },
+                          ),
+                        ],
+                      ),
+                    )),
+                const SizedBox(height: 12),
+              ],
+            );
+          },
+        ),
+
+        // ── البحث ──
+        TextField(
+          controller: _searchController,
+          style: const TextStyle(color: LightGlass.text, fontSize: 14),
+          decoration: InputDecoration(
+            prefixIcon: const Icon(Icons.search_rounded,
+                color: LightGlass.accentBlue),
+            hintText: 'ابحث باسم المستخدم الفريد (مثال: okey_king)...',
+            hintStyle:
+                const TextStyle(color: LightGlass.textFaint, fontSize: 12),
+            filled: true,
+            fillColor: LightGlass.cardStrong,
+            enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: LightGlass.border)),
+            focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(
+                    color: LightGlass.accentBlue, width: 1.4)),
+            suffixIcon: _searchController.text.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear,
+                        color: LightGlass.textMuted, size: 18),
+                    onPressed: () {
+                      _searchController.clear();
+                      _performSearch('');
+                    },
+                  )
+                : null,
+          ),
+          onChanged: _performSearch,
+        ),
+        const SizedBox(height: 16),
+
+        // ── نتائج البحث ──
+        if (_isSearching)
+          const Center(
+              child:
+                  CircularProgressIndicator(color: LightGlass.accentBlue))
+        else if (_searchResults.isNotEmpty) ...[
+          const Text('نتائج البحث:',
+              style: TextStyle(
+                  color: LightGlass.textSoft,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          // نحتاج حالة الطلبات الصادرة + الأصدقاء لعرض الزر الصحيح
+          StreamBuilder<Set<String>>(
+            stream: SocialService().getOutgoingRequestsStream(myUid),
+            builder: (context, outSnap) {
+              final outgoing = outSnap.data ?? {};
+              return StreamBuilder<List<Map<String, dynamic>>>(
+                stream: SocialService().getFriendsStream(myUid),
+                builder: (context, frSnap) {
+                  final friendUids =
+                      (frSnap.data ?? []).map((f) => f['uid'] as String).toSet();
+                  return Column(
+                    children: _searchResults.map((user) {
+                      final isMe = user.uid == myUid;
+                      final isFriend = friendUids.contains(user.uid);
+                      final isPending = outgoing.contains(user.uid);
+                      return _searchResultTile(
+                          user, isMe, isFriend, isPending, myUid);
+                    }).toList(),
+                  );
+                },
+              );
+            },
+          ),
+          const Divider(color: LightGlass.borderDim, height: 24),
+        ],
+
+        // ── قائمة أصدقائي ──
+        const Text('قائمة أصدقائي:',
+            style: TextStyle(
+                color: LightGlass.textSoft,
+                fontSize: 13,
+                fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+
+        StreamBuilder<List<Map<String, dynamic>>>(
+          stream: SocialService().getFriendsStream(myUid),
+          builder: (context, snapshot) {
+            final friends = snapshot.data ?? [];
+            if (friends.isEmpty) {
+              return _glassCard(
+                padding: const EdgeInsets.all(20),
+                child: const Center(
+                  child: Text(
+                    'لم تُضِف أصدقاء بعد. ابحث عنهم أعلاه وأرسل طلب صداقة!',
+                    textAlign: TextAlign.center,
+                    style:
+                        TextStyle(color: LightGlass.textMuted, fontSize: 12),
+                  ),
+                ),
+              );
+            }
+
+            return Column(
+              children: friends.map((f) {
+                final friendUser = AppUser(
+                  uid: f['uid'],
+                  email: '',
+                  displayName: f['displayName'] ?? 'صديق',
+                  username: f['username'] ?? '',
+                  photoUrl: f['photoUrl'] ?? '',
+                );
+                return _glassCard(
+                  padding: const EdgeInsets.all(10),
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      _avatar(friendUser.photoUrl, friendUser.displayName,
+                          radius: 21),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(friendUser.displayName,
+                                style: const TextStyle(
+                                    color: LightGlass.text,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14)),
+                            Text('@${friendUser.username}',
+                                style: const TextStyle(
+                                    color: LightGlass.accentBlue,
+                                    fontSize: 11)),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.chat_bubble_outline_rounded,
+                            color: LightGlass.accentBlue, size: 20),
+                        tooltip: 'مراسلة',
+                        onPressed: () => _openChat(friendUser),
+                      ),
+                      PopupMenuButton<String>(
+                        icon: const Icon(Icons.more_vert_rounded,
+                            color: LightGlass.textMuted, size: 20),
+                        color: LightGlass.cardStrong,
+                        itemBuilder: (ctx) => [
+                          const PopupMenuItem(
+                              value: 'delete',
+                              child: Text('🗑️ حذف من الأصدقاء',
+                                  style:
+                                      TextStyle(color: LightGlass.text))),
+                          const PopupMenuItem(
+                              value: 'report',
+                              child: Text('🚨 إبلاغ للإدارة',
+                                  style:
+                                      TextStyle(color: Color(0xFFDC2626)))),
+                          const PopupMenuItem(
+                              value: 'block',
+                              child: Text('🚫 حظر اللاعب',
+                                  style:
+                                      TextStyle(color: Color(0xFFDC2626)))),
+                        ],
+                        onSelected: (val) async {
+                          if (val == 'delete') {
+                            await SocialService()
+                                .removeFriend(myUid, friendUser.uid);
+                            if (mounted) {
+                              TopNotification.show(
+                                  context, 'تم حذف الصديق');
+                            }
+                          }
+                          if (val == 'report') {
+                            _showReportDialog(friendUser);
+                          }
+                          if (val == 'block') _showBlockDialog(friendUser);
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _searchResultTile(
+      AppUser user, bool isMe, bool isFriend, bool isPending, String myUid) {
+    return _glassCard(
+      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          _avatar(user.photoUrl, user.displayName, radius: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(user.displayName,
+                    style: const TextStyle(
+                        color: LightGlass.text,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14)),
+                Text('@${user.username}',
+                    style: const TextStyle(
+                        color: LightGlass.accentBlue, fontSize: 11)),
+                Text('تقييم ${user.rating} • مستوى ${user.level}',
+                    style: const TextStyle(
+                        color: LightGlass.textFaint, fontSize: 10.5)),
+              ],
+            ),
+          ),
+          if (!isMe) ...[
+            // زر الإضافة حسب الحالة
+            if (isFriend)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                child: Text('صديقك ✓',
+                    style: TextStyle(
+                        color: Color(0xFF10B981),
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold)),
+              )
+            else if (isPending)
+              TextButton.icon(
+                onPressed: () async {
+                  await SocialService()
+                      .cancelFriendRequest(myUid, user.uid);
+                },
+                icon: const Icon(Icons.hourglass_top_rounded,
+                    color: LightGlass.textMuted, size: 15),
+                label: const Text('تم الإرسال — إلغاء',
+                    style: TextStyle(
+                        color: LightGlass.textMuted, fontSize: 10.5)),
+              )
+            else
+              IconButton(
+                icon: const Icon(Icons.person_add_rounded,
+                    color: Color(0xFF10B981), size: 22),
+                tooltip: 'إرسال طلب صداقة',
+                onPressed: () async {
+                  AppHaptics.selection();
+                  final me = AuthService().currentUser;
+                  if (me == null) return;
+                  final error =
+                      await SocialService().sendFriendRequest(me, user);
+                  if (!mounted) return;
+                  if (error != null) {
+                    TopNotification.show(context, error,
+                        icon: Icons.info_outline_rounded);
+                  } else {
+                    TopNotification.show(context,
+                        'أُرسل طلب الصداقة إلى @${user.username} 📨',
+                        icon: Icons.send_rounded);
+                  }
+                },
+              ),
+            IconButton(
+              icon: const Icon(Icons.chat_bubble_outline_rounded,
+                  color: LightGlass.accentBlue, size: 20),
+              tooltip: 'مراسلة',
+              onPressed: () => _openChat(user),
+            ),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert_rounded,
+                  color: LightGlass.textMuted, size: 20),
+              color: LightGlass.cardStrong,
+              itemBuilder: (ctx) => [
+                const PopupMenuItem(
+                    value: 'report',
+                    child: Text('🚨 إبلاغ للإدارة',
+                        style: TextStyle(color: Color(0xFFDC2626)))),
+                const PopupMenuItem(
+                    value: 'block',
+                    child: Text('🚫 حظر اللاعب',
+                        style: TextStyle(color: LightGlass.text))),
+              ],
+              onSelected: (val) {
+                if (val == 'report') _showReportDialog(user);
+                if (val == 'block') _showBlockDialog(user);
+              },
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ── عناصر مساعدة ──
+
+  Widget _glassCard(
+      {required Widget child,
+      EdgeInsets padding = const EdgeInsets.all(12),
+      EdgeInsets margin = EdgeInsets.zero}) {
+    return Container(
+      margin: margin,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: padding,
+            decoration: BoxDecoration(
+              color: LightGlass.card,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: LightGlass.border),
+              boxShadow: [
+                BoxShadow(
+                    color: const Color(0xFF64748B).withOpacity(0.08),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3)),
+              ],
+            ),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _avatar(String photo, String name, {double radius = 22}) {
+    final isEmoji = photo.isNotEmpty && photo.length <= 4;
+    Widget content;
+    if (UserAvatar.isDataUri(photo)) {
+      try {
+        content = ClipOval(
+          child: Image.memory(
+            base64Decode(photo.split(',').last),
+            width: radius * 2,
+            height: radius * 2,
+            fit: BoxFit.cover,
+            gaplessPlayback: true,
+          ),
+        );
+      } catch (_) {
+        content = _initial(name, radius);
+      }
+    } else if (UserAvatar.isNetworkImage(photo)) {
+      content = ClipOval(
+        child: Image.network(photo,
+            width: radius * 2, height: radius * 2, fit: BoxFit.cover),
+      );
+    } else if (isEmoji) {
+      content = Text(photo, style: TextStyle(fontSize: radius));
+    } else {
+      content = _initial(name, radius);
+    }
+    return Container(
+      width: radius * 2,
+      height: radius * 2,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const LinearGradient(
+            colors: [Color(0xFF60A5FA), Color(0xFF3B82F6)]),
+        border: Border.all(color: Colors.white, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+              color: const Color(0xFF3B82F6).withOpacity(0.25),
+              blurRadius: 6)
+        ],
+      ),
+      child: Center(child: content),
+    );
+  }
+
+  Widget _initial(String name, double radius) => Text(
+        name.isNotEmpty ? name[0].toUpperCase() : 'P',
+        style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w900,
+            fontSize: radius * 0.8),
+      );
+
+  // ── الحوارات (إبلاغ/حظر) بنمط فاتح ──
 
   void _showReportDialog(AppUser targetUser) {
     AppHaptics.medium();
@@ -50,19 +808,23 @@ class _ChatScreenState extends State<ChatScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xFF24143D),
+          backgroundColor: LightGlass.cardStrong,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(22),
             side: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
           ),
           title: Row(
             children: [
-              const Icon(Icons.report_problem_rounded, color: Color(0xFFEF4444), size: 24),
+              const Icon(Icons.report_problem_rounded,
+                  color: Color(0xFFEF4444), size: 24),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'إبلاغ عن @${targetUser.username}',
-                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      color: LightGlass.text,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -73,16 +835,21 @@ class _ChatScreenState extends State<ChatScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('اختر سبب البلاغ:', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                const Text('اختر سبب البلاغ:',
+                    style:
+                        TextStyle(color: LightGlass.textMuted, fontSize: 12)),
                 const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
                   value: selectedReason,
-                  dropdownColor: const Color(0xFF1B0B30),
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  dropdownColor: LightGlass.cardStrong,
+                  style: const TextStyle(
+                      color: LightGlass.text, fontSize: 13),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: Colors.black26,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    fillColor: LightGlass.inputFill,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none),
                   ),
                   items: [
                     'سلوك مسيء أو غير لائق',
@@ -90,24 +857,33 @@ class _ChatScreenState extends State<ChatScreen> {
                     'اسم مستخدم أو صورة مسيئة',
                     'رسائل مزعجة أو سبام',
                     'أخرى',
-                  ].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                  ]
+                      .map((s) =>
+                          DropdownMenuItem(value: s, child: Text(s)))
+                      .toList(),
                   onChanged: (val) {
                     if (val != null) setDialogState(() => selectedReason = val);
                   },
                 ),
                 const SizedBox(height: 12),
-                const Text('تفاصيل إضافية (اختياري):', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                const Text('تفاصيل إضافية (اختياري):',
+                    style:
+                        TextStyle(color: LightGlass.textMuted, fontSize: 12)),
                 const SizedBox(height: 6),
                 TextField(
                   controller: detailsController,
                   maxLines: 3,
-                  style: const TextStyle(color: Colors.white, fontSize: 12.5),
+                  style: const TextStyle(
+                      color: LightGlass.text, fontSize: 12.5),
                   decoration: InputDecoration(
                     hintText: 'اكتب ما حدث للمساعدة في مراجعة البلاغ...',
-                    hintStyle: const TextStyle(color: Colors.white30, fontSize: 12),
+                    hintStyle: const TextStyle(
+                        color: LightGlass.textFaint, fontSize: 12),
                     filled: true,
-                    fillColor: Colors.black26,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    fillColor: LightGlass.inputFill,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none),
                   ),
                 ),
               ],
@@ -116,13 +892,15 @@ class _ChatScreenState extends State<ChatScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('إلغاء', style: TextStyle(color: Colors.white60)),
+              child: const Text('إلغاء',
+                  style: TextStyle(color: LightGlass.textMuted)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFDC2626),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
               ),
               onPressed: () async {
                 final myUser = AuthService().currentUser;
@@ -158,17 +936,22 @@ class _ChatScreenState extends State<ChatScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF24143D),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('حظر اللاعب', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        backgroundColor: LightGlass.cardStrong,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('حظر اللاعب',
+            style: TextStyle(
+                color: LightGlass.text, fontWeight: FontWeight.bold)),
         content: Text(
           'هل أنت متأكد من حظر @${targetUser.username}؟ لن يتمكن من مراسلتك أو اللعب معك مرة أخرى.',
-          style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+          style: const TextStyle(
+              color: LightGlass.textMuted, fontSize: 13, height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('إلغاء', style: TextStyle(color: Colors.white60)),
+            child: const Text('إلغاء',
+                style: TextStyle(color: LightGlass.textMuted)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -178,11 +961,13 @@ class _ChatScreenState extends State<ChatScreen> {
             onPressed: () async {
               final myUid = AuthService().currentUser?.uid;
               if (myUid != null) {
-                await SocialService().blockUser(myUid, targetUser.uid, 'حظر من المستخدم');
+                await SocialService()
+                    .blockUser(myUid, targetUser.uid, 'حظر من المستخدم');
               }
               if (mounted) {
                 Navigator.of(ctx).pop();
-                TopNotification.show(context, 'تم حظر اللاعب بنجاح', icon: Icons.block_rounded);
+                TopNotification.show(context, 'تم حظر اللاعب بنجاح',
+                    icon: Icons.block_rounded);
               }
             },
             child: const Text('نعم، حظر'),
@@ -191,512 +976,314 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
     );
   }
+}
+
+/// جرس الإشعارات في أعلى شاشة الدردشة — عدّاد طلبات الصداقة + الرسائل غير المقروءة
+class _NotificationBell extends StatelessWidget {
+  final void Function(AppUser) onOpenChat;
+  const _NotificationBell({required this.onOpenChat});
 
   @override
   Widget build(BuildContext context) {
-    return AppBackground(
-      child: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            // Top Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'الدردشة والأصدقاء 💬',
-                    style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+    final myUid = AuthService().currentUser?.uid ?? '';
+    return StreamBuilder<List<FriendRequest>>(
+      stream: SocialService().getIncomingRequestsStream(myUid),
+      builder: (context, reqSnap) {
+        final reqCount = reqSnap.data?.length ?? 0;
+        return StreamBuilder<List<ConversationSummary>>(
+          stream: SocialService().getConversationsStream(myUid),
+          builder: (context, convSnap) {
+            final unread = (convSnap.data ?? [])
+                .fold<int>(0, (s, c) => s + c.unreadCount);
+            final total = reqCount + unread;
+            return GestureDetector(
+              onTap: () {
+                AppHaptics.selection();
+                NotificationsSheet.show(context, onOpenChat: onOpenChat);
+              },
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(13),
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                  child: Container(
+                    width: 38,
+                    height: 38,
                     decoration: BoxDecoration(
-                      color: const Color(0x334ADE80),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFF4ADE80), width: 1),
+                      color: LightGlass.card,
+                      borderRadius: BorderRadius.circular(13),
+                      border: Border.all(color: LightGlass.border),
                     ),
-                    child: const Row(
+                    child: Stack(
+                      alignment: Alignment.center,
                       children: [
-                        Icon(Icons.circle, color: Color(0xFF4ADE80), size: 8),
-                        SizedBox(width: 5),
-                        Text('أونلاين', style: TextStyle(color: Color(0xFF4ADE80), fontSize: 11, fontWeight: FontWeight.bold)),
+                        const Icon(Icons.notifications_rounded,
+                            color: LightGlass.accent, size: 20),
+                        if (total > 0)
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: Container(
+                              padding: const EdgeInsets.all(3),
+                              constraints: const BoxConstraints(
+                                  minWidth: 15, minHeight: 15),
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Color(0xFFEF4444),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  total > 9 ? '9+' : '$total',
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.w900),
+                                ),
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
-
-            // Tab Selector
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF26143F),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0x22FFFFFF)),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          AppHaptics.selection();
-                          setState(() => _selectedTab = 0);
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          padding: const EdgeInsets.symmetric(vertical: 9),
-                          decoration: BoxDecoration(
-                            color: _selectedTab == 0 ? const Color(0xFF5B21B6) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.chat_bubble_rounded,
-                                  color: _selectedTab == 0 ? const Color(0xFFFFD54F) : Colors.white60, size: 16),
-                              const SizedBox(width: 6),
-                              Text(
-                                'الرسائل (Messenger)',
-                                style: TextStyle(
-                                  color: _selectedTab == 0 ? Colors.white : Colors.white60,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          AppHaptics.selection();
-                          setState(() => _selectedTab = 1);
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          padding: const EdgeInsets.symmetric(vertical: 9),
-                          decoration: BoxDecoration(
-                            color: _selectedTab == 1 ? const Color(0xFF5B21B6) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.people_alt_rounded,
-                                  color: _selectedTab == 1 ? const Color(0xFFFFD54F) : Colors.white60, size: 16),
-                              const SizedBox(width: 6),
-                              Text(
-                                'الأصدقاء والبحث',
-                                style: TextStyle(
-                                  color: _selectedTab == 1 ? Colors.white : Colors.white60,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
                 ),
               ),
-            ),
-
-            Expanded(
-              child: _selectedTab == 0 ? _buildMessengerTab() : _buildFriendsAndSearchTab(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMessengerTab() {
-    final myUid = AuthService().currentUser?.uid ?? '';
-
-    return StreamBuilder<List<Map<String, dynamic>>>(
-      stream: SocialService().getFriendsStream(myUid),
-      builder: (context, snapshot) {
-        final friends = snapshot.data ?? [];
-
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 90),
-          physics: const BouncingScrollPhysics(),
-          children: [
-            // Active Friends Horizontal Avatars Bar
-            if (friends.isNotEmpty) ...[
-              const Text('الأصدقاء المتصلون:', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 75,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: friends.length,
-                  itemBuilder: (context, index) {
-                    final f = friends[index];
-                    return GestureDetector(
-                      onTap: () {
-                        _openChatDialog(AppUser(
-                          uid: f['uid'],
-                          email: '',
-                          displayName: f['displayName'] ?? 'صديق',
-                          username: f['username'] ?? '',
-                          photoUrl: f['photoUrl'] ?? '',
-                        ));
-                      },
-                      child: Container(
-                        margin: const EdgeInsets.only(left: 14),
-                        child: Column(
-                          children: [
-                            Stack(
-                              children: [
-                                Container(
-                                  width: 48,
-                                  height: 48,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    gradient: const LinearGradient(colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)]),
-                                    border: Border.all(color: const Color(0xFFFFD54F), width: 1.5),
-                                  ),
-                                  child: const Center(
-                                    child: Icon(Icons.person, color: Colors.white, size: 24),
-                                  ),
-                                ),
-                                Positioned(
-                                  right: 0,
-                                  bottom: 0,
-                                  child: Container(
-                                    width: 12,
-                                    height: 12,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: const Color(0xFF10B981),
-                                      border: Border.all(color: const Color(0xFF160926), width: 2),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              f['displayName'] ?? '',
-                              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const Divider(color: Colors.white12, height: 24),
-            ],
-
-            const Text('المحادثات المباشرة:', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-
-            if (friends.isEmpty)
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: const Color(0x332E174D),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white12),
-                ),
-                child: Column(
-                  children: [
-                    const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white30, size: 48),
-                    const SizedBox(height: 12),
-                    const Text('لا توجد محادثات بعد', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'ابحث عن أصدقاء عبر اسم المستخدم الفريد من تبويب "الأصدقاء والبحث" وابدأ محادثتك الأولى!',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white54, fontSize: 12, height: 1.4),
-                    ),
-                    const SizedBox(height: 14),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFFD54F),
-                        foregroundColor: const Color(0xFF1B0B30),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      icon: const Icon(Icons.person_search_rounded, size: 18),
-                      label: const Text('البحث عن أصدقاء الآن', style: TextStyle(fontWeight: FontWeight.bold)),
-                      onPressed: () => setState(() => _selectedTab = 1),
-                    ),
-                  ],
-                ),
-              )
-            else
-              ...friends.map((f) {
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF24143D),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white10),
-                  ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                    leading: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(colors: [Color(0xFF6366F1), Color(0xFF4F46E5)]),
-                      ),
-                      child: const Center(child: Icon(Icons.person, color: Colors.white, size: 22)),
-                    ),
-                    title: Text(f['displayName'] ?? '', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                    subtitle: Text('@${f['username'] ?? ''}', style: const TextStyle(color: Color(0xFFFFD54F), fontSize: 11.5)),
-                    trailing: const Icon(Icons.chat_bubble_outline_rounded, color: Color(0xFFFFD54F), size: 20),
-                    onTap: () {
-                      _openChatDialog(AppUser(
-                        uid: f['uid'],
-                        email: '',
-                        displayName: f['displayName'] ?? 'صديق',
-                        username: f['username'] ?? '',
-                        photoUrl: f['photoUrl'] ?? '',
-                      ));
-                    },
-                  ),
-                );
-              }),
-          ],
+            );
+          },
         );
       },
     );
   }
+}
 
-  Widget _buildFriendsAndSearchTab() {
+/// نافذة الإشعارات: طلبات الصداقة الواردة + المحادثات غير المقروءة
+class NotificationsSheet extends StatelessWidget {
+  final void Function(AppUser)? onOpenChat;
+
+  const NotificationsSheet({super.key, this.onOpenChat});
+
+  static void show(BuildContext context,
+      {void Function(AppUser)? onOpenChat}) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => NotificationsSheet(onOpenChat: onOpenChat),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final myUid = AuthService().currentUser?.uid ?? '';
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 90),
-      physics: const BouncingScrollPhysics(),
-      children: [
-        // Search Input
-        TextField(
-          controller: _searchController,
-          style: const TextStyle(color: Colors.white, fontSize: 14),
-          decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFFFFD54F)),
-            hintText: 'ابحث باسم المستخدم الفريد (مثال: okey_king)...',
-            hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
-            filled: true,
-            fillColor: const Color(0xFF26143F),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-            suffixIcon: _searchController.text.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.clear, color: Colors.white54, size: 18),
-                    onPressed: () {
-                      _searchController.clear();
-                      _performSearch('');
-                    },
-                  )
-                : null,
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.62,
+      decoration: BoxDecoration(
+        color: LightGlass.cardStrong,
+        borderRadius:
+            const BorderRadius.vertical(top: Radius.circular(26)),
+        border: Border.all(color: LightGlass.border),
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: 10),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: LightGlass.textFaint,
+              borderRadius: BorderRadius.circular(4),
+            ),
           ),
-          onChanged: _performSearch,
-        ),
-        const SizedBox(height: 16),
-
-        // Search Results
-        if (_isSearching)
-          const Center(child: CircularProgressIndicator(color: Color(0xFFFFD54F)))
-        else if (_searchResults.isNotEmpty) ...[
-          const Text('نتائج البحث:', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          ..._searchResults.map((user) {
-            final isMe = user.uid == myUid;
-            return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF24143D),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0x33FFD54F)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(colors: [Color(0xFFEC4899), Color(0xFFBE185D)]),
-                    ),
-                    child: const Center(child: Icon(Icons.person, color: Colors.white, size: 22)),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
+          const Padding(
+            padding: EdgeInsets.all(14),
+            child: Row(
+              children: [
+                Icon(Icons.notifications_rounded,
+                    color: LightGlass.accent, size: 20),
+                SizedBox(width: 8),
+                Text('الإشعارات',
+                    style: TextStyle(
+                        color: LightGlass.text,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900)),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 20),
+              children: [
+                // طلبات الصداقة
+                StreamBuilder<List<FriendRequest>>(
+                  stream:
+                      SocialService().getIncomingRequestsStream(myUid),
+                  builder: (context, snap) {
+                    final requests = snap.data ?? [];
+                    if (requests.isEmpty) return const SizedBox.shrink();
+                    return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(user.displayName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                        Text('@${user.username}', style: const TextStyle(color: Color(0xFFFFD54F), fontSize: 11)),
-                        Text('تقييم ${user.rating} • مستوى ${user.level}', style: const TextStyle(color: Colors.white38, fontSize: 10.5)),
+                        const Text('طلبات صداقة:',
+                            style: TextStyle(
+                                color: LightGlass.textSoft,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 6),
+                        ...requests.map((r) => Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                    color: LightGlass.borderDim),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.person_add_alt_1_rounded,
+                                      color: LightGlass.accentBlue,
+                                      size: 22),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      '${r.fromName} (@${r.fromUsername}) أرسل لك طلب صداقة',
+                                      style: const TextStyle(
+                                          color: LightGlass.text,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                        Icons.check_circle_rounded,
+                                        color: Color(0xFF10B981),
+                                        size: 26),
+                                    onPressed: () => SocialService()
+                                        .acceptFriendRequest(r.id),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.cancel_rounded,
+                                        color: Color(0xFFEF4444),
+                                        size: 24),
+                                    onPressed: () => SocialService()
+                                        .declineFriendRequest(r.id),
+                                  ),
+                                ],
+                              ),
+                            )),
+                        const SizedBox(height: 10),
                       ],
-                    ),
-                  ),
-                  if (!isMe) ...[
-                    IconButton(
-                      icon: const Icon(Icons.person_add_rounded, color: Color(0xFF10B981), size: 22),
-                      tooltip: 'إضافة صديق',
-                      onPressed: () async {
-                        AppHaptics.selection();
-                        await SocialService().addFriend(myUid, user);
-                        if (mounted) {
-                          TopNotification.show(context, 'تمت إضافة @${user.username} إلى أصدقائك! 🤝', icon: Icons.check_circle);
-                        }
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.chat_bubble_outline_rounded, color: Color(0xFFFFD54F), size: 20),
-                      tooltip: 'مراسلة',
-                      onPressed: () => _openChatDialog(user),
-                    ),
-                    PopupMenuButton<String>(
-                      icon: const Icon(Icons.more_vert_rounded, color: Colors.white60, size: 20),
-                      color: const Color(0xFF1B0B30),
-                      itemBuilder: (ctx) => [
-                        const PopupMenuItem(value: 'report', child: Text('🚨 إبلاغ للإدارة', style: TextStyle(color: Color(0xFFEF4444)))),
-                        const PopupMenuItem(value: 'block', child: Text('🚫 حظر اللاعب', style: TextStyle(color: Colors.white70))),
+                    );
+                  },
+                ),
+
+                // الرسائل غير المقروءة
+                StreamBuilder<List<ConversationSummary>>(
+                  stream:
+                      SocialService().getConversationsStream(myUid),
+                  builder: (context, snap) {
+                    final unreadConvs = (snap.data ?? [])
+                        .where((c) => c.unreadCount > 0)
+                        .toList();
+                    if (unreadConvs.isEmpty) {
+                      // لا شيء على الإطلاق؟
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 24),
+                        child: Center(
+                          child: Text('لا توجد إشعارات جديدة 🎉',
+                              style: TextStyle(
+                                  color: LightGlass.textMuted,
+                                  fontSize: 12.5)),
+                        ),
+                      );
+                    }
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('رسائل غير مقروءة:',
+                            style: TextStyle(
+                                color: LightGlass.textSoft,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 6),
+                        ...unreadConvs.map((c) => ListTile(
+                              contentPadding:
+                                  const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 2),
+                              leading: const Icon(
+                                  Icons.mark_chat_unread_rounded,
+                                  color: LightGlass.accentBlue),
+                              title: Text(c.otherName,
+                                  style: const TextStyle(
+                                      color: LightGlass.text,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold)),
+                              subtitle: Text(c.lastMessage,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      color: LightGlass.textMuted,
+                                      fontSize: 11)),
+                              trailing: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 7, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEF4444),
+                                  borderRadius:
+                                      BorderRadius.circular(10),
+                                ),
+                                child: Text('${c.unreadCount}',
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w900)),
+                              ),
+                              onTap: () {
+                                Navigator.of(context).pop();
+                                onOpenChat?.call(AppUser(
+                                  uid: c.otherUid,
+                                  email: '',
+                                  displayName: c.otherName,
+                                  username: c.otherUsername,
+                                  photoUrl: c.otherPhoto,
+                                ));
+                              },
+                            )),
                       ],
-                      onSelected: (val) {
-                        if (val == 'report') _showReportDialog(user);
-                        if (val == 'block') _showBlockDialog(user);
-                      },
-                    ),
-                  ],
-                ],
-              ),
-            );
-          }),
-          const Divider(color: Colors.white12, height: 24),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
         ],
-
-        // Friends List
-        const Text('قائمة أصدقائي:', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-
-        StreamBuilder<List<Map<String, dynamic>>>(
-          stream: SocialService().getFriendsStream(myUid),
-          builder: (context, snapshot) {
-            final friends = snapshot.data ?? [];
-            if (friends.isEmpty) {
-              return Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: const Color(0x22FFFFFF),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Center(
-                  child: Text(
-                    'لم تقم بإضافة أصدقاء بعد. استخدم شريط البحث أعلاه لإيجاد أصدقائك!',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white54, fontSize: 12),
-                  ),
-                ),
-              );
-            }
-
-            return Column(
-              children: friends.map((f) {
-                final friendUser = AppUser(
-                  uid: f['uid'],
-                  email: '',
-                  displayName: f['displayName'] ?? 'صديق',
-                  username: f['username'] ?? '',
-                  photoUrl: f['photoUrl'] ?? '',
-                );
-
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF24143D),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white10),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 42,
-                        height: 42,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)]),
-                        ),
-                        child: const Center(child: Icon(Icons.person, color: Colors.white, size: 22)),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(friendUser.displayName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                            Text('@${friendUser.username}', style: const TextStyle(color: Color(0xFFFFD54F), fontSize: 11)),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.chat_bubble_outline_rounded, color: Color(0xFFFFD54F), size: 20),
-                        tooltip: 'شات',
-                        onPressed: () => _openChatDialog(friendUser),
-                      ),
-                      PopupMenuButton<String>(
-                        icon: const Icon(Icons.more_vert_rounded, color: Colors.white60, size: 20),
-                        color: const Color(0xFF1B0B30),
-                        itemBuilder: (ctx) => [
-                          const PopupMenuItem(value: 'delete', child: Text('🗑️ حذف من الأصدقاء', style: TextStyle(color: Colors.white70))),
-                          const PopupMenuItem(value: 'report', child: Text('🚨 إبلاغ للإدارة', style: TextStyle(color: Color(0xFFEF4444)))),
-                          const PopupMenuItem(value: 'block', child: Text('🚫 حظر اللاعب', style: TextStyle(color: Color(0xFFEF4444)))),
-                        ],
-                        onSelected: (val) async {
-                          if (val == 'delete') {
-                            await SocialService().removeFriend(myUid, friendUser.uid);
-                            if (mounted) TopNotification.show(context, 'تم حذف الصديق');
-                          }
-                          if (val == 'report') _showReportDialog(friendUser);
-                          if (val == 'block') _showBlockDialog(friendUser);
-                        },
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-            );
-          },
-        ),
-      ],
+      ),
     );
   }
 }
 
-/// نافذة الدردشة المباشرة بتصميم شات ماسنجر الاحترافي
-class _DirectChatModal extends StatefulWidget {
+/// نافذة الدردشة المباشرة — زجاج أبيض
+class DirectChatModal extends StatefulWidget {
   final AppUser otherUser;
 
-  const _DirectChatModal({required this.otherUser});
+  const DirectChatModal({super.key, required this.otherUser});
 
   @override
-  State<_DirectChatModal> createState() => _DirectChatModalState();
+  State<DirectChatModal> createState() => _DirectChatModalState();
 }
 
-class _DirectChatModalState extends State<_DirectChatModal> {
+class _DirectChatModalState extends State<DirectChatModal> {
   final TextEditingController _msgController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    // تصفير غير المقروء عند فتح المحادثة
+    final myUid = AuthService().currentUser?.uid ?? '';
+    SocialService().markConversationRead(
+        SocialService().getConversationId(myUid, widget.otherUser.uid),
+        myUid);
+  }
 
   Future<void> _sendMessage() async {
     final text = _msgController.text.trim();
@@ -711,8 +1298,12 @@ class _DirectChatModalState extends State<_DirectChatModal> {
     await SocialService().sendMessage(
       senderUid: myUser.uid,
       senderName: myUser.displayName,
+      senderUsername: myUser.username,
+      senderPhoto: myUser.photoUrl,
       receiverUid: widget.otherUser.uid,
       receiverName: widget.otherUser.displayName,
+      receiverUsername: widget.otherUser.username,
+      receiverPhoto: widget.otherUser.photoUrl,
       text: text,
     );
   }
@@ -720,152 +1311,232 @@ class _DirectChatModalState extends State<_DirectChatModal> {
   @override
   Widget build(BuildContext context) {
     final myUid = AuthService().currentUser?.uid ?? '';
-    final convId = SocialService().getConversationId(myUid, widget.otherUser.uid);
+    final convId =
+        SocialService().getConversationId(myUid, widget.otherUser.uid);
 
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.85,
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      decoration: const BoxDecoration(
-        color: Color(0xFF1E0E35),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: Column(
-        children: [
-          // Header Bar
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: const BoxDecoration(
-              color: Color(0xFF281446),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)]),
-                  ),
-                  child: const Center(child: Icon(Icons.person, color: Colors.white, size: 22)),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(widget.otherUser.displayName, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
-                      Text('@${widget.otherUser.username} • متصل الآن 🟢', style: const TextStyle(color: Color(0xFF4ADE80), fontSize: 11)),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded, color: Colors.white60),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ],
-            ),
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.85,
+          padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom),
+          decoration: BoxDecoration(
+            color: LightGlass.cardStrong,
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border.all(color: LightGlass.border),
           ),
-
-          // Messages Stream
-          Expanded(
-            child: StreamBuilder<List<ChatMessage>>(
-              stream: SocialService().getMessagesStream(convId, myUid),
-              builder: (context, snapshot) {
-                final messages = snapshot.data ?? [];
-
-                if (messages.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text('👋', style: TextStyle(fontSize: 40)),
-                        const SizedBox(height: 8),
-                        Text('ابدأ محادثتك مع ${widget.otherUser.displayName}!', style: const TextStyle(color: Colors.white54, fontSize: 13)),
-                      ],
+          child: Column(
+            children: [
+              // الترويسة
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 12),
+                decoration: const BoxDecoration(
+                  color: LightGlass.cardStrong,
+                  borderRadius:
+                      BorderRadius.vertical(top: Radius.circular(28)),
+                  border: Border(
+                      bottom: BorderSide(color: LightGlass.borderDim)),
+                ),
+                child: Row(
+                  children: [
+                    UserAvatar(
+                      photoUrl: widget.otherUser.photoUrl,
+                      name: widget.otherUser.displayName,
+                      size: 40,
                     ),
-                  );
-                }
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(widget.otherUser.displayName,
+                              style: const TextStyle(
+                                  color: LightGlass.text,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold)),
+                          Text('@${widget.otherUser.username} • متصل الآن 🟢',
+                              style: const TextStyle(
+                                  color: Color(0xFF047857),
+                                  fontSize: 11)),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded,
+                          color: LightGlass.textMuted),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+              ),
 
-                return ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    final msg = messages[index];
-                    final isMe = msg.isMe;
+              // الرسائل
+              Expanded(
+                child: StreamBuilder<List<ChatMessage>>(
+                  stream:
+                      SocialService().getMessagesStream(convId, myUid),
+                  builder: (context, snapshot) {
+                    final messages = snapshot.data ?? [];
 
-                    return Align(
-                      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(vertical: 4),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-                        decoration: BoxDecoration(
-                          gradient: isMe
-                              ? const LinearGradient(colors: [Color(0xFF7C3AED), Color(0xFF6D28D9)])
-                              : const LinearGradient(colors: [Color(0xFF2E1B4E), Color(0xFF24153E)]),
-                          borderRadius: BorderRadius.only(
-                            topLeft: const Radius.circular(16),
-                            topRight: const Radius.circular(16),
-                            bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(4),
-                            bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(16),
-                          ),
-                          border: Border.all(color: isMe ? const Color(0x60FFD54F) : Colors.white12, width: 0.8),
-                        ),
+                    if (messages.isEmpty) {
+                      return Center(
                         child: Column(
-                          crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(msg.text, style: const TextStyle(color: Colors.white, fontSize: 13.5)),
-                            const SizedBox(height: 2),
+                            const Text('👋',
+                                style: TextStyle(fontSize: 40)),
+                            const SizedBox(height: 8),
                             Text(
-                              '${msg.timestamp.hour.toString().padLeft(2, '0')}:${msg.timestamp.minute.toString().padLeft(2, '0')}',
-                              style: const TextStyle(color: Colors.white38, fontSize: 9.5),
-                            ),
+                                'ابدأ محادثتك مع ${widget.otherUser.displayName}!',
+                                style: const TextStyle(
+                                    color: LightGlass.textMuted,
+                                    fontSize: 13)),
                           ],
                         ),
-                      ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 10),
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: messages.length,
+                      itemBuilder: (context, index) {
+                        final msg = messages[index];
+                        final isMe = msg.isMe;
+
+                        return Align(
+                          alignment: isMe
+                              ? Alignment.centerRight
+                              : Alignment.centerLeft,
+                          child: Container(
+                            margin:
+                                const EdgeInsets.symmetric(vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 9),
+                            constraints: BoxConstraints(
+                                maxWidth:
+                                    MediaQuery.of(context).size.width *
+                                        0.75),
+                            decoration: BoxDecoration(
+                              gradient: isMe
+                                  ? const LinearGradient(colors: [
+                                      Color(0xFF475569),
+                                      Color(0xFF334155)
+                                    ])
+                                  : null,
+                              color: isMe ? null : LightGlass.card,
+                              borderRadius: BorderRadius.only(
+                                topLeft: const Radius.circular(16),
+                                topRight: const Radius.circular(16),
+                                bottomLeft: isMe
+                                    ? const Radius.circular(16)
+                                    : const Radius.circular(4),
+                                bottomRight: isMe
+                                    ? const Radius.circular(4)
+                                    : const Radius.circular(16),
+                              ),
+                              border: Border.all(
+                                  color: isMe
+                                      ? const Color(0x40FFD54F)
+                                      : LightGlass.borderDim,
+                                  width: 0.8),
+                              boxShadow: [
+                                BoxShadow(
+                                    color: Colors.black
+                                        .withOpacity(0.06),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2)),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: isMe
+                                  ? CrossAxisAlignment.end
+                                  : CrossAxisAlignment.start,
+                              children: [
+                                Text(msg.text,
+                                    style: TextStyle(
+                                        color: isMe
+                                            ? Colors.white
+                                            : LightGlass.text,
+                                        fontSize: 13.5)),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${msg.timestamp.hour.toString().padLeft(2, '0')}:${msg.timestamp.minute.toString().padLeft(2, '0')}',
+                                  style: TextStyle(
+                                      color: isMe
+                                          ? Colors.white54
+                                          : LightGlass.textFaint,
+                                      fontSize: 9.5),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                     );
                   },
-                );
-              },
-            ),
-          ),
+                ),
+              ),
 
-          // Message Input Field
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
-              color: Color(0xFF281446),
-              border: Border(top: BorderSide(color: Colors.white10)),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _msgController,
-                    style: const TextStyle(color: Colors.white, fontSize: 13.5),
-                    decoration: InputDecoration(
-                      hintText: 'اكتب رسالة...',
-                      hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
-                      filled: true,
-                      fillColor: Colors.black26,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
+              // حقل الإدخال
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: const BoxDecoration(
+                  color: LightGlass.cardStrong,
+                  border: Border(
+                      top: BorderSide(color: LightGlass.borderDim)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _msgController,
+                        style: const TextStyle(
+                            color: LightGlass.text, fontSize: 13.5),
+                        decoration: InputDecoration(
+                          hintText: 'اكتب رسالة...',
+                          hintStyle: const TextStyle(
+                              color: LightGlass.textFaint,
+                              fontSize: 13),
+                          filled: true,
+                          fillColor: LightGlass.inputFill,
+                          contentPadding:
+                              const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 10),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(24),
+                              borderSide: BorderSide.none),
+                        ),
+                        onSubmitted: (_) => _sendMessage(),
+                      ),
                     ),
-                    onSubmitted: (_) => _sendMessage(),
-                  ),
+                    const SizedBox(width: 8),
+                    Container(
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(colors: [
+                          Color(0xFF60A5FA),
+                          Color(0xFF3B82F6)
+                        ]),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.send_rounded,
+                            color: Colors.white, size: 20),
+                        onPressed: _sendMessage,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.send_rounded, color: Color(0xFFFFD54F), size: 24),
-                  onPressed: _sendMessage,
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

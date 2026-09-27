@@ -1,9 +1,15 @@
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import '../services/auth_service.dart';
 import '../services/firebase_service.dart';
+import '../services/store_service.dart';
 import '../utils/haptics.dart';
 import '../utils/top_notification.dart';
 import '../utils/url_helper.dart';
+import '../widgets/skin_mockup.dart';
+import '../widgets/user_avatar.dart';
 
 /// لوحة الإدارة والتحكم الكاملة للتطبيق - مرتبطة بسحابة Firebase
 class AdminPanelScreen extends StatefulWidget {
@@ -15,8 +21,8 @@ class AdminPanelScreen extends StatefulWidget {
 
 class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerProviderStateMixin {
   bool _isAuthenticated = false;
-  final TextEditingController _pinController = TextEditingController();
-  String _pinError = '';
+  bool _checking = true;
+  String _denyReason = '';
 
   late TabController _tabController;
   final FirebaseService _firebase = FirebaseService();
@@ -31,8 +37,46 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 7, vsync: this);
     _loadRemoteConfig();
+    _checkAdminAccess();
+  }
+
+  /// الدخول للوحة مقيّد بالحسابات المسجلة في مجموعة admins فقط
+  Future<void> _checkAdminAccess() async {
+    final user = AuthService().currentUser;
+    if (user == null || user.uid.startsWith('guest_')) {
+      setState(() {
+        _checking = false;
+        _denyReason = 'سجّل دخولك بحساب مدير حقيقي أولاً (ليس حساب ضيف)';
+      });
+      return;
+    }
+    if (!_firebase.isInitialized) {
+      setState(() {
+        _checking = false;
+        _denyReason = 'قاعدة البيانات غير متصلة';
+      });
+      return;
+    }
+    try {
+      final doc = await _firebase.firestore
+          .collection('admins')
+          .doc(user.uid)
+          .get();
+      setState(() {
+        _isAuthenticated = doc.exists;
+        _checking = false;
+        if (!doc.exists) {
+          _denyReason = 'هذا الحساب لا يملك صلاحيات الإدارة';
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _checking = false;
+        _denyReason = 'تعذّر التحقق من الصلاحيات';
+      });
+    }
   }
 
   Future<void> _loadRemoteConfig() async {
@@ -77,26 +121,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
     }
   }
 
-  void _verifyPin() {
-    // الرمز الافتراضي: 123456 أو admin2026
-    final pin = _pinController.text.trim();
-    if (pin == '123456' || pin == 'admin2026') {
-      AppHaptics.medium();
-      setState(() {
-        _isAuthenticated = true;
-        _pinError = '';
-      });
-    } else {
-      AppHaptics.heavy();
-      setState(() {
-        _pinError = 'رمز المرور غير صحيح! الرمز الافتراضي هو: 123456';
-      });
-    }
-  }
-
   @override
   void dispose() {
-    _pinController.dispose();
     _tabController.dispose();
     super.dispose();
   }
@@ -139,7 +165,10 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                 tooltip: 'تسجيل خروج',
                 icon: const Icon(Icons.lock_outline_rounded, color: Colors.redAccent),
                 onPressed: () {
-                  setState(() => _isAuthenticated = false);
+                  setState(() {
+                    _isAuthenticated = false;
+                    _denyReason = 'تم قفل لوحة الإدارة';
+                  });
                   TopNotification.show(context, 'تم قفل لوحة الإدارة 🔒');
                 },
               ),
@@ -151,10 +180,14 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                   labelColor: const Color(0xFF4ADE80),
                   unselectedLabelColor: Colors.white60,
                   labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  isScrollable: true,
                   tabs: const [
                     Tab(icon: Icon(Icons.dashboard_rounded, size: 18), text: 'الإحصائيات'),
-                    Tab(icon: Icon(Icons.people_alt_rounded, size: 18), text: 'اللاعبين'),
+                    Tab(icon: Icon(Icons.people_alt_rounded, size: 18), text: 'الحسابات'),
+                    Tab(icon: Icon(Icons.report_rounded, size: 18), text: 'البلاغات'),
                     Tab(icon: Icon(Icons.tune_rounded, size: 18), text: 'إعدادات اللعبة'),
+                    Tab(icon: Icon(Icons.storefront_rounded, size: 18), text: 'المتجر والسكنات'),
+                    Tab(icon: Icon(Icons.workspace_premium_rounded, size: 18), text: 'طلبات VIP'),
                     Tab(icon: Icon(Icons.history_rounded, size: 18), text: 'سجل المباريات'),
                   ],
                 )
@@ -165,18 +198,37 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
           children: [
             _buildOverviewTab(),
             _buildPlayersTab(),
+            _buildReportsTab(),
             _buildConfigTab(),
+            _buildStoreTab(),
+            _buildVipRequestsTab(),
             _buildHistoryTab(),
           ],
-        ) : _buildLoginScreen(),
+        ) : _buildAccessScreen(),
       ),
     );
   }
 
   // ══════════════════════════════════════════════════════════
-  // شاشة تسجيل دخول الإدارة بـ PIN
+  // شاشة التحقق من صلاحية الأدمن (دخول حقيقي عبر حساب Firebase)
   // ══════════════════════════════════════════════════════════
-  Widget _buildLoginScreen() {
+  Widget _buildAccessScreen() {
+    if (_checking) {
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: Color(0xFF4ADE80)),
+            SizedBox(height: 16),
+            Text(
+              'جارٍ التحقق من صلاحيات الإدارة...',
+              style: TextStyle(color: Colors.white60, fontSize: 13),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -204,10 +256,10 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                 decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
-                    colors: [Color(0xFF22C55E), Color(0xFF15803D)],
+                    colors: [Color(0xFFEF4444), Color(0xFF991B1B)],
                   ),
                 ),
-                child: const Icon(Icons.shield_rounded, color: Colors.white, size: 34),
+                child: const Icon(Icons.lock_rounded, color: Colors.white, size: 34),
               ),
               const SizedBox(height: 16),
               const Text(
@@ -218,72 +270,15 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              const SizedBox(height: 6),
-              const Text(
-                'أدخل رمز المرور السري للوصول إلى لوحة التحكم',
-                style: TextStyle(color: Colors.white60, fontSize: 12),
+              const SizedBox(height: 8),
+              Text(
+                _denyReason.isEmpty
+                    ? 'الوصول مقيّد لحسابات المدير المسجلة في مجموعة admins'
+                    : _denyReason,
+                style: const TextStyle(color: Colors.white60, fontSize: 12),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 20),
-              TextField(
-                controller: _pinController,
-                obscureText: true,
-                keyboardType: TextInputType.text,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  letterSpacing: 4,
-                  fontWeight: FontWeight.bold,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'رمز المرور',
-                  hintStyle: const TextStyle(color: Colors.white30, letterSpacing: 0),
-                  filled: true,
-                  fillColor: const Color(0x33000000),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0x33FFFFFF)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFF4ADE80), width: 1.5),
-                  ),
-                ),
-                onSubmitted: (_) => _verifyPin(),
-              ),
-              if (_pinError.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                Text(
-                  _pinError,
-                  style: const TextStyle(color: Colors.redAccent, fontSize: 11.5, fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                height: 46,
-                child: ElevatedButton(
-                  onPressed: _verifyPin,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF22C55E),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text(
-                    'تسجيل الدخول',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'الرمز الافتراضي: 123456 أو admin2026',
-                style: TextStyle(color: Colors.white38, fontSize: 11),
-              ),
-              const SizedBox(height: 16),
               OutlinedButton.icon(
                 onPressed: () => openAdminWeb(),
                 icon: const Icon(Icons.desktop_windows_rounded, size: 16, color: Color(0xFF38BDF8)),
@@ -295,6 +290,15 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                   side: const BorderSide(color: Color(0x5538BDF8)),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextButton.icon(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.arrow_back_rounded, size: 16, color: Colors.white54),
+                label: const Text(
+                  'عودة',
+                  style: TextStyle(color: Colors.white54, fontSize: 12),
                 ),
               ),
             ],
@@ -310,7 +314,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
   Widget _buildOverviewTab() {
     return StreamBuilder<QuerySnapshot>(
       stream: _firebase.isInitialized
-          ? _firebase.firestore.collection('players').snapshots()
+          ? _firebase.firestore.collection('users').snapshots()
           : const Stream.empty(),
       builder: (context, snapshot) {
         int totalPlayers = 0;
@@ -333,7 +337,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                 Expanded(
                   child: _buildStatCard(
                     icon: Icons.people_alt_rounded,
-                    title: 'إجمالي اللاعبين',
+                    title: 'إجمالي الحسابات المسجلة',
                     value: '$totalPlayers',
                     color: const Color(0xFF3B82F6),
                   ),
@@ -342,8 +346,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                 Expanded(
                   child: _buildStatCard(
                     icon: Icons.monetization_on_rounded,
-                    title: 'إجمالي الرصيد المتداول',
-                    value: '$totalChips Bakiye',
+                    title: 'إجمالي العملات المتداولة',
+                    value: '$totalChips 🪙',
                     color: const Color(0xFFEAB308),
                   ),
                 ),
@@ -455,8 +459,10 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
   }
 
   // ══════════════════════════════════════════════════════════
-  // التبويب 2: إدارة اللاعبين (Players Tab)
+  // التبويب 2: إدارة الحسابات الحقيقية (Users Tab)
   // ══════════════════════════════════════════════════════════
+  String _userSearch = '';
+
   Widget _buildPlayersTab() {
     if (!_firebase.isInitialized) {
       return const Center(
@@ -464,30 +470,294 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
       );
     }
 
+    return Column(
+      children: [
+        // شريط البحث
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: TextField(
+            style: const TextStyle(color: Colors.white, fontSize: 13),
+            decoration: InputDecoration(
+              hintText: 'ابحث بالاسم أو اسم المستخدم...',
+              hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
+              prefixIcon: const Icon(Icons.search_rounded, color: Colors.white38, size: 20),
+              filled: true,
+              fillColor: const Color(0xFF161C28),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none),
+              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+            ),
+            onChanged: (v) => setState(() => _userSearch = v.trim().toLowerCase()),
+          ),
+        ),
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            // الحسابات الحقيقية المسجلة في التطبيق
+            stream: _firebase.firestore.collection('users').snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator(color: Color(0xFF4ADE80)));
+              }
+
+              var docs = snapshot.data!.docs;
+              if (_userSearch.isNotEmpty) {
+                docs = docs.where((d) {
+                  final data = d.data() as Map<String, dynamic>;
+                  final name = (data['displayName'] ?? '').toString().toLowerCase();
+                  final username = (data['username'] ?? '').toString().toLowerCase();
+                  return name.contains(_userSearch) || username.contains(_userSearch);
+                }).toList();
+              }
+
+              if (docs.isEmpty) {
+                return const Center(
+                  child: Text('لا توجد حسابات مطابقة',
+                      style: TextStyle(color: Colors.white60)),
+                );
+              }
+
+              return ListView.separated(
+                padding: const EdgeInsets.all(16),
+                itemCount: docs.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                itemBuilder: (context, index) {
+                  final doc = docs[index];
+                  final data = doc.data() as Map<String, dynamic>;
+                  final name = data['displayName'] ?? 'لاعب';
+                  final username = data['username'] ?? '';
+                  final photo = data['photoUrl'] ?? '';
+                  final chips = data['chips'] ?? 0;
+                  final rating = data['rating'] ?? 1000;
+                  final level = data['level'] ?? 1;
+                  final wins = data['wins'] ?? 0;
+                  final losses = data['losses'] ?? 0;
+                  final isGuest = doc.id.startsWith('guest_');
+                  final isBanned = data['isBanned'] ?? false;
+                  final vipUntilTs = data['vipUntil'];
+                  final isVip = vipUntilTs is Timestamp &&
+                      vipUntilTs.toDate().isAfter(DateTime.now());
+
+                  return Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF161C28),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isBanned
+                            ? Colors.redAccent.withOpacity(0.7)
+                            : const Color(0x22FFFFFF),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            // الصورة الرمزية
+                            UserAvatar(
+                                photoUrl: photo, name: name, size: 46),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          name,
+                                          style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      if (isGuest)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 5, vertical: 1),
+                                          decoration: BoxDecoration(
+                                            color: Colors.orange.withOpacity(0.15),
+                                            borderRadius:
+                                                BorderRadius.circular(5),
+                                          ),
+                                          child: const Text('ضيف',
+                                              style: TextStyle(
+                                                  color: Colors.orangeAccent,
+                                                  fontSize: 9)),
+                                        ),
+                                      if (isBanned) ...[
+                                        const SizedBox(width: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.red.withOpacity(0.2),
+                                            borderRadius:
+                                                BorderRadius.circular(6),
+                                            border: Border.all(
+                                                color: Colors.redAccent,
+                                                width: 0.8),
+                                          ),
+                                          child: const Text('محظور',
+                                              style: TextStyle(
+                                                  color: Colors.redAccent,
+                                                  fontSize: 10)),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                  Text('@$username',
+                                      style: const TextStyle(
+                                          color: Color(0xFF38BDF8),
+                                          fontSize: 11)),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.edit_rounded,
+                                  color: Color(0xFF4ADE80), size: 20),
+                              tooltip: 'تعديل بيانات الحساب',
+                              onPressed: () =>
+                                  _showEditUserDialog(doc.id, data),
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                isVip
+                                    ? Icons.workspace_premium_rounded
+                                    : Icons.workspace_premium_outlined,
+                                color: isVip
+                                    ? const Color(0xFFFFD54F)
+                                    : Colors.white38,
+                                size: 20,
+                              ),
+                              tooltip: isVip
+                                  ? 'إلغاء اشتراك VIP'
+                                  : 'تفعيل VIP لمدة 30 يوماً',
+                              onPressed: () async {
+                                await _firebase.firestore
+                                    .collection('users')
+                                    .doc(doc.id)
+                                    .update({
+                                  'vipUntil': isVip
+                                      ? null
+                                      : Timestamp.fromDate(DateTime.now()
+                                          .add(const Duration(days: 30))),
+                                  'updatedAt':
+                                      FieldValue.serverTimestamp(),
+                                });
+                                if (mounted) {
+                                  TopNotification.show(
+                                    context,
+                                    isVip
+                                        ? 'تم إلغاء اشتراك VIP'
+                                        : 'تم تفعيل VIP لمدة 30 يوماً 👑',
+                                  );
+                                }
+                              },
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                isBanned
+                                    ? Icons.lock_open_rounded
+                                    : Icons.block_rounded,
+                                color: isBanned
+                                    ? Colors.green
+                                    : Colors.redAccent,
+                                size: 20,
+                              ),
+                              tooltip: isBanned ? 'فك الحظر' : 'حظر الحساب',
+                              onPressed: () {
+                                _firebase.firestore
+                                    .collection('users')
+                                    .doc(doc.id)
+                                    .update({'isBanned': !isBanned});
+                                TopNotification.show(
+                                  context,
+                                  isBanned
+                                      ? 'تم فك حظر الحساب'
+                                      : 'تم حظر الحساب',
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        // شريط إحصائيات صغير
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _miniStat('🪙', '$chips', 'الرصيد'),
+                            _miniStat('⭐', '$rating', 'التقييم'),
+                            _miniStat('🏆', '$level', 'المستوى'),
+                            _miniStat('✅', '$wins', 'فوز'),
+                            _miniStat('❌', '$losses', 'خسارة'),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _miniStat(String emoji, String value, String label) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 11)),
+            const SizedBox(width: 3),
+            Text(value,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w800)),
+          ],
+        ),
+        Text(label,
+            style: const TextStyle(color: Colors.white38, fontSize: 9)),
+      ],
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // التبويب 3: بلاغات اللاعبين (Reports Tab)
+  // ══════════════════════════════════════════════════════════
+  Widget _buildReportsTab() {
+    if (!_firebase.isInitialized) {
+      return const Center(
+          child: Text('قاعدة البيانات غير متصلة',
+              style: TextStyle(color: Colors.white60)));
+    }
+
     return StreamBuilder<QuerySnapshot>(
-      stream: _firebase.firestore.collection('players').snapshots(),
+      stream: _firebase.firestore
+          .collection('reports')
+          .orderBy('createdAt', descending: true)
+          .limit(100)
+          .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator(color: Color(0xFF4ADE80)));
+          return const Center(
+              child:
+                  CircularProgressIndicator(color: Color(0xFF4ADE80)));
         }
-
         final docs = snapshot.data!.docs;
         if (docs.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.people_outline_rounded, color: Colors.white30, size: 48),
-                const SizedBox(height: 12),
-                const Text('لا يوجد لاعبين مسجلين بعد في قاعدة البيانات', style: TextStyle(color: Colors.white60)),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed: () => _showAddPlayerDialog(),
-                  icon: const Icon(Icons.add),
-                  label: const Text('إضافة لاعب تجريبي'),
-                ),
-              ],
-            ),
+          return const Center(
+            child: Text('لا توجد بلاغات — كل شيء نظيف! ✅',
+                style: TextStyle(color: Colors.white60)),
           );
         }
 
@@ -497,86 +767,89 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
           separatorBuilder: (_, __) => const SizedBox(height: 10),
           itemBuilder: (context, index) {
             final doc = docs[index];
-            final data = doc.data() as Map<String, dynamic>;
-            final name = data['name'] ?? 'لاعب';
-            final chips = data['chips'] ?? 0;
-            final rating = data['rating'] ?? 1000;
-            final level = data['level'] ?? 1;
-            final isBanned = data['isBanned'] ?? false;
-
+            final d = doc.data() as Map<String, dynamic>;
+            final isPending = d['status'] == 'pending';
             return Container(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: const Color(0xFF161C28),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: isBanned ? Colors.redAccent : const Color(0x22FFFFFF),
-                  width: 1,
+                  color: isPending
+                      ? const Color(0xFFEF4444).withOpacity(0.5)
+                      : const Color(0x22FFFFFF),
                 ),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircleAvatar(
-                    backgroundColor: const Color(0xFF2E384D),
-                    child: Text(
-                      name.isNotEmpty ? name[0].toUpperCase() : 'P',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              name,
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                            ),
-                            if (isBanned) ...[
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: Colors.red.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: Colors.redAccent, width: 0.8),
-                                ),
-                                child: const Text('محظور', style: TextStyle(color: Colors.redAccent, fontSize: 10)),
-                              ),
-                            ],
-                          ],
+                  Row(
+                    children: [
+                      Icon(
+                          isPending
+                              ? Icons.report_problem_rounded
+                              : Icons.check_circle_rounded,
+                          color: isPending
+                              ? const Color(0xFFEF4444)
+                              : const Color(0xFF4ADE80),
+                          size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '${d['reason'] ?? 'بلاغ'}',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'المستوى: $level | التقييم: $rating | الرصيد: $chips Bakiye',
-                          style: const TextStyle(color: Colors.white60, fontSize: 11),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: isPending
+                              ? Colors.red.withOpacity(0.15)
+                              : Colors.green.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                      ],
+                        child: Text(
+                          isPending ? 'معلّق' : 'تمت المعالجة',
+                          style: TextStyle(
+                              color: isPending
+                                  ? Colors.redAccent
+                                  : const Color(0xFF4ADE80),
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'المُبلِغ: ${d['reporterName'] ?? ''}  ←  المُبلَغ عنه: @${d['reportedUsername'] ?? ''}',
+                    style: const TextStyle(
+                        color: Colors.white70, fontSize: 11.5),
+                  ),
+                  if ((d['details'] ?? '').toString().isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text('التفاصيل: ${d['details']}',
+                        style: const TextStyle(
+                            color: Colors.white38, fontSize: 11)),
+                  ],
+                  if (isPending)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: () => doc.reference
+                            .update({'status': 'resolved'}),
+                        icon: const Icon(Icons.check_rounded,
+                            size: 16, color: Color(0xFF4ADE80)),
+                        label: const Text('تمت المعالجة',
+                            style: TextStyle(
+                                color: Color(0xFF4ADE80),
+                                fontSize: 11.5)),
+                      ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.edit_rounded, color: Color(0xFF4ADE80)),
-                    tooltip: 'تعديل بيانات اللاعب',
-                    onPressed: () => _showEditPlayerDialog(doc.id, data),
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      isBanned ? Icons.lock_open_rounded : Icons.block_rounded,
-                      color: isBanned ? Colors.green : Colors.redAccent,
-                    ),
-                    tooltip: isBanned ? 'فك الحظر' : 'حظر اللاعب',
-                    onPressed: () {
-                      _firebase.firestore.collection('players').doc(doc.id).update({
-                        'isBanned': !isBanned,
-                      });
-                      TopNotification.show(
-                        context,
-                        isBanned ? 'تم فك حظر اللاعب' : 'تم حظر اللاعب',
-                      );
-                    },
-                  ),
                 ],
               ),
             );
@@ -586,10 +859,15 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
     );
   }
 
-  void _showAddPlayerDialog() {
-    final nameCtrl = TextEditingController(text: 'Player 1');
-    final chipsCtrl = TextEditingController(text: '1250');
-    final ratingCtrl = TextEditingController(text: '1300');
+  void _showEditUserDialog(String docId, Map<String, dynamic> data) {
+    final nameCtrl =
+        TextEditingController(text: data['displayName'] ?? data['name'] ?? '');
+    final chipsCtrl =
+        TextEditingController(text: '${data['chips'] ?? 0}');
+    final ratingCtrl =
+        TextEditingController(text: '${data['rating'] ?? 1000}');
+    final levelCtrl =
+        TextEditingController(text: '${data['level'] ?? 1}');
 
     showDialog(
       context: context,
@@ -597,71 +875,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
         textDirection: TextDirection.rtl,
         child: AlertDialog(
           backgroundColor: const Color(0xFF161C28),
-          title: const Text('إضافة لاعب جديد', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameCtrl,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(labelText: 'اسم اللاعب', labelStyle: TextStyle(color: Colors.white60)),
-              ),
-              TextField(
-                controller: chipsCtrl,
-                keyboardType: TextInputType.number,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(labelText: 'الرصيد الابتدائي', labelStyle: TextStyle(color: Colors.white60)),
-              ),
-              TextField(
-                controller: ratingCtrl,
-                keyboardType: TextInputType.number,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(labelText: 'التقييم', labelStyle: TextStyle(color: Colors.white60)),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('إلغاء', style: TextStyle(color: Colors.white60)),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final id = 'player_${DateTime.now().millisecondsSinceEpoch}';
-                await _firebase.firestore.collection('players').doc(id).set({
-                  'id': id,
-                  'name': nameCtrl.text.trim(),
-                  'chips': int.tryParse(chipsCtrl.text) ?? 1250,
-                  'rating': int.tryParse(ratingCtrl.text) ?? 1300,
-                  'level': 1,
-                  'wins': 0,
-                  'losses': 0,
-                  'createdAt': FieldValue.serverTimestamp(),
-                });
-                if (ctx.mounted) Navigator.of(ctx).pop();
-                if (mounted) TopNotification.show(context, 'تمت إضافة اللاعب بنجاح ✅');
-              },
-              child: const Text('إضافة'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showEditPlayerDialog(String docId, Map<String, dynamic> data) {
-    final nameCtrl = TextEditingController(text: data['name'] ?? '');
-    final chipsCtrl = TextEditingController(text: '${data['chips'] ?? 0}');
-    final ratingCtrl = TextEditingController(text: '${data['rating'] ?? 1000}');
-    final levelCtrl = TextEditingController(text: '${data['level'] ?? 1}');
-
-    showDialog(
-      context: context,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: AlertDialog(
-          backgroundColor: const Color(0xFF161C28),
-          title: Text('تعديل: ${data['name']}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          title: Text('تعديل: ${data['displayName'] ?? data['name']}',
+              style: const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.bold)),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -669,25 +885,33 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                 TextField(
                   controller: nameCtrl,
                   style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(labelText: 'اسم اللاعب', labelStyle: TextStyle(color: Colors.white60)),
+                  decoration: const InputDecoration(
+                      labelText: 'الاسم المعروض',
+                      labelStyle: TextStyle(color: Colors.white60)),
                 ),
                 TextField(
                   controller: chipsCtrl,
                   keyboardType: TextInputType.number,
                   style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(labelText: 'الرصيد (Bakiye)', labelStyle: TextStyle(color: Colors.white60)),
+                  decoration: const InputDecoration(
+                      labelText: 'الرصيد (عملات)',
+                      labelStyle: TextStyle(color: Colors.white60)),
                 ),
                 TextField(
                   controller: ratingCtrl,
                   keyboardType: TextInputType.number,
                   style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(labelText: 'التقييم (Rating)', labelStyle: TextStyle(color: Colors.white60)),
+                  decoration: const InputDecoration(
+                      labelText: 'التقييم (Rating)',
+                      labelStyle: TextStyle(color: Colors.white60)),
                 ),
                 TextField(
                   controller: levelCtrl,
                   keyboardType: TextInputType.number,
                   style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(labelText: 'المستوى (Level)', labelStyle: TextStyle(color: Colors.white60)),
+                  decoration: const InputDecoration(
+                      labelText: 'المستوى (Level)',
+                      labelStyle: TextStyle(color: Colors.white60)),
                 ),
               ],
             ),
@@ -695,19 +919,26 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('إلغاء', style: TextStyle(color: Colors.white60)),
+              child: const Text('إلغاء',
+                  style: TextStyle(color: Colors.white60)),
             ),
             ElevatedButton(
               onPressed: () async {
-                await _firebase.firestore.collection('players').doc(docId).update({
-                  'name': nameCtrl.text.trim(),
+                await _firebase.firestore
+                    .collection('users')
+                    .doc(docId)
+                    .update({
+                  'displayName': nameCtrl.text.trim(),
                   'chips': int.tryParse(chipsCtrl.text) ?? 0,
                   'rating': int.tryParse(ratingCtrl.text) ?? 1000,
                   'level': int.tryParse(levelCtrl.text) ?? 1,
                   'updatedAt': FieldValue.serverTimestamp(),
                 });
                 if (ctx.mounted) Navigator.of(ctx).pop();
-                if (mounted) TopNotification.show(context, 'تم تحديث بيانات اللاعب بنجاح ✅');
+                if (mounted) {
+                  TopNotification.show(
+                      context, 'تم تحديث بيانات الحساب بنجاح ✅');
+                }
               },
               child: const Text('حفظ التعديلات'),
             ),
@@ -718,7 +949,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
   }
 
   // ══════════════════════════════════════════════════════════
-  // التبويب 3: إعدادات اللعبة والقواعد (Config Tab)
+  // التبويب 4: إعدادات اللعبة والقواعد (Config Tab)
   // ══════════════════════════════════════════════════════════
   Widget _buildConfigTab() {
     return ListView(
@@ -888,8 +1119,678 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
   }
 
   // ══════════════════════════════════════════════════════════
-  // التبويب 4: سجل المباريات (History Tab)
+  // التبويب 4: إدارة المتجر والكسنات (Store Tab) - معاينة موك اب
   // ══════════════════════════════════════════════════════════
+  Widget _buildStoreTab() {
+    return Column(
+      children: [
+        // زر إضافة تصميم جديد
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: ElevatedButton.icon(
+              onPressed: _showAddSkinDialog,
+              icon: const Icon(Icons.add_photo_alternate_rounded),
+              label: const Text(
+                'إضافة تصميم جديد للمتجر (موك اب)',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF7C3AED),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+        ),
+
+        // قائمة الكسنات الحالية
+        Expanded(
+          child: !_firebase.isInitialized
+              ? const Center(
+                  child: Text('قاعدة البيانات غير متصلة',
+                      style: TextStyle(color: Colors.white60)))
+              : StreamBuilder<QuerySnapshot>(
+                  stream: _firebase.firestore
+                      .collection('store_items')
+                      .orderBy('createdAt', descending: true)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const Center(
+                          child: CircularProgressIndicator(
+                              color: Color(0xFF4ADE80)));
+                    }
+                    final docs = snapshot.data!.docs;
+                    if (docs.isEmpty) {
+                      return const Center(
+                        child: Text(
+                          'لا توجد كسنات في المتجر بعد — أضف أول تصميم!',
+                          style: TextStyle(color: Colors.white60),
+                        ),
+                      );
+                    }
+                    return ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      itemCount: docs.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        final doc = docs[index];
+                        final item = StoreItem.fromDoc(doc);
+                        return Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF161C28),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: item.active
+                                  ? const Color(0x334ADE80)
+                                  : Colors.redAccent.withOpacity(0.4),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              // مصغّر الموك اب
+                              SizedBox(
+                                width: 90,
+                                height: 56,
+                                child: SkinMockup(
+                                  category: item.category,
+                                  image: item.imageBase64.isNotEmpty
+                                      ? item.provider
+                                      : null,
+                                  width: 90,
+                                  height: 56,
+                                  zoom: item.zoom,
+                                  offsetX: item.offsetX,
+                                  offsetY: item.offsetY,
+                                  item: item,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(item.name,
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13)),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      '${StoreCategory.label(item.category)} • ${StoreCurrency.icon(item.currency)} ${item.price}',
+                                      style: const TextStyle(
+                                          color: Colors.white60,
+                                          fontSize: 11),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: item.active ? 'إخفاء' : 'إظهار',
+                                icon: Icon(
+                                  item.active
+                                      ? Icons.visibility_rounded
+                                      : Icons.visibility_off_rounded,
+                                  color: item.active
+                                      ? const Color(0xFF4ADE80)
+                                      : Colors.white38,
+                                ),
+                                onPressed: () {
+                                  doc.reference
+                                      .update({'active': !item.active});
+                                },
+                              ),
+                              IconButton(
+                                tooltip: 'حذف',
+                                icon: const Icon(Icons.delete_rounded,
+                                    color: Colors.redAccent),
+                                onPressed: () => doc.reference.delete(),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  /// نافذة إضافة تصميم جديد: رفع صورة + معاينة موك اب حية + نشر
+  void _showAddSkinDialog() {
+    final nameCtrl = TextEditingController();
+    final priceCtrl = TextEditingController(text: '500');
+    String selectedCategory = StoreCategory.tile;
+    String selectedCurrency = StoreCurrency.chips;
+    String? imageBase64;
+    bool saving = false;
+    double imgZoom = 1.0;
+    double imgOffX = 0.0;
+    double imgOffY = 0.0;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          Future<void> pickImage() async {
+            try {
+              final picker = ImagePicker();
+              final file = await picker.pickImage(
+                source: ImageSource.gallery,
+                maxWidth: 1024,
+                maxHeight: 1024,
+                imageQuality: 80,
+              );
+              if (file == null) return;
+              final bytes = await file.readAsBytes();
+              setDialogState(() => imageBase64 = base64Encode(bytes));
+            } catch (e) {
+              if (ctx.mounted) {
+                TopNotification.show(ctx, 'تعذر اختيار الصورة: $e');
+              }
+            }
+          }
+
+          Future<void> save() async {
+            if (nameCtrl.text.trim().isEmpty) {
+              TopNotification.show(ctx, 'أدخل اسم التصميم أولاً');
+              return;
+            }
+            if (imageBase64 == null) {
+              TopNotification.show(ctx, 'اختر صورة التصميم أولاً');
+              return;
+            }
+            setDialogState(() => saving = true);
+            try {
+              await _firebase.firestore.collection('store_items').add({
+                'name': nameCtrl.text.trim(),
+                'category': selectedCategory,
+                'price': int.tryParse(priceCtrl.text) ?? 500,
+                'currency': selectedCurrency,
+                'imageBase64': imageBase64,
+                'active': true,
+                'zoom': imgZoom,
+                'offsetX': imgOffX,
+                'offsetY': imgOffY,
+                'createdAt': FieldValue.serverTimestamp(),
+              });
+              if (ctx.mounted) Navigator.of(ctx).pop();
+              if (mounted) {
+                TopNotification.show(
+                    context, 'تم نشر التصميم في المتجر بنجاح! 🎉');
+              }
+            } catch (e) {
+              setDialogState(() => saving = false);
+              if (ctx.mounted) {
+                TopNotification.show(ctx, 'فشل النشر: $e');
+              }
+            }
+          }
+
+          return Directionality(
+            textDirection: TextDirection.rtl,
+            child: AlertDialog(
+              backgroundColor: const Color(0xFF161C28),
+              title: const Text(
+                'تصميم كسنة جديدة (موك اب)',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16),
+              ),
+              content: SizedBox(
+                width: 420,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // اختيار الفئة
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: StoreCategory.all.map((cat) {
+                          final sel = selectedCategory == cat;
+                          return GestureDetector(
+                            onTap: () => setDialogState(
+                                () => selectedCategory = cat),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: sel
+                                    ? const Color(0xFF7C3AED)
+                                    : const Color(0x22FFFFFF),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: sel
+                                      ? const Color(0xFFA78BFA)
+                                      : Colors.white12,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(StoreCategory.icon(cat),
+                                      size: 14,
+                                      color: sel
+                                          ? Colors.white
+                                          : Colors.white54),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    StoreCategory.label(cat),
+                                    style: TextStyle(
+                                      color: sel
+                                          ? Colors.white
+                                          : Colors.white70,
+                                      fontSize: 11.5,
+                                      fontWeight: sel
+                                          ? FontWeight.w800
+                                          : FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // زر رفع الصورة
+                      OutlinedButton.icon(
+                        onPressed: saving ? null : pickImage,
+                        icon: Icon(
+                          imageBase64 == null
+                              ? Icons.upload_rounded
+                              : Icons.check_circle_rounded,
+                          color: imageBase64 == null
+                              ? const Color(0xFF38BDF8)
+                              : const Color(0xFF4ADE80),
+                          size: 18,
+                        ),
+                        label: Text(
+                          imageBase64 == null
+                              ? 'اختيار صورة التصميم'
+                              : 'تم اختيار الصورة ✓ — تغييرها',
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 12),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0x5538BDF8)),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 10),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // المعاينة الحية على القطعة المختارة (موك اب)
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0D111A),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: Colors.white12),
+                        ),
+                        child: Column(
+                          children: [
+                            const Text(
+                              'معاينة حية على القطعة:',
+                              style: TextStyle(
+                                  color: Colors.white54, fontSize: 10.5),
+                            ),
+                            const SizedBox(height: 8),
+                            GestureDetector(
+                              onPanUpdate: imageBase64 == null
+                                  ? null
+                                  : (d) => setDialogState(() {
+                                        imgOffX = (imgOffX +
+                                                d.delta.dx / 150)
+                                            .clamp(-1.0, 1.0);
+                                        imgOffY = (imgOffY +
+                                                d.delta.dy / 75)
+                                            .clamp(-1.0, 1.0);
+                                      }),
+                              child: SkinMockup(
+                                category: selectedCategory,
+                                image: imageBase64 != null
+                                    ? MemoryImage(
+                                        base64Decode(imageBase64!))
+                                    : null,
+                                width: 300,
+                                height: 150,
+                                zoom: imgZoom,
+                                offsetX: imgOffX,
+                                offsetY: imgOffY,
+                                item: imageBase64 != null
+                                    ? StoreItem(
+                                        id: 'admin_preview',
+                                        name: 'معاينة',
+                                        category: selectedCategory,
+                                        price: 0,
+                                        imageBase64: imageBase64!,
+                                        zoom: imgZoom,
+                                        offsetX: imgOffX,
+                                        offsetY: imgOffY,
+                                      )
+                                    : null,
+                              ),
+                            ),
+                            if (imageBase64 != null) ...[
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  const Icon(Icons.zoom_in_rounded,
+                                      color: Colors.white54, size: 16),
+                                  Expanded(
+                                    child: Slider(
+                                      value: imgZoom,
+                                      min: 0.6,
+                                      max: 3.0,
+                                      divisions: 48,
+                                      activeColor:
+                                          const Color(0xFFA78BFA),
+                                      onChanged: (v) => setDialogState(
+                                          () => imgZoom = v),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    tooltip: 'إعادة الضبط',
+                                    icon: const Icon(
+                                        Icons.restart_alt_rounded,
+                                        color: Colors.white54,
+                                        size: 18),
+                                    onPressed: () => setDialogState(() {
+                                      imgZoom = 1.0;
+                                      imgOffX = 0;
+                                      imgOffY = 0;
+                                    }),
+                                  ),
+                                ],
+                              ),
+                              const Text(
+                                'اسحب الصورة لتحريكها على القطعة • حرّك المنزلق للتكبير',
+                                style: TextStyle(
+                                    color: Colors.white38,
+                                    fontSize: 9.5),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // الاسم والسعر
+                      TextField(
+                        controller: nameCtrl,
+                        style: const TextStyle(
+                            color: Colors.white, fontSize: 13),
+                        decoration: const InputDecoration(
+                          labelText: 'اسم التصميم',
+                          labelStyle: TextStyle(color: Colors.white60),
+                          hintText: 'مثال: رخام ملكي',
+                          hintStyle: TextStyle(color: Colors.white30),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: priceCtrl,
+                        keyboardType: TextInputType.number,
+                        style: const TextStyle(
+                            color: Colors.white, fontSize: 13),
+                        decoration: const InputDecoration(
+                          labelText: 'السعر',
+                          labelStyle: TextStyle(color: Colors.white60),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // اختيار عملة البيع
+                      Row(
+                        children: [
+                          for (final c in [
+                            (StoreCurrency.chips, '🪙 عملات ذهبية'),
+                            (StoreCurrency.gems, '💎 مجوهرات زرقاء'),
+                          ])
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => setDialogState(
+                                    () => selectedCurrency = c.$1),
+                                child: AnimatedContainer(
+                                  duration:
+                                      const Duration(milliseconds: 150),
+                                  margin:
+                                      const EdgeInsets.symmetric(horizontal: 3),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 9),
+                                  decoration: BoxDecoration(
+                                    color: selectedCurrency == c.$1
+                                        ? (c.$1 == StoreCurrency.gems
+                                            ? const Color(0x3338BDF8)
+                                            : const Color(0x33FFD54F))
+                                        : Colors.white.withOpacity(0.05),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: selectedCurrency == c.$1
+                                          ? (c.$1 == StoreCurrency.gems
+                                              ? const Color(0xFF38BDF8)
+                                              : const Color(0xFFFFD54F))
+                                          : Colors.white12,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    c.$2,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: selectedCurrency == c.$1
+                                          ? Colors.white
+                                          : Colors.white54,
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: saving ? null : () => Navigator.of(ctx).pop(),
+                  child: const Text('إلغاء',
+                      style: TextStyle(color: Colors.white60)),
+                ),
+                ElevatedButton.icon(
+                  onPressed: saving ? null : save,
+                  icon: saving
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.publish_rounded, size: 16),
+                  label: Text(saving ? 'جاري النشر...' : 'نشر في المتجر'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF22C55E),
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // التبويب 5: سجل المباريات (History Tab)
+  // ══════════════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════════════
+  // التبويب 6: طلبات اشتراك VIP (10$/شهر — تفعيل يدوي بعد الدفع)
+  // ══════════════════════════════════════════════════════════
+  Widget _buildVipRequestsTab() {
+    if (!_firebase.isInitialized) {
+      return const Center(
+          child: Text('قاعدة البيانات غير متصلة',
+              style: TextStyle(color: Colors.white60)));
+    }
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: _firebase.firestore
+          .collection('vip_requests')
+          .orderBy('createdAt', descending: true)
+          .limit(100)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(
+              child:
+                  CircularProgressIndicator(color: Color(0xFF4ADE80)));
+        }
+        final docs = snapshot.data!.docs;
+        if (docs.isEmpty) {
+          return const Center(
+            child: Text('لا توجد طلبات اشتراك VIP بعد',
+                style: TextStyle(color: Colors.white60)),
+          );
+        }
+
+        return ListView.separated(
+          padding: const EdgeInsets.all(16),
+          itemCount: docs.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          itemBuilder: (context, index) {
+            final doc = docs[index];
+            final d = doc.data() as Map<String, dynamic>;
+            final isPending = d['status'] == 'pending';
+            final ts = d['createdAt'];
+            final created =
+                ts is Timestamp ? ts.toDate() : null;
+
+            return Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF161C28),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isPending
+                      ? const Color(0xFFFFD54F).withOpacity(0.5)
+                      : const Color(0x22FFFFFF),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    isPending
+                        ? Icons.hourglass_top_rounded
+                        : Icons.workspace_premium_rounded,
+                    color: isPending
+                        ? const Color(0xFFFFD54F)
+                        : const Color(0xFF4ADE80),
+                    size: 26,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${d['displayName'] ?? 'لاعب'}  @${d['username'] ?? ''}',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13),
+                        ),
+                        Text(
+                          'اشتراك شهري — ${d['priceUsd'] ?? 10}\$'
+                          '${created != null ? '  •  ${created.day}/${created.month}/${created.year}' : ''}',
+                          style: const TextStyle(
+                              color: Colors.white54, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (isPending) ...[
+                    IconButton(
+                      tooltip: 'تفعيل VIP — 30 يوماً',
+                      icon: const Icon(Icons.check_circle_rounded,
+                          color: Color(0xFF4ADE80), size: 26),
+                      onPressed: () => _approveVip(doc, d),
+                    ),
+                    IconButton(
+                      tooltip: 'رفض الطلب',
+                      icon: const Icon(Icons.cancel_rounded,
+                          color: Colors.redAccent, size: 26),
+                      onPressed: () =>
+                          doc.reference.update({'status': 'rejected'}),
+                    ),
+                  ] else
+                    Text(
+                      d['status'] == 'approved' ? 'مُفعّل ✓' : 'مرفوض',
+                      style: TextStyle(
+                          color: d['status'] == 'approved'
+                              ? const Color(0xFF4ADE80)
+                              : Colors.redAccent,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold),
+                    ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// تفعيل VIP: تحديث vipUntil على المستخدم + وضع الطلب "مقبول"
+  Future<void> _approveVip(
+      DocumentSnapshot doc, Map<String, dynamic> d) async {
+    final uid = d['uid'] as String?;
+    if (uid == null) return;
+    try {
+      final userRef =
+          _firebase.firestore.collection('users').doc(uid);
+      final snap = await userRef.get();
+      final data = snap.data();
+      // يمدّد من نهاية الاشتراك الحالي إن كان فعّالاً
+      DateTime base = DateTime.now();
+      final cur = data?['vipUntil'];
+      if (cur is Timestamp && cur.toDate().isAfter(base)) {
+        base = cur.toDate();
+      }
+      final isPlus = d['plan'] == 'vipPlus';
+      await userRef.update({
+        'vipUntil':
+            Timestamp.fromDate(base.add(const Duration(days: 30))),
+        'vipTier': isPlus ? 'vipPlus' : 'vip',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      await doc.reference.update({'status': 'approved'});
+      if (mounted) {
+        TopNotification.show(
+            context,
+            'تم تفعيل ${isPlus ? 'VIP+' : 'VIP'} لـ ${d['displayName'] ?? ''} — 30 يوماً 👑');
+      }
+    } catch (e) {
+      if (mounted) {
+        TopNotification.show(context, 'تعذر التفعيل: $e',
+            icon: Icons.warning_rounded);
+      }
+    }
+  }
+
   Widget _buildHistoryTab() {
     if (!_firebase.isInitialized) {
       return const Center(child: Text('قاعدة البيانات غير متصلة', style: TextStyle(color: Colors.white60)));

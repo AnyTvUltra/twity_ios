@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 import '../okey_models.dart';
 import 'okey_tile_widget.dart';
+import 'game_notice.dart';
 import 'package:game_hub/utils/haptics.dart';
 
 class OkeyWinDialog extends StatelessWidget {
   final OkeyPlayer winner;
   final WinType winType;
   final VoidCallback onPlayAgain;
+  final VoidCallback? onExit;
 
   const OkeyWinDialog({
     super.key,
     required this.winner,
     required this.winType,
     required this.onPlayAgain,
+    this.onExit,
   });
 
   static Future<void> show(
@@ -20,15 +23,17 @@ class OkeyWinDialog extends StatelessWidget {
     required OkeyPlayer winner,
     required WinType winType,
     required VoidCallback onPlayAgain,
+    VoidCallback? onExit,
   }) {
-    return showDialog(
-      context: context,
+    return showOkeyLandscapeDialog(
+      context,
       barrierDismissible: false,
       barrierColor: Colors.black.withOpacity(0.75),
       builder: (_) => OkeyWinDialog(
         winner: winner,
         winType: winType,
         onPlayAgain: onPlayAgain,
+        onExit: onExit,
       ),
     );
   }
@@ -143,44 +148,89 @@ class OkeyWinDialog extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // زر لعب جولة جديدة
-            GestureDetector(
-              onTap: () {
-                AppHaptics.heavy();
-                Navigator.of(context).pop();
-                onPlayAgain();
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF22C55E), Color(0xFF16A34A)],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF22C55E).withOpacity(0.4),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.replay_rounded, color: Colors.white, size: 20),
-                    SizedBox(width: 8),
-                    Text(
-                      'جولة جديدة (Play Again)',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
+            // الأزرار: جولة جديدة + خروج
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // زر الخروج
+                if (onExit != null) ...[
+                  GestureDetector(
+                    onTap: () {
+                      AppHaptics.light();
+                      Navigator.of(context).pop();
+                      onExit!();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 26, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                            color: Colors.white.withOpacity(0.25), width: 1.2),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.exit_to_app_rounded,
+                              color: Colors.white70, size: 19),
+                          SizedBox(width: 7),
+                          Text(
+                            'خروج',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
+                  const SizedBox(width: 14),
+                ],
+                // زر لعب جولة جديدة
+                GestureDetector(
+                  onTap: () {
+                    AppHaptics.heavy();
+                    Navigator.of(context).pop();
+                    onPlayAgain();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 32, vertical: 12),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF22C55E), Color(0xFF16A34A)],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF22C55E).withOpacity(0.4),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.replay_rounded,
+                            color: Colors.white, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'جولة جديدة (Play Again)',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ],
         ),

@@ -1,10 +1,11 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../utils/haptics.dart';
 import '../utils/top_notification.dart';
-import '../widgets/app_background.dart';
-
+import '../utils/format.dart';
 import '../services/auth_service.dart';
+import '../widgets/daily_rewards_panel.dart';
 
 class AchievementsScreen extends StatefulWidget {
   const AchievementsScreen({super.key});
@@ -16,17 +17,15 @@ class AchievementsScreen extends StatefulWidget {
 class _AchievementsScreenState extends State<AchievementsScreen> {
   final List<bool> _claimedMissions = [false, true, false, false];
 
-  Future<void> _claimDailyReward() async {
-    AppHaptics.medium();
-    final res = await AuthService().claimDailyGift();
-    if (mounted) {
-      TopNotification.show(
-        context,
-        res['message'] as String,
-        icon: res['success'] == true ? Icons.card_giftcard_rounded : Icons.lock_clock_rounded,
-      );
-    }
-  }
+  static const _bgTop = Color(0xFF0A0F24);
+  static const _bgMid = Color(0xFF080C1C);
+  static const _bgBot = Color(0xFF04060F);
+  static const _neonBlue = Color(0xFF3B82F6);
+  static const _cyan = Color(0xFF38BDF8);
+  static const _gold = Color(0xFFFFD54F);
+  static const _emerald = Color(0xFF34D399);
+  static const _textWhite = Color(0xFFF1F5FF);
+  static const _textDim = Color(0xFF8EA3C8);
 
   Future<void> _claimMission(int index, String title, int reward) async {
     if (!_claimedMissions[index]) {
@@ -34,7 +33,12 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       setState(() {
         _claimedMissions[index] = true;
       });
-      await AuthService().updateMatchResult(chipChange: reward, ratingChange: 5, isWin: false);
+      await AuthService().updateMatchResult(
+        chipChange: reward,
+        ratingChange: 5,
+        isWin: false,
+        recordResult: false,
+      );
       if (mounted) {
         TopNotification.show(
           context,
@@ -45,356 +49,286 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
-    return AppBackground(
-      child: SafeArea(
-        bottom: false,
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.only(bottom: 90),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        'الإنجازات والجوائز',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black54,
-                              blurRadius: 4,
-                              offset: Offset(0, 1),
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [_bgTop, _bgMid, _bgBot],
+        ),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          const RepaintBoundary(
+              child: CustomPaint(painter: _AchievementsDecorPainter())),
+          SafeArea(
+            bottom: false,
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.only(bottom: 100),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ═══ الهيدر ═══
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    child: Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'الإنجازات والجوائز',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: _textWhite,
+                              fontSize: 21,
+                              fontWeight: FontWeight.w900,
+                              shadows: [
+                                Shadow(
+                                    color: Color(0x33FFFFFF),
+                                    blurRadius: 10),
+                              ],
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xE625143E),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0x40FFD54F), width: 1),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.emoji_events_rounded, color: AppColors.gold, size: 16),
-                          SizedBox(width: 4),
-                          Text(
-                            '18 / 40',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12),
                           ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              // Daily Login Streak (7-Day Box) with 24h timer & Firestore syncing
-              AnimatedBuilder(
-                animation: AuthService(),
-                builder: (context, _) {
-                  final user = AuthService().currentUser;
-                  final lastClaim = user?.lastDailyGiftClaim;
-                  final now = DateTime.now();
-
-                  bool isClaimableNow = false;
-                  int remainingHours = 0;
-                  int remainingMinutes = 0;
-
-                  if (lastClaim == null) {
-                    isClaimableNow = true;
-                  } else {
-                    final diff = now.difference(lastClaim);
-                    if (diff.inHours >= 24) {
-                      isClaimableNow = true;
-                    } else {
-                      remainingHours = 23 - diff.inHours;
-                      remainingMinutes = 59 - (diff.inMinutes % 60);
-                      if (remainingHours < 0) remainingHours = 0;
-                      if (remainingMinutes < 0) remainingMinutes = 0;
-                    }
-                  }
-
-                  final currentStreak = user?.dailyGiftStreak ?? 0;
-                  final targetIndex = isClaimableNow ? (currentStreak % 7) : ((currentStreak - 1).clamp(0, 6));
-
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [Color(0xFF3B1E6D), Color(0xFF241242)],
                         ),
-                        borderRadius: BorderRadius.circular(22),
-                        border: Border.all(color: const Color(0x60FFD54F), width: 1.2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.4),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Row(
+                        const SizedBox(width: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(18),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(
+                                sigmaX: 12, sigmaY: 12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 11, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: const Color(0x3A16204A),
+                                borderRadius:
+                                    BorderRadius.circular(18),
+                                border: Border.all(
+                                    color: _gold.withOpacity(0.5),
+                                    width: 1),
+                                boxShadow: [
+                                  BoxShadow(
+                                      color: _gold.withOpacity(0.18),
+                                      blurRadius: 10),
+                                ],
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text('🎁', style: TextStyle(fontSize: 20)),
-                                  SizedBox(width: 8),
+                                  Icon(Icons.emoji_events_rounded,
+                                      color: _gold, size: 15),
+                                  SizedBox(width: 5),
                                   Text(
-                                    'مكافآت تسجيل الدخول الأسبوعي',
+                                    '18 / 40',
                                     style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 14.5,
-                                      fontWeight: FontWeight.w800,
-                                    ),
+                                        color: _textWhite,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 12),
                                   ),
                                 ],
                               ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  const DailyRewardsPanel(),
+
+                  const SizedBox(height: 22),
+
+                  // ═══ المهام اليومية ═══
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 22,
+                          height: 2,
+                          decoration: BoxDecoration(
+                            borderRadius:
+                                BorderRadius.circular(2),
+                            gradient: LinearGradient(colors: [
+                              Colors.transparent,
+                              _neonBlue.withOpacity(0.8),
+                            ]),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'المهام اليومية (تتجدد كل 24 ساعة)',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: _textWhite,
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: const Color(0x2E141C3C),
+                            borderRadius:
+                                BorderRadius.circular(9),
+                            border: Border.all(
+                                color: const Color(0x26FFFFFF),
+                                width: 0.9),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.schedule_rounded,
+                                  color: _cyan, size: 11),
+                              SizedBox(width: 4),
                               Text(
-                                isClaimableNow ? 'جاهزة للاستلام! 🎉' : 'متبقي: $remainingHours س $remainingMinutes د ⏳',
+                                '12:45:10',
                                 style: TextStyle(
-                                  color: isClaimableNow ? const Color(0xFF34D399) : const Color(0xFFFFD54F),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
+                                  color: _cyan,
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w800,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 14),
-
-                          // 7 Days Grid
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: List.generate(7, (index) {
-                              final isPast = !isClaimableNow ? index <= targetIndex : index < targetIndex;
-                              final isCurrent = isClaimableNow && index == targetIndex;
-                              final dayNum = index + 1;
-                              final reward = (index + 1) * 150 + 200;
-
-                              return GestureDetector(
-                                onTap: isCurrent
-                                    ? _claimDailyReward
-                                    : () {
-                                        if (isPast) {
-                                          TopNotification.show(context, 'تم استلام هدية اليوم $dayNum بالفعل!',
-                                              icon: Icons.check_circle_rounded);
-                                        } else {
-                                          TopNotification.show(context, 'هذه الهدية مقفلة! تفتح بعد إتمام الأيام السابقة',
-                                              icon: Icons.lock_rounded);
-                                        }
-                                      },
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  width: 42,
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
-                                  decoration: BoxDecoration(
-                                    gradient: isCurrent
-                                        ? const LinearGradient(
-                                            begin: Alignment.topCenter,
-                                            end: Alignment.bottomCenter,
-                                            colors: [Color(0xFFFFD54F), Color(0xFFE65100)],
-                                          )
-                                        : null,
-                                    color: isPast
-                                        ? const Color(0x4034D399)
-                                        : (isCurrent ? null : const Color(0x401E0E35)),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: isCurrent
-                                          ? Colors.white
-                                          : (isPast ? const Color(0xFF34D399) : const Color(0x20FFFFFF)),
-                                      width: isCurrent ? 1.8 : 1,
-                                    ),
-                                    boxShadow: isCurrent
-                                        ? [
-                                            BoxShadow(
-                                              color: const Color(0xFFFF9800).withOpacity(0.6),
-                                              blurRadius: 10,
-                                              spreadRadius: 1,
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        'يوم $dayNum',
-                                        style: TextStyle(
-                                          color: isCurrent ? Colors.white : AppColors.textMuted,
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        isPast ? '✔' : (isCurrent ? '🎁' : '🔒'),
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: isPast ? const Color(0xFF34D399) : null,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 3),
-                                      Text(
-                                        '+$reward',
-                                        style: TextStyle(
-                                          color: isCurrent ? Colors.white : AppColors.gold,
-                                          fontSize: 8,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-
-
-              const SizedBox(height: 22),
-
-              // Daily Quests (المهام اليومية)
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'المهام اليومية (تتجدد كل 24 ساعة)',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
                         ),
-                      ),
+                      ],
                     ),
-                    SizedBox(width: 8),
-                    Text(
-                      '12:45:10',
-                      style: TextStyle(
-                        color: AppColors.textMuted,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  children: [
-                    _buildQuestCard(
-                      index: 0,
-                      title: 'العب 3 مباريات شطرنج اليوم',
-                      progress: '2 / 3',
-                      progressRatio: 2 / 3,
-                      reward: 300,
-                      icon: Icons.castle_rounded,
-                      color: AppColors.chessBorder,
-                    ),
-                    _buildQuestCard(
-                      index: 1,
-                      title: 'حقق الفوز في مباراة لودو',
-                      progress: '1 / 1',
-                      progressRatio: 1.0,
-                      reward: 500,
-                      icon: Icons.casino_rounded,
-                      color: AppColors.ludoBorder,
-                    ),
-                    _buildQuestCard(
-                      index: 2,
-                      title: 'رتب أوراقك وفز في سوليتر',
-                      progress: '0 / 1',
-                      progressRatio: 0.0,
-                      reward: 250,
-                      icon: Icons.style_rounded,
-                      color: AppColors.solitaireBorder,
-                    ),
-                    _buildQuestCard(
-                      index: 3,
-                      title: 'تحدى صديقاً في طاولي (Backgammon)',
-                      progress: '0 / 1',
-                      progressRatio: 0.0,
-                      reward: 400,
-                      icon: Icons.table_restaurant_rounded,
-                      color: AppColors.backgammonBorder,
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 22),
-
-              // Trophies / Milestones
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: Text(
-                  'كؤوس التميز الملكية',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
                   ),
-                ),
-              ),
-              const SizedBox(height: 12),
 
-              SizedBox(
-                height: 125,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  children: [
-                    _buildTrophyBadge('تاج اللودو الذهبي', 'فز بـ 50 مباراة لودو', '🏆', const Color(0xFFFFD54F)),
-                    _buildTrophyBadge('فارس الشطرنج', 'اهزم 20 منافساً', '♟️', const Color(0xFFC084FC)),
-                    _buildTrophyBadge('ساحر السوليتر', 'أنهِ اللعبة بأقل من دقيقتين', '🃏', const Color(0xFF4ADE80)),
-                    _buildTrophyBadge('أسطورة الطاولي', 'ارمِ الدوشيش 10 مرات', '🎲', const Color(0xFF38BDF8)),
-                  ],
-                ),
+                  const SizedBox(height: 12),
+
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      children: [
+                        _buildQuestCard(
+                          index: 0,
+                          title:
+                              'العب 3 مباريات شطرنج اليوم',
+                          progress: '2 / 3',
+                          progressRatio: 2 / 3,
+                          reward: 300,
+                          icon: Icons.castle_rounded,
+                          color: AppColors.chessGlow,
+                        ),
+                        _buildQuestCard(
+                          index: 1,
+                          title: 'حقق الفوز في مباراة لودو',
+                          progress: '1 / 1',
+                          progressRatio: 1.0,
+                          reward: 500,
+                          icon: Icons.casino_rounded,
+                          color: AppColors.ludoGlow,
+                        ),
+                        _buildQuestCard(
+                          index: 2,
+                          title:
+                              'رتب أوراقك وفز في سوليتر',
+                          progress: '0 / 1',
+                          progressRatio: 0.0,
+                          reward: 250,
+                          icon: Icons.style_rounded,
+                          color: AppColors.solitaireGlow,
+                        ),
+                        _buildQuestCard(
+                          index: 3,
+                          title:
+                              'تحدى صديقاً في طاولي (Backgammon)',
+                          progress: '0 / 1',
+                          progressRatio: 0.0,
+                          reward: 400,
+                          icon: Icons.table_restaurant_rounded,
+                          color: AppColors.backgammonGlow,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 22),
+
+                  // ═══ كؤوس التميز ═══
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 22,
+                          height: 2,
+                          decoration: BoxDecoration(
+                            borderRadius:
+                                BorderRadius.circular(2),
+                            gradient: LinearGradient(colors: [
+                              Colors.transparent,
+                              _gold.withOpacity(0.8),
+                            ]),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'كؤوس التميز الملكية',
+                          style: TextStyle(
+                            color: _textWhite,
+                            fontSize: 15.5,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  SizedBox(
+                    height: 132,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16),
+                      children: [
+                        _buildTrophyBadge(
+                            'تاج اللودو الذهبي',
+                            'فز بـ 50 مباراة لودو',
+                            '🏆',
+                            _gold),
+                        _buildTrophyBadge(
+                            'فارس الشطرنج',
+                            'اهزم 20 منافساً',
+                            '♟️',
+                            const Color(0xFF94A3B8)),
+                        _buildTrophyBadge(
+                            'ساحر السوليتر',
+                            'أنهِ اللعبة بأقل من دقيقتين',
+                            '🃏',
+                            _emerald),
+                        _buildTrophyBadge(
+                            'أسطورة الطاولي',
+                            'ارمِ الدوشيش 10 مرات',
+                            '🎲',
+                            _cyan),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -411,64 +345,76 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     final isDone = progressRatio >= 1.0;
     final isClaimed = _claimedMissions[index];
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xE624143D),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDone && !isClaimed ? AppColors.gold : color.withOpacity(0.3),
-          width: isDone && !isClaimed ? 1.5 : 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(12),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0x2E141C3C),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isDone && !isClaimed
+                  ? _gold
+                  : const Color(0x26FFFFFF),
+              width: isDone && !isClaimed ? 1.5 : 1,
             ),
-            child: Icon(icon, color: color, size: 22),
+            boxShadow: isDone && !isClaimed
+                ? [
+                    BoxShadow(
+                        color: _gold.withOpacity(0.22),
+                        blurRadius: 14),
+                  ]
+                : null,
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                  ),
+          child: Row(
+            children: [
+              // أيقونة اللعبة في مربع متوهج
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.14),
+                  borderRadius: BorderRadius.circular(13),
+                  border: Border.all(
+                      color: color.withOpacity(0.45), width: 1),
+                  boxShadow: [
+                    BoxShadow(
+                        color: color.withOpacity(0.2),
+                        blurRadius: 10),
+                  ],
                 ),
-                const SizedBox(height: 6),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerRight,
-                  child: SizedBox(
-                    width: 140,
-                    child: Row(
+                child: Icon(icon, color: color, size: 21),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: _textWhite,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 7),
+                    Row(
                       children: [
                         Expanded(
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius:
+                                BorderRadius.circular(4),
                             child: LinearProgressIndicator(
                               value: progressRatio,
-                              backgroundColor: Colors.white.withOpacity(0.12),
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                isDone ? const Color(0xFF34D399) : color,
+                              backgroundColor:
+                                  const Color(0x2EFFFFFF),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(
+                                isDone ? _emerald : color,
                               ),
                               minHeight: 6,
                             ),
@@ -478,100 +424,220 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                         Text(
                           progress,
                           style: TextStyle(
-                            color: isDone ? const Color(0xFF34D399) : AppColors.textMuted,
+                            color:
+                                isDone ? _emerald : _textDim,
                             fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-
-          // Action / Reward Button
-          GestureDetector(
-            onTap: () {
-              if (isDone) {
-                _claimMission(index, title, reward);
-              } else {
-                AppHaptics.light();
-              }
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-              decoration: BoxDecoration(
-                gradient: isDone && !isClaimed
-                    ? const LinearGradient(
-                        colors: [Color(0xFFFFB300), Color(0xFFE65100)],
-                      )
-                    : null,
-                color: isClaimed
-                    ? const Color(0x3334D399)
-                    : (isDone ? null : const Color(0x25FFFFFF)),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isDone && !isClaimed
-                      ? const Color(0xFFFFD54F)
-                      : (isClaimed ? const Color(0xFF34D399) : Colors.transparent),
-                  width: 1,
+                  ],
                 ),
               ),
-              child: isClaimed
-                  ? const Text(
-                      'تم الاستلام ✔',
-                      style: TextStyle(color: Color(0xFF34D399), fontSize: 11, fontWeight: FontWeight.bold),
-                    )
-                  : (isDone
+              const SizedBox(width: 12),
+
+              // زر المكافأة
+              GestureDetector(
+                onTap: () {
+                  if (isDone) {
+                    _claimMission(index, title, reward);
+                  } else {
+                    AppHaptics.light();
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    gradient: isDone && !isClaimed
+                        ? const LinearGradient(colors: [
+                            Color(0xFFFFE082),
+                            _gold,
+                            Color(0xFFE8A820),
+                          ])
+                        : null,
+                    color: isClaimed
+                        ? _emerald.withOpacity(0.15)
+                        : (isDone
+                            ? null
+                            : const Color(0x2EFFFFFF)),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDone && !isClaimed
+                          ? const Color(0xFFFFE9A8)
+                          : (isClaimed
+                              ? _emerald.withOpacity(0.6)
+                              : Colors.transparent),
+                      width: 1,
+                    ),
+                    boxShadow: isDone && !isClaimed
+                        ? [
+                            BoxShadow(
+                                color: _gold.withOpacity(0.4),
+                                blurRadius: 10),
+                          ]
+                        : null,
+                  ),
+                  child: isClaimed
                       ? const Text(
-                          'استلام 💰',
-                          style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900),
+                          'تم الاستلام ✔',
+                          style: TextStyle(
+                              color: _emerald,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800),
                         )
-                      : Text(
-                          '+$reward 💰',
-                          style: const TextStyle(color: AppColors.gold, fontSize: 11, fontWeight: FontWeight.w700),
-                        )),
-            ),
+                      : (isDone
+                          ? const Text(
+                              'استلام 💰',
+                              style: TextStyle(
+                                  color: Color(0xFF1B0B30),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w900),
+                            )
+                          : Text(
+                              '+${formatBalance(reward)} 💰',
+                              style: const TextStyle(
+                                  color: _gold,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800),
+                            )),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildTrophyBadge(String title, String desc, String emoji, Color glowColor) {
-    return Container(
-      width: 150,
-      margin: const EdgeInsets.only(left: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xE624143D),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: glowColor.withOpacity(0.4), width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(emoji, style: const TextStyle(fontSize: 26)),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+  Widget _buildTrophyBadge(
+      String title, String desc, String emoji, Color glowColor) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          width: 150,
+          margin: const EdgeInsets.only(left: 10),
+          padding:
+              const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                const Color(0xFF1B2A5E).withOpacity(0.45),
+                const Color(0xFF101838).withOpacity(0.35),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+                color: glowColor.withOpacity(0.45), width: 1.1),
+            boxShadow: [
+              BoxShadow(
+                  color: glowColor.withOpacity(0.15),
+                  blurRadius: 14,
+                  spreadRadius: -2),
+            ],
           ),
-          const SizedBox(height: 2),
-          Text(
-            desc,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: AppColors.textMuted, fontSize: 9),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(colors: [
+                    glowColor.withOpacity(0.3),
+                    const Color(0xFF0A1230),
+                  ]),
+                  border: Border.all(
+                      color: glowColor.withOpacity(0.6),
+                      width: 1.2),
+                  boxShadow: [
+                    BoxShadow(
+                        color: glowColor.withOpacity(0.3),
+                        blurRadius: 12),
+                  ],
+                ),
+                child: Center(
+                    child: Text(emoji,
+                        style: const TextStyle(fontSize: 21))),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    color: _textWhite,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                desc,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style:
+                    const TextStyle(color: _textDim, fontSize: 9),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
+}
+
+class _AchievementsDecorPainter extends CustomPainter {
+  const _AchievementsDecorPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    void glow(Offset c, double r, Color color, double o) {
+      canvas.drawCircle(
+          c,
+          r,
+          Paint()
+            ..shader = RadialGradient(
+              colors: [color.withOpacity(o), Colors.transparent],
+            ).createShader(Rect.fromCircle(center: c, radius: r)));
+    }
+
+    glow(Offset(size.width * 0.15, size.height * 0.04),
+        size.width * 0.5, const Color(0xFF2540A0), 0.28);
+    glow(Offset(size.width * 0.9, size.height * 0.45),
+        size.width * 0.45, const Color(0xFF7C5CFF), 0.13);
+    glow(Offset(size.width * 0.5, size.height * 1.05),
+        size.width * 0.65, const Color(0xFF8A6400), 0.15);
+
+    // أقواس هندسية ذهبية شفافة في الأسفل
+    final arcPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+    for (int i = 0; i < 4; i++) {
+      arcPaint.color =
+          const Color(0xFFFFD54F).withOpacity(0.04 + i * 0.013);
+      canvas.drawArc(
+        Rect.fromCenter(
+          center: Offset(size.width * 0.5, size.height * 1.15),
+          width: size.width * (0.9 + i * 0.35),
+          height: size.height * (0.35 + i * 0.14),
+        ),
+        3.6,
+        5.0,
+        false,
+        arcPaint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_AchievementsDecorPainter oldDelegate) =>
+      false;
 }

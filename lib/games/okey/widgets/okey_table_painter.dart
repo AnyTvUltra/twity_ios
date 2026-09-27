@@ -1,11 +1,32 @@
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import '../../../services/store_service.dart';
+import '../../../widgets/animated_skin_effect.dart';
 
-/// رسام الطاولة الخشبية ثلاثية الأبعاد الفاخرة - مطابق تماماً لمنظور ولون الصورة المرجعية
+/// رسام الطاولة الفاخرة — Premium 3D + Glassmorphism
+/// نفس هندسة المنظور السابقة (Trapezoid) لكن بخامة كحلية زجاجية عميقة
+/// مع حواف ناعمة وإضاءة محيطية خفيفة حول الإطار
 class OkeyTablePainter extends CustomPainter {
   final bool isHumanTurn;
 
-  const OkeyTablePainter({this.isHumanTurn = true});
+  /// كسنة سطح الطاولة المشتراة من المتجر (اختيارية) — مع التكبير والإزاحة
+  final StoreItem? surfaceItem;
+
+  /// تأثير متحرك على سطح الطاولة (نار/لافا/سديم...) + زمن الدورة 0..1
+  final SkinEffect surfaceEffect;
+  final double animT;
+
+  const OkeyTablePainter({
+    this.isHumanTurn = true,
+    this.surfaceItem,
+    this.surfaceEffect = SkinEffect.none,
+    this.animT = 0,
+  });
+
+  // بأليت الطاولة الزجاجية — كحلي عميق بلمسات نعناعية خافتة
+  static const _rimLight = Color(0xFF8FA8E8);
+  static const _accent = Color(0xFF3FF5A8);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -13,7 +34,6 @@ class OkeyTablePainter extends CustomPainter {
     final h = size.height;
 
     // أبعاد سطح الطاولة بمنظور ثلاثي الأبعاد حقيقي (Trapezoid Perspective)
-    // الحافة العلوية أضيق لأنها أبعد، والحافة السفلية أوسع لأنها أقرب
     final double topL = w * 0.14;
     final double topR = w * 0.86;
     final double topY = h * 0.08;
@@ -36,20 +56,35 @@ class OkeyTablePainter extends CustomPainter {
       ..close();
 
     // ══════════════════════════════════════════════════════════
-    // 1. أرجل الطاولة السفلية (Wooden Table Legs)
+    // 1. توهج محيطي خافت حول الطاولة (Ambient Edge Glow)
+    // ══════════════════════════════════════════════════════════
+    canvas.drawPath(
+      tablePath,
+      Paint()
+        ..color = _accent.withOpacity(0.05)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 22),
+    );
+    canvas.drawPath(
+      tablePath,
+      Paint()
+        ..color = _rimLight.withOpacity(0.10)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10),
+    );
+
+    // ══════════════════════════════════════════════════════════
+    // 2. أرجل زجاجية داكنة (بدل الخشبية)
     // ══════════════════════════════════════════════════════════
     final legPaint = Paint()
       ..shader = ui.Gradient.linear(
         Offset(0, botY),
         Offset(0, botY + 28),
-        [
-          const Color(0xFF1E0A03),
-          const Color(0xFF0F0401),
-          const Color(0xFF050100),
+        const [
+          Color(0xFF141B33),
+          Color(0xFF0A0F22),
+          Color(0xFF04060F),
         ],
       );
 
-    // رجل الطاولة اليسرى
     final leftLeg = Path()
       ..moveTo(botL + 34, botY)
       ..lineTo(botL + 54, botY)
@@ -58,7 +93,6 @@ class OkeyTablePainter extends CustomPainter {
       ..close();
     canvas.drawPath(leftLeg, legPaint);
 
-    // رجل الطاولة اليمنى
     final rightLeg = Path()
       ..moveTo(botR - 54, botY)
       ..lineTo(botR - 34, botY)
@@ -67,8 +101,19 @@ class OkeyTablePainter extends CustomPainter {
       ..close();
     canvas.drawPath(rightLeg, legPaint);
 
+    // لمعة زجاجية خفيفة على الأرجل
+    for (final leg in [leftLeg, rightLeg]) {
+      canvas.drawPath(
+        leg,
+        Paint()
+          ..color = Colors.white.withOpacity(0.10)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 0.8,
+      );
+    }
+
     // ══════════════════════════════════════════════════════════
-    // 2. ظل الطاولة العميق على الأرضية المحيطة
+    // 3. ظل الطاولة العميق على الأرضية المحيطة
     // ══════════════════════════════════════════════════════════
     final shadowPath = Path()
       ..moveTo(topL + 16, topY + 8)
@@ -85,7 +130,7 @@ class OkeyTablePainter extends CustomPainter {
     );
 
     // ══════════════════════════════════════════════════════════
-    // 3. الحافة السفلية ثلاثية الأبعاد (3D Front Bevel Thickness)
+    // 4. الحافة السفلية ثلاثية الأبعاد — معدن زجاجي داكن
     // ══════════════════════════════════════════════════════════
     const thickness = 14.0;
     final edgePath = Path()
@@ -101,52 +146,161 @@ class OkeyTablePainter extends CustomPainter {
       ..shader = ui.Gradient.linear(
         Offset(0, botY - 5),
         Offset(0, botY + thickness),
-        [
-          const Color(0xFF351A0D),
-          const Color(0xFF220F06),
-          const Color(0xFF140803),
+        const [
+          Color(0xFF2A3454),
+          Color(0xFF18203C),
+          Color(0xFF0B1023),
         ],
       );
     canvas.drawPath(edgePath, edgePaint);
 
-    // خط لمعان سفلي على الحافة
+    // خط لمعان سفلي زجاجي على الحافة
     canvas.drawLine(
       Offset(botL + 25, botY + thickness),
       Offset(botR - 25, botY + thickness),
       Paint()
-        ..color = const Color(0xFFD4A373).withOpacity(0.18)
+        ..color = _rimLight.withOpacity(0.30)
         ..strokeWidth = 1.0,
     );
 
     // ══════════════════════════════════════════════════════════
-    // 4. سطح الطاولة الخشبي الفاخر (Polished Mahogany Wood)
+    // 5. سطح الطاولة — زجاج كحلي عميق / كسنة / تأثير متحرك
     // ══════════════════════════════════════════════════════════
-    final surfacePaint = Paint()
-      ..shader = ui.Gradient.radial(
-        Offset(w * 0.5, h * 0.44),
-        w * 0.55,
-        [
-          const Color(0xFF5A2F17), // إضاءة دافئة في الوسط
-          const Color(0xFF492410),
-          const Color(0xFF381A0B),
-          const Color(0xFF281106),
-          const Color(0xFF1B0A03),
-        ],
-        [0.0, 0.35, 0.65, 0.88, 1.0],
+    final surfaceImage =
+        surfaceItem != null ? StoreService().uiImageOf(surfaceItem!) : null;
+    final woodBase = StoreService().defaultWoodImage;
+    if (surfaceEffect != SkinEffect.none) {
+      // تأثير متحرك على خشب حقيقي — حبيبات الخشب تُدمج فوق التأثير
+      canvas.save();
+      canvas.clipPath(tablePath);
+      paintSkinEffect(canvas, size, surfaceEffect, animT,
+          wood: woodBase);
+      canvas.drawRect(
+        tablePath.getBounds(),
+        Paint()..color = Colors.black.withOpacity(0.15),
       );
-    canvas.drawPath(tablePath, surfacePaint);
+      canvas.restore();
+    } else if (surfaceImage != null) {
+      final img = surfaceImage;
+      final imgW = img.width.toDouble();
+      final imgH = img.height.toDouble();
+      final dst = tablePath.getBounds();
+      final zoom = (surfaceItem!.zoom).clamp(0.5, 5.0);
+      final cover = math.max(dst.width / imgW, dst.height / imgH) * zoom;
+      final dw = imgW * cover;
+      final dh = imgH * cover;
+      final dx =
+          dst.center.dx - dw / 2 + surfaceItem!.offsetX * dst.width / 2;
+      final dy =
+          dst.center.dy - dh / 2 + surfaceItem!.offsetY * dst.height / 2;
+      canvas.save();
+      canvas.clipPath(tablePath);
+      canvas.drawImageRect(
+        img,
+        Rect.fromLTWH(0, 0, imgW, imgH),
+        Rect.fromLTWH(dx, dy, dw, dh),
+        Paint(),
+      );
+      canvas.drawRect(
+        dst,
+        Paint()..color = Colors.black.withOpacity(0.18),
+      );
+      canvas.restore();
+    } else {
+      // السطح الافتراضي: خامة خشب الماهوغني الحقيقية (أو زجاج كحلي كبديل)
+      if (woodBase != null) {
+        final dst = tablePath.getBounds();
+        final iw = woodBase.width.toDouble();
+        final ih = woodBase.height.toDouble();
+        final cover = math.max(dst.width / iw, dst.height / ih);
+        final dw = iw * cover;
+        final dh = ih * cover;
+        canvas.save();
+        canvas.clipPath(tablePath);
+        canvas.drawImageRect(
+          woodBase,
+          Rect.fromLTWH(0, 0, iw, ih),
+          Rect.fromLTWH(
+              dst.center.dx - dw / 2, dst.center.dy - dh / 2, dw, dh),
+          Paint(),
+        );
+        // بقعة ضوء مركزية خفيفة فوق الخشب
+        canvas.drawRect(
+          dst,
+          Paint()
+            ..shader = ui.Gradient.radial(
+              Offset(w * 0.5, h * 0.40),
+              w * 0.5,
+              [
+                Colors.white.withOpacity(0.14),
+                Colors.transparent,
+                Colors.black.withOpacity(0.28),
+              ],
+              const [0.0, 0.55, 1.0],
+            ),
+        );
+        canvas.restore();
+      } else {
+        canvas.drawPath(
+          tablePath,
+          Paint()
+            ..shader = ui.Gradient.radial(
+              Offset(w * 0.5, h * 0.44),
+              w * 0.55,
+              const [
+                Color(0xFF2A3A66),
+                Color(0xFF1C2949),
+                Color(0xFF121A36),
+                Color(0xFF0A0F22),
+                Color(0xFF060A18),
+              ],
+              const [0.0, 0.35, 0.65, 0.88, 1.0],
+            ),
+        );
+      }
+      // طبقة زجاجية: لمعان علوي ناعم (Glass sheen)
+      canvas.save();
+      canvas.clipPath(tablePath);
+      canvas.drawRect(
+        Rect.fromLTWH(topL - 10, topY, topR - topL + 20, (botY - topY) * 0.45),
+        Paint()
+          ..shader = ui.Gradient.linear(
+            Offset(0, topY),
+            Offset(0, topY + (botY - topY) * 0.45),
+            [
+              Colors.white.withOpacity(0.09),
+              Colors.white.withOpacity(0.02),
+              Colors.transparent,
+            ],
+          ),
+      );
+      // انعكاس جانبي زجاجي خفيف
+      canvas.drawRect(
+        Rect.fromLTWH(topL - 6, topY, 26, botY - topY),
+        Paint()
+          ..shader = ui.Gradient.linear(
+            Offset(topL - 6, 0),
+            Offset(topL + 20, 0),
+            [
+              Colors.white.withOpacity(0.06),
+              Colors.transparent,
+            ],
+          ),
+      );
+      canvas.restore();
+    }
 
-    // خط لمعان الحافة العلوية لسطح الطاولة
+    // لمعان حافة السطح العلوية — زجاجي فاتح
     canvas.drawPath(
       tablePath,
       Paint()
-        ..color = const Color(0xFFE8B88A).withOpacity(0.28)
+        ..color = _rimLight.withOpacity(0.34)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.2,
     );
 
     // ══════════════════════════════════════════════════════════
-    // 5. المجرى المحفور الأنيق (Routed Groove Inset)
+    // 6. منطقة اللعب الغائرة (Inset Glass Play-Field)
     // ══════════════════════════════════════════════════════════
     const gInset = 12.0;
     final groovePath = Path()
@@ -156,72 +310,80 @@ class OkeyTablePainter extends CustomPainter {
       ..lineTo(botL + gInset + 4, botY - gInset)
       ..close();
 
-    // ظل المجرى الداخلي الغائر
+    // عمق داخلي خفيف جداً — يعطي إحساس الغور دون ازدحام
     canvas.drawPath(
       groovePath,
-      Paint()
-        ..color = const Color(0xFF120501).withOpacity(0.65)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.5,
+      Paint()..color = Colors.black.withOpacity(0.16),
     );
 
-    // لمعان الحافة الخارجية للمجرى
+    // خط المجرى الغائر
     canvas.drawPath(
       groovePath,
       Paint()
-        ..color = const Color(0xFFD4A373).withOpacity(0.15)
+        ..color = const Color(0xFF04060F).withOpacity(0.75)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.2,
+    );
+
+    // لمعان الحافة الخارجية للمجرى — زجاجي
+    canvas.drawPath(
+      groovePath,
+      Paint()
+        ..color = _rimLight.withOpacity(0.20)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 0.8,
     );
 
     // ══════════════════════════════════════════════════════════
-    // 6. عروق الخشب الناعمة المنقوشة على السطح
+    // 7. خطوط زجاجية دقيقة على السطح (بدل عروق الخشب)
     // ══════════════════════════════════════════════════════════
-    final grainPaint = Paint()
-      ..color = Colors.black.withOpacity(0.035)
+    final sheenPaint = Paint()
+      ..color = Colors.white.withOpacity(0.022)
       ..strokeWidth = 0.8;
 
-    for (double t = 0.12; t < 0.82; t += 0.04) {
+    for (double t = 0.16; t < 0.80; t += 0.10) {
       final y = topY + (botY - topY) * t;
       final x1 = topL + (botL - topL) * t + 20;
       final x2 = topR + (botR - topR) * t - 20;
-      canvas.drawLine(Offset(x1, y), Offset(x2, y), grainPaint);
+      canvas.drawLine(Offset(x1, y), Offset(x2, y), sheenPaint);
     }
 
     // ══════════════════════════════════════════════════════════
-    // 7. الأسهم التوجيهية المنقوشة على الطاولة
+    // 8. الأسهم التوجيهية — علامات زجاجية شفافة أنيقة
     // ══════════════════════════════════════════════════════════
     final arrowPaint = Paint()
-      ..color = const Color(0xFFECC29C).withOpacity(0.38)
-      ..strokeWidth = 2.0
+      ..color = _rimLight.withOpacity(0.34)
+      ..strokeWidth = 1.6
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
     final arrowTipPaint = Paint()
-      ..color = const Color(0xFFECC29C).withOpacity(0.42)
+      ..color = _rimLight.withOpacity(0.40)
       ..style = PaintingStyle.fill;
 
-    // السهم الأيسر المتجه للأعلى
     final leftX = w * 0.28;
     final leftY1 = h * 0.54;
     final leftY2 = h * 0.34;
-    _drawArrow(canvas, Offset(leftX, leftY1), Offset(leftX, leftY2), arrowPaint, arrowTipPaint, isUp: true);
+    _drawArrow(canvas, Offset(leftX, leftY1), Offset(leftX, leftY2),
+        arrowPaint, arrowTipPaint,
+        isUp: true);
 
-    // السهم الأيمن المتجه للأسفل
     final rightX = w * 0.72;
     final rightY1 = h * 0.34;
     final rightY2 = h * 0.54;
-    _drawArrow(canvas, Offset(rightX, rightY1), Offset(rightX, rightY2), arrowPaint, arrowTipPaint, isUp: false);
+    _drawArrow(canvas, Offset(rightX, rightY1), Offset(rightX, rightY2),
+        arrowPaint, arrowTipPaint,
+        isUp: false);
 
     // ══════════════════════════════════════════════════════════
-    // 8. مؤشر الحجر المركزي الخفيف (Indicator Label)
+    // 9. مؤشر خفيف في المنتصف
     // ══════════════════════════════════════════════════════════
     _drawText(
       canvas,
       'Indicator',
       Offset(w * 0.50, h * 0.28),
       fontSize: 8.5,
-      color: const Color(0xFFECC29C).withOpacity(0.4),
+      color: _rimLight.withOpacity(0.35),
       isBold: false,
     );
   }
@@ -280,5 +442,8 @@ class OkeyTablePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant OkeyTablePainter oldDelegate) =>
-      oldDelegate.isHumanTurn != isHumanTurn;
+      oldDelegate.isHumanTurn != isHumanTurn ||
+      oldDelegate.surfaceItem != surfaceItem ||
+      oldDelegate.surfaceEffect != surfaceEffect ||
+      oldDelegate.animT != animT;
 }

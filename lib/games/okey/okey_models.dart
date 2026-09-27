@@ -21,6 +21,21 @@ extension OkeyTileColorExtension on OkeyTileColor {
     }
   }
 
+  /// نسخة مضيئة من اللون — مقروءة على السكنات الداكنة المتحركة
+  /// (الأسود يصبح فضّياً أبيض يمثل لون الحجر الأسود)
+  Color get brightColor {
+    switch (this) {
+      case OkeyTileColor.red:
+        return const Color(0xFFFF5252); // Bright Coral Red
+      case OkeyTileColor.yellow:
+        return const Color(0xFFFFC94D); // Bright Gold
+      case OkeyTileColor.blue:
+        return const Color(0xFF5EB4FF); // Bright Sky Blue
+      case OkeyTileColor.black:
+        return const Color(0xFFECEFF4); // Silver White (Black tile)
+    }
+  }
+
   String get displayName {
     switch (this) {
       case OkeyTileColor.red:
@@ -112,6 +127,10 @@ class OkeyPlayer {
   final BotDifficulty botDifficulty;
   List<OkeyTile?> rackTiles; // 28 slots (0-13 top tier, 14-27 bottom tier)
 
+  /// هل فتح اللاعب اللعب (أنزل ما مجموعه 101+ نقطة)؟
+  bool hasOpened = false;
+  int openedPoints = 0;
+
   OkeyPlayer({
     required this.id,
     required this.name,
@@ -133,8 +152,17 @@ class OkeyPlayer {
 class OkeyGroup {
   final List<OkeyTile> tiles;
   final bool isRun; // true = run (sequence same color), false = set (same number distinct colors)
+  final int ownerIndex; // اللاعب صاحب النزول (0 = البشري)
+  bool pending; // بانتظار اكتمال نقاط الافتتاح (101)
 
-  OkeyGroup({required this.tiles, required this.isRun});
+  OkeyGroup({
+    required this.tiles,
+    required this.isRun,
+    this.ownerIndex = 0,
+    this.pending = false,
+  });
+
+  int get points => tiles.fold(0, (sum, t) => sum + t.value);
 
   @override
   String toString() => '${isRun ? "Run" : "Set"}: ${tiles.map((t) => t.value).toList()}';
