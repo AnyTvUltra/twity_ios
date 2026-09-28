@@ -185,6 +185,56 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+  /// حذف الحساب نهائياً — تأكيد صريح قبل التنفيذ
+  Future<void> _confirmDeleteAccount(BuildContext context) async {
+    AppHaptics.medium();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          backgroundColor: const Color(0xFF141C34),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(
+                  color: const Color(0xFFF87171).withOpacity(0.5))),
+          title: const Text('حذف الحساب نهائياً؟',
+              style: TextStyle(
+                  color: Color(0xFFF1F5FF),
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16)),
+          content: const Text(
+              'سيتم حذف حسابك وكل بياناتك: الرصيد، الجواهر، السكنات، الإحصائيات والأصدقاء. لا يمكن التراجع عن هذا.',
+              style: TextStyle(
+                  color: Color(0xFFB8C4DC), fontSize: 13, height: 1.5)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('إلغاء',
+                  style: TextStyle(color: Color(0xFF8EA3C8))),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFDC2626),
+                  foregroundColor: Colors.white),
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('احذف حسابي',
+                  style: TextStyle(fontWeight: FontWeight.w900)),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    final res = await AuthService().deleteAccount();
+    if (context.mounted) {
+      TopNotification.show(context, res['message'] as String,
+          icon: res['success'] == true
+              ? Icons.check_circle_rounded
+              : Icons.warning_rounded);
+    }
+  }
+
   void _showSupportTicketDialog(BuildContext context) {
     AppHaptics.medium();
     String category = 'اقتراح تحسين';
@@ -462,6 +512,10 @@ class ProfileScreen extends StatelessWidget {
                             _glassIcon(
                                 Icons.help_outline_rounded, _gold,
                                 () => _showSupportTicketDialog(context)),
+                            const SizedBox(width: 8),
+                            _glassIcon(Icons.person_remove_rounded,
+                                const Color(0xFFF87171),
+                                () => _confirmDeleteAccount(context)),
                             const SizedBox(width: 8),
                             _glassIcon(Icons.logout_rounded, _textDim,
                                 () async {

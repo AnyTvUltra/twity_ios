@@ -17,7 +17,7 @@ class AppUpdateService {
   static final AppUpdateService instance = AppUpdateService._();
 
   /// رقم البناء الحالي للتطبيق — يُرفع يدوياً مع كل إصدار جديد
-  static const int currentBuild = 4;
+  static const int currentBuild = 5;
 
   final _firestore = FirebaseFirestore.instance;
   static const _skipKey = 'skipped_update_build';

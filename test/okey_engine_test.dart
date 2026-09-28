@@ -293,4 +293,64 @@ void main() {
       e.dispose();
     });
   });
+
+  group('OkeyEngine — نقل الكتل والسحب إلى خانة', () {
+    test('moveGroup ينقل الكتلة كاملة بترتيبها إلى الصف الآخر', () {
+      final e = OkeyEngine();
+      e.initGame();
+      final rack = e.players[0].rackTiles;
+      for (int i = 0; i < 28; i++) {
+        rack[i] = null;
+      }
+      final a = t(1, OkeyTileColor.red, 5);
+      final b = t(2, OkeyTileColor.red, 6);
+      final c = t(3, OkeyTileColor.red, 7);
+      rack[2] = a;
+      rack[3] = b;
+      rack[4] = c;
+      expect(e.moveGroup(3, 18), isTrue);
+      expect(rack[2], null);
+      expect(rack[3], null);
+      expect(rack[4], null);
+      expect([rack[18], rack[19], rack[20]], [a, b, c]);
+      e.dispose();
+    });
+
+    test('moveGroup يختار أقرب مكان يتسع عند وجود أحجار في الهدف', () {
+      final e = OkeyEngine();
+      e.initGame();
+      final rack = e.players[0].rackTiles;
+      for (int i = 0; i < 28; i++) {
+        rack[i] = null;
+      }
+      final a = t(1, OkeyTileColor.blue, 1);
+      final b = t(2, OkeyTileColor.blue, 2);
+      final blocker = t(3, OkeyTileColor.black, 9);
+      rack[0] = a;
+      rack[1] = b;
+      rack[16] = blocker;
+      expect(e.moveGroup(0, 16), isTrue);
+      expect(rack[16], blocker);
+      final placed = [for (var i = 14; i < 28; i++) if (rack[i] == a) i];
+      expect(placed.length, 1);
+      expect(rack[placed.first + 1], b);
+      e.dispose();
+    });
+
+    test('drawFromDeck(toSlot) يضع الحجر المسحوب في الخانة المطلوبة', () {
+      final e = OkeyEngine();
+      e.initGame();
+      final rack = e.players[0].rackTiles;
+      // اجعلها بداية دور سحب مع خانات فارغة
+      e.currentTurnIndex = 0;
+      e.turnPhase = OkeyTurnPhase.awaitingDraw;
+      rack[27] = null;
+      rack[20] = null;
+      final next = e.drawDeck.first;
+      expect(e.drawFromDeck(toSlot: 20), isTrue);
+      expect(rack[20], same(next));
+      expect(e.turnPhase, OkeyTurnPhase.awaitingDiscard);
+      e.dispose();
+    });
+  });
 }

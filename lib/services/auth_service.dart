@@ -1361,6 +1361,51 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  /// حذف الحساب نهائياً (مطلب Apple 5.1.1(v)): بيانات Firestore + حساب Firebase
+  Future<Map<String, dynamic>> deleteAccount() async {
+    final user = _currentUser;
+    if (user == null) {
+      return {'success': false, 'message': 'لا يوجد حساب مسجّل'};
+    }
+    try {
+      if (!user.uid.startsWith('guest_')) {
+        _userDocSub?.cancel();
+        await _firestore.collection('users').doc(user.uid).delete();
+        final fbUser = _auth.currentUser;
+        try {
+          await fbUser?.delete();
+        } on FirebaseAuthException catch (e) {
+          if (e.code == 'requires-recent-login') {
+            // إعادة المصادقة بـ Google ثم الحذف
+            final g = await _googleSignIn.signIn();
+            final ga = await g?.authentication;
+            if (ga == null) {
+              return {
+                'success': false,
+                'message': 'أعد تسجيل الدخول لتأكيد حذف الحساب',
+              };
+            }
+            await fbUser?.reauthenticateWithCredential(
+                GoogleAuthProvider.credential(
+                    accessToken: ga.accessToken, idToken: ga.idToken));
+            await fbUser?.delete();
+          } else {
+            rethrow;
+          }
+        }
+      }
+      await _googleSignIn.signOut();
+      await _auth.signOut();
+      _pendingUsernameSetup = false;
+      _currentUser = null;
+      notifyListeners();
+      return {'success': true, 'message': 'تم حذف حسابك وجميع بياناتك'};
+    } catch (e) {
+      debugPrint('Error deleting account: $e');
+      return {'success': false, 'message': 'تعذّر حذف الحساب، حاول لاحقاً'};
+    }
+  }
+
   @override
   void dispose() {
     _authSub?.cancel();

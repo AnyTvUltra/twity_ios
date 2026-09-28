@@ -28,7 +28,11 @@ import 'package:game_hub/utils/haptics.dart';
 /// شاشة لعبة الأوكي التركية – تصميم بورتريت واقعي بدون تدوير
 class OkeyGameScreen extends StatefulWidget {
   final OkeyRules rules;
-  const OkeyGameScreen({super.key, this.rules = OkeyRules.turkish});
+
+  /// زوجي: اللاعب المقابل (الأمامي) شريكك — فوزه فوزك
+  final bool teamMode;
+  const OkeyGameScreen(
+      {super.key, this.rules = OkeyRules.turkish, this.teamMode = false});
 
   @override
   State<OkeyGameScreen> createState() => _OkeyGameScreenState();
@@ -233,7 +237,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
 
   Future<void> _handleGameEnd() async {
     final winner = _engine.winner!;
-    final isHumanWinner = winner.isHuman;
+    // في الزوجي: فوز الشريك المقابل = فوز فريقك
+    final isHumanWinner = winner.isHuman ||
+        (widget.teamMode && identical(winner, _engine.players[2]));
     await _settleRound(
       chipChange: isHumanWinner ? _winChips : -_lossChips,
       ratingChange: isHumanWinner ? 25 : -15,
@@ -676,6 +682,25 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     }
   }
 
+  /// سحب بالإفلات: من الرزمة أو كومة اليسار مباشرة إلى خانة في الرف
+  void _drawToSlot(int source, int toSlot) {
+    if (_engine.currentTurnIndex != 0) {
+      _showGameNotice('ليس دورك الآن!');
+      return;
+    }
+    if (_engine.turnPhase != OkeyTurnPhase.awaitingDraw) {
+      _showGameNotice('لقد سحبت بالفعل! ارمِ حجراً لإنهاء دورك');
+      return;
+    }
+    final ok = source == OkeyDrag.deck
+        ? _engine.drawFromDeck(toSlot: toSlot)
+        : _engine.drawFromDiscard(toSlot: toSlot);
+    if (ok) {
+      OkeyAudio.playTileDraw();
+      AppHaptics.light();
+    }
+  }
+
   /// سحب آخر حجر رماه اللاعب الأيسر
   void _executeDrawFromLeft() {
     if (_engine.currentTurnIndex != 0) return;
@@ -985,6 +1010,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                   onTileMove: (fromSlot, toSlot) =>
                       _engine.moveTile(fromSlot, toSlot),
                   onDropAboveRack: _dropOnTable,
+                  onDrawToSlot: _drawToSlot,
+                  onGroupMove: (slot, to) => _engine.moveGroup(slot, to),
                 ),
               ),
               if (_engine.canDeclareOkeyOut)
@@ -995,10 +1022,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                   child: Center(child: _buildOkeyOutButton()),
                 ),
               Positioned(
-                left: sw * .39,
-                right: sw * .39,
-                top: 100,
-                child: _buildTableCenter(isHumanTurn),
+                left: 326,
+                right: 244,
+                top: 98,
+                child: Center(child: _buildTableCenter(isHumanTurn)),
               ),
               // أماكن البير على الطاولة — لكل لاعب جهته، ظاهرة للجميع
               ..._buildTableMelds(),
@@ -1087,20 +1114,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
               Positioned(
                 top: 6,
                 left: 14,
-                child: GestureDetector(
+                child: _landscapeCircleButton(
+                  icon: Icons.logout_rounded,
+                  color: const Color(0xFFFCA5A5),
                   onTap: _requestExit,
-                  child: const Row(
-                    children: [
-                      Icon(Icons.chevron_left_rounded,
-                          color: Colors.white70, size: 28),
-                      Text('TURKISH OKEY',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 17,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: .5)),
-                    ],
-                  ),
                 ),
               ),
               Positioned(
@@ -1108,10 +1125,17 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                 left: 0,
                 right: 0,
                 child: Center(
-                  child: OkeyPlayerBadge(
-                    player: _engine.players[2],
-                    isTurn: _engine.currentTurnIndex == 2,
-                    type: PlayerBadgeType.top,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      OkeyPlayerBadge(
+                        player: _engine.players[2],
+                        isTurn: _engine.currentTurnIndex == 2,
+                        type: PlayerBadgeType.top,
+                      ),
+                      const SizedBox(width: 6),
+                      _roleChip(widget.teamMode),
+                    ],
                   ),
                 ),
               ),
@@ -1179,6 +1203,22 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                   ),
                 ),
             ],
+    );
+  }
+
+  /// شارة دور اللاعب المقابل: شريك (زوجي) أو خصم (فردي)
+  Widget _roleChip(bool partner) {
+    final c = partner ? const Color(0xFF4ADE80) : const Color(0xFFF87171);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: c.withOpacity(0.14),
+        borderRadius: BorderRadius.circular(9),
+        border: Border.all(color: c.withOpacity(0.6)),
+      ),
+      child: Text(partner ? '🤝 شريك' : '⚔️ خصم',
+          style: TextStyle(
+              color: c, fontSize: 9, fontWeight: FontWeight.w900)),
     );
   }
 
@@ -1279,6 +1319,18 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
 
   /// إفلات حجر على الطاولة (أي مكان خارج الاستكانة وأماكن البير) = رمي
   void _dropOnTable(int slot, Offset dropGlobal) {
+    if (OkeyDrag.isGroup(slot)) {
+      // كتلة مرفوعة أُفلتت على الطاولة: إن كانت Per صحيحاً تنزل، ولا تُرمى أبداً
+      final s = slot - OkeyDrag.groupBase;
+      if (_engine.getHighlightedSlotIndices().contains(s) &&
+          _engine.layMeldContainingSlot(s)) {
+        AppHaptics.medium();
+      } else {
+        _showGameNotice('لا يمكن رمي مجموعة — ارمِ حجراً واحداً');
+      }
+      return;
+    }
+    if (!OkeyDrag.isRackTile(slot)) return;
     if (_engine.currentTurnIndex != 0) {
       _showGameNotice('ليس دورك الآن!');
       return;
@@ -1324,13 +1376,19 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     return out;
   }
 
+  /// خانة الرف من قيمة السحب (حجر مفرد أو كتلة)، أو -1
+  int _rackSlotOf(int data) => OkeyDrag.isRackTile(data)
+      ? data
+      : (OkeyDrag.isGroup(data) ? data - OkeyDrag.groupBase : -1);
+
   /// منطقتك: إسقاط Per مميّز هنا = نزول على الطاولة
   Widget _myMeldDropZone(Widget child) {
     return DragTarget<int>(
-      onWillAcceptWithDetails: (details) =>
-          _engine.getHighlightedSlotIndices().contains(details.data),
+      onWillAcceptWithDetails: (details) => _engine
+          .getHighlightedSlotIndices()
+          .contains(_rackSlotOf(details.data)),
       onAcceptWithDetails: (details) {
-        if (_engine.layMeldContainingSlot(details.data)) {
+        if (_engine.layMeldContainingSlot(_rackSlotOf(details.data))) {
           AppHaptics.medium();
         } else {
           _showGameNotice('هذه الأحجار لا تكوّن Per صحيحاً');
@@ -1405,6 +1463,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     return DragTarget<int>(
       onWillAcceptWithDetails: (details) {
         if (!_engine.players[0].hasOpened) return false;
+        if (!OkeyDrag.isRackTile(details.data)) return false;
         final tile = _engine.players[0].rackTiles[details.data];
         return tile != null && _engine.canLayOffTile(tile, meld);
       },
@@ -2173,197 +2232,90 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   //  مركز الطاولة: مؤشر + رمي + سحب
   // ─────────────────────────────────────────────
 
+  // ─────────────────────────────────────────────
+  //  مركز الطاولة: المؤشر + رزمة السحب الطولية + شريط الرمي (للجميع)
+  // ─────────────────────────────────────────────
+
+  /// مقاس حجر الـ feedback عند السحب من الرزمة — يطابق حجر الاستكانة
+  static const double _rackTileW = 38;
+  static const double _rackTileH = 38 * 1.36;
+
   Widget _buildTableCenter(bool isHumanTurn) {
-    final canDiscard =
-        isHumanTurn && _engine.turnPhase == OkeyTurnPhase.awaitingDiscard;
     final canDraw =
         isHumanTurn && _engine.turnPhase == OkeyTurnPhase.awaitingDraw;
-    final hasSelected = _engine.selectedTileIndex != null;
-    final remainingCount = _engine.drawDeck.length;
-    final stackCount = (remainingCount / 10).clamp(1, 5).toInt();
-
+    final canDiscard =
+        isHumanTurn && _engine.turnPhase == OkeyTurnPhase.awaitingDiscard;
     final leftPile = _engine.discardPiles[3];
     final canTakeLeft = canDraw && leftPile.isNotEmpty;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // ── رص رمي اللاعب الأيسر (قابل للسحب) ──
-        GestureDetector(
-          onTap: _executeDrawFromLeft,
-          child: AnimatedContainer(
-            key: _leftDiscardKey,
-            duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
-            decoration: BoxDecoration(
-              color: const Color(0xB8142040),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: canTakeLeft
-                    ? const Color(0xFF38BDF8)
-                    : const Color(0x338FA8E8),
-                width: canTakeLeft ? 1.8 : 1.0,
-              ),
-              boxShadow: [
-                if (canTakeLeft)
-                  BoxShadow(
-                    color: const Color(0xFF38BDF8).withOpacity(0.35),
-                    blurRadius: 12,
-                    spreadRadius: 1,
-                  ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'الأيسر',
-                  style: TextStyle(
-                    color:
-                        canTakeLeft ? const Color(0xFF7DD3FC) : Colors.white54,
-                    fontSize: 8,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                if (leftPile.isNotEmpty)
-                  OkeyTileWidget(
-                    tile: leftPile.last,
-                    width: 20,
-                    height: 28,
-                  )
-                else
-                  Container(
-                    width: 20,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.white24, width: 1),
-                      borderRadius: BorderRadius.circular(2.5),
-                      color: Colors.white.withOpacity(0.04),
-                    ),
-                  ),
-                const SizedBox(height: 3),
-                Text(
-                  'خذ',
-                  style: TextStyle(
-                    color:
-                        canTakeLeft ? const Color(0xFF7DD3FC) : Colors.white38,
-                    fontSize: 8,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
+        _buildIndicator(),
         const SizedBox(width: 8),
-
-        // ── رص السحب ──────────────────────────────
-        GestureDetector(
-          onTap: _executeDraw,
-          child: AnimatedContainer(
-            key: _deckKey,
-            duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color(0xB8142040),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color:
-                    canDraw ? const Color(0xFF4ADE80) : const Color(0x338FA8E8),
-                width: canDraw ? 1.8 : 1.0,
-              ),
-              boxShadow: [
-                if (canDraw)
-                  BoxShadow(
-                    color: const Color(0xFF4ADE80).withOpacity(0.4),
-                    blurRadius: 12,
-                    spreadRadius: 1,
-                  ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.layers_rounded,
-                        color: Color(0xFFFFD54F), size: 11),
-                    const SizedBox(width: 3),
-                    Text(
-                      '$remainingCount',
-                      style: TextStyle(
-                        color:
-                            canDraw ? const Color(0xFF86EFAC) : Colors.white70,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                // أحجار الرص مرتبة أفقياً
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: List.generate(stackCount, (i) {
-                    return Container(
-                      width: 16,
-                      height: 24,
-                      margin: const EdgeInsets.symmetric(horizontal: 1.0),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Color(0xFFFFFDF5),
-                            Color(0xFFEDE0C4),
-                            Color(0xFFD6C29E),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(2.5),
-                        border: Border.all(
-                            color: const Color(0xFFC4B28F), width: 0.7),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.35),
-                            blurRadius: 2,
-                            offset: Offset(i % 2 == 0 ? 0.5 : -0.5, 1.5),
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  canDraw ? 'اسحب' : 'سحب',
-                  style: TextStyle(
-                    color: canDraw ? const Color(0xFF86EFAC) : Colors.white54,
-                    fontSize: 8.5,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
+        _buildDrawTower(canDraw),
+        const SizedBox(width: 6),
+        // شريط الرمي: كومة اليسار (تؤخذ) بجانب الرزمة، ثم المقابل، اليمين، أنت
+        _discardStack(
+          key: _leftDiscardKey,
+          pile: leftPile,
+          label: 'يسار',
+          accent: const Color(0xFF38BDF8),
+          active: canTakeLeft,
+          takeable: true,
+          onTap: _executeDrawFromLeft,
         ),
-
-        const SizedBox(width: 10),
-
-        // ── حجر المؤشر ───────────────────────────
-        GestureDetector(
+        const SizedBox(width: 4),
+        _discardStack(
+          pile: _engine.discardPiles[2],
+          label: widget.teamMode ? 'شريك' : 'مقابل',
+          accent: widget.teamMode
+              ? const Color(0xFF4ADE80)
+              : const Color(0xFF94A3B8),
+        ),
+        const SizedBox(width: 4),
+        _discardStack(
+          pile: _engine.discardPiles[1],
+          label: 'يمين',
+          accent: const Color(0xFF94A3B8),
+        ),
+        const SizedBox(width: 4),
+        _discardStack(
+          key: _discardKey,
+          pile: _engine.discardPiles[0],
+          label: 'أنت',
+          accent: const Color(0xFFEF4444),
+          active: canDiscard,
           onTap: () {
-            AppHaptics.selection();
-            final indColor = _engine.indicatorTile.color.displayName;
-            final okeyColor = _engine.realOkeySample.color.displayName;
-            _showGameNotice('المؤشر: $indColor ${_engine.indicatorTile.value} | الأوكي: $okeyColor ${_engine.realOkeySample.value}',
-              icon: Icons.star_rounded,
-            );
+            final sel = _engine.selectedTileIndex;
+            if (canDiscard && sel != null) {
+              _executeDiscard(sel);
+            } else if (canDiscard) {
+              _showGameNotice('اختر حجراً أو اسحبه إلى الطاولة لرميه',
+                  icon: Icons.pan_tool_alt_rounded);
+            }
           },
-          child: Container(
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIndicator() {
+    return GestureDetector(
+      onTap: () {
+        AppHaptics.selection();
+        final indColor = _engine.indicatorTile.color.displayName;
+        final okeyColor = _engine.realOkeySample.color.displayName;
+        _showGameNotice(
+          'المؤشر: $indColor ${_engine.indicatorTile.value} | الأوكي: $okeyColor ${_engine.realOkeySample.value}',
+          icon: Icons.star_rounded,
+        );
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(4),
               boxShadow: [
@@ -2378,156 +2330,209 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
               ],
             ),
             child: OkeyTileWidget(
-              tile: _engine.indicatorTile,
-              width: 26,
-              height: 36,
-            ),
+                tile: _engine.indicatorTile, width: 24, height: 33),
           ),
-        ),
-
-        const SizedBox(width: 10),
-
-        // ── منطقة رمي الحجر (رمز بصري — الإفلات الفعلي يتم عبر منطقة الطاولة الواسعة) ──
-        Builder(
-          builder: (context) {
-            final showHighlight = canDiscard || hasSelected;
-
-            return GestureDetector(
-              onTap: () {
-                if (hasSelected && canDiscard) {
-                  _executeDiscard(_engine.selectedTileIndex!);
-                } else if (canDiscard) {
-                  _showGameNotice('اختر حجراً من رفّك أولاً!',
-                      icon: Icons.pan_tool_alt_rounded);
-                }
-              },
-              child: AnimatedContainer(
-                key: _discardKey,
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                decoration: BoxDecoration(
-                  color: showHighlight
-                      ? const Color(0xFFEF4444).withOpacity(0.12)
-                      : const Color(0xB8142040),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: showHighlight
-                        ? const Color(0xFFEF4444).withOpacity(0.85)
-                        : const Color(0x338FA8E8),
-                    width: showHighlight ? 2.0 : 1.0,
-                  ),
-                  boxShadow: [
-                    if (showHighlight)
-                      BoxShadow(
-                        color: const Color(0xFFEF4444).withOpacity(0.3),
-                        blurRadius: 10,
-                        spreadRadius: 1,
-                      ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.file_download_outlined,
-                      color: showHighlight
-                          ? const Color(0xFFFCA5A5)
-                          : Colors.white60,
-                      size: 14,
-                    ),
-                    const SizedBox(height: 4),
-                    if (_engine.discardPiles[0].isNotEmpty)
-                      _buildDiscardCluster()
-                    else
-                      Container(
-                        width: 36,
-                        height: 46,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.white24, width: 1.2),
-                          borderRadius: BorderRadius.circular(3),
-                          color: Colors.white.withOpacity(0.04),
-                        ),
-                        child: const Center(
-                          child: Icon(Icons.arrow_downward_rounded,
-                              color: Colors.white30, size: 16),
-                        ),
-                      ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'رمي',
-                      style: TextStyle(
-                        color: showHighlight
-                            ? const Color(0xFFFCA5A5)
-                            : Colors.white54,
-                        fontSize: 8.5,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDiscardCluster() {
-    final discards = _engine.discardPiles[0];
-    if (discards.isEmpty) return const SizedBox.shrink();
-
-    final count = math.min(discards.length, 5);
-    final recent = discards.sublist(discards.length - count);
-
-    final offsets = [
-      const Offset(-8, -3),
-      const Offset(6, -5),
-      const Offset(-4, 5),
-      const Offset(5, 2),
-      const Offset(0, 0),
-    ];
-    final rotations = [-0.14, 0.12, -0.07, 0.10, 0.0];
-
-    return SizedBox(
-      width: 60,
-      height: 48,
-      child: Stack(
-        alignment: Alignment.center,
-        children: List.generate(recent.length, (i) {
-          final tile = recent[i];
-          final idx = (5 - recent.length + i) % 5;
-          return Transform.translate(
-            offset: offsets[idx],
-            child: Transform.rotate(
-              angle: rotations[idx],
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(3),
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.black
-                            .withOpacity(i == recent.length - 1 ? 0.45 : 0.2),
-                        blurRadius: 3,
-                        offset: const Offset(0, 1)),
-                  ],
-                ),
-                child: OkeyTileWidget(
-                  tile: tile,
-                  width: 22,
-                  height: 30,
-                ),
-              ),
-            ),
-          );
-        }),
+          const SizedBox(height: 3),
+          const Text('مؤشر',
+              style: TextStyle(
+                  color: Color(0xFFFFD54F),
+                  fontSize: 7.5,
+                  fontWeight: FontWeight.w800)),
+        ],
       ),
     );
   }
 
-  // ─────────────────────────────────────────────
-  //  بطاقة اللاعب السفلي
-  // ─────────────────────────────────────────────
+  /// ظهر الحجر (مقلوب) — للرزمة وللحجر المسحوب منها
+  Widget _tileBack(double w, double h, {bool glow = false}) {
+    return Container(
+      width: w,
+      height: h,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFFFFDF5), Color(0xFFEDE0C4), Color(0xFFD6C29E)],
+        ),
+        borderRadius: BorderRadius.circular(w * 0.12),
+        border: Border.all(color: const Color(0xFFC4B28F), width: 0.7),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.4),
+              blurRadius: 3,
+              offset: const Offset(0, 2)),
+          if (glow)
+            BoxShadow(
+                color: const Color(0xFF4ADE80).withOpacity(0.55),
+                blurRadius: 10),
+        ],
+      ),
+      child: Center(
+        child: Container(
+          width: w * 0.42,
+          height: w * 0.42,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+                color: const Color(0xFFB89A62).withOpacity(0.7), width: 1),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// رزمة السحب: برج طولي من الأحجار المتراصة — المس للسحب أو اسحب إلى رفّك
+  Widget _buildDrawTower(bool canDraw) {
+    final remaining = _engine.drawDeck.length;
+    final layers = (remaining / 6).ceil().clamp(1, 8);
+    const w = 24.0, h = 33.0, step = 3.2;
+    final tower = SizedBox(
+      width: w + 2,
+      height: h + step * (layers - 1),
+      child: Stack(
+        children: [
+          for (var i = 0; i < layers; i++)
+            Positioned(
+              left: 1,
+              top: step * i,
+              child: _tileBack(w, h, glow: canDraw && i == layers - 1),
+            ),
+        ],
+      ),
+    );
+    return GestureDetector(
+      onTap: _executeDraw,
+      child: Draggable<int>(
+        key: _deckKey,
+        data: OkeyDrag.deck,
+        maxSimultaneousDrags: canDraw && remaining > 0 ? 1 : 0,
+        onDragStarted: () => AppHaptics.selection(),
+        dragAnchorStrategy: (d, c, p) => const Offset(
+            _rackTileW / 2, _rackTileH / 2 + _rackTileH * 0.28),
+        feedback: Material(
+          color: Colors.transparent,
+          elevation: 10,
+          child: _tileBack(_rackTileW, _rackTileH),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            tower,
+            const SizedBox(height: 3),
+            Text('$remaining',
+                style: TextStyle(
+                    color: canDraw ? const Color(0xFF86EFAC) : Colors.white60,
+                    fontSize: 8.5,
+                    fontWeight: FontWeight.w900)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// كومة رمي لاعب: آخر حجر ظاهر فوق ما قبله، مع عدد الأحجار
+  Widget _discardStack({
+    Key? key,
+    required List<OkeyTile> pile,
+    required String label,
+    required Color accent,
+    bool active = false,
+    bool takeable = false,
+    VoidCallback? onTap,
+  }) {
+    const w = 22.0, h = 30.0;
+    final top = pile.isNotEmpty ? pile.last : null;
+    final under = pile.length > 1 ? pile[pile.length - 2] : null;
+    Widget face = SizedBox(
+      width: w + 4,
+      height: h + 3,
+      child: Stack(
+        children: [
+          if (under != null)
+            Positioned(
+              left: 3,
+              top: 0,
+              child: Opacity(
+                  opacity: 0.55,
+                  child: OkeyTileWidget(tile: under, width: w, height: h)),
+            ),
+          Positioned(
+            left: 0,
+            top: 3,
+            child: top != null
+                ? OkeyTileWidget(tile: top, width: w, height: h)
+                : Container(
+                    width: w,
+                    height: h,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.white24),
+                      borderRadius: BorderRadius.circular(3),
+                      color: Colors.white.withOpacity(0.04),
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+    // كومة اليسار فقط تُسحب منها (باللمس أو بالسحب إلى الرف)
+    if (takeable && top != null) {
+      face = Draggable<int>(
+        data: OkeyDrag.leftPile,
+        maxSimultaneousDrags: active ? 1 : 0,
+        onDragStarted: () => AppHaptics.selection(),
+        dragAnchorStrategy: (d, c, p) => const Offset(
+            _rackTileW / 2, _rackTileH / 2 + _rackTileH * 0.28),
+        feedback: Material(
+          color: Colors.transparent,
+          elevation: 10,
+          child: OkeyTileWidget(
+              tile: top,
+              isDragging: true,
+              width: _rackTileW,
+              height: _rackTileH),
+        ),
+        childWhenDragging: Opacity(opacity: 0.35, child: face),
+        child: face,
+      );
+    }
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        key: key,
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.fromLTRB(4, 3, 4, 3),
+        decoration: BoxDecoration(
+          color: active
+              ? accent.withOpacity(0.14)
+              : const Color(0x8C142040),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: active ? accent : accent.withOpacity(0.28),
+            width: active ? 1.6 : 0.9,
+          ),
+          boxShadow: [
+            if (active)
+              BoxShadow(color: accent.withOpacity(0.35), blurRadius: 10),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            face,
+            const SizedBox(height: 2),
+            Text(
+              takeable && active ? 'خذ ⬇' : label,
+              style: TextStyle(
+                color: active ? accent : Colors.white54,
+                fontSize: 7.5,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildBottomPlayerBadge(String timerString, bool isTurn) {
     final player = _engine.players[0];

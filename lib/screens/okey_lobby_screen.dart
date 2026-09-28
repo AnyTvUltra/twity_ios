@@ -25,6 +25,9 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
     with SingleTickerProviderStateMixin {
   int _selectedStakes = 50;
   bool _isSearching = false;
+
+  /// زوجي: اللاعب المقابل شريك (فوزه فوزك)
+  bool _teamMode = false;
   bool _ctaPressed = false;
   OkeyRoom? _currentRoom;
   StreamSubscription<OkeyRoom>? _roomSub;
@@ -125,7 +128,8 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
               builder: (context) => OkeyGameScreen(
-                  rules: OkeyRules.fromId(_currentRoom?.variant))),
+                  rules: OkeyRules.fromId(_currentRoom?.variant),
+                  teamMode: _teamMode)),
         );
       }
     });
@@ -323,9 +327,65 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
           ..._stakeTiers.map(_buildTierCard),
 
           const SizedBox(height: 16),
+          _buildModeSelector(),
+          const SizedBox(height: 16),
           _buildJoinButton(),
         ],
       ),
+    );
+  }
+
+  /// نوع اللعبة: فردي (كل لاعب لنفسه) أو زوجي (اللاعب المقابل شريكك)
+  Widget _buildModeSelector() {
+    Widget option(bool team, String icon, String title, String sub) {
+      final selected = _teamMode == team;
+      return Expanded(
+        child: GestureDetector(
+          onTap: () {
+            AppHaptics.selection();
+            setState(() => _teamMode = team);
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+            decoration: BoxDecoration(
+              color: selected
+                  ? _neonBlue.withOpacity(0.16)
+                  : Colors.white.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: selected
+                    ? _neonBlue.withOpacity(0.8)
+                    : Colors.white.withOpacity(0.12),
+                width: selected ? 1.5 : 1,
+              ),
+            ),
+            child: Column(
+              children: [
+                Text(icon, style: const TextStyle(fontSize: 20)),
+                const SizedBox(height: 4),
+                Text(title,
+                    style: TextStyle(
+                        color: selected ? _textWhite : _textDim,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900)),
+                const SizedBox(height: 2),
+                Text(sub,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: _textDim, fontSize: 10)),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      children: [
+        option(false, '👤', 'فردي', 'كل لاعب لنفسه'),
+        const SizedBox(width: 10),
+        option(true, '🤝', 'زوجي', 'اللاعب المقابل شريكك'),
+      ],
     );
   }
 

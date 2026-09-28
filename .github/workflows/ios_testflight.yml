@@ -23,6 +23,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Apple: منذ 28 أبريل 2026 يجب البناء بـ Xcode 26 و iOS 26 SDK
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
       - uses: subosito/flutter-action@v2
         with:
           channel: stable

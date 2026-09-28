@@ -7,6 +7,23 @@ import '../../../widgets/skin_image.dart';
 import 'okey_tile_widget.dart';
 import 'okey_rack_model_3d.dart';
 
+/// ترميز ما يُسحب في مشهد الأوكي (قيمة الـ Draggable)
+class OkeyDrag {
+  OkeyDrag._();
+
+  /// حجر من رزمة السحب
+  static const int deck = -1;
+
+  /// آخر حجر رماه اللاعب الأيسر
+  static const int leftPile = -2;
+
+  /// كتلة كاملة من الرف: groupBase + خانة أي حجر فيها
+  static const int groupBase = 100;
+
+  static bool isRackTile(int d) => d >= 0 && d < 28;
+  static bool isGroup(int d) => d >= groupBase && d < groupBase + 28;
+}
+
 /// استكانة اللاعب ثلاثية الأبعاد - مطابقة لشكل الحامل الخشبي بالصورة المرجعية
 class OkeyIstakaWidget extends StatelessWidget {
   final List<OkeyTile?> rackTiles;
@@ -39,10 +56,18 @@ class OkeyIstakaWidget extends StatelessWidget {
     this.feedbackQuarterTurns = 0,
     this.rackItem,
     this.onDropAboveRack,
+    this.onDrawToSlot,
+    this.onGroupMove,
   });
 
   /// إفلات الحجر فوق الرف (على الطاولة) — يُستخدم للرمي
   final void Function(int slot, Offset dropGlobal)? onDropAboveRack;
+
+  /// سحب حجر من الرزمة/كومة اليسار وإفلاته في خانة محددة
+  final void Function(int source, int toSlot)? onDrawToSlot;
+
+  /// نقل كتلة كاملة (ضغط مطوّل) إلى خانة جديدة
+  final void Function(int anySlot, int toSlot)? onGroupMove;
 
   /// أحجار الكتلة المتجاورة التي تحتوي الخانة (لحمل الـ Per كاملاً)
   List<OkeyTile> _groupForSlot(int slotIndex) {
@@ -319,7 +344,8 @@ class OkeyIstakaWidget extends StatelessWidget {
           : Offset(tileW / 2, tileH / 2));
 
   /// يحوّل موضع الحجر إلى خانة (أو -1 = فوق الرف، أي على الطاولة)
-  int _slotAt(Offset global, int fromSlot, double slotW, double tileH) {
+  int _slotAt(Offset global, int fromSlot, double slotW, double tileH,
+      {bool raw = false}) {
     final box = _rackBox;
     if (box == null || !box.attached) return fromSlot;
     final local = box.globalToLocal(global);
@@ -331,7 +357,7 @@ class OkeyIstakaWidget extends StatelessWidget {
     final p = ((local.dx - x0) / slotW).clamp(0.0, 13.999);
     final col = p.floor();
     final slot = row * 14 + col;
-    if (slot == fromSlot) return fromSlot;
+    if (slot == fromSlot || raw) return slot;
     // خانة مشغولة: إدراج قبل/بعد الحجر حسب نصفها
     if (rackTiles[slot] != null && p - col > 0.5 && col < 13) {
       final next = slot + 1;
@@ -349,16 +375,34 @@ class OkeyIstakaWidget extends StatelessWidget {
     return DragTarget<int>(
       onWillAcceptWithDetails: (_) => true,
       onMove: (details) {
+        final d = details.data;
         final s = _slotAt(_dragCenter(details.offset, tileW, tileH),
-            details.data, slotW, tileH);
-        final v = (s < 0 || s == details.data) ? null : s;
+            OkeyDrag.isRackTile(d) ? d : -99, slotW, tileH,
+            raw: !OkeyDrag.isRackTile(d));
+        final v = (s < 0 || s == d) ? null : s;
         if (_hoverSlot.value != v) _hoverSlot.value = v;
       },
       onLeave: (_) => _hoverSlot.value = null,
       onAcceptWithDetails: (details) {
         _hoverSlot.value = null;
+        final d = details.data;
         final center = _dragCenter(details.offset, tileW, tileH);
-        final s = _slotAt(center, details.data, slotW, tileH);
+        if (!OkeyDrag.isRackTile(d)) {
+          final s = _slotAt(center, -99, slotW, tileH, raw: true);
+          if (OkeyDrag.isGroup(d)) {
+            if (s >= 0) {
+              HapticFeedback.lightImpact();
+              onGroupMove?.call(d - OkeyDrag.groupBase, s);
+            } else {
+              onDropAboveRack?.call(d, details.offset);
+            }
+          } else if (s >= 0) {
+            HapticFeedback.lightImpact();
+            onDrawToSlot?.call(d, s);
+          }
+          return;
+        }
+        final s = _slotAt(center, d, slotW, tileH);
         if (s < 0) {
           // الحجر فوق الرف (على الطاولة) — يُعامل كرمي
           onDropAboveRack?.call(details.data, details.offset);
@@ -373,6 +417,62 @@ class OkeyIstakaWidget extends StatelessWidget {
         _rackBox = context.findRenderObject() as RenderBox?;
         return child;
       },
+    );
+  }
+
+  /// ضغط مطوّل على حجر ضمن كتلة (2+) يرفع الكتلة كاملة لنقلها
+  Widget _groupDraggable({
+    required int slotIndex,
+    required List<OkeyTile> groupTiles,
+    required int indexInGroup,
+    required double tileW,
+    required double tileH,
+    required Widget child,
+  }) {
+    if (groupTiles.length < 2) return child;
+    const pad = 3.0, gap = 1.0;
+    return LongPressDraggable<int>(
+      data: OkeyDrag.groupBase + slotIndex,
+      delay: const Duration(milliseconds: 320),
+      hapticFeedbackOnStart: true,
+      onDragEnd: (_) => _hoverSlot.value = null,
+      // الحجر المضغوط يبقى تحت الإصبع، والكتلة ممتدة حوله
+      dragAnchorStrategy: (d, c, p) => Offset(
+          pad + gap + indexInGroup * (tileW + gap * 2) + tileW / 2,
+          pad + tileH / 2 + tileH * dragScaleY * 0.28),
+      feedback: Material(
+        color: Colors.transparent,
+        child: Transform(
+          alignment: Alignment.topLeft,
+          transform: Matrix4.diagonal3Values(
+              dragScaleX * 1.04, dragScaleY * 1.04, 1),
+          child: Container(
+            padding: const EdgeInsets.all(pad),
+            decoration: BoxDecoration(
+              color: const Color(0xCC10B981),
+              borderRadius: BorderRadius.circular(6),
+              boxShadow: const [
+                BoxShadow(
+                    color: Color(0x88000000),
+                    blurRadius: 14,
+                    offset: Offset(0, 8)),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final t in groupTiles)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: gap),
+                    child: OkeyTileWidget(
+                        tile: t, isDragging: true, width: tileW, height: tileH),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      child: child,
     );
   }
 
@@ -419,10 +519,10 @@ class OkeyIstakaWidget extends StatelessWidget {
               );
             }
 
-            // حمل الـ Per كاملاً: إن كان الحجر ضمن مجموعة مميّزة اسحبها كلها
-            final groupTiles = highlightedIndices.contains(slotIndex)
-                ? _groupForSlot(slotIndex)
-                : null;
+            // الكتلة المتجاورة — تُرفع كاملة بالضغط المطوّل
+            final groupTiles = _groupForSlot(slotIndex);
+            final groupStart = slotIndex -
+                groupTiles.indexWhere((t) => identical(t, tile));
             // الحجر في خانة النزول يُزاح قليلاً ليفسح مكاناً للإدراج
             final hoverOffset = isHovering ? slotW * 0.38 : 0.0;
             return SizedBox(
@@ -433,7 +533,13 @@ class OkeyIstakaWidget extends StatelessWidget {
                   duration: const Duration(milliseconds: 140),
                   curve: Curves.easeOutCubic,
                   transform: Matrix4.translationValues(hoverOffset, 0, 0),
-                  child: Draggable<int>(
+                  child: _groupDraggable(
+                    slotIndex: slotIndex,
+                    groupTiles: groupTiles,
+                    indexInGroup: slotIndex - groupStart,
+                    tileW: tileW,
+                    tileH: tileH,
+                    child: Draggable<int>(
                     data: slotIndex,
                     onDragStarted: () => HapticFeedback.selectionClick(),
                     onDragEnd: (_) => _hoverSlot.value = null,
@@ -456,36 +562,12 @@ class OkeyIstakaWidget extends StatelessWidget {
                           alignment: Alignment.center,
                           transform: Matrix4.diagonal3Values(
                               dragScaleX * 1.08, dragScaleY * 1.08, 1),
-                          child: groupTiles != null && groupTiles.length > 1
-                              ? Container(
-                                  padding: const EdgeInsets.all(3),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xCC10B981),
-                                    borderRadius: BorderRadius.circular(5),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: groupTiles
-                                        .map((t) => Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 1),
-                                              child: OkeyTileWidget(
-                                                tile: t,
-                                                isDragging: true,
-                                                width: tileW,
-                                                height: tileH,
-                                              ),
-                                            ))
-                                        .toList(),
-                                  ),
-                                )
-                              : OkeyTileWidget(
-                                  tile: tile,
-                                  isDragging: true,
-                                  width: tileW,
-                                  height: tileH,
-                                ),
+                          child: OkeyTileWidget(
+                            tile: tile,
+                            isDragging: true,
+                            width: tileW,
+                            height: tileH,
+                          ),
                         ),
                       ),
                     ),
@@ -509,6 +591,7 @@ class OkeyIstakaWidget extends StatelessWidget {
                       height: tileH,
                       onTap: () => onTileTap(slotIndex),
                     ),
+                  ),
                   ),
                 ),
               ),

@@ -337,6 +337,85 @@ class OkeyEngine extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// الكتلة المتجاورة (أحجار بلا فراغ بينها) التي تحتوي الخانة
+  List<int> groupSlotsAt(int slot) {
+    final rack = players[0].rackTiles;
+    if (slot < 0 || slot >= 28 || rack[slot] == null) return const [];
+    final rs = slot < 14 ? 0 : 14;
+    var a = slot, b = slot;
+    while (a > rs && rack[a - 1] != null) {
+      a--;
+    }
+    while (b < rs + 13 && rack[b + 1] != null) {
+      b++;
+    }
+    return [for (var i = a; i <= b; i++) i];
+  }
+
+  /// نقل كتلة كاملة (Per) إلى مكان جديد في الرف — تبقى متلاصقة بترتيبها.
+  /// toSlot = الخانة المطلوبة لأول حجر؛ إن لم تتسع يُختار أقرب مكان فارغ كافٍ.
+  bool moveGroup(int anySlot, int toSlot) {
+    final slots = groupSlotsAt(anySlot);
+    if (slots.isEmpty || toSlot < 0 || toSlot >= 28) return false;
+    final rack = players[0].rackTiles;
+    final tiles = [for (final s in slots) rack[s]!];
+    final n = tiles.length;
+    for (final s in slots) {
+      rack[s] = null;
+    }
+
+    bool fits(int start) {
+      final rs = start < 14 ? 0 : 14;
+      if (start < rs || start + n - 1 > rs + 13) return false;
+      for (var i = start; i < start + n; i++) {
+        if (rack[i] != null) return false;
+      }
+      return true;
+    }
+
+    final row = toSlot ~/ 14;
+    final rs = row * 14;
+    final desired = toSlot.clamp(rs, rs + 14 - n);
+    int? best;
+    for (var d = 0; d < 14 && best == null; d++) {
+      for (final c in [desired - d, desired + d]) {
+        if (c >= rs && c + n - 1 <= rs + 13 && fits(c)) {
+          best = c;
+          break;
+        }
+      }
+    }
+    if (best == null) {
+      // لا مكان يتسع لها — تعود لمكانها
+      for (var i = 0; i < n; i++) {
+        rack[slots[i]] = tiles[i];
+      }
+      notifyListeners();
+      return false;
+    }
+    for (var i = 0; i < n; i++) {
+      rack[best + i] = tiles[i];
+    }
+    selectedTileIndex = null;
+    OkeyAudio.playTilePickup();
+    notifyListeners();
+    return true;
+  }
+
+  /// يضع الحجر المسحوب الجديد في الخانة التي أفلته عليها اللاعب
+  void _placeDrawnAt(int placedSlot, int? toSlot) {
+    if (toSlot == null || toSlot == placedSlot || toSlot < 0 || toSlot >= 28) {
+      return;
+    }
+    insertTile(placedSlot, toSlot);
+    final rack = players[0].rackTiles;
+    // حدّد الحجر الجديد بعد النقل
+    final tileIdx = rack.indexWhere((t) => identical(t, _lastDrawn));
+    selectedTileIndex = tileIdx >= 0 ? tileIdx : null;
+  }
+
+  OkeyTile? _lastDrawn;
+
   void swapTiles(int slotA, int slotB) {
     final temp = players[0].rackTiles[slotA];
     players[0].rackTiles[slotA] = players[0].rackTiles[slotB];
@@ -360,7 +439,7 @@ class OkeyEngine extends ChangeNotifier {
   }
 
   /// Draw from center stock
-  bool drawFromDeck() {
+  bool drawFromDeck({int? toSlot}) {
     if (currentTurnIndex != 0 || turnPhase != OkeyTurnPhase.awaitingDraw) {
       return false;
     }
@@ -375,13 +454,15 @@ class OkeyEngine extends ChangeNotifier {
     selectedTileIndex = emptySlot;
     turnPhase = OkeyTurnPhase.awaitingDiscard;
     gameState = OkeyGameState.discardPhase;
+    _lastDrawn = tile;
+    _placeDrawnAt(emptySlot, toSlot);
     OkeyAudio.playTilePickup();
     notifyListeners();
     return true;
   }
 
   /// Take the latest discarded tile from previous player (Left Bot, index 3)
-  bool drawFromDiscard() {
+  bool drawFromDiscard({int? toSlot}) {
     if (currentTurnIndex != 0 || turnPhase != OkeyTurnPhase.awaitingDraw) {
       return false;
     }
@@ -396,6 +477,8 @@ class OkeyEngine extends ChangeNotifier {
     selectedTileIndex = emptySlot;
     turnPhase = OkeyTurnPhase.awaitingDiscard;
     gameState = OkeyGameState.discardPhase;
+    _lastDrawn = tile;
+    _placeDrawnAt(emptySlot, toSlot);
     OkeyAudio.playTilePickup();
     notifyListeners();
     return true;
