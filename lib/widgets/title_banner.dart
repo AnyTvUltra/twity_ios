@@ -93,7 +93,7 @@ class TitleBanner extends StatelessWidget {
                     Transform.translate(
                       offset: const Offset(0, 3),
                       child: Text(
-                        'مَجْمُوعَة',
+                        'یەڵا یاری',
                         style: TextStyle(
                           fontSize: 34,
                           fontWeight: FontWeight.w900,
@@ -106,7 +106,7 @@ class TitleBanner extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'مَجْمُوعَة',
+                      'یەڵا یاری',
                       style: TextStyle(
                         fontSize: 34,
                         fontWeight: FontWeight.w900,
@@ -129,7 +129,7 @@ class TitleBanner extends StatelessWidget {
                         ],
                       ).createShader(bounds),
                       child: const Text(
-                        'مَجْمُوعَة',
+                        'یەڵا یاری',
                         style: TextStyle(
                           fontSize: 34,
                           fontWeight: FontWeight.w900,
@@ -157,7 +157,7 @@ class TitleBanner extends StatelessWidget {
                     Transform.translate(
                       offset: const Offset(0, 3.5),
                       child: Text(
-                        'الأَلْعَاب الْمُمْتِعَة',
+                        'Yalla Yari',
                         style: TextStyle(
                           fontSize: 27,
                           fontWeight: FontWeight.w900,
@@ -170,7 +170,7 @@ class TitleBanner extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'الأَلْعَاب الْمُمْتِعَة',
+                      'Yalla Yari',
                       style: TextStyle(
                         fontSize: 27,
                         fontWeight: FontWeight.w900,
@@ -192,7 +192,7 @@ class TitleBanner extends StatelessWidget {
                         ],
                       ).createShader(bounds),
                       child: const Text(
-                        'الأَلْعَاب الْمُمْتِعَة',
+                        'Yalla Yari',
                         style: TextStyle(
                           fontSize: 27,
                           fontWeight: FontWeight.w900,

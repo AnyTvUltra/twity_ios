@@ -742,7 +742,15 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     final media = MediaQuery.of(context);
     final rotateToLandscape = media.orientation == Orientation.portrait;
     final landscapeMedia = rotateToLandscape
-        ? media.copyWith(size: Size(media.size.height, media.size.width))
+        ? media.copyWith(
+            size: Size(media.size.height, media.size.width),
+            padding: EdgeInsets.symmetric(
+              horizontal:
+                  media.padding.top > media.padding.bottom ? media.padding.top : media.padding.bottom,
+              vertical:
+                  media.padding.left > media.padding.right ? media.padding.left : media.padding.right,
+            ),
+          )
         : media;
     _sceneRotated = rotateToLandscape;
     final game = MediaQuery(
@@ -787,7 +795,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         final scaleY = constraints.maxHeight / sh;
         return SizedBox.expand(
           child: FittedBox(
-            fit: BoxFit.fill,
+            fit: BoxFit.contain,
             child: SizedBox(
               key: _sceneKey,
               width: sw,

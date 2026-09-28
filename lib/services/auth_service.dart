@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'rewards_service.dart';
 import 'store_service.dart';
 
@@ -226,7 +228,109 @@ class AuthService extends ChangeNotifier {
   StreamSubscription<User?>? _authSub;
   StreamSubscription<DocumentSnapshot>? _userDocSub;
 
+  // ══════════════════════════════════════════════════════
+  // التخزين المحلي — بيانات اللاعب تُعرض فوراً من الجهاز
+  // ثم تُزامَن مع Firestore (الإدارة تبقى هي مصدر الحقيقة)
+  // ══════════════════════════════════════════════════════
+  static const _userCacheKey = 'cached_user_v1';
+  SharedPreferences? _prefs;
+
+  @override
+  void notifyListeners() {
+    super.notifyListeners();
+    final u = _currentUser;
+    if (u != null) {
+      unawaited(_saveUserToCache(u));
+    } else {
+      unawaited(_clearUserCache());
+    }
+  }
+
+  Map<String, dynamic> _userToJson(AppUser u) => {
+        'uid': u.uid,
+        'email': u.email,
+        'displayName': u.displayName,
+        'username': u.username,
+        'photoUrl': u.photoUrl,
+        'chips': u.chips,
+        'gems': u.gems,
+        'rating': u.rating,
+        'level': u.level,
+        'wins': u.wins,
+        'losses': u.losses,
+        'lastDailyGiftClaim': u.lastDailyGiftClaim?.toIso8601String(),
+        'dailyGiftStreak': u.dailyGiftStreak,
+        'lastWheelSpin': u.lastWheelSpin?.toIso8601String(),
+        'wheelSpinCount': u.wheelSpinCount,
+        'vipUntil': u.vipUntil?.toIso8601String(),
+        'vipTier': u.vipTier,
+        'lastLootBox': u.lastLootBox?.toIso8601String(),
+        'referredBy': u.referredBy,
+        'isOnline': u.isOnline,
+        'ownedSkins': u.ownedSkins,
+        'equippedSkins': u.equippedSkins,
+      };
+
+  AppUser _userFromJson(Map<String, dynamic> d) => AppUser(
+        uid: d['uid'] ?? '',
+        email: d['email'] ?? '',
+        displayName: d['displayName'] ?? 'لاعب',
+        username: d['username'] ?? '',
+        photoUrl: d['photoUrl'] ?? '',
+        chips: (d['chips'] as num?)?.toInt() ?? 0,
+        gems: (d['gems'] as num?)?.toInt() ?? 0,
+        rating: (d['rating'] as num?)?.toInt() ?? 1200,
+        level: (d['level'] as num?)?.toInt() ?? 1,
+        wins: (d['wins'] as num?)?.toInt() ?? 0,
+        losses: (d['losses'] as num?)?.toInt() ?? 0,
+        lastDailyGiftClaim:
+            DateTime.tryParse(d['lastDailyGiftClaim'] ?? ''),
+        dailyGiftStreak: (d['dailyGiftStreak'] as num?)?.toInt() ?? 0,
+        lastWheelSpin: DateTime.tryParse(d['lastWheelSpin'] ?? ''),
+        wheelSpinCount: (d['wheelSpinCount'] as num?)?.toInt() ?? 0,
+        vipUntil: DateTime.tryParse(d['vipUntil'] ?? ''),
+        vipTier: d['vipTier'] ?? '',
+        lastLootBox: DateTime.tryParse(d['lastLootBox'] ?? ''),
+        referredBy: d['referredBy'],
+        isOnline: d['isOnline'] ?? true,
+        ownedSkins: (d['ownedSkins'] as List?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            const [],
+        equippedSkins: (d['equippedSkins'] as Map?)?.map(
+                (k, v) => MapEntry(k.toString(), v.toString())) ??
+            const {},
+      );
+
+  Future<void> _saveUserToCache(AppUser u) async {
+    try {
+      _prefs ??= await SharedPreferences.getInstance();
+      await _prefs!.setString(_userCacheKey, jsonEncode(_userToJson(u)));
+    } catch (_) {}
+  }
+
+  Future<void> _clearUserCache() async {
+    try {
+      _prefs ??= await SharedPreferences.getInstance();
+      await _prefs!.remove(_userCacheKey);
+    } catch (_) {}
+  }
+
+  /// استرجاع بيانات اللاعب المخزنة فور فتح التطبيق — بدون انتظار الشبكة
+  Future<void> _restoreCachedUser() async {
+    try {
+      _prefs ??= await SharedPreferences.getInstance();
+      final raw = _prefs!.getString(_userCacheKey);
+      if (raw == null || _currentUser != null) return;
+      final cached = _userFromJson(jsonDecode(raw) as Map<String, dynamic>);
+      if (cached.uid.isEmpty || _currentUser != null) return;
+      _currentUser = cached;
+      super.notifyListeners();
+    } catch (_) {}
+  }
+
   void initialize() {
+    unawaited(_restoreCachedUser());
     _authSub = _auth.authStateChanges().listen((user) async {
       if (user != null) {
         await _fetchOrCreateUser(user);

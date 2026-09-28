@@ -122,15 +122,21 @@ class _WeeklyStrip extends StatelessWidget {
                 ],
               ),
               borderRadius: BorderRadius.circular(26),
+              // التوهج الذهبي يظهر فقط عندما تكون هدية اليوم جاهزة للاستلام
               border: Border.all(
-                  color: DailyRewardsPanel._gold.withOpacity(0.45),
+                  color: claimable
+                      ? DailyRewardsPanel._gold.withOpacity(0.45)
+                      : Colors.white.withOpacity(0.12),
                   width: 1.2),
-              boxShadow: [
-                BoxShadow(
-                    color: DailyRewardsPanel._gold.withOpacity(0.13),
-                    blurRadius: 22,
-                    spreadRadius: -4),
-              ],
+              boxShadow: claimable
+                  ? [
+                      BoxShadow(
+                          color:
+                              DailyRewardsPanel._gold.withOpacity(0.13),
+                          blurRadius: 22,
+                          spreadRadius: -4),
+                    ]
+                  : null,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -851,14 +857,20 @@ class _LootBoxCard extends StatelessWidget {
 
   Future<void> _open(BuildContext context) async {
     AppHaptics.medium();
-    final res = await AuthService().claimLootBox();
-    if (!context.mounted) return;
-    TopNotification.show(
-      context,
-      res['message'] as String,
-      icon: res['success'] == true
-          ? Icons.inventory_2_rounded
-          : Icons.lock_clock_rounded,
+    if (AuthService().currentUser == null) {
+      TopNotification.show(context, 'سجّل الدخول أولاً!',
+          icon: Icons.warning_rounded);
+      return;
+    }
+    if (!AuthService().canClaimLootBox) {
+      TopNotification.show(context, 'الصندوق يتجدد غداً ⏳',
+          icon: Icons.lock_clock_rounded);
+      return;
+    }
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const LootBoxDialog(),
     );
   }
 
@@ -1372,4 +1384,202 @@ class _WheelPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter old) => false;
+}
+
+// ══════════════════════════════════════════════════════════════
+// حوار صندوق الغنائم — الصندوق يهتز ثم ينفتح ويكشف الجائزة
+// ══════════════════════════════════════════════════════════════
+class LootBoxDialog extends StatefulWidget {
+  const LootBoxDialog({super.key});
+
+  @override
+  State<LootBoxDialog> createState() => _LootBoxDialogState();
+}
+
+class _LootBoxDialogState extends State<LootBoxDialog>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+  Map<String, dynamic>? _result;
+  String? _error;
+  bool _opened = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1400));
+    _claim();
+  }
+
+  Future<void> _claim() async {
+    // اهتزاز الصندوق أولاً
+    _c.forward();
+    final res = await AuthService().claimLootBox();
+    if (!mounted) return;
+    if (res['success'] != true) {
+      setState(() => _error = res['message'] as String);
+      return;
+    }
+    // انتظر انتهاء الاهتزاز ثم اكشف الجائزة
+    await Future.delayed(const Duration(milliseconds: 900));
+    if (!mounted) return;
+    AppHaptics.heavy();
+    setState(() {
+      _result = res;
+      _opened = true;
+    });
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const purple = Color(0xFFC084FC);
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Dialog(
+        backgroundColor: Colors.transparent,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(26),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    const Color(0xFF2A1650).withOpacity(0.94),
+                    const Color(0xFF0E0820).withOpacity(0.97),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(26),
+                border: Border.all(
+                    color: purple.withOpacity(0.55), width: 1.4),
+                boxShadow: [
+                  BoxShadow(
+                      color: purple.withOpacity(0.2), blurRadius: 32),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('📦 صندوق الغنائم',
+                      style: TextStyle(
+                          color: Color(0xFFF1F5FF),
+                          fontSize: 17,
+                          fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 24),
+                  // الصندوق — يهتز ثم يتبدل بالجائزة
+                  AnimatedBuilder(
+                    animation: _c,
+                    builder: (_, child) {
+                      final t = _c.value;
+                      final shake = _opened
+                          ? 0.0
+                          : math.sin(t * math.pi * 14) *
+                              (1 - t) *
+                              0.16;
+                      final scale = _opened
+                          ? 1.25
+                          : 1.0 + math.sin(t * math.pi) * 0.12;
+                      return Transform.rotate(
+                        angle: shake,
+                        child: Transform.scale(
+                            scale: scale, child: child),
+                      );
+                    },
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 500),
+                      transitionBuilder: (child, anim) =>
+                          ScaleTransition(
+                              scale: CurvedAnimation(
+                                  parent: anim,
+                                  curve: Curves.elasticOut),
+                              child: child),
+                      child: _opened
+                          ? const Text('✨', key: ValueKey('open'),
+                              style: TextStyle(fontSize: 72))
+                          : const Text('🎁', key: ValueKey('closed'),
+                              style: TextStyle(fontSize: 72)),
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 400),
+                    child: _error != null
+                        ? Text(_error!,
+                            key: const ValueKey('err'),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                                color: Color(0xFFFCA5A5),
+                                fontSize: 13))
+                        : _opened && _result != null
+                            ? Container(
+                                key: const ValueKey('win'),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 12),
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                      colors: [
+                                        Color(0xFFE9D5FF),
+                                        purple,
+                                      ]),
+                                  borderRadius:
+                                      BorderRadius.circular(14),
+                                  boxShadow: [
+                                    BoxShadow(
+                                        color:
+                                            purple.withOpacity(0.5),
+                                        blurRadius: 18),
+                                  ],
+                                ),
+                                child: Text(
+                                  _result!['rewardLabel'] as String? ??
+                                      _result!['message'] as String,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                      color: Color(0xFF2E1065),
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 14),
+                                ),
+                              )
+                            : const Text('الصندوق يُفتح...',
+                                key: ValueKey('wait'),
+                                style: TextStyle(
+                                    color: Color(0xFF8EA3C8),
+                                    fontSize: 12)),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: (_opened || _error != null)
+                          ? () => Navigator.of(context).pop()
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: purple,
+                        disabledBackgroundColor:
+                            Colors.white.withOpacity(0.08),
+                        foregroundColor: const Color(0xFF2E1065),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('إغلاق',
+                          style: TextStyle(fontWeight: FontWeight.w900)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

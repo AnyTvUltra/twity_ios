@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../services/broadcast_service.dart';
 import '../services/social_service.dart';
 import '../theme.dart';
 import '../utils/haptics.dart';
@@ -1112,6 +1113,74 @@ class NotificationsSheet extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(14, 0, 14, 20),
               children: [
+                // إشعارات الإدارة (آخر الرسائل العامة)
+                StreamBuilder<List<BroadcastMessage>>(
+                  stream: BroadcastService.instance.recentStream(),
+                  builder: (context, snap) {
+                    final items = (snap.data ?? [])
+                        .where((b) => b.body.isNotEmpty)
+                        .toList();
+                    if (items.isEmpty) return const SizedBox.shrink();
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('من الإدارة 📢',
+                            style: TextStyle(
+                                color: LightGlass.textSoft,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 6),
+                        ...items.take(3).map((b) => Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(colors: [
+                                  const Color(0xFFFFD54F)
+                                      .withOpacity(0.14),
+                                  LightGlass.card,
+                                ]),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                    color: const Color(0xFFFFD54F)
+                                        .withOpacity(0.35)),
+                              ),
+                              child: Row(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  const Text('📢',
+                                      style: TextStyle(fontSize: 18)),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(b.title,
+                                            style: const TextStyle(
+                                                color: LightGlass.text,
+                                                fontSize: 12.5,
+                                                fontWeight:
+                                                    FontWeight.w800)),
+                                        const SizedBox(height: 2),
+                                        Text(b.body,
+                                            style: const TextStyle(
+                                                color:
+                                                    LightGlass.textMuted,
+                                                fontSize: 11.5,
+                                                height: 1.4)),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )),
+                        const SizedBox(height: 10),
+                      ],
+                    );
+                  },
+                ),
+
                 // طلبات الصداقة
                 StreamBuilder<List<FriendRequest>>(
                   stream:
@@ -1132,10 +1201,10 @@ class NotificationsSheet extends StatelessWidget {
                               margin: const EdgeInsets.only(bottom: 8),
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: LightGlass.card,
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
-                                    color: LightGlass.borderDim),
+                                    color: LightGlass.border),
                               ),
                               child: Row(
                                 children: [

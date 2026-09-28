@@ -9,6 +9,10 @@ import 'services/firebase_service.dart';
 import 'services/auth_service.dart';
 import 'services/radio_service.dart';
 import 'services/store_service.dart';
+import 'services/broadcast_service.dart';
+import 'widgets/update_dialog.dart';
+
+final _navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,15 +21,69 @@ void main() async {
   StoreService().initialize();
   RadioService().init();
   RadioService().initialize();
+
+  // إشعارات الإدارة — تظهر كحوار منبثق عند وصول رسالة جديدة
+  BroadcastService.instance.initialize((title, body) {
+    final ctx = _navigatorKey.currentContext;
+    if (ctx == null) return;
+    showDialog(
+      context: ctx,
+      builder: (_) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          backgroundColor: const Color(0xFF141C34),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(
+                  color: const Color(0xFFFFD54F).withOpacity(0.5))),
+          title: Text(title,
+              style: const TextStyle(
+                  color: Color(0xFFF1F5FF),
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16)),
+          content: Text(body,
+              style: const TextStyle(
+                  color: Color(0xFFB8C4DC), fontSize: 13, height: 1.5)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('حسناً',
+                  style: TextStyle(
+                      color: Color(0xFFFFD54F),
+                      fontWeight: FontWeight.w900)),
+            ),
+          ],
+        ),
+      ),
+    );
+  });
+
   runApp(const GameHubApp());
 }
 
-class GameHubApp extends StatelessWidget {
+class GameHubApp extends StatefulWidget {
   const GameHubApp({super.key});
+
+  @override
+  State<GameHubApp> createState() => _GameHubAppState();
+}
+
+class _GameHubAppState extends State<GameHubApp> {
+  @override
+  void initState() {
+    super.initState();
+    // فحص التحديث بعد أول إطار — لا يظهر أي حوار إن كان التطبيق محدثاً
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = _navigatorKey.currentContext;
+      if (ctx != null) UpdateDialog.showIfNeeded(ctx);
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: _navigatorKey,
       title: 'Yalla Yari - یەڵا یاری',
       debugShowCheckedModeBanner: false,
       scrollBehavior: const MaterialScrollBehavior().copyWith(

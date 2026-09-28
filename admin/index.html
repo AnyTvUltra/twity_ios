@@ -333,6 +333,9 @@
       const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
       const [newPlayerData, setNewPlayerData] = useState({ name: '', chips: 5000, rating: 1200, level: 1 });
       const [toastMsg, setToastMsg] = useState(null);
+      const [broadcast, setBroadcast] = useState({ title: '📢 إشعار', body: '' });
+      const [broadcasts, setBroadcasts] = useState([]);
+      const [sendingBroadcast, setSendingBroadcast] = useState(false);
 
       const showToast = (text, type = 'success') => {
         setToastMsg({ text, type });
@@ -499,7 +502,13 @@
               setRadioGroups(list);
             }, (err) => console.error("Radio groups listener error:", err));
 
-            const unsubRadioSongs = onSnapshot(collection(window.db, 'radio_songs'), (snap) => {
+            const unsubBroadcasts = onSnapshot(query(collection(window.db, 'broadcasts'), orderBy('createdAt', 'desc'), limit(20)), (snap) => {
+            const list = [];
+            snap.forEach((doc) => list.push({ id: doc.id, ...doc.data() }));
+            setBroadcasts(list);
+          });
+
+          const unsubRadioSongs = onSnapshot(collection(window.db, 'radio_songs'), (snap) => {
               const list = [];
               snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
               list.sort((a, b) => (a.sort ?? 999) - (b.sort ?? 999));
@@ -516,6 +525,7 @@
               unsubOrders();
               unsubRadioGroups();
               unsubRadioSongs();
+              unsubBroadcasts();
             };
           } catch (e) {
             console.error("Firebase init failed:", e);
@@ -530,6 +540,41 @@
           return () => window.removeEventListener('firebase-ready', initFirebaseListeners);
         }
       }, [isAuthenticated]);
+
+      // إرسال إشعار عام لجميع اللاعبين — يظهر داخل التطبيق فوراً
+      const sendBroadcast = async () => {
+        if (!window.db || !window.fbTools) return;
+        if (!broadcast.body.trim()) {
+          showToast('اكتب نص الإشعار أولاً', 'error');
+          return;
+        }
+        setSendingBroadcast(true);
+        try {
+          const { collection, addDoc, serverTimestamp } = window.fbTools;
+          await addDoc(collection(window.db, 'broadcasts'), {
+            title: broadcast.title.trim() || '📢 إشعار',
+            body: broadcast.body.trim(),
+            createdAt: serverTimestamp(),
+          });
+          setBroadcast({ title: '📢 إشعار', body: '' });
+          showToast('📢 أُرسل الإشعار لجميع اللاعبين!');
+        } catch (err) {
+          showToast('فشل الإرسال: ' + err.message, 'error');
+        } finally {
+          setSendingBroadcast(false);
+        }
+      };
+
+      const deleteBroadcast = async (id) => {
+        if (!window.db || !window.fbTools) return;
+        try {
+          const { doc, deleteDoc } = window.fbTools;
+          await deleteDoc(doc(window.db, 'broadcasts', id));
+          showToast('تم حذف الإشعار');
+        } catch (err) {
+          showToast('فشل الحذف: ' + err.message, 'error');
+        }
+      };
 
       // Re-trigger icons after DOM changes
       useEffect(() => {
@@ -1067,6 +1112,7 @@
                   { id: 'topup', label: 'باقات الشحن والطلبات', icon: 'banknote', badge: orders.filter(o => o.status === 'pending').length },
                   { id: 'radio', label: 'الراديو والأغاني', icon: 'radio', badge: radioSongs.length },
                   { id: 'reports', label: 'البلاغات والدعم', icon: 'flag', badge: reports.filter(r => r.status === 'pending').length },
+                  { id: 'broadcast', label: 'إشعارات اللاعبين', icon: 'megaphone' },
                   { id: 'settings', label: 'إعدادات اللعبة والسيرفر', icon: 'sliders-horizontal' },
                   { id: 'history', label: 'سجل المباريات المباشر', icon: 'history', badge: gameLogs.length },
                 ].map((item) => {
@@ -1132,6 +1178,7 @@
                   {activeTab === 'topup' && 'باقات شحن الرصيد وطلبات الشراء'}
                   {activeTab === 'radio' && 'إدارة مجموعات الراديو والأغاني'}
                   {activeTab === 'reports' && 'بلاغات اللاعبين وتذاكر الدعم'}
+                  {activeTab === 'broadcast' && 'إرسال إشعار لجميع اللاعبين'}
                   {activeTab === 'settings' && 'إعدادات السيرفر والألعاب'}
                   {activeTab === 'history' && 'سجل الجولات والمباريات'}
                 </h1>
@@ -1937,6 +1984,59 @@
                     >
                       💾 حفظ ونشر الإعدادات إلى السيرفر
                     </button>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: BROADCAST NOTIFICATIONS */}
+              {activeTab === 'broadcast' && (
+                <div className="space-y-6">
+                  <div className="glass-card rounded-2xl border border-gray-800 p-6 space-y-4">
+                    <h4 className="font-bold text-white text-base">📢 إرسال إشعار عام</h4>
+                    <p className="text-xs text-gray-400">يصل الإشعار فوراً داخل التطبيق لكل اللاعبين المتصلين، ويُحفظ في لوحة إشعاراتهم.</p>
+                    <input
+                      type="text"
+                      value={broadcast.title}
+                      onChange={(e) => setBroadcast({ ...broadcast, title: e.target.value })}
+                      placeholder="عنوان الإشعار"
+                      className="w-full bg-dark-700 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:border-emerald-500 outline-none"
+                    />
+                    <textarea
+                      value={broadcast.body}
+                      onChange={(e) => setBroadcast({ ...broadcast, body: e.target.value })}
+                      placeholder="نص الإشعار... مثال: بطولة أوكي الليلة الساعة 9 مساءً 🏆"
+                      rows={3}
+                      className="w-full bg-dark-700 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:border-emerald-500 outline-none resize-none"
+                    />
+                    <button
+                      onClick={sendBroadcast}
+                      disabled={sendingBroadcast || !broadcast.body.trim()}
+                      className="px-8 py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 disabled:opacity-40 text-white font-black text-sm rounded-xl shadow-lg shadow-amber-500/25 transition"
+                    >
+                      {sendingBroadcast ? 'جارٍ الإرسال...' : '🚀 إرسال للجميع'}
+                    </button>
+                  </div>
+
+                  <div className="glass-card rounded-2xl border border-gray-800 overflow-hidden">
+                    <div className="p-4 border-b border-gray-800">
+                      <h4 className="font-bold text-white text-base">آخر الإشعارات المُرسلة</h4>
+                    </div>
+                    {broadcasts.length === 0 ? (
+                      <p className="p-6 text-center text-gray-500 text-sm">لا توجد إشعارات مرسلة بعد</p>
+                    ) : (
+                      broadcasts.map((b) => (
+                        <div key={b.id} className="p-4 border-b border-gray-800/60 flex items-start justify-between gap-4">
+                          <div>
+                            <p className="text-white text-sm font-bold">{b.title}</p>
+                            <p className="text-gray-400 text-xs mt-1">{b.body}</p>
+                          </div>
+                          <button
+                            onClick={() => deleteBroadcast(b.id)}
+                            className="text-rose-400 hover:text-rose-300 text-xs font-bold shrink-0"
+                          >حذف</button>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               )}
