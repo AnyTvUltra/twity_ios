@@ -26,7 +26,7 @@ class OkeyIstakaWidget extends StatelessWidget {
   /// كسنة الاستكانة (اختيارية) — تغطي كامل الجسم مع دعم التكبير والإزاحة
   final StoreItem? rackItem;
 
-  OkeyIstakaWidget({
+  const OkeyIstakaWidget({
     super.key,
     required this.rackTiles,
     required this.selectedIndex,
@@ -38,10 +38,11 @@ class OkeyIstakaWidget extends StatelessWidget {
     this.dragScaleY = 1.0,
     this.feedbackQuarterTurns = 0,
     this.rackItem,
+    this.onDropAboveRack,
   });
 
-  /// صناديق العرض لكل خانة — لحساب نصف الخانة عند الإفلات
-  final Map<int, RenderBox?> _lastSlotBoxes = {};
+  /// إفلات الحجر فوق الرف (على الطاولة) — يُستخدم للرمي
+  final void Function(int slot, Offset dropGlobal)? onDropAboveRack;
 
   /// أحجار الكتلة المتجاورة التي تحتوي الخانة (لحمل الـ Per كاملاً)
   List<OkeyTile> _groupForSlot(int slotIndex) {
@@ -78,7 +79,11 @@ class OkeyIstakaWidget extends StatelessWidget {
         final totalWidgetW = rackContainerW + 24.0;
 
         return Center(
-          child: SizedBox(
+          child: _buildDropArea(
+            slotW: slotW,
+            tileW: tileW,
+            tileH: tileH,
+            child: SizedBox(
             width: totalWidgetW,
             child: Stack(
               clipBehavior: Clip.none,
@@ -289,7 +294,84 @@ class OkeyIstakaWidget extends StatelessWidget {
               ],
             ),
           ),
+          ),
         );
+      },
+    );
+  }
+
+  // ══════════════════════════════════════════════════════
+  // الإفلات: هدف واحد يغطي الرف كاملاً — تُحسب الخانة الأقرب من موضع
+  // الحجر المرسوم (لا من إصبعك) فيُقبل الإفلات في أي مكان على الرف
+  // ══════════════════════════════════════════════════════
+
+  /// الخانة المستهدفة أثناء السحب (لمعاينة مكان النزول)
+  static final ValueNotifier<int?> _hoverSlot = ValueNotifier<int?>(null);
+
+  /// صندوق الرف المعروض (للتحويل من إحداثيات الشاشة)
+  static RenderBox? _rackBox;
+
+  /// مركز الحجر المرسوم على الشاشة من موضع الـ feedback
+  Offset _dragCenter(Offset feedbackTopLeft, double tileW, double tileH) =>
+      feedbackTopLeft +
+      (feedbackQuarterTurns.isOdd
+          ? Offset(tileH / 2, tileW / 2)
+          : Offset(tileW / 2, tileH / 2));
+
+  /// يحوّل موضع الحجر إلى خانة (أو -1 = فوق الرف، أي على الطاولة)
+  int _slotAt(Offset global, int fromSlot, double slotW, double tileH) {
+    final box = _rackBox;
+    if (box == null || !box.attached) return fromSlot;
+    final local = box.globalToLocal(global);
+    // بداية الأحجار داخل الرف: هامش 12 + حشوة 14 + حد 1 / الشريط العلوي 20 + 4 + حد 1
+    const x0 = 27.0;
+    const y0 = 25.0;
+    if (local.dy < y0 - tileH * 0.45) return -1;
+    final row = local.dy < y0 + tileH + 4.5 ? 0 : 1;
+    final p = ((local.dx - x0) / slotW).clamp(0.0, 13.999);
+    final col = p.floor();
+    final slot = row * 14 + col;
+    if (slot == fromSlot) return fromSlot;
+    // خانة مشغولة: إدراج قبل/بعد الحجر حسب نصفها
+    if (rackTiles[slot] != null && p - col > 0.5 && col < 13) {
+      final next = slot + 1;
+      return next == fromSlot ? slot : next;
+    }
+    return slot;
+  }
+
+  Widget _buildDropArea({
+    required Widget child,
+    required double slotW,
+    required double tileW,
+    required double tileH,
+  }) {
+    return DragTarget<int>(
+      onWillAcceptWithDetails: (_) => true,
+      onMove: (details) {
+        final s = _slotAt(_dragCenter(details.offset, tileW, tileH),
+            details.data, slotW, tileH);
+        final v = (s < 0 || s == details.data) ? null : s;
+        if (_hoverSlot.value != v) _hoverSlot.value = v;
+      },
+      onLeave: (_) => _hoverSlot.value = null,
+      onAcceptWithDetails: (details) {
+        _hoverSlot.value = null;
+        final center = _dragCenter(details.offset, tileW, tileH);
+        final s = _slotAt(center, details.data, slotW, tileH);
+        if (s < 0) {
+          // الحجر فوق الرف (على الطاولة) — يُعامل كرمي
+          onDropAboveRack?.call(details.data, details.offset);
+          return;
+        }
+        if (s != details.data) {
+          HapticFeedback.lightImpact();
+          onTileMove?.call(details.data, s);
+        }
+      },
+      builder: (context, _, __) {
+        _rackBox = context.findRenderObject() as RenderBox?;
+        return child;
       },
     );
   }
@@ -298,186 +380,141 @@ class OkeyIstakaWidget extends StatelessWidget {
       int start, int end, double slotW, double tileW, double tileH) {
     return SizedBox(
       height: tileH,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(end - start, (i) {
-          final slotIndex = start + i;
-          final tile =
-              slotIndex < rackTiles.length ? rackTiles[slotIndex] : null;
-          final isSelected = selectedIndex == slotIndex;
+      child: ValueListenableBuilder<int?>(
+        valueListenable: _hoverSlot,
+        builder: (context, hover, _) => Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(end - start, (i) {
+            final slotIndex = start + i;
+            final tile =
+                slotIndex < rackTiles.length ? rackTiles[slotIndex] : null;
+            final isSelected = selectedIndex == slotIndex;
+            final isHovering = hover == slotIndex;
 
-          if (tile == null) {
-            // خانة فارغة تدعم إسقاط الحجر المسحوب
+            if (tile == null) {
+              // خانة فارغة — تتوهج عندما تكون هي مكان النزول
+              return SizedBox(
+                width: slotW,
+                height: tileH,
+                child: Center(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 140),
+                    curve: Curves.easeOutCubic,
+                    width: isHovering ? slotW : tileW,
+                    height: tileH,
+                    decoration: BoxDecoration(
+                      color: isHovering
+                          ? const Color(0x334ADE80)
+                          : const Color(0x14FFFFFF),
+                      borderRadius: BorderRadius.circular(3),
+                      border: Border.all(
+                        color: isHovering
+                            ? const Color(0xFF4ADE80)
+                            : const Color(0x1AFFFFFF),
+                        width: isHovering ? 1.2 : 0.5,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            // حمل الـ Per كاملاً: إن كان الحجر ضمن مجموعة مميّزة اسحبها كلها
+            final groupTiles = highlightedIndices.contains(slotIndex)
+                ? _groupForSlot(slotIndex)
+                : null;
+            // الحجر في خانة النزول يُزاح قليلاً ليفسح مكاناً للإدراج
+            final hoverOffset = isHovering ? slotW * 0.38 : 0.0;
             return SizedBox(
               width: slotW,
               height: tileH,
               child: Center(
-                child: DragTarget<int>(
-                  onWillAcceptWithDetails: (details) => true,
-                  onAcceptWithDetails: (details) {
-                    onTileMove?.call(details.data, slotIndex);
-                  },
-                  builder: (context, candidateData, rejectedData) {
-                    final isHovering = candidateData.isNotEmpty;
-                    return Container(
-                      width: slotW,
-                      height: tileH,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 140),
+                  curve: Curves.easeOutCubic,
+                  transform: Matrix4.translationValues(hoverOffset, 0, 0),
+                  child: Draggable<int>(
+                    data: slotIndex,
+                    onDragStarted: () => HapticFeedback.selectionClick(),
+                    onDragEnd: (_) => _hoverSlot.value = null,
+                    // الحجر يتوسط الإصبع ويرتفع فوقه قليلاً ليبقى ظاهراً
+                    dragAnchorStrategy: (Draggable<Object> draggable,
+                        BuildContext context, Offset position) {
+                      if (feedbackQuarterTurns.isOdd) {
+                        return Offset(tileH / 2, tileW / 2);
+                      }
+                      return Offset(
+                          tileW / 2, tileH / 2 + tileH * dragScaleY * 0.28);
+                    },
+                    feedback: Material(
                       color: Colors.transparent,
-                      child: Center(
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          curve: Curves.easeOutCubic,
-                          width: isHovering ? slotW : tileW,
-                          height: tileH,
-                          decoration: BoxDecoration(
-                            color: isHovering
-                                ? const Color(0x334ADE80)
-                                : const Color(0x14FFFFFF),
-                            borderRadius: BorderRadius.circular(3),
-                            border: Border.all(
-                              color: isHovering
-                                  ? const Color(0xFF4ADE80)
-                                  : const Color(0x1AFFFFFF),
-                              width: isHovering ? 1.2 : 0.5,
-                            ),
-                          ),
+                      elevation: 10,
+                      borderRadius: BorderRadius.circular(4),
+                      child: RotatedBox(
+                        quarterTurns: feedbackQuarterTurns,
+                        child: Transform(
+                          alignment: Alignment.center,
+                          transform: Matrix4.diagonal3Values(
+                              dragScaleX * 1.08, dragScaleY * 1.08, 1),
+                          child: groupTiles != null && groupTiles.length > 1
+                              ? Container(
+                                  padding: const EdgeInsets.all(3),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xCC10B981),
+                                    borderRadius: BorderRadius.circular(5),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: groupTiles
+                                        .map((t) => Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 1),
+                                              child: OkeyTileWidget(
+                                                tile: t,
+                                                isDragging: true,
+                                                width: tileW,
+                                                height: tileH,
+                                              ),
+                                            ))
+                                        .toList(),
+                                  ),
+                                )
+                              : OkeyTileWidget(
+                                  tile: tile,
+                                  isDragging: true,
+                                  width: tileW,
+                                  height: tileH,
+                                ),
                         ),
                       ),
-                    );
-                  },
+                    ),
+                    childWhenDragging: Container(
+                      width: tileW,
+                      height: tileH,
+                      decoration: BoxDecoration(
+                        color: const Color(0x1AFFFFFF),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color: const Color(0x33FFFFFF),
+                          width: 0.8,
+                        ),
+                      ),
+                    ),
+                    child: OkeyTileWidget(
+                      tile: tile,
+                      isSelected: isSelected,
+                      isHighlighted: highlightedIndices.contains(slotIndex),
+                      width: tileW,
+                      height: tileH,
+                      onTap: () => onTileTap(slotIndex),
+                    ),
+                  ),
                 ),
               ),
             );
-          }
-
-          // حجر موجود في الخانة - يدعم السحب والإفلات واللمس
-          return SizedBox(
-            width: slotW,
-            height: tileH,
-            child: Center(
-              child: DragTarget<int>(
-                onWillAcceptWithDetails: (details) => details.data != slotIndex,
-                onAcceptWithDetails: (details) {
-                  // إدراج قبل/بعد الحجر حسب نصف الخانة الذي أفلتّ عليه
-                  // — بدون إزاحة الأحجار المجاورة بعيداً
-                  final rowEnd = end - 1;
-                  var target = slotIndex;
-                  final box = _lastSlotBoxes[slotIndex];
-                  if (box != null && box.attached) {
-                    final local = box.globalToLocal(details.offset);
-                    if (local.dx > box.size.width / 2 &&
-                        slotIndex + 1 <= rowEnd) {
-                      target = slotIndex + 1;
-                    }
-                  }
-                  if (target == details.data) target = slotIndex;
-                  onTileMove?.call(details.data, target);
-                },
-                builder: (context, candidateData, rejectedData) {
-                  _lastSlotBoxes[slotIndex] =
-                      context.findRenderObject() as RenderBox?;
-                  final draggedFrom =
-                      candidateData.isEmpty ? null : candidateData.first;
-                  final hoverOffset = draggedFrom == null
-                      ? 0.0
-                      : (draggedFrom < slotIndex
-                          ? -slotW * 0.38
-                          : slotW * 0.38);
-                  // حمل الـ Per كاملاً: إن كان الحجر ضمن مجموعة مميّزة اسحبها كلها
-                  final groupTiles = highlightedIndices.contains(slotIndex)
-                      ? _groupForSlot(slotIndex)
-                      : null;
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    curve: Curves.easeOutCubic,
-                    transform: Matrix4.translationValues(hoverOffset, 0, 0),
-                    child: Draggable<int>(
-                      data: slotIndex,
-                      onDragStarted: () =>
-                          HapticFeedback.selectionClick(),
-                      // الحجر يرتفع قليلاً فوق الإصبع ولا يتداخل معه
-                      dragAnchorStrategy: (Draggable<Object> draggable,
-                          BuildContext context, Offset position) {
-                        final w = tileW * dragScaleX * 1.08;
-                        final h = tileH * dragScaleY * 1.08;
-                        if (feedbackQuarterTurns.isOdd) {
-                          // بعد التدوير: العرض المعروض = الارتفاع والعكس
-                          return Offset(h / 2, w + 8);
-                        }
-                        return Offset(w / 2, h + 8);
-                      },
-                      feedback: Material(
-                        color: Colors.transparent,
-                        elevation: 10,
-                        borderRadius: BorderRadius.circular(4),
-                        child: RotatedBox(
-                          quarterTurns: feedbackQuarterTurns,
-                          child: Transform(
-                            alignment: Alignment.center,
-                            transform: Matrix4.diagonal3Values(
-                                dragScaleX * 1.08, dragScaleY * 1.08, 1),
-                            child: groupTiles != null && groupTiles.length > 1
-                                ? Container(
-                                    padding: const EdgeInsets.all(3),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xCC10B981),
-                                      borderRadius:
-                                          BorderRadius.circular(5),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: groupTiles
-                                          .map((t) => Padding(
-                                                padding:
-                                                    const EdgeInsets
-                                                        .symmetric(
-                                                        horizontal: 1),
-                                                child: OkeyTileWidget(
-                                                  tile: t,
-                                                  isDragging: true,
-                                                  width: tileW,
-                                                  height: tileH,
-                                                ),
-                                              ))
-                                          .toList(),
-                                    ),
-                                  )
-                                : OkeyTileWidget(
-                                    tile: tile,
-                                    isDragging: true,
-                                    width: tileW,
-                                    height: tileH,
-                                  ),
-                          ),
-                        ),
-                      ),
-                      childWhenDragging: Container(
-                        width: tileW,
-                        height: tileH,
-                        decoration: BoxDecoration(
-                          color: const Color(0x1AFFFFFF),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(
-                            color: const Color(0x33FFFFFF),
-                            width: 0.8,
-                          ),
-                        ),
-                      ),
-                      child: OkeyTileWidget(
-                        tile: tile,
-                        isSelected: isSelected,
-                        isHighlighted: highlightedIndices.contains(slotIndex),
-                        width: tileW,
-                        height: tileH,
-                        onTap: () => onTileTap(slotIndex),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          );
-        }),
+          }),
+        ),
       ),
     );
   }

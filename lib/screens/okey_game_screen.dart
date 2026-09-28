@@ -894,41 +894,40 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                   );
                 }),
               ),
-              // منطقة رمي واسعة: إسقاط الحجر في أي مكان على سطح الطاولة = رمي
-              Positioned(
-                left: 148,
-                right: 148,
-                top: 62,
-                bottom: 198,
+              // منطقة رمي تغطي المشهد كله: إسقاط الحجر في أي مكان خارج
+              // الاستكانة وأماكن البير = رمي (الأهداف الأدق فوقها لها الأولوية)
+              Positioned.fill(
                 child: DragTarget<int>(
-                  onWillAcceptWithDetails: (details) => isHumanTurn,
-                  onAcceptWithDetails: (details) {
-                    if (isHumanTurn &&
-                        _engine.turnPhase ==
-                            OkeyTurnPhase.awaitingDiscard) {
-                      _executeDiscard(details.data,
-                          dropGlobal: details.offset);
-                    } else {
-                      _showGameNotice(
-                          'يجب سحب حجر أولاً قبل الرمي!');
-                    }
-                  },
+                  onWillAcceptWithDetails: (details) => true,
+                  onAcceptWithDetails: (details) =>
+                      _dropOnTable(details.data, details.offset),
                   builder: (context, candidateData, rejectedData) {
-                    final hovering = candidateData.isNotEmpty;
-                    return AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      decoration: BoxDecoration(
-                        color: hovering
-                            ? const Color(0xFFEF4444).withOpacity(0.10)
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(14),
-                        border: hovering
-                            ? Border.all(
-                                color: const Color(0x66EF4444),
-                                width: 1.4)
-                            : null,
+                    final hovering =
+                        candidateData.isNotEmpty && isHumanTurn;
+                    return Stack(children: [
+                      Positioned(
+                        left: 148,
+                        right: 148,
+                        top: 62,
+                        bottom: 128,
+                        child: IgnorePointer(
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            decoration: BoxDecoration(
+                              color: hovering
+                                  ? const Color(0xFFEF4444).withOpacity(0.08)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(14),
+                              border: hovering
+                                  ? Border.all(
+                                      color: const Color(0x55EF4444),
+                                      width: 1.2)
+                                  : null,
+                            ),
+                          ),
+                        ),
                       ),
-                    );
+                    ]);
                   },
                 ),
               ),
@@ -985,6 +984,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                   onTileTap: _handleTileTap,
                   onTileMove: (fromSlot, toSlot) =>
                       _engine.moveTile(fromSlot, toSlot),
+                  onDropAboveRack: _dropOnTable,
                 ),
               ),
               if (_engine.canDeclareOkeyOut)
@@ -1000,12 +1000,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                 top: 100,
                 child: _buildTableCenter(isHumanTurn),
               ),
-              Positioned(
-                left: sw * .30,
-                right: sw * .30,
-                bottom: 134,
-                child: _buildMeldArea(),
-              ),
+              // أماكن البير على الطاولة — لكل لاعب جهته، ظاهرة للجميع
+              ..._buildTableMelds(),
               // ═══════ أنيميشن الحجر الطائر: الرمي من يد اللاعب ═══════
               if (_animatingDiscardTile != null)
                 AnimatedBuilder(
@@ -1281,132 +1277,195 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     );
   }
 
-  Widget _buildMeldArea() {
+  /// إفلات حجر على الطاولة (أي مكان خارج الاستكانة وأماكن البير) = رمي
+  void _dropOnTable(int slot, Offset dropGlobal) {
+    if (_engine.currentTurnIndex != 0) {
+      _showGameNotice('ليس دورك الآن!');
+      return;
+    }
+    if (_engine.turnPhase == OkeyTurnPhase.awaitingDiscard) {
+      _executeDiscard(slot, dropGlobal: dropGlobal);
+    } else {
+      _showGameNotice('يجب سحب حجر أولاً قبل الرمي!');
+    }
+  }
+
+  // ══════════════════════════════════════════════════════
+  // البير على الطاولة — كل لاعب له جهة (أنت أسفل، الخصوم أعلى/يمين/يسار)
+  // الأحجار مرسومة ممدّدة على السطح بمنظور ثلاثي الأبعاد وظل
+  // ══════════════════════════════════════════════════════
+
+  /// منطقة كل لاعب على سطح الطاولة (بإحداثيات المشهد 844×390)
+  static const _meldZones = <int, Rect>{
+    0: Rect.fromLTWH(196, 196, 452, 38), // أنت — طرف الطاولة القريب
+    2: Rect.fromLTWH(250, 68, 344, 30), // الخصم المقابل
+    3: Rect.fromLTWH(156, 104, 166, 90), // الخصم الأيسر
+    1: Rect.fromLTWH(604, 104, 90, 90), // الخصم الأيمن (بعد كومة الرمي)
+  };
+
+  List<Widget> _buildTableMelds() {
+    final out = <Widget>[];
+    for (final entry in _meldZones.entries) {
+      final owner = entry.key;
+      final zone = entry.value;
+      final melds = <MapEntry<int, OkeyGroup>>[
+        for (var i = 0; i < _engine.tableMelds.length; i++)
+          if (_engine.tableMelds[i].ownerIndex == owner)
+            MapEntry(i, _engine.tableMelds[i]),
+      ];
+      final content = melds.isEmpty
+          ? (owner == 0 ? _myMeldHint() : const SizedBox.shrink())
+          : _meldsOnTable(melds, zone);
+      out.add(Positioned.fromRect(
+        rect: zone,
+        child: owner == 0 ? _myMeldDropZone(content) : content,
+      ));
+    }
+    return out;
+  }
+
+  /// منطقتك: إسقاط Per مميّز هنا = نزول على الطاولة
+  Widget _myMeldDropZone(Widget child) {
     return DragTarget<int>(
       onWillAcceptWithDetails: (details) =>
           _engine.getHighlightedSlotIndices().contains(details.data),
       onAcceptWithDetails: (details) {
-        if (!_engine.layMeldContainingSlot(details.data)) {
+        if (_engine.layMeldContainingSlot(details.data)) {
+          AppHaptics.medium();
+        } else {
           _showGameNotice('هذه الأحجار لا تكوّن Per صحيحاً');
         }
       },
       builder: (context, candidateData, rejectedData) {
         final hovering = candidateData.isNotEmpty;
         return AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          constraints: const BoxConstraints(minHeight: 56),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+          duration: const Duration(milliseconds: 160),
           decoration: BoxDecoration(
-            color: hovering
-                ? const Color(0x4434D399)
-                : const Color(0x99142040),
-            borderRadius: BorderRadius.circular(7),
+            color: hovering ? const Color(0x3334D399) : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(
-                color: hovering
-                    ? const Color(0xFF6EE7B7)
-                    : const Color(0x2E8FA8E8),
-                width: hovering ? 1.5 : 1),
+              color: hovering
+                  ? const Color(0xFF6EE7B7)
+                  : Colors.transparent,
+              width: 1.4,
+            ),
           ),
-          child: _engine.tableMelds.isEmpty
-              ? const Center(
-                  child: Text('اسحب الـ Per إلى هنا أو اضغط عليه مرتين',
-                      style: TextStyle(
-                          color: Colors.white54,
-                          fontSize: 8.5,
-                          fontWeight: FontWeight.w700)))
-              : SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: _engine.tableMelds.map((meld) {
-                      final owner = _engine.players[meld.ownerIndex];
-                      final isMine = meld.ownerIndex == 0;
-                      final meldIndex = _engine.tableMelds.indexOf(meld);
-                      final ownerColor = isMine
-                          ? const Color(0xFF4ADE80)
-                          : const Color(0xFF38BDF8);
-                      // كل بير يقبل صرف حجر عليه إذا كان اللاعب فاتحاً
-                      return DragTarget<int>(
-                        onWillAcceptWithDetails: (details) {
-                          if (!_engine.players[0].hasOpened) return false;
-                          final tile =
-                              _engine.players[0].rackTiles[details.data];
-                          return tile != null &&
-                              _engine.canLayOffTile(tile, meld);
-                        },
-                        onAcceptWithDetails: (details) {
-                          if (!_engine.layTileOnMeld(
-                              details.data, meldIndex)) {
-                            _showGameNotice(
-                                'هذا الحجر لا يصرف على هذا البير');
-                          }
-                        },
-                        builder: (context, candidateData, rejectedData) {
-                          final hovering = candidateData.isNotEmpty;
-                          return AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        padding: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          color: hovering
-                              ? const Color(0x5534D399)
-                              : meld.pending
-                                  ? const Color(0x44D97706)
-                                  : Colors.black26,
-                          borderRadius: BorderRadius.circular(5),
-                          border: Border.all(
-                            color: hovering
-                                ? const Color(0xFF6EE7B7)
-                                : meld.pending
-                                    ? const Color(0xFFFBBF24)
-                                    : ownerColor.withOpacity(0.5),
-                            width: hovering
-                                ? 1.6
-                                : (meld.pending ? 1.4 : 0.8),
-                          ),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // اسم صاحب النزول + النقاط
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  isMine ? 'أنت' : owner.name,
-                                  style: TextStyle(
-                                    color: ownerColor,
-                                    fontSize: 6.5,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '${meld.points}ن${meld.pending ? " ⏳" : ""}',
-                                  style: TextStyle(
-                                    color: meld.pending
-                                        ? const Color(0xFFFBBF24)
-                                        : Colors.white54,
-                                    fontSize: 6,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 2),
-                            Row(
-                                children: meld.tiles
-                                    .map((tile) => OkeyTileWidget(
-                                        tile: tile, width: 26, height: 36))
-                                    .toList()),
-                          ],
-                        ),
-                          );
-                        },
-                      );
-                    }).toList(),
+          child: child,
+        );
+      },
+    );
+  }
+
+  Widget _myMeldHint() {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.22),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.white.withOpacity(0.10)),
+        ),
+        child: const Text('اسحب الـ Per هنا لتنزله على الطاولة',
+            style: TextStyle(
+                color: Colors.white54,
+                fontSize: 8.5,
+                fontWeight: FontWeight.w700)),
+      ),
+    );
+  }
+
+  /// مجموعة بيرات لاعب واحد ممدّدة على السطح بمنظور ثري دي
+  Widget _meldsOnTable(List<MapEntry<int, OkeyGroup>> melds, Rect zone) {
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: SizedBox(
+        width: zone.width * 1.25,
+        child: Transform(
+          alignment: Alignment.center,
+          // ميلان للخلف: الأحجار تبدو مستلقية على الطاولة
+          transform: Matrix4.identity()
+            ..setEntry(3, 2, 0.0018)
+            ..rotateX(0.62),
+          child: Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 6,
+            runSpacing: 5,
+            children: [for (final m in melds) _meld3D(m.key, m.value)],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// بير واحد: أحجار متلاصقة بسماكة وظل، وتقبل صرف حجر عليها
+  Widget _meld3D(int meldIndex, OkeyGroup meld) {
+    final isMine = meld.ownerIndex == 0;
+    final ownerColor =
+        isMine ? const Color(0xFF4ADE80) : const Color(0xFF38BDF8);
+    return DragTarget<int>(
+      onWillAcceptWithDetails: (details) {
+        if (!_engine.players[0].hasOpened) return false;
+        final tile = _engine.players[0].rackTiles[details.data];
+        return tile != null && _engine.canLayOffTile(tile, meld);
+      },
+      onAcceptWithDetails: (details) {
+        if (_engine.layTileOnMeld(details.data, meldIndex)) {
+          AppHaptics.light();
+        } else {
+          _showGameNotice('هذا الحجر لا يصرف على هذا البير');
+        }
+      },
+      builder: (context, candidateData, rejectedData) {
+        final hovering = candidateData.isNotEmpty;
+        final glow = hovering
+            ? const Color(0xFF6EE7B7)
+            : meld.pending
+                ? const Color(0xFFFBBF24)
+                : ownerColor;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.fromLTRB(2, 2, 2, 4),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(hovering ? 0.10 : 0.22),
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(
+                color: glow.withOpacity(hovering || meld.pending ? 0.9 : 0.35),
+                width: hovering ? 1.4 : 0.8),
+            boxShadow: [
+              // ظل الأحجار على سطح الطاولة
+              BoxShadow(
+                color: Colors.black.withOpacity(0.55),
+                blurRadius: 6,
+                offset: const Offset(0, 4),
+              ),
+              if (hovering || meld.pending)
+                BoxShadow(color: glow.withOpacity(0.35), blurRadius: 10),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final tile in meld.tiles)
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 0.5),
+                  // سماكة الحجر: حافة سفلية داكنة تحت الوجه
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(3),
+                    boxShadow: const [
+                      BoxShadow(
+                          color: Color(0xFF8C7A55),
+                          offset: Offset(0, 2.2),
+                          blurRadius: 0),
+                      BoxShadow(
+                          color: Color(0x88000000),
+                          offset: Offset(0, 3),
+                          blurRadius: 2),
+                    ],
                   ),
+                  child: OkeyTileWidget(tile: tile, width: 22, height: 30),
                 ),
+            ],
+          ),
         );
       },
     );
