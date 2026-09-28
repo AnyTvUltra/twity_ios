@@ -83,6 +83,7 @@ class OkeyTablePainter extends CustomPainter {
           Color(0xFF0A0F22),
           Color(0xFF04060F),
         ],
+        const [0.0, 0.5, 1.0],
       );
 
     final leftLeg = Path()
@@ -151,6 +152,7 @@ class OkeyTablePainter extends CustomPainter {
           Color(0xFF18203C),
           Color(0xFF0B1023),
         ],
+        const [0.0, 0.5, 1.0],
       );
     canvas.drawPath(edgePath, edgePaint);
 
@@ -272,6 +274,7 @@ class OkeyTablePainter extends CustomPainter {
               Colors.white.withOpacity(0.02),
               Colors.transparent,
             ],
+            const [0.0, 0.5, 1.0],
           ),
       );
       // انعكاس جانبي زجاجي خفيف
