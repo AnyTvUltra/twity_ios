@@ -14,6 +14,8 @@ import 'okey_game_screen.dart';
 import 'store_screen.dart';
 import '../l10n/app_lang.dart';
 
+import '../theme_mode.dart';
+
 class OkeyLobbyScreen extends StatefulWidget {
   final OkeyRules rules;
   OkeyLobbyScreen({super.key, OkeyRules? rules})
@@ -36,15 +38,15 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
   late final AnimationController _ctaGlow;
 
   // ═══ لوحة الألوان: Deep Navy + Electric Blue + Gold ═══
-  static const _bgTop = Color(0xFF0A0F24);
-  static const _bgMid = Color(0xFF070B18);
-  static const _bgBot = Color(0xFF04060F);
-  static const _neonBlue = Color(0xFF3B82F6);
-  static const _cyan = Color(0xFF38BDF8);
-  static const _gold = Color(0xFFFFD54F);
-  static const _goldDeep = Color(0xFFB8860B);
-  static const _textWhite = Color(0xFFF1F5FF);
-  static const _textDim = Color(0xFF8EA3C8);
+  static final _bgTop = L(0xFF0A0F24);
+  static final _bgMid = L(0xFF070B18);
+  static final _bgBot = L(0xFF04060F);
+  static final _neonBlue = L(0xFF3B82F6);
+  static final _cyan = L(0xFF38BDF8);
+  static final _gold = L(0xFFFFD54F);
+  static final _goldDeep = L(0xFFB8860B);
+  static final _textWhite = L(0xFFF1F5FF);
+  static final _textDim = L(0xFF8EA3C8);
 
   final List<Map<String, dynamic>> _stakeTiers = [
     {
@@ -52,24 +54,24 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
       'pot': 200,
       'title': 'طاولة المبتدئين'.tr,
       'medal': '🥉',
-      'color': const Color(0xFFCD8B5A),
-      'glow': const Color(0xFF10B981),
+      'color': L(0xFFCD8B5A),
+      'glow': L(0xFF10B981),
     },
     {
       'stakes': 200,
       'pot': 800,
       'title': 'طاولة المحترفين'.tr,
       'medal': '🥈',
-      'color': const Color(0xFF9FB8D8),
-      'glow': const Color(0xFF3B82F6),
+      'color': L(0xFF9FB8D8),
+      'glow': L(0xFF3B82F6),
     },
     {
       'stakes': 1000,
       'pot': 4000,
       'title': 'طاولة كبار الشخصيات VIP'.tr,
       'medal': '👑',
-      'color': const Color(0xFFFFD54F),
-      'glow': const Color(0xFFFFB300),
+      'color': L(0xFFFFD54F),
+      'glow': L(0xFFFFB300),
     },
   ];
 
@@ -94,7 +96,9 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
 
     if (user.chips < _selectedStakes) {
       TopNotification.show(
-          context, 'رصيدك غير كافٍ لدخول هذه الطاولة! تحتاج {} عملة'.trp([_selectedStakes]),
+          context,
+          'رصيدك غير كافٍ لدخول هذه الطاولة! تحتاج {} عملة'
+              .trp([_selectedStakes]),
           icon: Icons.warning_rounded);
       return;
     }
@@ -198,7 +202,7 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                 const SizedBox(width: 4),
                 Text(
                   formatBalance(user?.chips ?? 0),
-                  style: const TextStyle(
+                  style: TextStyle(
                       color: _gold,
                       fontWeight: FontWeight.w900,
                       fontSize: 12.5),
@@ -213,7 +217,7 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                 const SizedBox(width: 4),
                 Text(
                   formatBalance(user?.gems ?? 0),
-                  style: const TextStyle(
+                  style: TextStyle(
                       color: _cyan,
                       fontWeight: FontWeight.w900,
                       fontSize: 12.5),
@@ -224,12 +228,12 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
           const SizedBox(width: 6),
           _glassIcon(Icons.storefront_rounded, _neonBlue, () {
             AppHaptics.selection();
-            Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const StoreScreen()));
+            Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const StoreScreen()));
           }),
           const SizedBox(width: 6),
-          _glassIcon(Icons.radio_rounded, _gold,
-              () => RadioPlayerSheet.show(context)),
+          _glassIcon(
+              Icons.radio_rounded, _gold, () => RadioPlayerSheet.show(context)),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -374,7 +378,7 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                 const SizedBox(height: 2),
                 Text(sub,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: _textDim, fontSize: 10)),
+                    style: TextStyle(color: _textDim, fontSize: 10)),
               ],
             ),
           ),
@@ -450,8 +454,7 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                     colors: [Color(0x40FFD54F), Colors.transparent],
                   ),
                   boxShadow: [
-                    BoxShadow(
-                        color: _gold.withOpacity(0.3), blurRadius: 22),
+                    BoxShadow(color: _gold.withOpacity(0.3), blurRadius: 22),
                   ],
                 ),
                 child: const Center(
@@ -472,7 +475,8 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                     ),
                     const SizedBox(height: 5),
                     Text(
-                      'اختر قيمة الرهان، وانضم لطاولة نشطة مع دردشة صوتية وراديو مباشر!'.tr,
+                      'اختر قيمة الرهان، وانضم لطاولة نشطة مع دردشة صوتية وراديو مباشر!'
+                          .tr,
                       textAlign: TextAlign.start,
                       style:
                           TextStyle(color: _textDim, fontSize: 11, height: 1.4),
@@ -488,8 +492,12 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                             color: _cyan.withOpacity(0.4), width: 0.9),
                       ),
                       child: Text(
-                        '{} {} — افتتاح {}'.trp([widget.rules.icon, widget.rules.name, widget.rules.openingPoints]),
-                        style: const TextStyle(
+                        '{} {} — افتتاح {}'.trp([
+                          widget.rules.icon,
+                          widget.rules.name,
+                          widget.rules.openingPoints
+                        ]),
+                        style: TextStyle(
                             color: _cyan,
                             fontSize: 10.5,
                             fontWeight: FontWeight.w800),
@@ -520,17 +528,16 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
         setState(() => _selectedStakes = stakes);
       },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
+        duration: Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
-        margin: const EdgeInsets.only(bottom: 14),
+        margin: EdgeInsets.only(bottom: 14),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(26),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+              duration: Duration(milliseconds: 220),
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 15),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -538,18 +545,16 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                   colors: isSelected
                       ? [
                           accent.withOpacity(0.55),
-                          const Color(0xFF14286B).withOpacity(0.85),
+                          L(0xFF14286B).withOpacity(0.85),
                         ]
                       : [
-                          const Color(0x2E141C3C),
-                          const Color(0x1E0C1230),
+                          Color(0x2E141C3C),
+                          Color(0x1E0C1230),
                         ],
                 ),
                 borderRadius: BorderRadius.circular(26),
                 border: Border.all(
-                  color: isSelected
-                      ? accent
-                      : const Color(0x2EFFFFFF),
+                  color: isSelected ? accent : Color(0x2EFFFFFF),
                   width: isSelected ? 1.8 : 1.0,
                 ),
                 boxShadow: [
@@ -576,7 +581,7 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                       gradient: RadialGradient(
                         colors: [
                           accent.withOpacity(isSelected ? 0.6 : 0.32),
-                          const Color(0xFF0A1230),
+                          L(0xFF0A1230),
                         ],
                         center: const Alignment(0, -0.35),
                         radius: 1.1,
@@ -587,8 +592,7 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                       ),
                       boxShadow: [
                         BoxShadow(
-                            color:
-                                accent.withOpacity(isSelected ? 0.55 : 0.3),
+                            color: accent.withOpacity(isSelected ? 0.55 : 0.3),
                             blurRadius: isSelected ? 20 : 12),
                       ],
                     ),
@@ -603,14 +607,13 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                           fontSize: stakes >= 1000 ? 13 : 16.5,
                           shadows: [
                             Shadow(
-                                color: accent.withOpacity(0.9),
-                                blurRadius: 10),
+                                color: accent.withOpacity(0.9), blurRadius: 10),
                           ],
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 14),
+                  SizedBox(width: 14),
 
                   // الاسم + الميدالية + الجائزة — في المنتصف
                   Expanded(
@@ -620,17 +623,15 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(tier['medal'],
-                                style: const TextStyle(fontSize: 17)),
-                            const SizedBox(width: 7),
+                            Text(tier['medal'], style: TextStyle(fontSize: 17)),
+                            SizedBox(width: 7),
                             Flexible(
                               child: Text(
                                 tier['title'],
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  color: isSelected
-                                      ? _textWhite
-                                      : const Color(0xFFDDE6F8),
+                                  color:
+                                      isSelected ? _textWhite : L(0xFFDDE6F8),
                                   fontSize: 15,
                                   fontWeight: FontWeight.w900,
                                 ),
@@ -642,14 +643,14 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text('🪙',
-                                style: TextStyle(fontSize: 11)),
+                            const Text('🪙', style: TextStyle(fontSize: 11)),
                             const SizedBox(width: 4),
                             Flexible(
                               child: Text(
-                                'الجائزة الإجمالية للفائز: {} عملة ذهبية'.trp([formatBalance(pot)]),
+                                'الجائزة الإجمالية للفائز: {} عملة ذهبية'
+                                    .trp([formatBalance(pot)]),
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                     color: _gold,
                                     fontSize: 10.5,
                                     fontWeight: FontWeight.w700),
@@ -670,9 +671,7 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: isSelected
-                            ? accent
-                            : const Color(0x55FFFFFF),
+                        color: isSelected ? accent : const Color(0x55FFFFFF),
                         width: 2,
                       ),
                       boxShadow: isSelected
@@ -690,9 +689,7 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                         height: 12,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: isSelected
-                              ? accent
-                              : Colors.transparent,
+                          color: isSelected ? accent : Colors.transparent,
                         ),
                       ),
                     ),
@@ -719,28 +716,27 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
           onTap: _isSearching ? null : _handleQuickMatch,
           child: AnimatedScale(
             scale: _ctaPressed ? 0.96 : 1.0,
-            duration: const Duration(milliseconds: 120),
+            duration: Duration(milliseconds: 120),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(24),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 17),
+                  padding: EdgeInsets.symmetric(vertical: 17),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
+                    gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Color(0xFFFFE082),
+                        L(0xFFFFE082),
                         _gold,
-                        Color(0xFFE8A820),
+                        L(0xFFE8A820),
                         _goldDeep,
                       ],
                       stops: [0.0, 0.35, 0.75, 1.0],
                     ),
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                        color: const Color(0xFFFFE9A8), width: 1.4),
+                    border: Border.all(color: L(0xFFFFE9A8), width: 1.4),
                     boxShadow: [
                       BoxShadow(
                           color: _gold.withOpacity(0.45 * glow),
@@ -749,7 +745,7 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                       BoxShadow(
                           color: Colors.black.withOpacity(0.4),
                           blurRadius: 12,
-                          offset: const Offset(0, 6)),
+                          offset: Offset(0, 6)),
                     ],
                   ),
                   child: Stack(
@@ -782,11 +778,11 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                                     height: 20,
                                     child: CircularProgressIndicator(
                                         strokeWidth: 2.4,
-                                        color: Color(0xFF1B0B30))),
+                                        color: L(0xFF1B0B30))),
                                 SizedBox(width: 10),
                                 Text('جاري البحث عن طاولة...'.tr,
                                     style: TextStyle(
-                                        color: Color(0xFF1B0B30),
+                                        color: L(0xFF1B0B30),
                                         fontWeight: FontWeight.w900,
                                         fontSize: 15)),
                               ],
@@ -799,14 +795,14 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                                 Text(
                                   'دخول الطاولة وبدء التحدي'.tr,
                                   style: TextStyle(
-                                      color: Color(0xFF1B0B30),
+                                      color: L(0xFF1B0B30),
                                       fontWeight: FontWeight.w900,
                                       fontSize: 16.5,
                                       letterSpacing: .2),
                                 ),
                                 SizedBox(width: 10),
                                 Icon(Icons.play_arrow_rounded,
-                                    color: Color(0xFF1B0B30), size: 24),
+                                    color: L(0xFF1B0B30), size: 24),
                               ],
                             ),
                     ],
@@ -855,8 +851,9 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                             fontWeight: FontWeight.w900)),
                     const SizedBox(height: 6),
                     Text(
-                        'قيمة الرهان: {} 🪙 • الجائزة: {} 💰'.trp([room.stakes, room.stakes * 4]),
-                        style: const TextStyle(color: _gold, fontSize: 13)),
+                        'قيمة الرهان: {} 🪙 • الجائزة: {} 💰'
+                            .trp([room.stakes, room.stakes * 4]),
+                        style: TextStyle(color: _gold, fontSize: 13)),
                   ],
                 ),
               ),
@@ -867,8 +864,7 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
           // 4 مقاعد
           Expanded(
             child: GridView.builder(
-              gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
@@ -876,9 +872,8 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
               ),
               itemCount: 4,
               itemBuilder: (context, index) {
-                final player = index < room.players.length
-                    ? room.players[index]
-                    : null;
+                final player =
+                    index < room.players.length ? room.players[index] : null;
 
                 return ClipRRect(
                   borderRadius: BorderRadius.circular(22),
@@ -934,7 +929,7 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                               ),
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           Text(
                             player != null ? player.name : 'مقعد فارغ'.tr,
                             style: TextStyle(
@@ -951,9 +946,8 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                                   ? 'روبوت ذكي 🤖'.tr
                                   : 'لاعب حقيقي 🟢'.tr,
                               style: TextStyle(
-                                  color: player.isBot
-                                      ? _textDim
-                                      : const Color(0xFF4ADE80),
+                                  color:
+                                      player.isBot ? _textDim : L(0xFF4ADE80),
                                   fontSize: 10),
                             ),
                         ],
@@ -965,23 +959,22 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
             ),
           ),
 
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
 
           // زر البدء الفوري مع الروبوتات
           GestureDetector(
             onTap: _startWithBotsNow,
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 15),
+              padding: EdgeInsets.symmetric(vertical: 15),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF34D399), Color(0xFF059669)],
+                gradient: LinearGradient(
+                  colors: [L(0xFF34D399), L(0xFF059669)],
                 ),
                 borderRadius: BorderRadius.circular(20),
-                border:
-                    Border.all(color: const Color(0xFF6EE7B7), width: 1.2),
+                border: Border.all(color: L(0xFF6EE7B7), width: 1.2),
                 boxShadow: [
                   BoxShadow(
-                      color: const Color(0xFF10B981).withOpacity(0.35),
+                      color: L(0xFF10B981).withOpacity(0.35),
                       blurRadius: 18,
                       spreadRadius: -4),
                 ],
@@ -1023,7 +1016,7 @@ class _LobbyBackdrop extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
@@ -1044,21 +1037,20 @@ class _LobbyDecorPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     // توهج أزرق علوي يسار
     _glow(canvas, Offset(size.width * 0.15, size.height * 0.08),
-        size.width * 0.55, const Color(0xFF2540A0), 0.30);
+        size.width * 0.55, L(0xFF2540A0), 0.30);
     // توهج نيلي يمين وسط
     _glow(canvas, Offset(size.width * 0.9, size.height * 0.35),
-        size.width * 0.5, const Color(0xFF1E3A8A), 0.22);
+        size.width * 0.5, L(0xFF1E3A8A), 0.22);
     // توهج ذهبي خافت أسفل
     _glow(canvas, Offset(size.width * 0.3, size.height * 0.98),
-        size.width * 0.6, const Color(0xFF8A6400), 0.14);
+        size.width * 0.6, L(0xFF8A6400), 0.14);
 
     // زخارف: أقواس هندسية شفافة أسفل الشاشة (مثل المرجع)
     final arcPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.2;
     for (int i = 0; i < 4; i++) {
-      arcPaint.color =
-          const Color(0xFFFFD54F).withOpacity(0.05 + i * 0.015);
+      arcPaint.color = L(0xFFFFD54F).withOpacity(0.05 + i * 0.015);
       final rect = Rect.fromCenter(
         center: Offset(size.width * 0.5, size.height * 1.12),
         width: size.width * (0.9 + i * 0.35),
@@ -1071,15 +1063,12 @@ class _LobbyDecorPainter extends CustomPainter {
     final linePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1
-      ..color = const Color(0xFF3B82F6).withOpacity(0.08);
+      ..color = L(0xFF3B82F6).withOpacity(0.08);
     for (int i = 0; i < 3; i++) {
       final p = Path()
         ..moveTo(size.width * (0.55 + i * 0.15), 0)
-        ..quadraticBezierTo(
-            size.width * (0.7 + i * 0.12),
-            size.height * 0.08,
-            size.width * (0.95 + i * 0.1),
-            size.height * 0.02);
+        ..quadraticBezierTo(size.width * (0.7 + i * 0.12), size.height * 0.08,
+            size.width * (0.95 + i * 0.1), size.height * 0.02);
       canvas.drawPath(p, linePaint);
     }
   }

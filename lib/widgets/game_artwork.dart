@@ -371,10 +371,27 @@ class _Solitaire3DArtwork extends StatelessWidget {
             child: Stack(
               alignment: Alignment.bottomCenter,
               children: [
-                _buildCard(angle: -18, offsetX: -34, value: '10', suit: '♣', isRed: false),
-                _buildCard(angle: -7, offsetX: -12, value: 'Q', suit: '♦', isRed: true),
-                _buildCard(angle: 6, offsetX: 12, value: 'K', suit: '♥', isRed: true),
-                _buildCard(angle: 18, offsetX: 34, value: 'A', suit: '♠', isRed: false, isAce: true),
+                _buildCard(
+                    angle: -18,
+                    offsetX: -34,
+                    value: '10',
+                    suit: '♣',
+                    isRed: false),
+                _buildCard(
+                    angle: -7,
+                    offsetX: -12,
+                    value: 'Q',
+                    suit: '♦',
+                    isRed: true),
+                _buildCard(
+                    angle: 6, offsetX: 12, value: 'K', suit: '♥', isRed: true),
+                _buildCard(
+                    angle: 18,
+                    offsetX: 34,
+                    value: 'A',
+                    suit: '♠',
+                    isRed: false,
+                    isAce: true),
               ],
             ),
           ),
@@ -391,7 +408,11 @@ class _Solitaire3DArtwork extends StatelessWidget {
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF22C55E), Color(0xFF15803D), Color(0xFF14532D)],
+                colors: [
+                  Color(0xFF22C55E),
+                  Color(0xFF15803D),
+                  Color(0xFF14532D)
+                ],
               ),
               borderRadius: BorderRadius.circular(4),
               border: Border.all(color: const Color(0xFFFFD54F), width: 1),
@@ -457,7 +478,9 @@ class _Solitaire3DArtwork extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w900,
-                        color: isRed ? const Color(0xFFDC2626) : const Color(0xFF1F2937),
+                        color: isRed
+                            ? const Color(0xFFDC2626)
+                            : const Color(0xFF1F2937),
                         height: 1,
                       ),
                     ),
@@ -465,7 +488,9 @@ class _Solitaire3DArtwork extends StatelessWidget {
                       suit,
                       style: TextStyle(
                         fontSize: 8,
-                        color: isRed ? const Color(0xFFDC2626) : const Color(0xFF1F2937),
+                        color: isRed
+                            ? const Color(0xFFDC2626)
+                            : const Color(0xFF1F2937),
                         height: 1,
                       ),
                     ),
@@ -477,7 +502,9 @@ class _Solitaire3DArtwork extends StatelessWidget {
                   suit,
                   style: TextStyle(
                     fontSize: isAce ? 24 : 18,
-                    color: isRed ? const Color(0xFFDC2626) : const Color(0xFF111827),
+                    color: isRed
+                        ? const Color(0xFFDC2626)
+                        : const Color(0xFF111827),
                     shadows: [
                       Shadow(
                         color: Colors.black.withOpacity(0.15),

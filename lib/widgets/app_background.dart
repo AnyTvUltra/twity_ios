@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../theme_mode.dart';
 
 class AppBackground extends StatelessWidget {
   final Widget child;
@@ -11,15 +12,19 @@ class AppBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final day = UiTheme.instance.isLight;
     return Stack(
       children: [
         // Base Gradient
         Positioned.fill(
-          child: Container(
+          child: AnimatedContainer(
+            duration: UiTheme.transition,
             decoration: BoxDecoration(
-              gradient: light
-                  ? AppGradients.lightBackground
-                  : AppGradients.fullBackground,
+              gradient: day
+                  ? AppGradients.dayBackground
+                  : (light
+                      ? AppGradients.lightBackground
+                      : AppGradients.fullBackground),
             ),
           ),
         ),
@@ -28,7 +33,7 @@ class AppBackground extends StatelessWidget {
         Positioned.fill(
           child: RepaintBoundary(
             child: CustomPaint(
-              painter: _AmbiancePainter(light: light),
+              painter: _AmbiancePainter(light: light, day: day),
             ),
           ),
         ),
@@ -44,11 +49,16 @@ class AppBackground extends StatelessWidget {
 
 class _AmbiancePainter extends CustomPainter {
   final bool light;
+  final bool day;
 
-  _AmbiancePainter({this.light = false});
+  _AmbiancePainter({this.light = false, this.day = false});
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (day) {
+      _paintDay(canvas, size);
+      return;
+    }
     if (light) {
       _paintLight(canvas, size);
       return;
@@ -148,9 +158,8 @@ class _AmbiancePainter extends CustomPainter {
       ).createShader(Rect.fromCircle(
           center: Offset(size.width * 0.15, size.height * 0.10),
           radius: size.width * 0.55));
-    canvas.drawCircle(
-        Offset(size.width * 0.15, size.height * 0.10), size.width * 0.55,
-        glowPaint);
+    canvas.drawCircle(Offset(size.width * 0.15, size.height * 0.10),
+        size.width * 0.55, glowPaint);
 
     // 2. توهج بنفسجي خافت أسفل اليمين
     final skyPaint = Paint()
@@ -164,9 +173,8 @@ class _AmbiancePainter extends CustomPainter {
       ).createShader(Rect.fromCircle(
           center: Offset(size.width * 0.9, size.height * 0.9),
           radius: size.width * 0.6));
-    canvas.drawCircle(
-        Offset(size.width * 0.9, size.height * 0.9), size.width * 0.6,
-        skyPaint);
+    canvas.drawCircle(Offset(size.width * 0.9, size.height * 0.9),
+        size.width * 0.6, skyPaint);
 
     // 3. خطوط زجاجية خافتة
     final streakPaint = Paint()
@@ -179,7 +187,27 @@ class _AmbiancePainter extends CustomPainter {
     }
   }
 
+  /// توهجات باستيل شديدة الخفة للوضع النهاري
+  void _paintDay(Canvas canvas, Size size) {
+    void glow(Offset c, double r, Color color, double o) {
+      canvas.drawCircle(
+          c,
+          r,
+          Paint()
+            ..shader = RadialGradient(
+              colors: [color.withOpacity(o), Colors.transparent],
+            ).createShader(Rect.fromCircle(center: c, radius: r)));
+    }
+
+    glow(Offset(size.width * 0.9, size.height * 0.05), size.width * 0.6,
+        const Color(0xFFBBD3F7), 0.20);
+    glow(Offset(size.width * 0.05, size.height * 0.35), size.width * 0.5,
+        const Color(0xFFF3E3C0), 0.18);
+    glow(Offset(size.width * 0.5, size.height * 1.0), size.width * 0.7,
+        const Color(0xFFD9CBF5), 0.13);
+  }
+
   @override
   bool shouldRepaint(covariant _AmbiancePainter oldDelegate) =>
-      oldDelegate.light != light;
+      oldDelegate.light != light || oldDelegate.day != day;
 }

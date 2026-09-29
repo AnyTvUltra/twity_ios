@@ -17,8 +17,8 @@ import '../theme_mode.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
-  static const _gold = Color(0xFFFFD54F);
-  static const _textDim = Color(0xFF8EA3C8);
+  static final _gold = L(0xFFFFD54F);
+  static final _textDim = L(0xFF8EA3C8);
 
   void _showAvatarPicker(BuildContext context) {
     AppHaptics.selection();
@@ -42,19 +42,18 @@ class ProfileScreen extends StatelessWidget {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [t.sheetTop, t.sheetBot],
               ),
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(26)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
               border: Border.all(color: t.cardBorder, width: 1),
             ),
             child: Column(
@@ -64,9 +63,7 @@ class ProfileScreen extends StatelessWidget {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: t.light
-                        ? const Color(0xFFD8DFEB)
-                        : const Color(0x40FFFFFF),
+                    color: t.light ? L(0xFFD8DFEB) : const Color(0x40FFFFFF),
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -107,16 +104,15 @@ class ProfileScreen extends StatelessWidget {
                       }
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      padding: EdgeInsets.symmetric(vertical: 13),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(colors: [
-                          Color(0xFFFFE082),
+                        gradient: LinearGradient(colors: [
+                          L(0xFFFFE082),
                           _gold,
-                          Color(0xFFE8A820),
+                          L(0xFFE8A820),
                         ]),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                            color: const Color(0xFFFFE9A8), width: 1.2),
+                        border: Border.all(color: L(0xFFFFE9A8), width: 1.2),
                         boxShadow: [
                           BoxShadow(
                               color: _gold.withOpacity(0.35), blurRadius: 14),
@@ -126,11 +122,11 @@ class ProfileScreen extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.photo_library_rounded,
-                              color: Color(0xFF1B0B30), size: 19),
+                              color: L(0xFF1B0B30), size: 19),
                           SizedBox(width: 8),
                           Text('رفع صورة من الاستوديو'.tr,
                               style: TextStyle(
-                                  color: Color(0xFF1B0B30),
+                                  color: L(0xFF1B0B30),
                                   fontWeight: FontWeight.w900,
                                   fontSize: 14)),
                         ],
@@ -212,7 +208,7 @@ class ProfileScreen extends StatelessWidget {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFDC2626),
+                  backgroundColor: L(0xFFDC2626),
                   foregroundColor: Colors.white),
               onPressed: () => Navigator.of(ctx).pop(true),
               child: Text('احذف حسابي'.tr,
@@ -263,20 +259,18 @@ class ProfileScreen extends StatelessWidget {
                       Navigator.of(ctx).pop();
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 12),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
                         color: controller.lang == lang
                             ? t.purple.withOpacity(0.14)
-                            : (t.light
-                                ? const Color(0xFFF3F6FB)
-                                : const Color(0x14FFFFFF)),
+                            : (t.light ? L(0xFFF3F6FB) : Color(0x14FFFFFF)),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
                           color: controller.lang == lang
                               ? t.purple
                               : (t.light
-                                  ? const Color(0xFFE2E8F2)
+                                  ? L(0xFFE2E8F2)
                                   : const Color(0x22FFFFFF)),
                           width: 1.2,
                         ),
@@ -319,7 +313,7 @@ class ProfileScreen extends StatelessWidget {
           backgroundColor: t.dialogBg,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(22),
-            side: const BorderSide(color: Color(0xFFFFD54F), width: 1.2),
+            side: BorderSide(color: L(0xFFFFD54F), width: 1.2),
           ),
           title: Row(
             children: [
@@ -380,10 +374,10 @@ class ProfileScreen extends StatelessWidget {
                         borderSide: BorderSide.none),
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Text('التفاصيل:'.tr,
                     style: TextStyle(color: t.textDim, fontSize: 12)),
-                const SizedBox(height: 6),
+                SizedBox(height: 6),
                 TextField(
                   controller: messageController,
                   maxLines: 4,
@@ -411,7 +405,7 @@ class ProfileScreen extends StatelessWidget {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: _gold,
-                foregroundColor: const Color(0xFF1B0B30),
+                foregroundColor: L(0xFF1B0B30),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10)),
               ),
@@ -472,8 +466,7 @@ class ProfileScreen extends StatelessWidget {
                 controller: controller,
                 style: TextStyle(color: t.text),
                 decoration: InputDecoration(
-                  prefixIcon:
-                      const Icon(Icons.alternate_email_rounded, color: _gold),
+                  prefixIcon: Icon(Icons.alternate_email_rounded, color: _gold),
                   hintText: 'اسم المستخدم الجديد'.tr,
                   errorText: error,
                   filled: true,
@@ -491,8 +484,7 @@ class ProfileScreen extends StatelessWidget {
                 child: Text('إلغاء'.tr, style: TextStyle(color: t.textDim))),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                  backgroundColor: _gold,
-                  foregroundColor: const Color(0xFF1B0B30)),
+                  backgroundColor: _gold, foregroundColor: L(0xFF1B0B30)),
               onPressed: () async {
                 final input = controller.text.trim();
                 final ok = await AuthService().updateUsername(input);
@@ -1219,7 +1211,7 @@ class _SettingsTileState extends State<_SettingsTile> {
                       child:
                           Icon(widget.icon, color: widget.iconColor, size: 20),
                     ),
-                    const SizedBox(width: 13),
+                    SizedBox(width: 13),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1231,7 +1223,7 @@ class _SettingsTileState extends State<_SettingsTile> {
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.w800),
                           ),
-                          const SizedBox(height: 3),
+                          SizedBox(height: 3),
                           Text(
                             widget.subtitle,
                             style: TextStyle(color: t.textDim, fontSize: 10.5),
@@ -1239,11 +1231,11 @@ class _SettingsTileState extends State<_SettingsTile> {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     widget.trailing ??
                         Icon(Icons.arrow_forward_ios_rounded,
                             color: t.light
-                                ? const Color(0xFFB7C2D4)
+                                ? L(0xFFB7C2D4)
                                 : widget.iconColor.withOpacity(0.6),
                             size: 14),
                   ],
@@ -1277,27 +1269,27 @@ class _ProfileDecorPainter extends CustomPainter {
     if (light) {
       // توهجات باستيل ناعمة جداً للوضع النهاري
       glow(Offset(size.width * 0.9, size.height * 0.03), size.width * 0.6,
-          const Color(0xFFBBD3F7), 0.22);
+          L(0xFFBBD3F7), 0.22);
       glow(Offset(size.width * 0.05, size.height * 0.30), size.width * 0.5,
-          const Color(0xFFF3E3C0), 0.20);
+          L(0xFFF3E3C0), 0.20);
       glow(Offset(size.width * 0.5, size.height * 1.02), size.width * 0.7,
-          const Color(0xFFD9CBF5), 0.14);
+          L(0xFFD9CBF5), 0.14);
       return;
     }
 
     glow(Offset(size.width * 0.85, size.height * 0.05), size.width * 0.55,
-        const Color(0xFF2540A0), 0.30);
+        L(0xFF2540A0), 0.30);
     glow(Offset(size.width * 0.05, size.height * 0.35), size.width * 0.45,
-        const Color(0xFF7C5CFF), 0.14);
+        L(0xFF7C5CFF), 0.14);
     glow(Offset(size.width * 0.5, size.height * 1.05), size.width * 0.65,
-        const Color(0xFF8A6400), 0.14);
+        L(0xFF8A6400), 0.14);
 
     // أقواس هندسية ذهبية شفافة في الأسفل
     final arcPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.2;
     for (int i = 0; i < 4; i++) {
-      arcPaint.color = const Color(0xFFFFD54F).withOpacity(0.04 + i * 0.013);
+      arcPaint.color = L(0xFFFFD54F).withOpacity(0.04 + i * 0.013);
       canvas.drawArc(
         Rect.fromCenter(
           center: Offset(size.width * 0.5, size.height * 1.15),
@@ -1313,7 +1305,7 @@ class _ProfileDecorPainter extends CustomPainter {
 
     // خطوط نيلية شفافة في الأعلى
     final linePaint = Paint()
-      ..color = const Color(0xFF9DB7FF).withOpacity(0.03)
+      ..color = L(0xFF9DB7FF).withOpacity(0.03)
       ..strokeWidth = 1.0;
     for (double y = size.height * 0.12;
         y < size.height * 0.4;
@@ -1333,9 +1325,9 @@ class _ProfileDecorPainter extends CustomPainter {
 class _SocialRewardsCard extends StatelessWidget {
   const _SocialRewardsCard();
 
-  static const _gold = Color(0xFFFFD54F);
-  static const _textDim = Color(0xFF8EA3C8);
-  static const _cyan = Color(0xFF38BDF8);
+  static final _gold = L(0xFFFFD54F);
+  static final _textDim = L(0xFF8EA3C8);
+  static final _cyan = L(0xFF38BDF8);
 
   Future<void> _redeemReferral(BuildContext context) async {
     final t = PT(UiTheme.instance.isLight);
@@ -1372,8 +1364,7 @@ class _SocialRewardsCard extends StatelessWidget {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                  backgroundColor: _cyan,
-                  foregroundColor: const Color(0xFF082F49)),
+                  backgroundColor: _cyan, foregroundColor: L(0xFF082F49)),
               onPressed: () => Navigator.of(ctx).pop(true),
               child: Text('استبدال'.tr,
                   style: TextStyle(fontWeight: FontWeight.w900)),
@@ -1424,7 +1415,7 @@ class _SocialRewardsCard extends StatelessWidget {
                       borderSide: BorderSide.none),
                 ),
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               TextField(
                 controller: chipsCtrl,
                 keyboardType: TextInputType.number,
@@ -1448,8 +1439,7 @@ class _SocialRewardsCard extends StatelessWidget {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                  backgroundColor: _gold,
-                  foregroundColor: const Color(0xFF1B0B30)),
+                  backgroundColor: _gold, foregroundColor: L(0xFF1B0B30)),
               onPressed: () => Navigator.of(ctx).pop(true),
               child: Text('أرسل 🎁'.tr,
                   style: TextStyle(fontWeight: FontWeight.w900)),
@@ -1479,21 +1469,19 @@ class _SocialRewardsCard extends StatelessWidget {
       builder: (context, _) {
         final t = PT(UiTheme.instance.isLight);
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: EdgeInsets.symmetric(horizontal: 16),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(22),
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
               child: AnimatedContainer(
                 duration: UiTheme.transition,
-                padding: const EdgeInsets.all(14),
+                padding: EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: t.card,
                   borderRadius: BorderRadius.circular(22),
                   border: Border.all(
-                      color: t.light
-                          ? const Color(0xFFD8E6FA)
-                          : _cyan.withOpacity(0.35),
+                      color: t.light ? L(0xFFD8E6FA) : _cyan.withOpacity(0.35),
                       width: 1),
                   boxShadow: t.cardShadow,
                 ),
@@ -1532,16 +1520,16 @@ class _SocialRewardsCard extends StatelessWidget {
                               }
                             },
                             child: Container(
-                              padding: const EdgeInsets.symmetric(
+                              padding: EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 10),
                               decoration: BoxDecoration(
                                 color: t.light
-                                    ? const Color(0xFFEFF5FE)
+                                    ? L(0xFFEFF5FE)
                                     : _cyan.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                     color: t.light
-                                        ? const Color(0xFFBBD8F9)
+                                        ? L(0xFFBBD8F9)
                                         : _cyan.withOpacity(0.4)),
                               ),
                               child: Row(
@@ -1575,19 +1563,19 @@ class _SocialRewardsCard extends StatelessWidget {
                                 }
                               : () => _redeemReferral(context),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
+                            padding: EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 10),
                             decoration: BoxDecoration(
                               color: alreadyReferred
                                   ? (t.light
-                                      ? const Color(0xFFF1F4F9)
-                                      : const Color(0x2EFFFFFF))
+                                      ? L(0xFFF1F4F9)
+                                      : Color(0x2EFFFFFF))
                                   : t.gold.withOpacity(0.10),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                   color: alreadyReferred
                                       ? (t.light
-                                          ? const Color(0xFFD9E0EC)
+                                          ? L(0xFFD9E0EC)
                                           : Colors.white24)
                                       : t.gold.withOpacity(0.55)),
                             ),
@@ -1604,21 +1592,17 @@ class _SocialRewardsCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     GestureDetector(
                       onTap: () => _sendGift(context),
                       child: AnimatedContainer(
                         duration: UiTheme.transition,
                         width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 9),
+                        padding: EdgeInsets.symmetric(vertical: 9),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(colors: [
-                            t.light
-                                ? const Color(0xFFF9D876)
-                                : _gold.withOpacity(0.9),
-                            t.light
-                                ? const Color(0xFFEDB02A)
-                                : const Color(0xFFE8A820),
+                            t.light ? L(0xFFF9D876) : _gold.withOpacity(0.9),
+                            t.light ? L(0xFFEDB02A) : L(0xFFE8A820),
                           ]),
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
@@ -1630,7 +1614,7 @@ class _SocialRewardsCard extends StatelessWidget {
                           child: Text(
                             '🎁 أرسل عملات هدية لصديق'.tr,
                             style: TextStyle(
-                                color: Color(0xFF1B0B30),
+                                color: L(0xFF1B0B30),
                                 fontSize: 12,
                                 fontWeight: FontWeight.w900),
                           ),

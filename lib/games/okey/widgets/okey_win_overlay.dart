@@ -88,9 +88,9 @@ class _OkeyWinOverlayState extends State<OkeyWinOverlay>
   @override
   Widget build(BuildContext context) {
     final isHuman = widget.winner.isHuman;
-    final accent =
-        isHuman ? const Color(0xFFFFD54F) : const Color(0xFF60A5FA);
-    final title = isHuman ? 'مبروك! فزت!'.tr : 'فاز {}!'.trp([widget.winner.name]);
+    final accent = isHuman ? const Color(0xFFFFD54F) : const Color(0xFF60A5FA);
+    final title =
+        isHuman ? 'مبروك! فزت!'.tr : 'فاز {}!'.trp([widget.winner.name]);
     final sub = switch (widget.winType) {
       WinType.discardOkey => 'برمي حجر الأوكي — Okey ile Bitti'.tr,
       WinType.sevenPairs => 'بالأزواج السبعة — 7 Çift'.tr,
@@ -114,8 +114,9 @@ class _OkeyWinOverlayState extends State<OkeyWinOverlay>
               final tileRot = (1 - ft) * math.pi * 2.2;
               final tileScale = 0.7 + ft * 0.9;
               // وميض الهبوط عند وصول الحجر
-              final landBurst =
-                  ft >= 0.98 ? ((_controller.value - 0.38) / 0.12).clamp(0.0, 1.0) : 0.0;
+              final landBurst = ft >= 0.98
+                  ? ((_controller.value - 0.38) / 0.12).clamp(0.0, 1.0)
+                  : 0.0;
 
               return Stack(
                 fit: StackFit.expand,
@@ -175,10 +176,7 @@ class _OkeyWinOverlayState extends State<OkeyWinOverlay>
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                               colors: isHuman
-                                  ? const [
-                                      Color(0xFF3B2A07),
-                                      Color(0xFF1A1204)
-                                    ]
+                                  ? const [Color(0xFF3B2A07), Color(0xFF1A1204)]
                                   : const [
                                       Color(0xFF10203C),
                                       Color(0xFF0A1220)
@@ -308,8 +306,8 @@ class _ConfettiPainter extends CustomPainter {
       if (local <= 0) continue;
       final y = -20 + local * p.speed * (size.height + 80);
       if (y > size.height + 20) continue;
-      final x = p.x * size.width +
-          math.sin(local * math.pi * p.swayFreq) * p.sway;
+      final x =
+          p.x * size.width + math.sin(local * math.pi * p.swayFreq) * p.sway;
       final fade = (1 - local).clamp(0.0, 1.0);
       final paint = Paint()..color = p.color.withOpacity(0.95 * fade);
 

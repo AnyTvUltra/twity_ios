@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/app_lang.dart';
+import '../theme_mode.dart';
 
 /// صفحة قانونية داخل التطبيق — سياسة الخصوصية وشروط الاستخدام
 /// بنفس محتوى الصفحات المنشورة (privacy.html / terms.html)
@@ -19,24 +20,24 @@ class _LegalScreenState extends State<LegalScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0E1F),
+      backgroundColor: L(0xFF0A0E1F),
       body: SafeArea(
         child: Column(
           children: [
             // شريط علوي مع زر رجوع
             Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+              padding: EdgeInsets.fromLTRB(8, 8, 8, 0),
               child: Row(
                 children: [
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                    icon: Icon(Icons.arrow_back_ios_new_rounded,
                         color: Colors.white, size: 20),
                   ),
-                  const SizedBox(width: 4),
+                  SizedBox(width: 4),
                   Text(
                     _tab == 0 ? 'سياسة الخصوصية'.tr : 'شروط الاستخدام'.tr,
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: Colors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.w900),
@@ -46,11 +47,11 @@ class _LegalScreenState extends State<LegalScreen> {
             ),
             // تبويبات
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12),
               child: Container(
-                padding: const EdgeInsets.all(4),
+                padding: EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF141C34),
+                  color: L(0xFF141C34),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: Colors.white12),
                 ),
@@ -81,12 +82,11 @@ class _LegalScreenState extends State<LegalScreen> {
       child: GestureDetector(
         onTap: () => setState(() => _tab = i),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          duration: Duration(milliseconds: 180),
+          padding: EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             gradient: active
-                ? const LinearGradient(
-                    colors: [Color(0xFF7C3AED), Color(0xFF4F46E5)])
+                ? LinearGradient(colors: [L(0xFF7C3AED), L(0xFF4F46E5)])
                 : null,
             borderRadius: BorderRadius.circular(11),
           ),
@@ -94,12 +94,11 @@ class _LegalScreenState extends State<LegalScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(icon,
-                  size: 16,
-                  color: active ? Colors.white : const Color(0xFF94A3B8)),
-              const SizedBox(width: 6),
+                  size: 16, color: active ? Colors.white : L(0xFF94A3B8)),
+              SizedBox(width: 6),
               Text(label,
                   style: TextStyle(
-                      color: active ? Colors.white : const Color(0xFF94A3B8),
+                      color: active ? Colors.white : L(0xFF94A3B8),
                       fontSize: 12.5,
                       fontWeight: FontWeight.w800)),
             ],
@@ -110,32 +109,30 @@ class _LegalScreenState extends State<LegalScreen> {
   }
 
   Widget _h(String t) => Padding(
-        padding: const EdgeInsets.only(top: 18, bottom: 8),
+        padding: EdgeInsets.only(top: 18, bottom: 8),
         child: Text(t.tr,
-            style: const TextStyle(
-                color: Color(0xFFC4B5FD),
+            style: TextStyle(
+                color: L(0xFFC4B5FD),
                 fontSize: 15,
                 fontWeight: FontWeight.w900)),
       );
 
   Widget _p(String t) => Padding(
-        padding: const EdgeInsets.only(bottom: 6),
+        padding: EdgeInsets.only(bottom: 6),
         child: Text(t.tr,
-            style: const TextStyle(
-                color: Color(0xFFC9D4EC), fontSize: 13, height: 1.75)),
+            style: TextStyle(color: L(0xFFC9D4EC), fontSize: 13, height: 1.75)),
       );
 
   Widget _bullet(String t) => Padding(
-        padding: const EdgeInsets.only(bottom: 5),
+        padding: EdgeInsets.only(bottom: 5),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('• ',
-                style: TextStyle(color: Color(0xFF7DD3FC), fontSize: 14)),
+            Text('• ', style: TextStyle(color: L(0xFF7DD3FC), fontSize: 14)),
             Expanded(
               child: Text(t.tr,
-                  style: const TextStyle(
-                      color: Color(0xFFC9D4EC), fontSize: 13, height: 1.6)),
+                  style: TextStyle(
+                      color: L(0xFFC9D4EC), fontSize: 13, height: 1.6)),
             ),
           ],
         ),
@@ -175,9 +172,11 @@ class _LegalScreenState extends State<LegalScreen> {
           _h('2. الحساب والاستخدام'),
           _bullet('أنت مسؤول عن حسابك ونشاطه.'),
           _bullet('يُمنع استخدام أسماء مسيئة أو انتحال هوية الآخرين.'),
-          _bullet('يُمنع الغش أو استغلال الأخطاء البرمجية أو التلاعب بالنتائج.'),
+          _bullet(
+              'يُمنع الغش أو استغلال الأخطاء البرمجية أو التلاعب بالنتائج.'),
           _h('3. العملات الافتراضية والشراء'),
-          _bullet('العملات والجواهر والسكنات افتراضية وليست قابلة للاسترداد نقداً.'),
+          _bullet(
+              'العملات والجواهر والسكنات افتراضية وليست قابلة للاسترداد نقداً.'),
           _bullet('المشتريات والهدايا داخل اللعبة نهائية ولا تُسترجع.'),
           _bullet('قد نعدّل أسعار المحتوى الافتراضي أو محتواه في أي وقت.'),
           _h('4. المحتوى والسلوك'),

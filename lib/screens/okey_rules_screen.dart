@@ -5,6 +5,8 @@ import '../utils/haptics.dart';
 import 'okey_lobby_screen.dart';
 import '../l10n/app_lang.dart';
 
+import '../theme_mode.dart';
+
 /// شاشة اختيار قانون الكونكان — تظهر عند الضغط على بطاقة اللعبة
 class OkeyRulesScreen extends StatefulWidget {
   const OkeyRulesScreen({super.key});
@@ -16,14 +18,14 @@ class OkeyRulesScreen extends StatefulWidget {
 class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
   OkeyRulesVariant _selected = OkeyRulesVariant.turkish;
 
-  static const _bgTop = Color(0xFF0A0F24);
-  static const _bgMid = Color(0xFF070B18);
-  static const _bgBot = Color(0xFF04060F);
-  static const _neonBlue = Color(0xFF3B82F6);
-  static const _cyan = Color(0xFF38BDF8);
-  static const _gold = Color(0xFFFFD54F);
-  static const _textWhite = Color(0xFFF1F5FF);
-  static const _textDim = Color(0xFF8EA3C8);
+  static final _bgTop = L(0xFF0A0F24);
+  static final _bgMid = L(0xFF070B18);
+  static final _bgBot = L(0xFF04060F);
+  static final _neonBlue = L(0xFF3B82F6);
+  static final _cyan = L(0xFF38BDF8);
+  static final _gold = L(0xFFFFD54F);
+  static final _textWhite = L(0xFFF1F5FF);
+  static final _textDim = L(0xFF8EA3C8);
 
   static final _variants = [
     OkeyRules.sulaymaniyah,
@@ -72,7 +74,8 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                       children: [
                         // وصف
                         Text(
-                          'لكل مدينة قانونها الخاص في الكونكان — اختر القانون الذي تريد اللعب به، أو اضغط "؟" لقراءة شرحه الكامل'.tr,
+                          'لكل مدينة قانونها الخاص في الكونكان — اختر القانون الذي تريد اللعب به، أو اضغط "؟" لقراءة شرحه الكامل'
+                              .tr,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                               color: _textDim, fontSize: 11.5, height: 1.5),
@@ -119,7 +122,7 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
 
   Widget _buildVariantCard(OkeyRules rules) {
     final isSelected = _selected == rules.variant;
-    const accent = _neonBlue;
+    final accent = _neonBlue;
 
     return GestureDetector(
       onTap: () {
@@ -127,17 +130,16 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
         setState(() => _selected = rules.variant);
       },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
+        duration: Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
-        margin: const EdgeInsets.only(bottom: 14),
+        margin: EdgeInsets.only(bottom: 14),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(24),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              duration: Duration(milliseconds: 220),
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -145,17 +147,16 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                   colors: isSelected
                       ? [
                           accent.withOpacity(0.5),
-                          const Color(0xFF14286B).withOpacity(0.85),
+                          L(0xFF14286B).withOpacity(0.85),
                         ]
                       : [
-                          const Color(0x2E141C3C),
-                          const Color(0x1E0C1230),
+                          Color(0x2E141C3C),
+                          Color(0x1E0C1230),
                         ],
                 ),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color:
-                      isSelected ? accent : const Color(0x2EFFFFFF),
+                  color: isSelected ? accent : Color(0x2EFFFFFF),
                   width: isSelected ? 1.8 : 1.0,
                 ),
                 boxShadow: [
@@ -177,7 +178,7 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                       gradient: RadialGradient(
                         colors: [
                           accent.withOpacity(isSelected ? 0.5 : 0.25),
-                          const Color(0xFF0A1230),
+                          L(0xFF0A1230),
                         ],
                       ),
                       border: Border.all(
@@ -203,7 +204,7 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                       children: [
                         Text(
                           rules.name,
-                          style: const TextStyle(
+                          style: TextStyle(
                               color: _textWhite,
                               fontSize: 15.5,
                               fontWeight: FontWeight.w900),
@@ -211,7 +212,7 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                         const SizedBox(height: 4),
                         Text(
                           rules.subtitle,
-                          style: const TextStyle(
+                          style: TextStyle(
                               color: _textDim,
                               fontSize: 11,
                               fontWeight: FontWeight.w600),
@@ -219,7 +220,8 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            _miniTag('افتتاح {}'.trp([rules.openingPoints]), _gold),
+                            _miniTag(
+                                'افتتاح {}'.trp([rules.openingPoints]), _gold),
                             const SizedBox(width: 6),
                             _miniTag(
                                 rules.allowSevenPairs
@@ -268,9 +270,8 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: isSelected
-                                ? accent
-                                : const Color(0x55FFFFFF),
+                            color:
+                                isSelected ? accent : const Color(0x55FFFFFF),
                             width: 2,
                           ),
                           color: isSelected ? accent : Colors.transparent,
@@ -318,8 +319,7 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
       onTap: () {
         AppHaptics.medium();
         Navigator.of(context).push(
-          MaterialPageRoute(
-              builder: (_) => OkeyLobbyScreen(rules: rules)),
+          MaterialPageRoute(builder: (_) => OkeyLobbyScreen(rules: rules)),
         );
       },
       child: ClipRRect(
@@ -327,22 +327,21 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: EdgeInsets.symmetric(vertical: 16),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Color(0xFFFFE082),
+                  L(0xFFFFE082),
                   _gold,
-                  Color(0xFFE8A820),
-                  Color(0xFFB8860B),
+                  L(0xFFE8A820),
+                  L(0xFFB8860B),
                 ],
                 stops: [0.0, 0.35, 0.75, 1.0],
               ),
               borderRadius: BorderRadius.circular(24),
-              border:
-                  Border.all(color: const Color(0xFFFFE9A8), width: 1.4),
+              border: Border.all(color: L(0xFFFFE9A8), width: 1.4),
               boxShadow: [
                 BoxShadow(
                     color: _gold.withOpacity(0.4),
@@ -351,7 +350,7 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                 BoxShadow(
                     color: Colors.black.withOpacity(0.4),
                     blurRadius: 12,
-                    offset: const Offset(0, 6)),
+                    offset: Offset(0, 6)),
               ],
             ),
             child: Stack(
@@ -377,18 +376,18 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(rules.icon, style: const TextStyle(fontSize: 19)),
-                    const SizedBox(width: 9),
+                    Text(rules.icon, style: TextStyle(fontSize: 19)),
+                    SizedBox(width: 9),
                     Text(
                       'العب بـ{}'.trp([rules.name]),
-                      style: const TextStyle(
-                          color: Color(0xFF1B0B30),
+                      style: TextStyle(
+                          color: L(0xFF1B0B30),
                           fontWeight: FontWeight.w900,
                           fontSize: 16),
                     ),
-                    const SizedBox(width: 9),
-                    const Icon(Icons.arrow_back_rounded,
-                        color: Color(0xFF1B0B30), size: 22),
+                    SizedBox(width: 9),
+                    Icon(Icons.arrow_back_rounded,
+                        color: L(0xFF1B0B30), size: 22),
                   ],
                 ),
               ],
@@ -422,8 +421,7 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(color: const Color(0x44FFFFFF), width: 1.1),
                 boxShadow: [
-                  BoxShadow(
-                      color: _neonBlue.withOpacity(0.2), blurRadius: 30),
+                  BoxShadow(color: _neonBlue.withOpacity(0.2), blurRadius: 30),
                 ],
               ),
               child: Column(
@@ -441,19 +439,18 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(rules.name,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                       color: _textWhite,
                                       fontSize: 16,
                                       fontWeight: FontWeight.w900)),
                               Text(rules.subtitle,
-                                  style: const TextStyle(
-                                      color: _cyan, fontSize: 11)),
+                                  style: TextStyle(color: _cyan, fontSize: 11)),
                             ],
                           ),
                         ),
                         GestureDetector(
                           onTap: () => Navigator.of(ctx).pop(),
-                          child: const Icon(Icons.close_rounded,
+                          child: Icon(Icons.close_rounded,
                               color: _textDim, size: 22),
                         ),
                       ],
@@ -461,19 +458,17 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                   ),
                   Container(
                       height: 1,
-                      margin: const EdgeInsets.symmetric(horizontal: 16),
-                      color: const Color(0x22FFFFFF)),
+                      margin: EdgeInsets.symmetric(horizontal: 16),
+                      color: Color(0x22FFFFFF)),
                   // الشرح
                   Flexible(
                     child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
+                      physics: BouncingScrollPhysics(),
+                      padding: EdgeInsets.fromLTRB(18, 12, 18, 18),
                       child: Text(
                         rules.fullDescription,
-                        style: const TextStyle(
-                            color: Color(0xFFD5DEEF),
-                            fontSize: 12.5,
-                            height: 1.75),
+                        style: TextStyle(
+                            color: L(0xFFD5DEEF), fontSize: 12.5, height: 1.75),
                       ),
                     ),
                   ),
@@ -493,7 +488,7 @@ class _RulesBackdrop extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
@@ -523,18 +518,17 @@ class _RulesDecorPainter extends CustomPainter {
     }
 
     glow(Offset(size.width * 0.85, size.height * 0.06), size.width * 0.5,
-        const Color(0xFF2540A0), 0.28);
+        L(0xFF2540A0), 0.28);
     glow(Offset(size.width * 0.1, size.height * 0.5), size.width * 0.45,
-        const Color(0xFF1E3A8A), 0.18);
+        L(0xFF1E3A8A), 0.18);
     glow(Offset(size.width * 0.5, size.height * 1.05), size.width * 0.6,
-        const Color(0xFF8A6400), 0.13);
+        L(0xFF8A6400), 0.13);
 
     final arcPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.2;
     for (int i = 0; i < 4; i++) {
-      arcPaint.color =
-          const Color(0xFFFFD54F).withOpacity(0.05 + i * 0.014);
+      arcPaint.color = L(0xFFFFD54F).withOpacity(0.05 + i * 0.014);
       canvas.drawArc(
         Rect.fromCenter(
           center: Offset(size.width * 0.5, size.height * 1.14),

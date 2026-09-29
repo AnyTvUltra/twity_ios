@@ -1,4 +1,5 @@
 import '../../l10n/app_lang.dart';
+
 /// قوانين الكونكان (الأوكي) المتاحة للاعب قبل دخول الطاولة
 enum OkeyRulesVariant { sulaymaniyah, erbil, turkish }
 
@@ -29,32 +30,32 @@ class OkeyRules {
   });
 
   static OkeyRules get sulaymaniyah => OkeyRules(
-    variant: OkeyRulesVariant.sulaymaniyah,
-    name: 'قانون سليمانية'.tr,
-    subtitle: 'افتتاح سريع 51 نقطة'.tr,
-    icon: '🏔️',
-    openingPoints: 51,
-    allowSevenPairs: true,
-    jokerBelowIndicator: true,
-  );
+        variant: OkeyRulesVariant.sulaymaniyah,
+        name: 'قانون سليمانية'.tr,
+        subtitle: 'افتتاح سريع 51 نقطة'.tr,
+        icon: '🏔️',
+        openingPoints: 51,
+        allowSevenPairs: true,
+        jokerBelowIndicator: true,
+      );
 
   static OkeyRules get erbil => OkeyRules(
-    variant: OkeyRulesVariant.erbil,
-    name: 'قانون أربيل'.tr,
-    subtitle: 'احترافي — بدون أزواج'.tr,
-    icon: '🏰',
-    openingPoints: 101,
-    allowSevenPairs: false,
-  );
+        variant: OkeyRulesVariant.erbil,
+        name: 'قانون أربيل'.tr,
+        subtitle: 'احترافي — بدون أزواج'.tr,
+        icon: '🏰',
+        openingPoints: 101,
+        allowSevenPairs: false,
+      );
 
   static OkeyRules get turkish => OkeyRules(
-    variant: OkeyRulesVariant.turkish,
-    name: 'القانون التركي'.tr,
-    subtitle: 'الكلاسيكي — 101 + أزواج'.tr,
-    icon: '🀄',
-    openingPoints: 101,
-    allowSevenPairs: true,
-  );
+        variant: OkeyRulesVariant.turkish,
+        name: 'القانون التركي'.tr,
+        subtitle: 'الكلاسيكي — 101 + أزواج'.tr,
+        icon: '🀄',
+        openingPoints: 101,
+        allowSevenPairs: true,
+      );
 
   static OkeyRules of(OkeyRulesVariant v) {
     switch (v) {

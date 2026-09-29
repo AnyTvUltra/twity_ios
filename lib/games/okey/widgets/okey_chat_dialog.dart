@@ -74,7 +74,8 @@ class _OkeyChatDialogState extends State<OkeyChatDialog> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.chat_bubble_rounded, color: Color(0xFF4ADE80), size: 18),
+                    Icon(Icons.chat_bubble_rounded,
+                        color: Color(0xFF4ADE80), size: 18),
                     SizedBox(width: 8),
                     Text(
                       'المحادثة السريعة (Chat)'.tr,
@@ -94,7 +95,8 @@ class _OkeyChatDialogState extends State<OkeyChatDialog> {
                       color: Color(0x33FFFFFF),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.close, color: Colors.white70, size: 16),
+                    child: const Icon(Icons.close,
+                        color: Colors.white70, size: 16),
                   ),
                 ),
               ],
@@ -109,11 +111,13 @@ class _OkeyChatDialogState extends State<OkeyChatDialog> {
                 return GestureDetector(
                   onTap: () => _send(msg['ar']!),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                     decoration: BoxDecoration(
                       color: const Color(0x3322C55E),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0x444ADE80), width: 1),
+                      border:
+                          Border.all(color: const Color(0x444ADE80), width: 1),
                     ),
                     child: Text(
                       msg['ar']!,
@@ -139,14 +143,16 @@ class _OkeyChatDialogState extends State<OkeyChatDialog> {
                     decoration: BoxDecoration(
                       color: const Color(0x40000000),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0x33FFFFFF), width: 0.8),
+                      border: Border.all(
+                          color: const Color(0x33FFFFFF), width: 0.8),
                     ),
                     child: TextField(
                       controller: _textController,
                       style: const TextStyle(color: Colors.white, fontSize: 12),
                       decoration: InputDecoration(
                         hintText: 'اكتب رسالة...'.tr,
-                        hintStyle: TextStyle(color: Colors.white38, fontSize: 12),
+                        hintStyle:
+                            TextStyle(color: Colors.white38, fontSize: 12),
                         border: InputBorder.none,
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(vertical: 9),
@@ -171,7 +177,8 @@ class _OkeyChatDialogState extends State<OkeyChatDialog> {
                       color: const Color(0xFF22C55E),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.send_rounded, color: Colors.white, size: 18),
+                    child: const Icon(Icons.send_rounded,
+                        color: Colors.white, size: 18),
                   ),
                 ),
               ],

@@ -11,6 +11,8 @@ import '../widgets/app_background.dart';
 import '../widgets/user_avatar.dart';
 import '../l10n/app_lang.dart';
 
+import '../theme_mode.dart';
+
 /// شاشة الدردشة والأصدقاء — تصميم زجاجي أبيض
 /// تبويبان: الرسائل (محادثات حقيقية بعدّاد غير مقروء) / الأصدقاء (طلبات + بحث)
 class ChatScreen extends StatefulWidget {
@@ -66,7 +68,7 @@ class _ChatScreenState extends State<ChatScreen> {
           children: [
             // ── الترويسة ──
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -81,24 +83,22 @@ class _ChatScreenState extends State<ChatScreen> {
                     children: [
                       // جرس الإشعارات (طلبات الصداقة + الرسائل غير المقروءة)
                       _NotificationBell(onOpenChat: _openChat),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0x3310B981),
+                          color: Color(0x3310B981),
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                              color: const Color(0xFF10B981), width: 1),
+                          border: Border.all(color: L(0xFF10B981), width: 1),
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.circle,
-                                color: Color(0xFF10B981), size: 8),
+                            Icon(Icons.circle, color: L(0xFF10B981), size: 8),
                             SizedBox(width: 5),
                             Text('أونلاين'.tr,
                                 style: TextStyle(
-                                    color: Color(0xFF047857),
+                                    color: L(0xFF047857),
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold)),
                           ],
@@ -112,13 +112,13 @@ class _ChatScreenState extends State<ChatScreen> {
 
             // ── مبدّل التبويبات ──
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: BackdropFilter(
                   filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                   child: Container(
-                    padding: const EdgeInsets.all(4),
+                    padding: EdgeInsets.all(4),
                     decoration: BoxDecoration(
                       color: LightGlass.cardSoft,
                       borderRadius: BorderRadius.circular(16),
@@ -158,8 +158,8 @@ class _ChatScreenState extends State<ChatScreen> {
           setState(() => _selectedTab = index);
         },
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(vertical: 9),
+          duration: Duration(milliseconds: 180),
+          padding: EdgeInsets.symmetric(vertical: 9),
           decoration: BoxDecoration(
             color: sel ? LightGlass.cardStrong : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
@@ -168,7 +168,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     BoxShadow(
                         color: Colors.black.withOpacity(0.08),
                         blurRadius: 8,
-                        offset: const Offset(0, 2))
+                        offset: Offset(0, 2))
                   ]
                 : null,
           ),
@@ -178,7 +178,7 @@ class _ChatScreenState extends State<ChatScreen> {
               Icon(icon,
                   color: sel ? LightGlass.accentBlue : LightGlass.textMuted,
                   size: 16),
-              const SizedBox(width: 6),
+              SizedBox(width: 6),
               Text(
                 label,
                 style: TextStyle(
@@ -205,31 +205,32 @@ class _ChatScreenState extends State<ChatScreen> {
 
         if (convs.isEmpty) {
           return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 90),
-            physics: const BouncingScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(16, 10, 16, 90),
+            physics: BouncingScrollPhysics(),
             children: [
               _glassCard(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(24),
                 child: Column(
                   children: [
-                    const Icon(Icons.chat_bubble_outline_rounded,
+                    Icon(Icons.chat_bubble_outline_rounded,
                         color: LightGlass.textFaint, size: 48),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     Text('لا توجد محادثات بعد'.tr,
                         style: TextStyle(
                             color: LightGlass.text,
                             fontWeight: FontWeight.bold,
                             fontSize: 15)),
-                    const SizedBox(height: 6),
+                    SizedBox(height: 6),
                     Text(
-                      'ابحث عن أصدقاء من تبويب "الأصدقاء" وابدأ محادثتك الأولى!'.tr,
+                      'ابحث عن أصدقاء من تبويب "الأصدقاء" وابدأ محادثتك الأولى!'
+                          .tr,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                           color: LightGlass.textMuted,
                           fontSize: 12,
                           height: 1.4),
                     ),
-                    const SizedBox(height: 14),
+                    SizedBox(height: 14),
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: LightGlass.accent,
@@ -271,14 +272,12 @@ class _ChatScreenState extends State<ChatScreen> {
     return _glassCard(
       padding: EdgeInsets.zero,
       child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         leading: _avatar(c.otherPhoto, c.otherName, radius: 23),
         title: Text(c.otherName,
             style: TextStyle(
                 color: LightGlass.text,
-                fontWeight:
-                    hasUnread ? FontWeight.w900 : FontWeight.bold,
+                fontWeight: hasUnread ? FontWeight.w900 : FontWeight.bold,
                 fontSize: 14)),
         subtitle: Text(
           c.lastMessage.isEmpty ? '@${c.otherUsername}' : c.lastMessage,
@@ -294,25 +293,23 @@ class _ChatScreenState extends State<ChatScreen> {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text(time,
-                style: const TextStyle(
-                    color: LightGlass.textFaint, fontSize: 10)),
-            const SizedBox(height: 4),
+                style: TextStyle(color: LightGlass.textFaint, fontSize: 10)),
+            SizedBox(height: 4),
             if (hasUnread)
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                padding: EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEF4444),
+                  color: L(0xFFEF4444),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text('${c.unreadCount}',
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: Colors.white,
                         fontSize: 10,
                         fontWeight: FontWeight.w900)),
               )
             else
-              const Icon(Icons.chat_bubble_outline_rounded,
+              Icon(Icons.chat_bubble_outline_rounded,
                   color: LightGlass.textFaint, size: 16),
           ],
         ),
@@ -351,41 +348,40 @@ class _ChatScreenState extends State<ChatScreen> {
                             color: LightGlass.text,
                             fontSize: 13,
                             fontWeight: FontWeight.bold)),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 7, vertical: 2),
+                      padding: EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEF4444),
+                        color: L(0xFFEF4444),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text('${requests.length}',
-                          style: const TextStyle(
+                          style: TextStyle(
                               color: Colors.white,
                               fontSize: 10,
                               fontWeight: FontWeight.w900)),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 ...requests.map((r) => _glassCard(
-                      padding: const EdgeInsets.all(10),
-                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: EdgeInsets.all(10),
+                      margin: EdgeInsets.only(bottom: 8),
                       child: Row(
                         children: [
                           _avatar(r.fromPhoto, r.fromName, radius: 21),
-                          const SizedBox(width: 10),
+                          SizedBox(width: 10),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(r.fromName,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                         color: LightGlass.text,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 13)),
                                 Text('@{} يريد إضافتك'.trp([r.fromUsername]),
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                         color: LightGlass.textMuted,
                                         fontSize: 11)),
                               ],
@@ -393,13 +389,12 @@ class _ChatScreenState extends State<ChatScreen> {
                           ),
                           // قبول
                           IconButton(
-                            icon: const Icon(Icons.check_circle_rounded,
-                                color: Color(0xFF10B981), size: 28),
+                            icon: Icon(Icons.check_circle_rounded,
+                                color: L(0xFF10B981), size: 28),
                             tooltip: 'قبول'.tr,
                             onPressed: () async {
                               AppHaptics.medium();
-                              await SocialService()
-                                  .acceptFriendRequest(r.id);
+                              await SocialService().acceptFriendRequest(r.id);
                               if (mounted) {
                                 TopNotification.show(context,
                                     'أصبح {} صديقك! 🤝'.trp([r.fromName]),
@@ -409,13 +404,12 @@ class _ChatScreenState extends State<ChatScreen> {
                           ),
                           // رفض
                           IconButton(
-                            icon: const Icon(Icons.cancel_rounded,
-                                color: Color(0xFFEF4444), size: 26),
+                            icon: Icon(Icons.cancel_rounded,
+                                color: L(0xFFEF4444), size: 26),
                             tooltip: 'رفض'.tr,
                             onPressed: () async {
                               AppHaptics.light();
-                              await SocialService()
-                                  .declineFriendRequest(r.id);
+                              await SocialService().declineFriendRequest(r.id);
                             },
                           ),
                         ],
@@ -430,25 +424,24 @@ class _ChatScreenState extends State<ChatScreen> {
         // ── البحث ──
         TextField(
           controller: _searchController,
-          style: const TextStyle(color: LightGlass.text, fontSize: 14),
+          style: TextStyle(color: LightGlass.text, fontSize: 14),
           decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.search_rounded,
-                color: LightGlass.accentBlue),
+            prefixIcon:
+                Icon(Icons.search_rounded, color: LightGlass.accentBlue),
             hintText: 'ابحث باسم المستخدم الفريد (مثال: okey_king)...'.tr,
-            hintStyle:
-                const TextStyle(color: LightGlass.textFaint, fontSize: 12),
+            hintStyle: TextStyle(color: LightGlass.textFaint, fontSize: 12),
             filled: true,
             fillColor: LightGlass.cardStrong,
             enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(color: LightGlass.border)),
+                borderSide: BorderSide(color: LightGlass.border)),
             focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(
-                    color: LightGlass.accentBlue, width: 1.4)),
+                borderSide:
+                    BorderSide(color: LightGlass.accentBlue, width: 1.4)),
             suffixIcon: _searchController.text.isNotEmpty
                 ? IconButton(
-                    icon: const Icon(Icons.clear,
+                    icon: Icon(Icons.clear,
                         color: LightGlass.textMuted, size: 18),
                     onPressed: () {
                       _searchController.clear();
@@ -459,13 +452,11 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           onChanged: _performSearch,
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16),
 
         // ── نتائج البحث ──
         if (_isSearching)
-          const Center(
-              child:
-                  CircularProgressIndicator(color: LightGlass.accentBlue))
+          Center(child: CircularProgressIndicator(color: LightGlass.accentBlue))
         else if (_searchResults.isNotEmpty) ...[
           Text('نتائج البحث:'.tr,
               style: TextStyle(
@@ -481,8 +472,9 @@ class _ChatScreenState extends State<ChatScreen> {
               return StreamBuilder<List<Map<String, dynamic>>>(
                 stream: SocialService().getFriendsStream(myUid),
                 builder: (context, frSnap) {
-                  final friendUids =
-                      (frSnap.data ?? []).map((f) => f['uid'] as String).toSet();
+                  final friendUids = (frSnap.data ?? [])
+                      .map((f) => f['uid'] as String)
+                      .toSet();
                   return Column(
                     children: _searchResults.map((user) {
                       final isMe = user.uid == myUid;
@@ -496,7 +488,7 @@ class _ChatScreenState extends State<ChatScreen> {
               );
             },
           ),
-          const Divider(color: LightGlass.borderDim, height: 24),
+          Divider(color: LightGlass.borderDim, height: 24),
         ],
 
         // ── قائمة أصدقائي ──
@@ -513,13 +505,12 @@ class _ChatScreenState extends State<ChatScreen> {
             final friends = snapshot.data ?? [];
             if (friends.isEmpty) {
               return _glassCard(
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsets.all(20),
                 child: Center(
                   child: Text(
                     'لم تُضِف أصدقاء بعد. ابحث عنهم أعلاه وأرسل طلب صداقة!'.tr,
                     textAlign: TextAlign.center,
-                    style:
-                        TextStyle(color: LightGlass.textMuted, fontSize: 12),
+                    style: TextStyle(color: LightGlass.textMuted, fontSize: 12),
                   ),
                 ),
               );
@@ -535,63 +526,59 @@ class _ChatScreenState extends State<ChatScreen> {
                   photoUrl: f['photoUrl'] ?? '',
                 );
                 return _glassCard(
-                  padding: const EdgeInsets.all(10),
-                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: EdgeInsets.all(10),
+                  margin: EdgeInsets.only(bottom: 8),
                   child: Row(
                     children: [
                       _avatar(friendUser.photoUrl, friendUser.displayName,
                           radius: 21),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(friendUser.displayName,
-                                style: const TextStyle(
+                                style: TextStyle(
                                     color: LightGlass.text,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14)),
                             Text('@${friendUser.username}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                     color: LightGlass.accentBlue,
                                     fontSize: 11)),
                           ],
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.chat_bubble_outline_rounded,
+                        icon: Icon(Icons.chat_bubble_outline_rounded,
                             color: LightGlass.accentBlue, size: 20),
                         tooltip: 'مراسلة'.tr,
                         onPressed: () => _openChat(friendUser),
                       ),
                       PopupMenuButton<String>(
-                        icon: const Icon(Icons.more_vert_rounded,
+                        icon: Icon(Icons.more_vert_rounded,
                             color: LightGlass.textMuted, size: 20),
                         color: LightGlass.cardStrong,
                         itemBuilder: (ctx) => [
                           PopupMenuItem(
                               value: 'delete',
                               child: Text('🗑️ حذف من الأصدقاء'.tr,
-                                  style:
-                                      TextStyle(color: LightGlass.text))),
+                                  style: TextStyle(color: LightGlass.text))),
                           PopupMenuItem(
                               value: 'report',
                               child: Text('🚨 إبلاغ للإدارة'.tr,
-                                  style:
-                                      TextStyle(color: Color(0xFFDC2626)))),
+                                  style: TextStyle(color: L(0xFFDC2626)))),
                           PopupMenuItem(
                               value: 'block',
                               child: Text('🚫 حظر اللاعب'.tr,
-                                  style:
-                                      TextStyle(color: Color(0xFFDC2626)))),
+                                  style: TextStyle(color: L(0xFFDC2626)))),
                         ],
                         onSelected: (val) async {
                           if (val == 'delete') {
                             await SocialService()
                                 .removeFriend(myUid, friendUser.uid);
                             if (mounted) {
-                              TopNotification.show(
-                                  context, 'تم حذف الصديق'.tr);
+                              TopNotification.show(context, 'تم حذف الصديق'.tr);
                             }
                           }
                           if (val == 'report') {
@@ -614,27 +601,27 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget _searchResultTile(
       AppUser user, bool isMe, bool isFriend, bool isPending, String myUid) {
     return _glassCard(
-      padding: const EdgeInsets.all(12),
-      margin: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.all(12),
+      margin: EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
           _avatar(user.photoUrl, user.displayName, radius: 22),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(user.displayName,
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: LightGlass.text,
                         fontWeight: FontWeight.bold,
                         fontSize: 14)),
                 Text('@${user.username}',
-                    style: const TextStyle(
-                        color: LightGlass.accentBlue, fontSize: 11)),
+                    style:
+                        TextStyle(color: LightGlass.accentBlue, fontSize: 11)),
                 Text('تقييم {} • مستوى {}'.trp([user.rating, user.level]),
-                    style: const TextStyle(
-                        color: LightGlass.textFaint, fontSize: 10.5)),
+                    style:
+                        TextStyle(color: LightGlass.textFaint, fontSize: 10.5)),
               ],
             ),
           ),
@@ -645,26 +632,25 @@ class _ChatScreenState extends State<ChatScreen> {
                 padding: EdgeInsets.symmetric(horizontal: 8),
                 child: Text('صديقك ✓'.tr,
                     style: TextStyle(
-                        color: Color(0xFF10B981),
+                        color: L(0xFF10B981),
                         fontSize: 11,
                         fontWeight: FontWeight.bold)),
               )
             else if (isPending)
               TextButton.icon(
                 onPressed: () async {
-                  await SocialService()
-                      .cancelFriendRequest(myUid, user.uid);
+                  await SocialService().cancelFriendRequest(myUid, user.uid);
                 },
-                icon: const Icon(Icons.hourglass_top_rounded,
+                icon: Icon(Icons.hourglass_top_rounded,
                     color: LightGlass.textMuted, size: 15),
                 label: Text('تم الإرسال — إلغاء'.tr,
-                    style: TextStyle(
-                        color: LightGlass.textMuted, fontSize: 10.5)),
+                    style:
+                        TextStyle(color: LightGlass.textMuted, fontSize: 10.5)),
               )
             else
               IconButton(
-                icon: const Icon(Icons.person_add_rounded,
-                    color: Color(0xFF10B981), size: 22),
+                icon: Icon(Icons.person_add_rounded,
+                    color: L(0xFF10B981), size: 22),
                 tooltip: 'إرسال طلب صداقة'.tr,
                 onPressed: () async {
                   AppHaptics.selection();
@@ -684,20 +670,20 @@ class _ChatScreenState extends State<ChatScreen> {
                 },
               ),
             IconButton(
-              icon: const Icon(Icons.chat_bubble_outline_rounded,
+              icon: Icon(Icons.chat_bubble_outline_rounded,
                   color: LightGlass.accentBlue, size: 20),
               tooltip: 'مراسلة'.tr,
               onPressed: () => _openChat(user),
             ),
             PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert_rounded,
+              icon: Icon(Icons.more_vert_rounded,
                   color: LightGlass.textMuted, size: 20),
               color: LightGlass.cardStrong,
               itemBuilder: (ctx) => [
                 PopupMenuItem(
                     value: 'report',
                     child: Text('🚨 إبلاغ للإدارة'.tr,
-                        style: TextStyle(color: Color(0xFFDC2626)))),
+                        style: TextStyle(color: L(0xFFDC2626)))),
                 PopupMenuItem(
                     value: 'block',
                     child: Text('🚫 حظر اللاعب'.tr,
@@ -734,7 +720,7 @@ class _ChatScreenState extends State<ChatScreen> {
               border: Border.all(color: LightGlass.border),
               boxShadow: [
                 BoxShadow(
-                    color: const Color(0xFF64748B).withOpacity(0.08),
+                    color: L(0xFF64748B).withOpacity(0.08),
                     blurRadius: 10,
                     offset: const Offset(0, 3)),
               ],
@@ -778,13 +764,10 @@ class _ChatScreenState extends State<ChatScreen> {
       height: radius * 2,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: const LinearGradient(
-            colors: [Color(0xFF60A5FA), Color(0xFF3B82F6)]),
+        gradient: LinearGradient(colors: [L(0xFF60A5FA), L(0xFF3B82F6)]),
         border: Border.all(color: Colors.white, width: 1.5),
         boxShadow: [
-          BoxShadow(
-              color: const Color(0xFF3B82F6).withOpacity(0.25),
-              blurRadius: 6)
+          BoxShadow(color: L(0xFF3B82F6).withOpacity(0.25), blurRadius: 6)
         ],
       ),
       child: Center(child: content),
@@ -813,17 +796,17 @@ class _ChatScreenState extends State<ChatScreen> {
           backgroundColor: LightGlass.cardStrong,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(22),
-            side: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+            side: BorderSide(color: L(0xFFEF4444), width: 1.5),
           ),
           title: Row(
             children: [
-              const Icon(Icons.report_problem_rounded,
-                  color: Color(0xFFEF4444), size: 24),
-              const SizedBox(width: 8),
+              Icon(Icons.report_problem_rounded,
+                  color: L(0xFFEF4444), size: 24),
+              SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'إبلاغ عن @{}'.trp([targetUser.username]),
-                  style: const TextStyle(
+                  style: TextStyle(
                       color: LightGlass.text,
                       fontSize: 16,
                       fontWeight: FontWeight.bold),
@@ -840,12 +823,11 @@ class _ChatScreenState extends State<ChatScreen> {
                 Text('اختر سبب البلاغ:'.tr,
                     style:
                         TextStyle(color: LightGlass.textMuted, fontSize: 12)),
-                const SizedBox(height: 6),
+                SizedBox(height: 6),
                 DropdownButtonFormField<String>(
                   value: selectedReason,
                   dropdownColor: LightGlass.cardStrong,
-                  style: const TextStyle(
-                      color: LightGlass.text, fontSize: 13),
+                  style: TextStyle(color: LightGlass.text, fontSize: 13),
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: LightGlass.inputFill,
@@ -860,27 +842,25 @@ class _ChatScreenState extends State<ChatScreen> {
                     'رسائل مزعجة أو سبام'.tr,
                     'أخرى'.tr,
                   ]
-                      .map((s) =>
-                          DropdownMenuItem(value: s, child: Text(s)))
+                      .map((s) => DropdownMenuItem(value: s, child: Text(s)))
                       .toList(),
                   onChanged: (val) {
                     if (val != null) setDialogState(() => selectedReason = val);
                   },
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Text('تفاصيل إضافية (اختياري):'.tr,
                     style:
                         TextStyle(color: LightGlass.textMuted, fontSize: 12)),
-                const SizedBox(height: 6),
+                SizedBox(height: 6),
                 TextField(
                   controller: detailsController,
                   maxLines: 3,
-                  style: const TextStyle(
-                      color: LightGlass.text, fontSize: 12.5),
+                  style: TextStyle(color: LightGlass.text, fontSize: 12.5),
                   decoration: InputDecoration(
                     hintText: 'اكتب ما حدث للمساعدة في مراجعة البلاغ...'.tr,
-                    hintStyle: const TextStyle(
-                        color: LightGlass.textFaint, fontSize: 12),
+                    hintStyle:
+                        TextStyle(color: LightGlass.textFaint, fontSize: 12),
                     filled: true,
                     fillColor: LightGlass.inputFill,
                     border: OutlineInputBorder(
@@ -899,7 +879,7 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFDC2626),
+                backgroundColor: L(0xFFDC2626),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10)),
@@ -920,7 +900,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   Navigator.of(ctx).pop();
                   TopNotification.show(
                     context,
-                    'تم إرسال البلاغ للإدارة بنجاح! سيتم التحقق واتخاذ الإجراء اللازم.'.tr,
+                    'تم إرسال البلاغ للإدارة بنجاح! سيتم التحقق واتخاذ الإجراء اللازم.'
+                        .tr,
                     icon: Icons.shield_rounded,
                   );
                 }
@@ -939,25 +920,25 @@ class _ChatScreenState extends State<ChatScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: LightGlass.cardStrong,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text('حظر اللاعب'.tr,
-            style: TextStyle(
-                color: LightGlass.text, fontWeight: FontWeight.bold)),
+            style:
+                TextStyle(color: LightGlass.text, fontWeight: FontWeight.bold)),
         content: Text(
-          'هل أنت متأكد من حظر @{}؟ لن يتمكن من مراسلتك أو اللعب معك مرة أخرى.'.trp([targetUser.username]),
-          style: const TextStyle(
-              color: LightGlass.textMuted, fontSize: 13, height: 1.4),
+          'هل أنت متأكد من حظر @{}؟ لن يتمكن من مراسلتك أو اللعب معك مرة أخرى.'
+              .trp([targetUser.username]),
+          style:
+              TextStyle(color: LightGlass.textMuted, fontSize: 13, height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: Text('إلغاء'.tr,
-                style: TextStyle(color: LightGlass.textMuted)),
+            child:
+                Text('إلغاء'.tr, style: TextStyle(color: LightGlass.textMuted)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFDC2626),
+              backgroundColor: L(0xFFDC2626),
               foregroundColor: Colors.white,
             ),
             onPressed: () async {
@@ -995,8 +976,8 @@ class _NotificationBell extends StatelessWidget {
         return StreamBuilder<List<ConversationSummary>>(
           stream: SocialService().getConversationsStream(myUid),
           builder: (context, convSnap) {
-            final unread = (convSnap.data ?? [])
-                .fold<int>(0, (s, c) => s + c.unreadCount);
+            final unread =
+                (convSnap.data ?? []).fold<int>(0, (s, c) => s + c.unreadCount);
             final total = reqCount + unread;
             return GestureDetector(
               onTap: () {
@@ -1018,19 +999,19 @@ class _NotificationBell extends StatelessWidget {
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        const Icon(Icons.notifications_rounded,
+                        Icon(Icons.notifications_rounded,
                             color: LightGlass.accent, size: 20),
                         if (total > 0)
                           Positioned(
                             top: 4,
                             right: 4,
                             child: Container(
-                              padding: const EdgeInsets.all(3),
-                              constraints: const BoxConstraints(
-                                  minWidth: 15, minHeight: 15),
-                              decoration: const BoxDecoration(
+                              padding: EdgeInsets.all(3),
+                              constraints:
+                                  BoxConstraints(minWidth: 15, minHeight: 15),
+                              decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: Color(0xFFEF4444),
+                                color: L(0xFFEF4444),
                               ),
                               child: Center(
                                 child: Text(
@@ -1062,8 +1043,7 @@ class NotificationsSheet extends StatelessWidget {
 
   const NotificationsSheet({super.key, this.onOpenChat});
 
-  static void show(BuildContext context,
-      {void Function(AppUser)? onOpenChat}) {
+  static void show(BuildContext context, {void Function(AppUser)? onOpenChat}) {
     BroadcastService.instance.markAllSeen();
     showModalBottomSheet(
       context: context,
@@ -1081,13 +1061,12 @@ class NotificationsSheet extends StatelessWidget {
       height: MediaQuery.of(context).size.height * 0.62,
       decoration: BoxDecoration(
         color: LightGlass.cardStrong,
-        borderRadius:
-            const BorderRadius.vertical(top: Radius.circular(26)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
         border: Border.all(color: LightGlass.border),
       ),
       child: Column(
         children: [
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           Container(
             width: 40,
             height: 4,
@@ -1131,44 +1110,38 @@ class NotificationsSheet extends StatelessWidget {
                                 color: LightGlass.textSoft,
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 6),
+                        SizedBox(height: 6),
                         ...items.take(3).map((b) => Container(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              padding: const EdgeInsets.all(10),
+                              margin: EdgeInsets.only(bottom: 8),
+                              padding: EdgeInsets.all(10),
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(colors: [
-                                  const Color(0xFFFFD54F)
-                                      .withOpacity(0.14),
+                                  L(0xFFFFD54F).withOpacity(0.14),
                                   LightGlass.card,
                                 ]),
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
-                                    color: const Color(0xFFFFD54F)
-                                        .withOpacity(0.35)),
+                                    color: L(0xFFFFD54F).withOpacity(0.35)),
                               ),
                               child: Row(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text('📢',
-                                      style: TextStyle(fontSize: 18)),
-                                  const SizedBox(width: 10),
+                                  Text('📢', style: TextStyle(fontSize: 18)),
+                                  SizedBox(width: 10),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(b.title,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                                 color: LightGlass.text,
                                                 fontSize: 12.5,
-                                                fontWeight:
-                                                    FontWeight.w800)),
-                                        const SizedBox(height: 2),
+                                                fontWeight: FontWeight.w800)),
+                                        SizedBox(height: 2),
                                         Text(b.body,
-                                            style: const TextStyle(
-                                                color:
-                                                    LightGlass.textMuted,
+                                            style: TextStyle(
+                                                color: LightGlass.textMuted,
                                                 fontSize: 11.5,
                                                 height: 1.4)),
                                       ],
@@ -1185,8 +1158,7 @@ class NotificationsSheet extends StatelessWidget {
 
                 // طلبات الصداقة
                 StreamBuilder<List<FriendRequest>>(
-                  stream:
-                      SocialService().getIncomingRequestsStream(myUid),
+                  stream: SocialService().getIncomingRequestsStream(myUid),
                   builder: (context, snap) {
                     final requests = snap.data ?? [];
                     if (requests.isEmpty) return const SizedBox.shrink();
@@ -1198,43 +1170,39 @@ class NotificationsSheet extends StatelessWidget {
                                 color: LightGlass.textSoft,
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 6),
+                        SizedBox(height: 6),
                         ...requests.map((r) => Container(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              padding: const EdgeInsets.all(10),
+                              margin: EdgeInsets.only(bottom: 8),
+                              padding: EdgeInsets.all(10),
                               decoration: BoxDecoration(
                                 color: LightGlass.card,
                                 borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                    color: LightGlass.border),
+                                border: Border.all(color: LightGlass.border),
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(Icons.person_add_alt_1_rounded,
-                                      color: LightGlass.accentBlue,
-                                      size: 22),
-                                  const SizedBox(width: 10),
+                                  Icon(Icons.person_add_alt_1_rounded,
+                                      color: LightGlass.accentBlue, size: 22),
+                                  SizedBox(width: 10),
                                   Expanded(
                                     child: Text(
-                                      '{} (@{}) أرسل لك طلب صداقة'.trp([r.fromName, r.fromUsername]),
-                                      style: const TextStyle(
+                                      '{} (@{}) أرسل لك طلب صداقة'
+                                          .trp([r.fromName, r.fromUsername]),
+                                      style: TextStyle(
                                           color: LightGlass.text,
                                           fontSize: 12,
                                           fontWeight: FontWeight.w600),
                                     ),
                                   ),
                                   IconButton(
-                                    icon: const Icon(
-                                        Icons.check_circle_rounded,
-                                        color: Color(0xFF10B981),
-                                        size: 26),
+                                    icon: Icon(Icons.check_circle_rounded,
+                                        color: L(0xFF10B981), size: 26),
                                     onPressed: () => SocialService()
                                         .acceptFriendRequest(r.id),
                                   ),
                                   IconButton(
-                                    icon: const Icon(Icons.cancel_rounded,
-                                        color: Color(0xFFEF4444),
-                                        size: 24),
+                                    icon: Icon(Icons.cancel_rounded,
+                                        color: L(0xFFEF4444), size: 24),
                                     onPressed: () => SocialService()
                                         .declineFriendRequest(r.id),
                                   ),
@@ -1249,8 +1217,7 @@ class NotificationsSheet extends StatelessWidget {
 
                 // الرسائل غير المقروءة
                 StreamBuilder<List<ConversationSummary>>(
-                  stream:
-                      SocialService().getConversationsStream(myUid),
+                  stream: SocialService().getConversationsStream(myUid),
                   builder: (context, snap) {
                     final unreadConvs = (snap.data ?? [])
                         .where((c) => c.unreadCount > 0)
@@ -1262,8 +1229,7 @@ class NotificationsSheet extends StatelessWidget {
                         child: Center(
                           child: Text('لا توجد إشعارات جديدة 🎉'.tr,
                               style: TextStyle(
-                                  color: LightGlass.textMuted,
-                                  fontSize: 12.5)),
+                                  color: LightGlass.textMuted, fontSize: 12.5)),
                         ),
                       );
                     }
@@ -1275,32 +1241,29 @@ class NotificationsSheet extends StatelessWidget {
                                 color: LightGlass.textSoft,
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 6),
+                        SizedBox(height: 6),
                         ...unreadConvs.map((c) => ListTile(
-                              contentPadding:
-                                  const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 2),
-                              leading: const Icon(
-                                  Icons.mark_chat_unread_rounded,
+                              contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              leading: Icon(Icons.mark_chat_unread_rounded,
                                   color: LightGlass.accentBlue),
                               title: Text(c.otherName,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                       color: LightGlass.text,
                                       fontSize: 13,
                                       fontWeight: FontWeight.bold)),
                               subtitle: Text(c.lastMessage,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                       color: LightGlass.textMuted,
                                       fontSize: 11)),
                               trailing: Container(
-                                padding: const EdgeInsets.symmetric(
+                                padding: EdgeInsets.symmetric(
                                     horizontal: 7, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFEF4444),
-                                  borderRadius:
-                                      BorderRadius.circular(10),
+                                  color: L(0xFFEF4444),
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text('${c.unreadCount}',
                                     style: const TextStyle(
@@ -1352,8 +1315,7 @@ class _DirectChatModalState extends State<DirectChatModal> {
     // تصفير غير المقروء عند فتح المحادثة
     final myUid = AuthService().currentUser?.uid ?? '';
     SocialService().markConversationRead(
-        SocialService().getConversationId(myUid, widget.otherUser.uid),
-        myUid);
+        SocialService().getConversationId(myUid, widget.otherUser.uid), myUid);
   }
 
   Future<void> _sendMessage() async {
@@ -1386,31 +1348,28 @@ class _DirectChatModalState extends State<DirectChatModal> {
         SocialService().getConversationId(myUid, widget.otherUser.uid);
 
     return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       child: BackdropFilter(
         filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
         child: Container(
           height: MediaQuery.of(context).size.height * 0.85,
-          padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom),
+          padding:
+              EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
           decoration: BoxDecoration(
             color: LightGlass.cardStrong,
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(28)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
             border: Border.all(color: LightGlass.border),
           ),
           child: Column(
             children: [
               // الترويسة
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 12),
-                decoration: const BoxDecoration(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
                   color: LightGlass.cardStrong,
-                  borderRadius:
-                      BorderRadius.vertical(top: Radius.circular(28)),
-                  border: Border(
-                      bottom: BorderSide(color: LightGlass.borderDim)),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                  border:
+                      Border(bottom: BorderSide(color: LightGlass.borderDim)),
                 ),
                 child: Row(
                   children: [
@@ -1419,25 +1378,26 @@ class _DirectChatModalState extends State<DirectChatModal> {
                       name: widget.otherUser.displayName,
                       size: 40,
                     ),
-                    const SizedBox(width: 10),
+                    SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(widget.otherUser.displayName,
-                              style: const TextStyle(
+                              style: TextStyle(
                                   color: LightGlass.text,
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold)),
-                          Text('@{} • متصل الآن 🟢'.trp([widget.otherUser.username]),
-                              style: const TextStyle(
-                                  color: Color(0xFF047857),
-                                  fontSize: 11)),
+                          Text(
+                              '@{} • متصل الآن 🟢'
+                                  .trp([widget.otherUser.username]),
+                              style: TextStyle(
+                                  color: L(0xFF047857), fontSize: 11)),
                         ],
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close_rounded,
+                      icon: Icon(Icons.close_rounded,
                           color: LightGlass.textMuted),
                       onPressed: () => Navigator.of(context).pop(),
                     ),
@@ -1448,8 +1408,7 @@ class _DirectChatModalState extends State<DirectChatModal> {
               // الرسائل
               Expanded(
                 child: StreamBuilder<List<ChatMessage>>(
-                  stream:
-                      SocialService().getMessagesStream(convId, myUid),
+                  stream: SocialService().getMessagesStream(convId, myUid),
                   builder: (context, snapshot) {
                     final messages = snapshot.data ?? [];
 
@@ -1458,14 +1417,13 @@ class _DirectChatModalState extends State<DirectChatModal> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text('👋',
-                                style: TextStyle(fontSize: 40)),
-                            const SizedBox(height: 8),
+                            Text('👋', style: TextStyle(fontSize: 40)),
+                            SizedBox(height: 8),
                             Text(
-                                'ابدأ محادثتك مع {}!'.trp([widget.otherUser.displayName]),
-                                style: const TextStyle(
-                                    color: LightGlass.textMuted,
-                                    fontSize: 13)),
+                                'ابدأ محادثتك مع {}!'
+                                    .trp([widget.otherUser.displayName]),
+                                style: TextStyle(
+                                    color: LightGlass.textMuted, fontSize: 13)),
                           ],
                         ),
                       );
@@ -1486,43 +1444,38 @@ class _DirectChatModalState extends State<DirectChatModal> {
                               ? Alignment.centerRight
                               : Alignment.centerLeft,
                           child: Container(
-                            margin:
-                                const EdgeInsets.symmetric(vertical: 4),
-                            padding: const EdgeInsets.symmetric(
+                            margin: EdgeInsets.symmetric(vertical: 4),
+                            padding: EdgeInsets.symmetric(
                                 horizontal: 14, vertical: 9),
                             constraints: BoxConstraints(
                                 maxWidth:
-                                    MediaQuery.of(context).size.width *
-                                        0.75),
+                                    MediaQuery.of(context).size.width * 0.75),
                             decoration: BoxDecoration(
                               gradient: isMe
-                                  ? const LinearGradient(colors: [
-                                      Color(0xFF475569),
-                                      Color(0xFF334155)
-                                    ])
+                                  ? LinearGradient(
+                                      colors: [L(0xFF475569), L(0xFF334155)])
                                   : null,
                               color: isMe ? null : LightGlass.card,
                               borderRadius: BorderRadius.only(
-                                topLeft: const Radius.circular(16),
-                                topRight: const Radius.circular(16),
+                                topLeft: Radius.circular(16),
+                                topRight: Radius.circular(16),
                                 bottomLeft: isMe
-                                    ? const Radius.circular(16)
-                                    : const Radius.circular(4),
+                                    ? Radius.circular(16)
+                                    : Radius.circular(4),
                                 bottomRight: isMe
-                                    ? const Radius.circular(4)
-                                    : const Radius.circular(16),
+                                    ? Radius.circular(4)
+                                    : Radius.circular(16),
                               ),
                               border: Border.all(
                                   color: isMe
-                                      ? const Color(0x40FFD54F)
+                                      ? Color(0x40FFD54F)
                                       : LightGlass.borderDim,
                                   width: 0.8),
                               boxShadow: [
                                 BoxShadow(
-                                    color: Colors.black
-                                        .withOpacity(0.06),
+                                    color: Colors.black.withOpacity(0.06),
                                     blurRadius: 6,
-                                    offset: const Offset(0, 2)),
+                                    offset: Offset(0, 2)),
                               ],
                             ),
                             child: Column(
@@ -1536,7 +1489,7 @@ class _DirectChatModalState extends State<DirectChatModal> {
                                             ? Colors.white
                                             : LightGlass.text,
                                         fontSize: 13.5)),
-                                const SizedBox(height: 2),
+                                SizedBox(height: 2),
                                 Text(
                                   '${msg.timestamp.hour.toString().padLeft(2, '0')}:${msg.timestamp.minute.toString().padLeft(2, '0')}',
                                   style: TextStyle(
@@ -1557,29 +1510,26 @@ class _DirectChatModalState extends State<DirectChatModal> {
 
               // حقل الإدخال
               Container(
-                padding: const EdgeInsets.all(12),
-                decoration: const BoxDecoration(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
                   color: LightGlass.cardStrong,
-                  border: Border(
-                      top: BorderSide(color: LightGlass.borderDim)),
+                  border: Border(top: BorderSide(color: LightGlass.borderDim)),
                 ),
                 child: Row(
                   children: [
                     Expanded(
                       child: TextField(
                         controller: _msgController,
-                        style: const TextStyle(
-                            color: LightGlass.text, fontSize: 13.5),
+                        style:
+                            TextStyle(color: LightGlass.text, fontSize: 13.5),
                         decoration: InputDecoration(
                           hintText: 'اكتب رسالة...'.tr,
-                          hintStyle: const TextStyle(
-                              color: LightGlass.textFaint,
-                              fontSize: 13),
+                          hintStyle: TextStyle(
+                              color: LightGlass.textFaint, fontSize: 13),
                           filled: true,
                           fillColor: LightGlass.inputFill,
-                          contentPadding:
-                              const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 10),
+                          contentPadding: EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 10),
                           border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(24),
                               borderSide: BorderSide.none),
@@ -1587,14 +1537,12 @@ class _DirectChatModalState extends State<DirectChatModal> {
                         onSubmitted: (_) => _sendMessage(),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     Container(
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        gradient: LinearGradient(colors: [
-                          Color(0xFF60A5FA),
-                          Color(0xFF3B82F6)
-                        ]),
+                        gradient: LinearGradient(
+                            colors: [L(0xFF60A5FA), L(0xFF3B82F6)]),
                       ),
                       child: IconButton(
                         icon: const Icon(Icons.send_rounded,

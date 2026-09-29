@@ -78,7 +78,9 @@ SkinEffect skinEffectOf(StoreItem? item) {
   if (n.contains('شفق'.tr) || n.contains('aurora')) return SkinEffect.aurora;
   if (n.contains('تنين'.tr) || n.contains('dragon')) return SkinEffect.dragon;
   if (n.contains('جمر'.tr) || n.contains('ember')) return SkinEffect.ember;
-  if (n.contains('صقيع'.tr) || n.contains('كريستال'.tr) || n.contains('crystal')) {
+  if (n.contains('صقيع'.tr) ||
+      n.contains('كريستال'.tr) ||
+      n.contains('crystal')) {
     return SkinEffect.crystal;
   }
   // ملاحظة: تأثيرات الخشب (wood/walnut/mahogany) تُفعَّل فقط عبر
@@ -198,9 +200,7 @@ class _AnimatedSkinLayerState extends State<AnimatedSkinLayer>
                   _pointer,
                   widget.intensity + (_pointer != null ? 0.35 : 0),
                 ),
-                widget.woodUnderlay
-                    ? StoreService().defaultWoodImage
-                    : null,
+                widget.woodUnderlay ? StoreService().defaultWoodImage : null,
               ),
             ),
           ),
@@ -406,9 +406,11 @@ class _FireSurfacePainter extends CustomPainter {
     for (int i = 0; i < 8; i++) {
       final seed = rng.nextDouble() * 10;
       _flameTongue(
-        canvas, size,
+        canvas,
+        size,
         baseX: (i + 0.35 + rng.nextDouble() * 0.3) / 8 * size.width,
-        maxH: size.height * (0.5 + 0.28 * (0.5 + 0.5 * math.sin(tt * 2 + seed))),
+        maxH:
+            size.height * (0.5 + 0.28 * (0.5 + 0.5 * math.sin(tt * 2 + seed))),
         w: size.width * (0.13 + rng.nextDouble() * 0.07),
         swayPhase: seed,
         tt: tt,
@@ -424,10 +426,12 @@ class _FireSurfacePainter extends CustomPainter {
     for (int i = 0; i < 5; i++) {
       final seed = 3 + rng.nextDouble() * 10;
       _flameTongue(
-        canvas, size,
+        canvas,
+        size,
         baseX: (i + 0.5) / 5 * size.width +
             math.sin(tt + seed) * size.width * 0.04,
-        maxH: size.height * (0.42 + 0.22 * (0.5 + 0.5 * math.sin(tt * 2 + seed))),
+        maxH:
+            size.height * (0.42 + 0.22 * (0.5 + 0.5 * math.sin(tt * 2 + seed))),
         w: size.width * (0.07 + rng.nextDouble() * 0.045),
         swayPhase: seed * 1.7,
         tt: tt,
@@ -445,7 +449,8 @@ class _FireSurfacePainter extends CustomPainter {
       final cycles = 1 + rng.nextInt(3);
       final p = (t * cycles + rng.nextDouble()) % 1.0;
       final x0 = rng.nextDouble() * size.width;
-      final x = x0 + math.sin(p * 7 + i * 2.3) * size.width * 0.06 +
+      final x = x0 +
+          math.sin(p * 7 + i * 2.3) * size.width * 0.06 +
           p * size.width * 0.06 * (rng.nextBool() ? 1 : -1);
       final y = size.height - p * size.height * 1.05;
       if (y < -4) continue;
@@ -465,9 +470,9 @@ class _FireSurfacePainter extends CustomPainter {
         Offset(x, y),
         r,
         Paint()
-          ..color = Color.lerp(const Color(0xFFFFF3B0),
-                  const Color(0xFFF97316), p)!
-              .withOpacity(alpha.clamp(0.0, 1.0)),
+          ..color =
+              Color.lerp(const Color(0xFFFFF3B0), const Color(0xFFF97316), p)!
+                  .withOpacity(alpha.clamp(0.0, 1.0)),
       );
     }
 
@@ -516,13 +521,12 @@ class _FireSurfacePainter extends CustomPainter {
     required List<Color> colors,
   }) {
     final baseY = size.height;
-    final tipX =
-        baseX + math.sin(tt * 2 + swayPhase) * w * 1.1;
+    final tipX = baseX + math.sin(tt * 2 + swayPhase) * w * 1.1;
     final tipY = baseY - maxH;
     final path = Path()..moveTo(baseX - w, baseY);
     // الجانب الأيسر للسان
-    path.quadraticBezierTo(
-        baseX - w * 0.9, baseY - maxH * 0.4, tipX - w * 0.1, tipY + maxH * 0.15);
+    path.quadraticBezierTo(baseX - w * 0.9, baseY - maxH * 0.4, tipX - w * 0.1,
+        tipY + maxH * 0.15);
     path.quadraticBezierTo(tipX, tipY, tipX, tipY);
     // الجانب الأيمن
     path.quadraticBezierTo(
@@ -591,8 +595,7 @@ class _IceSurfacePainter extends CustomPainter {
     ];
     for (int i = 0; i < frostSpots.length; i++) {
       final c = frostSpots[i];
-      final r = size.shortestSide *
-          (0.42 + 0.10 * math.sin(tt + i * 1.8));
+      final r = size.shortestSide * (0.42 + 0.10 * math.sin(tt + i * 1.8));
       canvas.drawCircle(
         c,
         r,
@@ -608,10 +611,10 @@ class _IceSurfacePainter extends CustomPainter {
       // زوائد إبرية صغيرة حول بقعة الصقيع
       for (int k = 0; k < 6; k++) {
         final ang = k / 6 * math.pi * 2 + i * 0.7;
-        final p1 = Offset(c.dx + math.cos(ang) * r * 0.4,
-            c.dy + math.sin(ang) * r * 0.4);
-        final p2 = Offset(c.dx + math.cos(ang) * r * 0.95,
-            c.dy + math.sin(ang) * r * 0.95);
+        final p1 = Offset(
+            c.dx + math.cos(ang) * r * 0.4, c.dy + math.sin(ang) * r * 0.4);
+        final p2 = Offset(
+            c.dx + math.cos(ang) * r * 0.95, c.dy + math.sin(ang) * r * 0.95);
         canvas.drawLine(
           p1,
           p2,
@@ -704,7 +707,8 @@ class _IceSurfacePainter extends CustomPainter {
       canvas.drawCircle(
         Offset(x, y),
         r * 0.35,
-        Paint()..color = const Color(0xFFD8F1FC).withOpacity((1 - p * 0.5) * 0.8),
+        Paint()
+          ..color = const Color(0xFFD8F1FC).withOpacity((1 - p * 0.5) * 0.8),
       );
     }
 
@@ -806,11 +810,10 @@ class _FireRingPainter extends CustomPainter {
     // ألسنة لهب صغيرة حول المحيط
     for (int i = 0; i < 18; i++) {
       final ang = i / 18 * math.pi * 2;
-      final flick = 0.5 +
-          0.5 * math.sin(tt * 3 + i * 1.7 + rng.nextDouble());
+      final flick = 0.5 + 0.5 * math.sin(tt * 3 + i * 1.7 + rng.nextDouble());
       final len = radius * (0.06 + 0.11 * flick);
-      final p1 = Offset(
-          c.dx + math.cos(ang) * ringR, c.dy + math.sin(ang) * ringR);
+      final p1 =
+          Offset(c.dx + math.cos(ang) * ringR, c.dy + math.sin(ang) * ringR);
       final p2 = Offset(c.dx + math.cos(ang + 0.06) * (ringR + len),
           c.dy + math.sin(ang + 0.06) * (ringR + len));
       canvas.drawLine(
@@ -848,15 +851,15 @@ class _FireRingPainter extends CustomPainter {
       final p = (t * cycles + rng.nextDouble()) % 1.0;
       final ang = rng.nextDouble() * math.pi * 2;
       final rr = ringR + p * radius * 0.55;
-      final pos = Offset(
-          c.dx + math.cos(ang) * rr, c.dy + math.sin(ang) * rr - p * 4);
+      final pos =
+          Offset(c.dx + math.cos(ang) * rr, c.dy + math.sin(ang) * rr - p * 4);
       canvas.drawCircle(
         pos,
         (1.6 - p) * 1.4,
         Paint()
-          ..color = Color.lerp(
-                  const Color(0xFFFFE08A), const Color(0xFFEF4444), p)!
-              .withOpacity((1 - p) * 0.9),
+          ..color =
+              Color.lerp(const Color(0xFFFFE08A), const Color(0xFFEF4444), p)!
+                  .withOpacity((1 - p) * 0.9),
       );
     }
   }
@@ -916,8 +919,8 @@ class _IceRingPainter extends CustomPainter {
     // بريقان دوّاران على الحلقة (glints)
     for (int i = 0; i < 2; i++) {
       final ang = tt + i * math.pi;
-      final pos = Offset(
-          c.dx + math.cos(ang) * ringR, c.dy + math.sin(ang) * ringR);
+      final pos =
+          Offset(c.dx + math.cos(ang) * ringR, c.dy + math.sin(ang) * ringR);
       canvas.drawCircle(
         pos,
         4.5,
@@ -933,8 +936,7 @@ class _IceRingPainter extends CustomPainter {
       final ang = i / 12 * math.pi * 2 + rng.nextDouble() * 0.3;
       final tw = 0.5 + 0.5 * math.sin(tt * 2 + i * 1.9);
       final rr = ringR + (rng.nextDouble() - 0.5) * radius * 0.22;
-      final pos = Offset(
-          c.dx + math.cos(ang) * rr, c.dy + math.sin(ang) * rr);
+      final pos = Offset(c.dx + math.cos(ang) * rr, c.dy + math.sin(ang) * rr);
       canvas.drawCircle(
         pos,
         1.0 + tw * 1.3,
@@ -947,16 +949,13 @@ class _IceRingPainter extends CustomPainter {
       final ang = i / 10 * math.pi * 2 + 0.31;
       final glint = 0.5 + 0.5 * math.sin(tt * 2 + i * 2.2);
       final len = radius * (0.10 + 0.08 * glint);
-      final p1 = Offset(
-          c.dx + math.cos(ang) * (ringR - 2), c.dy + math.sin(ang) * (ringR - 2));
-      final tip = Offset(
-          c.dx + math.cos(ang) * (ringR + len),
+      final p1 = Offset(c.dx + math.cos(ang) * (ringR - 2),
+          c.dy + math.sin(ang) * (ringR - 2));
+      final tip = Offset(c.dx + math.cos(ang) * (ringR + len),
           c.dy + math.sin(ang) * (ringR + len));
-      final side1 = Offset(
-          c.dx + math.cos(ang + 0.09) * ringR,
+      final side1 = Offset(c.dx + math.cos(ang + 0.09) * ringR,
           c.dy + math.sin(ang + 0.09) * ringR);
-      final side2 = Offset(
-          c.dx + math.cos(ang - 0.09) * ringR,
+      final side2 = Offset(c.dx + math.cos(ang - 0.09) * ringR,
           c.dy + math.sin(ang - 0.09) * ringR);
       final shard = Path()
         ..moveTo(side1.dx, side1.dy)
@@ -965,8 +964,7 @@ class _IceRingPainter extends CustomPainter {
         ..close();
       canvas.drawPath(
         shard,
-        Paint()
-          ..color = Color(0xFFD8F1FC).withOpacity(0.35 + glint * 0.45),
+        Paint()..color = Color(0xFFD8F1FC).withOpacity(0.35 + glint * 0.45),
       );
       // حد مضيء على السنبلة
       canvas.drawLine(
@@ -1001,32 +999,65 @@ class _FxSurfacePainter extends CustomPainter {
     final tt = t * math.pi * 2;
     final rng = math.Random(97);
     switch (effect) {
-      case SkinEffect.lava: _lava(canvas, size, tt, rng); break;
-      case SkinEffect.blaze: _blaze(canvas, size, tt, rng); break;
-      case SkinEffect.frost: _frost(canvas, size, tt, rng); break;
-      case SkinEffect.storm: _storm(canvas, size, tt, rng); break;
-      case SkinEffect.gold: _gold(canvas, size, tt, rng); break;
-      case SkinEffect.crystal: _crystal(canvas, size, tt, rng); break;
-      case SkinEffect.neon: _neon(canvas, size, tt, rng); break;
-      case SkinEffect.galaxy: _galaxy(canvas, size, tt, rng); break;
-      case SkinEffect.ocean: _ocean(canvas, size, tt, rng); break;
-      case SkinEffect.aurora: _aurora(canvas, size, tt, rng); break;
-      case SkinEffect.dragon: _dragon(canvas, size, tt, rng); break;
-      case SkinEffect.ember: _ember(canvas, size, tt, rng); break;
-      case SkinEffect.wood: _woodPlanks(canvas, size, tt, rng, 0); break;
-      case SkinEffect.walnut: _woodPlanks(canvas, size, tt, rng, 1); break;
-      case SkinEffect.mahogany: _woodPlanks(canvas, size, tt, rng, 2); break;
-      default: break;
+      case SkinEffect.lava:
+        _lava(canvas, size, tt, rng);
+        break;
+      case SkinEffect.blaze:
+        _blaze(canvas, size, tt, rng);
+        break;
+      case SkinEffect.frost:
+        _frost(canvas, size, tt, rng);
+        break;
+      case SkinEffect.storm:
+        _storm(canvas, size, tt, rng);
+        break;
+      case SkinEffect.gold:
+        _gold(canvas, size, tt, rng);
+        break;
+      case SkinEffect.crystal:
+        _crystal(canvas, size, tt, rng);
+        break;
+      case SkinEffect.neon:
+        _neon(canvas, size, tt, rng);
+        break;
+      case SkinEffect.galaxy:
+        _galaxy(canvas, size, tt, rng);
+        break;
+      case SkinEffect.ocean:
+        _ocean(canvas, size, tt, rng);
+        break;
+      case SkinEffect.aurora:
+        _aurora(canvas, size, tt, rng);
+        break;
+      case SkinEffect.dragon:
+        _dragon(canvas, size, tt, rng);
+        break;
+      case SkinEffect.ember:
+        _ember(canvas, size, tt, rng);
+        break;
+      case SkinEffect.wood:
+        _woodPlanks(canvas, size, tt, rng, 0);
+        break;
+      case SkinEffect.walnut:
+        _woodPlanks(canvas, size, tt, rng, 1);
+        break;
+      case SkinEffect.mahogany:
+        _woodPlanks(canvas, size, tt, rng, 2);
+        break;
+      default:
+        break;
     }
     _pointerGlow(canvas, size);
   }
 
   void _bg(Canvas c, Size s, List<Color> colors,
-      [Alignment a = Alignment.topCenter, Alignment b = Alignment.bottomCenter]) {
+      [Alignment a = Alignment.topCenter,
+      Alignment b = Alignment.bottomCenter]) {
     c.drawRect(
       Offset.zero & s,
-      Paint()..shader = LinearGradient(begin: a, end: b, colors: colors)
-          .createShader(Offset.zero & s),
+      Paint()
+        ..shader = LinearGradient(begin: a, end: b, colors: colors)
+            .createShader(Offset.zero & s),
     );
   }
 
@@ -1111,8 +1142,8 @@ class _FxSurfacePainter extends CustomPainter {
       c.drawPath(
         path,
         Paint()
-          ..color = Color.lerp(const Color(0xFFFF6A00),
-                  const Color(0xFFFFE08A), pulse)!
+          ..color = Color.lerp(
+                  const Color(0xFFFF6A00), const Color(0xFFFFE08A), pulse)!
               .withOpacity(0.8 * pulse)
           ..strokeWidth = 1.6
           ..strokeCap = StrokeCap.round,
@@ -1141,7 +1172,8 @@ class _FxSurfacePainter extends CustomPainter {
     );
     for (int i = 0; i < 10; i++) {
       final bx = (i + 0.5) / 10 * s.width + math.sin(tt * 2 + i) * 3;
-      final h = s.height * (0.10 + 0.08 * (0.5 + 0.5 * math.sin(tt * 3 + i * 2)));
+      final h =
+          s.height * (0.10 + 0.08 * (0.5 + 0.5 * math.sin(tt * 3 + i * 2)));
       final w = s.width * 0.035;
       final path = Path()
         ..moveTo(bx - w, s.height)
@@ -1170,8 +1202,11 @@ class _FxSurfacePainter extends CustomPainter {
     _bg(c, s, const [Color(0xFF9CC4DE), Color(0xFF5C8FB4), Color(0xFF2A4A66)],
         Alignment.topLeft, Alignment.bottomRight);
     final spots = [
-      const Offset(0, 0), Offset(s.width, 0), Offset(0, s.height),
-      Offset(s.width, s.height), Offset(s.width * 0.5, 0),
+      const Offset(0, 0),
+      Offset(s.width, 0),
+      Offset(0, s.height),
+      Offset(s.width, s.height),
+      Offset(s.width * 0.5, 0),
     ];
     for (int i = 0; i < spots.length; i++) {
       final grow = 0.5 + 0.5 * math.sin(tt * (1 + i % 2) + i * 2.3);
@@ -1260,7 +1295,8 @@ class _FxSurfacePainter extends CustomPainter {
     for (int i = 0; i < 8; i++) {
       final y = s.height * (i + 0.5) / 8;
       c.drawLine(
-        Offset(0, y), Offset(s.width, y),
+        Offset(0, y),
+        Offset(s.width, y),
         Paint()
           ..color = Colors.white.withOpacity(0.05)
           ..strokeWidth = 1,
@@ -1352,11 +1388,15 @@ class _FxSurfacePainter extends CustomPainter {
     _sparks(c, s, rng, 12, mint, const Color(0xFFA78BFA), spread: 0.4);
     for (int i = 0; i < 4; i++) {
       final p = [
-        const Offset(8, 8), Offset(s.width - 8, 8),
-        Offset(8, s.height - 8), Offset(s.width - 8, s.height - 8),
+        const Offset(8, 8),
+        Offset(s.width - 8, 8),
+        Offset(8, s.height - 8),
+        Offset(s.width - 8, s.height - 8),
       ][i];
       final tw = 0.5 + 0.5 * math.sin(tt * 2 + i * 1.6);
-      c.drawCircle(p, 2.2 + tw * 1.5,
+      c.drawCircle(
+          p,
+          2.2 + tw * 1.5,
           Paint()
             ..color = mint.withOpacity(0.4 + tw * 0.5)
             ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3));
@@ -1369,7 +1409,9 @@ class _FxSurfacePainter extends CustomPainter {
     _bg(c, s, const [Color(0xFF12082A), Color(0xFF0A0418), Color(0xFF020108)],
         Alignment.topLeft, Alignment.bottomRight);
     const nebs = [
-      Color(0xFF7C3AED), Color(0xFFEC4899), Color(0xFF3B82F6),
+      Color(0xFF7C3AED),
+      Color(0xFFEC4899),
+      Color(0xFF3B82F6),
     ];
     for (int i = 0; i < 3; i++) {
       final ang = tt * (1 + i) * 0.5 + i * 2.1;
@@ -1442,7 +1484,9 @@ class _FxSurfacePainter extends CustomPainter {
   void _aurora(Canvas c, Size s, double tt, math.Random rng) {
     _bg(c, s, const [Color(0xFF0A1220), Color(0xFF060A14), Color(0xFF030508)]);
     const cols = [
-      Color(0xFF6EE7B7), Color(0xFF7DD3FC), Color(0xFFA78BFA),
+      Color(0xFF6EE7B7),
+      Color(0xFF7DD3FC),
+      Color(0xFFA78BFA),
     ];
     for (int i = 0; i < 3; i++) {
       final path = Path();
@@ -1488,7 +1532,9 @@ class _FxSurfacePainter extends CustomPainter {
         final shimmer = 0.5 + 0.5 * math.sin(tt * 2 + row + x * 0.01);
         c.drawArc(
           Rect.fromCircle(center: Offset(x, y), radius: sc * 0.52),
-          math.pi, math.pi, false,
+          math.pi,
+          math.pi,
+          false,
           Paint()
             ..color = Color.lerp(const Color(0xFFFBBF24),
                     const Color(0xFFEF4444), (row % 3) / 2)!
@@ -1615,8 +1661,8 @@ class _FxSurfacePainter extends CustomPainter {
           ? s.shortestSide * 0.16 + nailR
           : s.width - s.shortestSide * 0.16 - nailR;
       for (int k = 0; k < 3; k++) {
-        _nail(c, Offset(cx, s.height * (0.24 + k * 0.26)),
-            nailR, tt, side * 3 + k);
+        _nail(c, Offset(cx, s.height * (0.24 + k * 0.26)), nailR, tt,
+            side * 3 + k);
       }
     }
   }
@@ -1717,8 +1763,8 @@ class _FxRingPainter extends CustomPainter {
 
     for (int i = 0; i < 2; i++) {
       final ang = tt * (1 + i) + i * math.pi;
-      final pos = Offset(
-          c.dx + math.cos(ang) * ringR, c.dy + math.sin(ang) * ringR);
+      final pos =
+          Offset(c.dx + math.cos(ang) * ringR, c.dy + math.sin(ang) * ringR);
       canvas.drawCircle(
         pos,
         3.2,
@@ -1731,10 +1777,11 @@ class _FxRingPainter extends CustomPainter {
     for (int i = 0; i < 8; i++) {
       final ang = i / 8 * math.pi * 2 + rng.nextDouble() * 0.4;
       final tw = 0.5 + 0.5 * math.sin(tt * 2 + i * 1.9);
-      final pos = Offset(c.dx + math.cos(ang) * ringR,
-          c.dy + math.sin(ang) * ringR);
+      final pos =
+          Offset(c.dx + math.cos(ang) * ringR, c.dy + math.sin(ang) * ringR);
       canvas.drawCircle(
-        pos, 1.0 + tw,
+        pos,
+        1.0 + tw,
         Paint()..color = Colors.white.withOpacity(0.3 + tw * 0.5),
       );
     }

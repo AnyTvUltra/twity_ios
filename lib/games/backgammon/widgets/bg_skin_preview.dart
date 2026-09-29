@@ -10,7 +10,8 @@ class BgSkinPreview extends StatefulWidget {
   final String category;
   final String itemId;
 
-  const BgSkinPreview({super.key, required this.category, required this.itemId});
+  const BgSkinPreview(
+      {super.key, required this.category, required this.itemId});
 
   @override
   State<BgSkinPreview> createState() => _BgSkinPreviewState();
@@ -22,9 +23,8 @@ class _BgSkinPreviewState extends State<BgSkinPreview>
       AnimationController(vsync: this, duration: const Duration(seconds: 4));
 
   bool get _isBoard => widget.category == StoreCategory.bgBoard;
-  BgBoardTheme get _board => _isBoard
-      ? BgThemes.boardFromItemId(widget.itemId)
-      : BgThemes.classic;
+  BgBoardTheme get _board =>
+      _isBoard ? BgThemes.boardFromItemId(widget.itemId) : BgThemes.classic;
   BgCheckerSet get _set => _isBoard
       ? BgThemes.classicSet
       : BgThemes.checkersFromItemId(widget.itemId);
@@ -55,8 +55,14 @@ class _BgSkinPreviewState extends State<BgSkinPreview>
     final size = Size(bw, bw / 1.45);
     final g = BgGeom(size);
     final s = [
-      (23, 2, 0), (12, 5, 0), (7, 3, 0), (5, 5, 0),
-      (0, 2, 1), (11, 5, 1), (16, 3, 1), (18, 5, 1),
+      (23, 2, 0),
+      (12, 5, 0),
+      (7, 3, 0),
+      (5, 5, 0),
+      (0, 2, 1),
+      (11, 5, 1),
+      (16, 3, 1),
+      (18, 5, 1),
     ];
     return Center(
       child: SizedBox.fromSize(

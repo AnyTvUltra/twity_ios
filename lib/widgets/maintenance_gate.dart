@@ -4,6 +4,7 @@ import '../l10n/app_lang.dart';
 import '../services/auth_service.dart';
 import '../services/firebase_service.dart';
 import '../services/game_settings_service.dart';
+import '../theme_mode.dart';
 
 /// بوابة وضع الصيانة — إذا فعّلها الأدمن من لوحة التحكم تُغلق اللعبة
 /// لجميع اللاعبين (ما عدا المدير نفسه) وتظهر رسالة صيانة لحظياً.
@@ -28,7 +29,11 @@ class _MaintenanceGateState extends State<MaintenanceGate> {
 
   Future<void> _checkAdmin() async {
     if (widget.isAdmin) {
-      if (mounted) setState(() { _isAdmin = true; _checkedAdmin = true; });
+      if (mounted)
+        setState(() {
+          _isAdmin = true;
+          _checkedAdmin = true;
+        });
       return;
     }
     try {
@@ -40,7 +45,10 @@ class _MaintenanceGateState extends State<MaintenanceGate> {
       }
       final doc = await fb.firestore.collection('admins').doc(uid).get();
       if (mounted) {
-        setState(() { _isAdmin = doc.exists; _checkedAdmin = true; });
+        setState(() {
+          _isAdmin = doc.exists;
+          _checkedAdmin = true;
+        });
       }
     } catch (_) {
       if (mounted) setState(() => _checkedAdmin = true);
@@ -68,39 +76,38 @@ class _MaintenanceScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final gs = GameSettingsService();
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0E1F),
+      backgroundColor: L(0xFF0A0E1F),
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(32),
+          padding: EdgeInsets.all(32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: const EdgeInsets.all(22),
+                padding: EdgeInsets.all(22),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFFFFA726).withOpacity(0.12),
+                  color: L(0xFFFFA726).withOpacity(0.12),
                   border: Border.all(
-                      color: const Color(0xFFFFA726).withOpacity(0.4),
-                      width: 1.5),
+                      color: L(0xFFFFA726).withOpacity(0.4), width: 1.5),
                 ),
-                child: const Icon(Icons.build_circle_rounded,
-                    color: Color(0xFFFFA726), size: 56),
+                child: Icon(Icons.build_circle_rounded,
+                    color: L(0xFFFFA726), size: 56),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               Text('صيانة مؤقتة 🛠️'.tr,
-                  style: const TextStyle(
+                  style: TextStyle(
                       color: Colors.white,
                       fontSize: 22,
                       fontWeight: FontWeight.w900)),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Text(
                 gs.announcement.isNotEmpty
                     ? gs.announcement
                     : 'نجري تحديثات لتحسين تجربتك — عد بعد قليل!'.tr,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                    color: Color(0xFFB8C4DC), fontSize: 14, height: 1.6),
+                style:
+                    TextStyle(color: L(0xFFB8C4DC), fontSize: 14, height: 1.6),
               ),
             ],
           ),

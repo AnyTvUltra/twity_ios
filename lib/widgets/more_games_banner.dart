@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/haptics.dart';
 import '../l10n/app_lang.dart';
+import '../theme_mode.dart';
 
 class MoreGamesBanner extends StatelessWidget {
   final VoidCallback? onTap;
@@ -15,7 +16,7 @@ class MoreGamesBanner extends StatelessWidget {
         onTap?.call();
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         child: SizedBox(
           height: 60,
           child: Stack(
@@ -43,9 +44,9 @@ class MoreGamesBanner extends StatelessWidget {
                       begin: Alignment.centerLeft,
                       end: Alignment.centerRight,
                       colors: [
-                        const Color(0xFF5B48C8).withOpacity(0.52),
-                        const Color(0xFF15254D).withOpacity(0.76),
-                        const Color(0xFF251451).withOpacity(0.66),
+                        L(0xFF5B48C8).withOpacity(0.52),
+                        L(0xFF15254D).withOpacity(0.76),
+                        L(0xFF251451).withOpacity(0.66),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(21),
@@ -125,11 +126,11 @@ class _OrangeBrushPainter extends CustomPainter {
     final h = size.height;
 
     final paint = Paint()
-      ..shader = const LinearGradient(
+      ..shader = LinearGradient(
         colors: [
-          Color(0xFFFF6D00),
-          Color(0xFFFF9100),
-          Color(0xFFFFAB40),
+          L(0xFFFF6D00),
+          L(0xFFFF9100),
+          L(0xFFFFAB40),
         ],
       ).createShader(Rect.fromLTWH(0, 0, w, h));
 
@@ -170,10 +171,10 @@ class _CoinStackWithCrownPainter extends CustomPainter {
       ..close();
 
     final crownPaint = Paint()
-      ..shader = const LinearGradient(
+      ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [Color(0xFFFFFDE7), Color(0xFFFFD54F), Color(0xFFFF8F00)],
+        colors: [L(0xFFFFFDE7), L(0xFFFFD54F), L(0xFFFF8F00)],
       ).createShader(Rect.fromLTWH(w * 0.35, h * 0.22, w * 0.5, h * 0.36));
 
     canvas.drawPath(
@@ -182,8 +183,8 @@ class _CoinStackWithCrownPainter extends CustomPainter {
     );
     canvas.drawPath(crownPath, crownPaint);
 
-    canvas.drawCircle(Offset(w * 0.60, h * 0.32), 2,
-        Paint()..color = const Color(0xFFD32F2F));
+    canvas.drawCircle(
+        Offset(w * 0.60, h * 0.32), 2, Paint()..color = L(0xFFD32F2F));
   }
 
   void _drawCoin(Canvas canvas, Offset center, double width, double thickness) {
@@ -196,10 +197,10 @@ class _CoinStackWithCrownPainter extends CustomPainter {
     );
 
     final edgePaint = Paint()
-      ..shader = const LinearGradient(
+      ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [Color(0xFFFFB300), Color(0xFFC67D00)],
+        colors: [L(0xFFFFB300), L(0xFFC67D00)],
       ).createShader(
           Rect.fromCenter(center: center, width: width, height: thickness));
     canvas.drawRect(
@@ -208,10 +209,10 @@ class _CoinStackWithCrownPainter extends CustomPainter {
     );
 
     final topPaint = Paint()
-      ..shader = const LinearGradient(
+      ..shader = LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [Color(0xFFFFF9C4), Color(0xFFFFD54F), Color(0xFFFF8F00)],
+        colors: [L(0xFFFFF9C4), L(0xFFFFD54F), L(0xFFFF8F00)],
       ).createShader(Rect.fromCenter(
           center: center.translate(0, -thickness * 0.5),
           width: width,
@@ -226,7 +227,7 @@ class _CoinStackWithCrownPainter extends CustomPainter {
     );
 
     canvas.drawCircle(center.translate(0, -thickness * 0.5), 2.5,
-        Paint()..color = const Color(0xFFBF360C));
+        Paint()..color = L(0xFFBF360C));
   }
 
   @override

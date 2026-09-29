@@ -4,6 +4,7 @@ import '../models.dart';
 import '../utils/haptics.dart';
 import '../l10n/app_lang.dart';
 import 'game_artwork.dart';
+import '../theme_mode.dart';
 
 class GameCard extends StatefulWidget {
   final GameModel game;
@@ -227,7 +228,7 @@ class _GameCardState extends State<GameCard>
                     top: -14,
                     right: 12,
                     child: CustomPaint(
-                      size: const Size(36, 26),
+                      size: Size(36, 26),
                       painter: _MiniCrownPainter(),
                     ),
                   ),
@@ -238,20 +239,18 @@ class _GameCardState extends State<GameCard>
                     top: 10,
                     left: 12,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.black.withOpacity(0.55),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                            color:
-                                const Color(0xFFFFD54F).withOpacity(0.7),
-                            width: 1),
+                            color: L(0xFFFFD54F).withOpacity(0.7), width: 1),
                       ),
                       child: Text(
                         'قريباً ⏳'.tr,
-                        style: const TextStyle(
-                            color: Color(0xFFFFD54F),
+                        style: TextStyle(
+                            color: L(0xFFFFD54F),
                             fontSize: 10,
                             fontWeight: FontWeight.w900),
                       ),
@@ -447,16 +446,16 @@ class _MiniCrownPainter extends CustomPainter {
 
     // Gold Gradient
     final crownPaint = Paint()
-      ..shader = const LinearGradient(
+      ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [Color(0xFFFFF9C4), Color(0xFFFFD54F), Color(0xFFFF8F00)],
+        colors: [L(0xFFFFF9C4), L(0xFFFFD54F), L(0xFFFF8F00)],
       ).createShader(Rect.fromLTWH(0, 0, w, h));
     canvas.drawPath(crownPath, crownPaint);
 
     // Jewel
-    canvas.drawCircle(Offset(w * 0.5, h * 0.18), 2.2,
-        Paint()..color = const Color(0xFFD32F2F));
+    canvas.drawCircle(
+        Offset(w * 0.5, h * 0.18), 2.2, Paint()..color = L(0xFFD32F2F));
   }
 
   @override

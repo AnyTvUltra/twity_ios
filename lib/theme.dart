@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'theme_mode.dart';
 
 class AppColors {
   // Background
@@ -74,27 +75,42 @@ class AppColors {
   static const Color navInactiveText = Color(0xFF9386B5);
 }
 
-/// لوحة "الزجاج الليلي" المستخدمة في الصفحات الداخلية (غير الرئيسية)
-/// أسطح كحلية داكنة شبه شفافة + نصوص فاتحة + حدود زجاجية
+/// لوحة "الزجاج" المستخدمة في الصفحات الداخلية — تستجيب لوضع الواجهة:
+/// الوضع الليلي يعيد نفس القيم الأصلية حرفياً، والنهاري يعطي زجاجاً فاتحاً.
 class LightGlass {
-  // Surfaces — زجاج ليلي داكن
-  static const Color card = Color(0xB3151D33);
-  static const Color cardStrong = Color(0xF21B2338);
-  static const Color cardSoft = Color(0x801E2742);
-  static const Color border = Color(0x40FFFFFF);
-  static const Color borderDim = Color(0x1FFFFFFF);
-  static const Color inputFill = Color(0x2EFFFFFF);
+  static bool get _l => UiTheme.instance.isLight;
 
-  // Text — نصوص فاتحة مريحة للعين
-  static const Color text = Color(0xFFF1F5F9);
-  static const Color textSoft = Color(0xFFCBD5E1);
-  static const Color textMuted = Color(0xFF94A3B8);
-  static const Color textFaint = Color(0xFF64748B);
+  // Surfaces
+  static Color get card =>
+      _l ? const Color(0xF5FFFFFF) : const Color(0xB3151D33);
+  static Color get cardStrong =>
+      _l ? const Color(0xFFFFFFFF) : const Color(0xF21B2338);
+  static Color get cardSoft =>
+      _l ? const Color(0xE6FFFFFF) : const Color(0x801E2742);
+  static Color get border =>
+      _l ? const Color(0x1F111B3A) : const Color(0x40FFFFFF);
+  static Color get borderDim =>
+      _l ? const Color(0x14111B3A) : const Color(0x1FFFFFFF);
+  static Color get inputFill =>
+      _l ? const Color(0xFFF1F4F9) : const Color(0x2EFFFFFF);
 
-  // Accents — ألوان مميزة تناسب الوضع الليلي
-  static const Color accent = Color(0xFF38BDF8);
-  static const Color accentBlue = Color(0xFF60A5FA);
-  static const Color gold = Color(0xFFFBBF24);
+  // Text
+  static Color get text =>
+      _l ? const Color(0xFF111B3A) : const Color(0xFFF1F5F9);
+  static Color get textSoft =>
+      _l ? const Color(0xFF3D4A66) : const Color(0xFFCBD5E1);
+  static Color get textMuted =>
+      _l ? const Color(0xFF71809A) : const Color(0xFF94A3B8);
+  static Color get textFaint =>
+      _l ? const Color(0xFFA5B1C6) : const Color(0xFF64748B);
+
+  // Accents
+  static Color get accent =>
+      _l ? const Color(0xFF2F8EF5) : const Color(0xFF38BDF8);
+  static Color get accentBlue =>
+      _l ? const Color(0xFF2F8EF5) : const Color(0xFF60A5FA);
+  static Color get gold =>
+      _l ? const Color(0xFFE8AD22) : const Color(0xFFFBBF24);
 }
 
 class AppGradients {
@@ -123,6 +139,17 @@ class AppGradients {
       Color(0xFF080C20),
     ],
     stops: [0.0, 0.25, 0.52, 0.78, 1.0],
+  );
+
+  /// خلفية الوضع النهاري — أوف-وايت ناعم مع عمق خفيف
+  static const LinearGradient dayBackground = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Color(0xFFFBFCFE),
+      Color(0xFFF7F9FC),
+      Color(0xFFEFF3FA),
+    ],
   );
 
   static const LinearGradient chessCard = LinearGradient(

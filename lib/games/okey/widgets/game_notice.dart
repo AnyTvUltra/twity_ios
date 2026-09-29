@@ -9,8 +9,7 @@ class GameNotice {
   /// معالج الإشعار داخل المشهد (يُسجَّل من شاشة اللعبة)
   static void Function(String message, {IconData? icon})? handler;
 
-  static void show(BuildContext context, String message,
-      {IconData? icon}) {
+  static void show(BuildContext context, String message, {IconData? icon}) {
     final h = handler;
     if (h != null) {
       h(message, icon: icon);
@@ -42,8 +41,8 @@ Future<T?> showOkeyLandscapeDialog<T>(BuildContext context,
           width: media.size.height,
           height: media.size.width,
           child: MediaQuery(
-            data: media.copyWith(
-                size: Size(media.size.height, media.size.width)),
+            data:
+                media.copyWith(size: Size(media.size.height, media.size.width)),
             child: Center(child: builder(ctx)),
           ),
         ),

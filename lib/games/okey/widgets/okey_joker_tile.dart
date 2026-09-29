@@ -112,8 +112,7 @@ class _OkeyJokerTileState extends State<OkeyJokerTile>
               offset: const Offset(0, 2)),
           if (widget.isHighlighted)
             BoxShadow(
-                color: const Color(0xFF4ADE80).withOpacity(0.5),
-                blurRadius: 8),
+                color: const Color(0xFF4ADE80).withOpacity(0.5), blurRadius: 8),
         ],
       ),
       child: Center(

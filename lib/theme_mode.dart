@@ -201,3 +201,106 @@ class PT {
   Color get navIconCircle =>
       light ? const Color(0xFFF2F5FA) : Colors.white.withValues(alpha: 0.05);
 }
+
+// ══════════════════════════════════════════════════════════════════
+// التحويل العام للألوان بين الليلي والنهاري (للشاشات الأخرى)
+// ══════════════════════════════════════════════════════════════════
+
+/// خريطة: كل لون داكن مستخدم في الواجهة -> بديله النهاري.
+final Map<int, Color> _dayMap = {
+  // خلفيات داكنة -> أفتح ما يمكن
+  0xFF050914: const Color(0xFFF5F8FC),
+  0xFF070D1C: const Color(0xFFF3F6FB),
+  0xFF0A1124: const Color(0xFFF0F4FA),
+  0xFF0B1220: const Color(0xFFEFF3F9),
+  0xFF0B1020: const Color(0xFFEFF3F9),
+  0xFF0C1530: const Color(0xFFEFF4FA),
+  0xFF0D1B33: const Color(0xFFEFF4FB),
+  0xFF0E1C3A: const Color(0xFFEDF3FA),
+  0xFF0F1B33: const Color(0xFFEDF3FA),
+  0xFF101730: const Color(0xFFEDF2F9),
+  0xFF121B36: const Color(0xFFECF1F8),
+  0xFF131B36: const Color(0xFFECF1F8),
+  0xFF14264D: const Color(0xFFE8EFF8),
+  0xFF152642: const Color(0xFFE9F0F9),
+  0xFF16224B: const Color(0xFFE8EFF8),
+  0xFF1A2450: const Color(0xFFE5EDF7),
+  0xFF1B2440: const Color(0xFFE4EBF5),
+  0xFF1E2B4F: const Color(0xFFE3EAF4),
+  0xFF1F2B52: const Color(0xFFE3EAF4),
+  0xFF202A4D: const Color(0xFFE3EAF4),
+  0xFF233055: const Color(0xFFE2E9F3),
+  0xFF26335E: const Color(0xFFE1E8F2),
+  0xFF2A3554: const Color(0xFFDEE6F0),
+  0xFF2E3A5C: const Color(0xFFDDE5EF),
+  // نصوص فاتحة -> داكنة
+  0xFFFFFFFF: const Color(0xFF111B3A),
+  0xFFF5F7FF: const Color(0xFF141F3E),
+  0xFFF0F4FF: const Color(0xFF16213F),
+  0xFFE2E8F0: const Color(0xFF2B3A5E),
+  0xFFCBD5E1: const Color(0xFF3A4A6E),
+  0xFFB0B8CC: const Color(0xFF5A6A8C),
+  0xFF94A3B8: const Color(0xFF71809A),
+  0xFF8E9BC0: const Color(0xFF6B7A99),
+  0xFF7C8AA5: const Color(0xFF8A97B2),
+  0xFF64748B: const Color(0xFF7C8AA5),
+  // ألوان مميزة: إبقاء الروح لكن أفتح/أكثر قراءةً على الأبيض
+  0xFFF7C948: const Color(0xFFE8AD22),
+  0xFFFFD54F: const Color(0xFFE8AD22),
+  0xFFFFC94D: const Color(0xFFE8A920),
+  0xFFE8B12C: const Color(0xFFDD9E1A),
+  0xFFFFB300: const Color(0xFFE8A200),
+  0xFFFFA000: const Color(0xFFE89500),
+  0xFF3FF5A8: const Color(0xFF14B888),
+  0xFF22E39E: const Color(0xFF14B988),
+  0xFF4ADE80: const Color(0xFF22B573),
+  0xFF3B82F6: const Color(0xFF2F8EF5),
+  0xFF60A5FA: const Color(0xFF3D8FE8),
+  0xFF38BDF8: const Color(0xFF1E96E8),
+  0xFF22D3EE: const Color(0xFF0FA8C8),
+  0xFF67E8F9: const Color(0xFF28A8C4),
+  0xFFA855F7: const Color(0xFF8B65E8),
+  0xFF8B5CF6: const Color(0xFF8B65E8),
+  0xFFC084FC: const Color(0xFFA679EE),
+  0xFFEC4899: const Color(0xFFE84A92),
+  0xFFF472B6: const Color(0xFFF05A9D),
+  0xFFEF4444: const Color(0xFFD93A3A),
+  0xFFF87171: const Color(0xFFE35C5C),
+  0xFFFB923C: const Color(0xFFF07818),
+};
+
+/// ترجع اللون المقابل للوضع الحالي. يُستخدم في ملفات الواجهة بدلاً من
+/// Color(0xFF...) الثابتة حتى تستجيب كل الشاشات للوضع النهائي تلقائياً.
+Color L(int argb) {
+  if (!UiTheme.instance.isLight) return Color(argb);
+  return _dayMap[argb] ?? _autoLight(Color(argb));
+}
+
+/// لألوان غير موجودة في الخريطة: تحويل تلقائي
+/// (الداكنة جداً -> أفتح قليلاً فوق الأبيض، الفاتحة جداً -> كحلي داكن).
+Color _autoLight(Color c) {
+  final r = (c.r * 255.0).round();
+  final g = (c.g * 255.0).round();
+  final b = (c.b * 255.0).round();
+  final lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  if (lum < 90) {
+    // داكن -> يصبح سطحاً فاتحاً يحافظ على الصبغة
+    final mix = 0.88;
+    return Color.fromARGB(
+        255,
+        (r * (1 - mix) + 255 * mix).round(),
+        (g * (1 - mix) + 255 * mix).round(),
+        (b * (1 - mix) + 255 * mix).round());
+  }
+  if (lum > 200) {
+    // فاتح جداً (نص أبيض مثلاً) -> كحلي داكن
+    final mix = 0.82;
+    const navy = 0x3A;
+    return Color.fromARGB(
+        255,
+        (r * (1 - mix) + navy * mix).round(),
+        (g * (1 - mix) + navy * mix).round(),
+        (b * (1 - mix) + navy * mix).round());
+  }
+  return c;
+}

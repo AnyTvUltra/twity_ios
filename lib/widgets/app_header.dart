@@ -8,6 +8,7 @@ import 'radio_player_widget.dart';
 import 'user_avatar.dart';
 import 'gem_icon.dart';
 import '../utils/format.dart';
+import '../theme_mode.dart';
 
 class AppHeader extends StatelessWidget {
   final VoidCallback? onProfileTap;
@@ -102,27 +103,42 @@ class _HeaderGlassButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(13),
       child: BackdropFilter(
         filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: Container(
+        child: AnimatedContainer(
+          duration: UiTheme.transition,
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white.withOpacity(0.20),
-                const Color(0xFF6C63FF).withOpacity(0.10),
-                const Color(0xFF07142F).withOpacity(0.34),
-              ],
-            ),
+            gradient: UiTheme.instance.isLight
+                ? null
+                : LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white.withOpacity(0.20),
+                      const Color(0xFF6C63FF).withOpacity(0.10),
+                      const Color(0xFF07142F).withOpacity(0.34),
+                    ],
+                  ),
+            color: UiTheme.instance.isLight ? Colors.white : null,
             borderRadius: BorderRadius.circular(13),
-            border: Border.all(color: Colors.white.withOpacity(0.26)),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF719BFF).withOpacity(0.12),
-                blurRadius: 12,
-              ),
-            ],
+            border: Border.all(
+                color: UiTheme.instance.isLight
+                    ? const Color(0xFFE4E9F2)
+                    : Colors.white.withOpacity(0.26)),
+            boxShadow: UiTheme.instance.isLight
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF111B3A).withOpacity(0.08),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: const Color(0xFF719BFF).withOpacity(0.12),
+                      blurRadius: 12,
+                    ),
+                  ],
           ),
           child: Center(child: child),
         ),
@@ -235,28 +251,35 @@ class _BoyAvatarPainter extends CustomPainter {
 class _CoinBadgeWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final day = UiTheme.instance.isLight;
     return ClipRRect(
       borderRadius: BorderRadius.circular(18),
       child: BackdropFilter(
         filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: Container(
+        child: AnimatedContainer(
+          duration: UiTheme.transition,
           height: 36,
           padding: const EdgeInsets.only(left: 4, right: 6),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Colors.white.withOpacity(0.16),
-                const Color(0xFF182B59).withOpacity(0.46),
-              ],
-            ),
+            gradient: day
+                ? null
+                : LinearGradient(
+                    colors: [
+                      Colors.white.withOpacity(0.16),
+                      const Color(0xFF182B59).withOpacity(0.46),
+                    ],
+                  ),
+            color: day ? Colors.white : null,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: const Color(0xFFFFD76A).withOpacity(0.52),
+              color: const Color(0xFFFFD76A).withOpacity(day ? 0.7 : 0.52),
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.35),
+                color: day
+                    ? const Color(0xFF111B3A).withOpacity(0.08)
+                    : Colors.black.withOpacity(0.35),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -306,18 +329,20 @@ class _CoinBadgeWidget extends StatelessWidget {
                   final chips = AuthService().currentUser?.chips ?? 1500;
                   return Text(
                     formatBalance(chips),
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: day ? const Color(0xFF111B3A) : Colors.white,
                       fontWeight: FontWeight.w800,
                       fontSize: 14,
                       letterSpacing: 0.5,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black45,
-                          blurRadius: 3,
-                          offset: Offset(0, 1),
-                        ),
-                      ],
+                      shadows: day
+                          ? null
+                          : const [
+                              Shadow(
+                                color: Colors.black45,
+                                blurRadius: 3,
+                                offset: Offset(0, 1),
+                              ),
+                            ],
                     ),
                   );
                 },
@@ -355,7 +380,9 @@ class _CoinBadgeWidget extends StatelessWidget {
                 width: 1,
                 height: 18,
                 margin: const EdgeInsets.symmetric(horizontal: 6),
-                color: Colors.white.withOpacity(0.18),
+                color: day
+                    ? const Color(0x1F111B3A)
+                    : Colors.white.withOpacity(0.18),
               ),
               const GemIcon(size: 20),
               const SizedBox(width: 4),
@@ -365,18 +392,22 @@ class _CoinBadgeWidget extends StatelessWidget {
                   final gems = AuthService().currentUser?.gems ?? 25;
                   return Text(
                     formatBalance(gems),
-                    style: const TextStyle(
-                      color: Color(0xFF7DD3FC),
+                    style: TextStyle(
+                      color: day
+                          ? const Color(0xFF2F8EF5)
+                          : const Color(0xFF7DD3FC),
                       fontWeight: FontWeight.w800,
                       fontSize: 13,
                       letterSpacing: 0.5,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black45,
-                          blurRadius: 3,
-                          offset: Offset(0, 1),
-                        ),
-                      ],
+                      shadows: day
+                          ? null
+                          : const [
+                              Shadow(
+                                color: Colors.black45,
+                                blurRadius: 3,
+                                offset: Offset(0, 1),
+                              ),
+                            ],
                     ),
                   );
                 },
@@ -402,47 +433,51 @@ class _NotificationBellWidget extends StatelessWidget {
         return StreamBuilder<List<ConversationSummary>>(
           stream: SocialService().getConversationsStream(myUid),
           builder: (context, convSnap) {
-            final unread = (convSnap.data ?? [])
-                .fold<int>(0, (s, c) => s + c.unreadCount);
+            final unread =
+                (convSnap.data ?? []).fold<int>(0, (s, c) => s + c.unreadCount);
             return ValueListenableBuilder<int>(
               valueListenable: BroadcastService.instance.unreadCount,
               builder: (context, broadcastUnread, _) {
-            final total = reqCount + unread + broadcastUnread;
-            return Stack(
-              clipBehavior: Clip.none,
-              alignment: Alignment.center,
-              children: [
-                const Icon(Icons.notifications_rounded,
-                    color: Colors.white, size: 20),
-                if (total > 0)
-                  Positioned(
-                    top: -4,
-                    right: -5,
-                    child: Container(
-                      padding: const EdgeInsets.all(3),
-                      constraints:
-                          const BoxConstraints(minWidth: 16, minHeight: 16),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: const Color(0xFFFF1744),
-                        border: Border.all(color: Colors.white, width: 1.2),
-                        boxShadow: const [
-                          BoxShadow(color: Color(0xFFFF1744), blurRadius: 4),
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          total > 9 ? '9+' : '$total',
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 8,
-                              fontWeight: FontWeight.w900),
+                final total = reqCount + unread + broadcastUnread;
+                return Stack(
+                  clipBehavior: Clip.none,
+                  alignment: Alignment.center,
+                  children: [
+                    Icon(Icons.notifications_rounded,
+                        color: UiTheme.instance.isLight
+                            ? const Color(0xFF111B3A)
+                            : Colors.white,
+                        size: 20),
+                    if (total > 0)
+                      Positioned(
+                        top: -4,
+                        right: -5,
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          constraints:
+                              const BoxConstraints(minWidth: 16, minHeight: 16),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFFFF1744),
+                            border: Border.all(color: Colors.white, width: 1.2),
+                            boxShadow: const [
+                              BoxShadow(
+                                  color: Color(0xFFFF1744), blurRadius: 4),
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              total > 9 ? '9+' : '$total',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w900),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-              ],
-            );
+                  ],
+                );
               },
             );
           },
@@ -451,4 +486,3 @@ class _NotificationBellWidget extends StatelessWidget {
     );
   }
 }
-

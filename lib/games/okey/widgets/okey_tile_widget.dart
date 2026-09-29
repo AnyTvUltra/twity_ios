@@ -29,7 +29,6 @@ class OkeyTileWidget extends StatelessWidget {
     this.skinOverride,
   });
 
-
   @override
   Widget build(BuildContext context) {
     if (tile == null) {
@@ -86,8 +85,11 @@ class OkeyTileWidget extends StatelessWidget {
                   ? const Color(0xFF60A5FA)
                   : (isHighlighted
                       ? const Color(0xFF10B981)
-                      : (isOkey ? const Color(0xFFFFB300) : const Color(0xFFCFC4A4))),
-          width: isSelected ? 2.0 : (isHighlighted ? 1.6 : (isOkey ? 1.6 : 0.8)),
+                      : (isOkey
+                          ? const Color(0xFFFFB300)
+                          : const Color(0xFFCFC4A4))),
+          width:
+              isSelected ? 2.0 : (isHighlighted ? 1.6 : (isOkey ? 1.6 : 0.8)),
         ),
         boxShadow: [
           // ظل عمق ثلاثي الأبعاد
@@ -99,12 +101,12 @@ class OkeyTileWidget extends StatelessWidget {
                     : (isHighlighted
                         ? const Color(0xFF10B981).withOpacity(0.5)
                         : Colors.black.withOpacity(0.38)),
-            blurRadius: isSelected ? 8 : (isDragging ? 10 : (isHighlighted ? 6 : 3.5)),
+            blurRadius:
+                isSelected ? 8 : (isDragging ? 10 : (isHighlighted ? 6 : 3.5)),
             offset: Offset(0, isSelected ? 4 : (isDragging ? 5 : 2)),
           ),
         ],
       ),
-
       child: ClipRRect(
         borderRadius: BorderRadius.circular(4),
         child: Stack(
@@ -174,9 +176,8 @@ class OkeyTileWidget extends StatelessWidget {
                       fontWeight: FontWeight.w900,
                       // على السكنات المتحركة: بأليت ألوان مضيئة تحافظ على
                       // تمييز لون الحجر (الأسود→فضّي أبيض)
-                      color: hasAnimatedSkin
-                          ? t.color.brightColor
-                          : t.color.color,
+                      color:
+                          hasAnimatedSkin ? t.color.brightColor : t.color.color,
                       height: 1.0,
                       shadows: hasAnimatedSkin
                           ? [
@@ -207,13 +208,11 @@ class OkeyTileWidget extends StatelessWidget {
                     height: width * (hasAnimatedSkin ? 0.20 : 0.14),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: hasAnimatedSkin
-                          ? t.color.brightColor
-                          : t.color.color,
+                      color:
+                          hasAnimatedSkin ? t.color.brightColor : t.color.color,
                       border: hasAnimatedSkin
                           ? Border.all(
-                              color: Colors.black.withOpacity(0.55),
-                              width: 0.8)
+                              color: Colors.black.withOpacity(0.55), width: 0.8)
                           : null,
                       boxShadow: hasAnimatedSkin
                           ? [

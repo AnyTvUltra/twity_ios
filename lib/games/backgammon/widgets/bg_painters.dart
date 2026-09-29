@@ -42,8 +42,7 @@ void _drawImageCover(Canvas canvas, ui.Image img, Rect dst, Paint paint) {
 
 void _goldPlate(Canvas canvas, Rect r, List<Color> metal,
     {bool vertical = false}) {
-  final rr =
-      RRect.fromRectAndRadius(r, Radius.circular(r.shortestSide * 0.25));
+  final rr = RRect.fromRectAndRadius(r, Radius.circular(r.shortestSide * 0.25));
   canvas.drawRRect(
       rr.shift(const Offset(0, 1.5)),
       Paint()
@@ -125,7 +124,12 @@ void _corners(Canvas canvas, Size size, List<Color> metal) {
   final outer =
       RRect.fromRectAndRadius(Offset.zero & size, Radius.circular(w * 0.022));
   final c = w * 0.045;
-  for (final corner in [Offset.zero, Offset(w, 0), Offset(0, h), Offset(w, h)]) {
+  for (final corner in [
+    Offset.zero,
+    Offset(w, 0),
+    Offset(0, h),
+    Offset(w, h)
+  ]) {
     final sx = corner.dx == 0 ? 1.0 : -1.0;
     final sy = corner.dy == 0 ? 1.0 : -1.0;
     final p = Path()
@@ -155,8 +159,7 @@ class BackgammonBoardPainter extends CustomPainter {
   final ui.Image? wood;
   final BgBoardTheme theme;
 
-  BackgammonBoardPainter(this.g,
-      {this.wood, this.theme = BgThemes.classic});
+  BackgammonBoardPainter(this.g, {this.wood, this.theme = BgThemes.classic});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -320,8 +323,8 @@ class BackgammonBoardPainter extends CustomPainter {
     final grain = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.7
-      ..color = Color.lerp(colors.last, Colors.black, 0.4)!
-          .withValues(alpha: 0.28);
+      ..color =
+          Color.lerp(colors.last, Colors.black, 0.4)!.withValues(alpha: 0.28);
     for (int k = -2; k <= 2; k++) {
       final gx = x + k * g.pointW * 0.13;
       final p = Path()..moveTo(gx, base);
@@ -434,7 +437,8 @@ class BoardEffectPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(BoardEffectPainter old) => old.t != t || old.theme != theme;
+  bool shouldRepaint(BoardEffectPainter old) =>
+      old.t != t || old.theme != theme;
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -504,16 +508,16 @@ class BoardLidPainter extends CustomPainter {
     }
     canvas.drawCircle(c, r * 0.22, Paint()..color = th.metal[1]);
     canvas.drawCircle(
-        c - Offset(r * 0.06, r * 0.06),
-        r * 0.1,
-        Paint()..color = th.metal[0]);
+        c - Offset(r * 0.06, r * 0.06), r * 0.1, Paint()..color = th.metal[0]);
 
     // أقفال ذهبية على الحافة الخارجية (يسار = جهة الإغلاق)
     for (final fy in [0.28, 0.72]) {
       _goldPlate(
           canvas,
           Rect.fromCenter(
-              center: Offset(w * 0.035, h * fy), width: w * 0.05, height: h * 0.11),
+              center: Offset(w * 0.035, h * fy),
+              width: w * 0.05,
+              height: h * 0.11),
           th.metal,
           vertical: true);
     }
@@ -638,10 +642,10 @@ class CheckerPainter extends CustomPainter {
           Paint()
             ..style = PaintingStyle.stroke
             ..strokeWidth = math.max(0.8, r * (neon ? 0.07 : 0.05))
-            ..color = st.groove.withValues(alpha: neon ? 0.6 + 0.4 * pulse : 0.6)
-            ..maskFilter = neon
-                ? MaskFilter.blur(BlurStyle.normal, r * 0.04)
-                : null);
+            ..color =
+                st.groove.withValues(alpha: neon ? 0.6 + 0.4 * pulse : 0.6)
+            ..maskFilter =
+                neon ? MaskFilter.blur(BlurStyle.normal, r * 0.04) : null);
       if (st.grooveLight > 0) {
         canvas.drawCircle(
             top + Offset(r * 0.03, r * 0.03),
@@ -770,10 +774,8 @@ class CheckerPainter extends CustomPainter {
           final a = k * math.pi / 3 + seed;
           canvas.drawLine(c, c + Offset(math.cos(a), math.sin(a)) * r, p);
           final m = c + Offset(math.cos(a), math.sin(a)) * r * 0.55;
-          canvas.drawLine(
-              m,
-              m + Offset(math.cos(a + 0.6), math.sin(a + 0.6)) * r * 0.25,
-              p);
+          canvas.drawLine(m,
+              m + Offset(math.cos(a + 0.6), math.sin(a + 0.6)) * r * 0.25, p);
         }
         // وميض يعبر سطح الجليد
         final sx = -r + (time * 1.3 % 1) * r * 4;

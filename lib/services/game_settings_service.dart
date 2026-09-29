@@ -36,8 +36,7 @@ class GameSettingsService extends ChangeNotifier {
       announcement = (data['announcement'] ?? '').toString();
       defaultTurnTimer =
           (data['defaultTurnTimer'] as num?)?.toInt() ?? defaultTurnTimer;
-      startingChips =
-          (data['startingChips'] as num?)?.toInt() ?? startingChips;
+      startingChips = (data['startingChips'] as num?)?.toInt() ?? startingChips;
       botDifficulty = (data['botDifficulty'] ?? 'medium').toString();
       notifyListeners();
     }, onError: (Object e) {

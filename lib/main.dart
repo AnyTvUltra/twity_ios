@@ -1,6 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'screens/home_screen.dart';
+import 'screens/home_screen.dart' hide AnimatedBuilder;
 import 'screens/game_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/okey_lobby_screen.dart';
@@ -113,10 +113,13 @@ class _GameHubAppState extends State<GameHubApp> {
         ),
       ),
       builder: (context, child) {
-        return Directionality(
-          textDirection: AppLangController.instance.direction,
-          // بوابة الإنترنت تغلف كل الشاشات — بلا اتصال تظهر شاشة حظر
-          child: ConnectivityGate(child: child ?? const SizedBox()),
+        return AnimatedBuilder(
+          animation: UiTheme.instance,
+          builder: (context, _) => Directionality(
+            textDirection: AppLangController.instance.direction,
+            // بوابة الإنترنت تغلف كل الشاشات — بلا اتصال تظهر شاشة حظر
+            child: ConnectivityGate(child: child ?? const SizedBox()),
+          ),
         );
       },
       home: _AuthGate(),
