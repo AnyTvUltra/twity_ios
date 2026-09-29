@@ -10,6 +10,8 @@ import 'services/auth_service.dart';
 import 'services/radio_service.dart';
 import 'services/store_service.dart';
 import 'services/broadcast_service.dart';
+import 'services/game_settings_service.dart';
+import 'widgets/maintenance_gate.dart';
 import 'widgets/update_dialog.dart';
 import 'l10n/app_lang.dart';
 
@@ -23,6 +25,7 @@ void main() async {
   StoreService().initialize();
   RadioService().init();
   RadioService().initialize();
+  GameSettingsService().initialize();
 
   // إشعارات الإدارة — تظهر كحوار منبثق عند وصول رسالة جديدة
   BroadcastService.instance.initialize((title, body) {
@@ -192,7 +195,8 @@ class _AuthGateState extends State<_AuthGate> {
   @override
   Widget build(BuildContext context) {
     if (_authAvailable && (_authOrNull?.isAuthenticated ?? false)) {
-      return const HomeScreen();
+      // وضع الصيانة يُطبَّق بعد الدخول — شاشة الدخول تبقى متاحة للمدير
+      return const MaintenanceGate(child: HomeScreen());
     }
     return AuthScreen(onAuthenticated: () {});
   }

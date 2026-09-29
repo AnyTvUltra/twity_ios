@@ -27,7 +27,11 @@ class GameModel {
     required this.borderLightColor,
     required this.glowColor,
     this.hasCrown = false,
+    this.comingSoon = false,
   });
+
+  /// لعبة معلنة لكنها قيد التطوير — تظهر شارة "قريباً" على بطاقتها
+  final bool comingSoon;
 }
 
 class GamesData {
@@ -96,6 +100,34 @@ class GamesData {
       borderLightColor: AppColors.backgammonBorderLight,
       glowColor: AppColors.backgammonGlow,
       hasCrown: false,
+    ),
+    GameModel(
+      id: 'snake',
+      title: 'الحية والدرج'.tr,
+      subtitle: 'Snakes & Ladders',
+      description: 'ارمِ النرد • اصعد الدرج'.tr,
+      route: '/games/snake',
+      gradient: AppGradients.snakeCard,
+      primaryColor: AppColors.snakeBg,
+      borderColor: AppColors.snakeBorder,
+      borderLightColor: AppColors.snakeBorderLight,
+      glowColor: AppColors.snakeGlow,
+      hasCrown: false,
+      comingSoon: true,
+    ),
+    GameModel(
+      id: 'domino',
+      title: 'دومينو'.tr,
+      subtitle: 'Dominoes',
+      description: 'طابق الأرقام • اكسب الجولة'.tr,
+      route: '/games/domino',
+      gradient: AppGradients.dominoCard,
+      primaryColor: AppColors.dominoBg,
+      borderColor: AppColors.dominoBorder,
+      borderLightColor: AppColors.dominoBorderLight,
+      glowColor: AppColors.dominoGlow,
+      hasCrown: false,
+      comingSoon: true,
     ),
   ];
 

@@ -8,6 +8,7 @@ import '../widgets/title_banner.dart';
 import '../widgets/game_card.dart';
 import '../widgets/more_games_banner.dart';
 import '../widgets/bottom_nav_bar.dart';
+import '../widgets/announcement_banner.dart';
 import 'game_screen.dart';
 import 'achievements_screen.dart';
 import 'chat_screen.dart';
@@ -54,7 +55,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
 
     // 5 game cards stagger one by one (0.15 → 0.85)
-    _cardAnimations = List.generate(5, (i) {
+    _cardAnimations = List.generate(GamesData.games.length, (i) {
       final start = 0.15 + (i * 0.10);
       final end = (start + 0.22).clamp(0.0, 1.0);
       return CurvedAnimation(
@@ -81,6 +82,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   void _navigateToGame(String gameId) {
     AppHaptics.medium();
+    // ألعاب قيد التطوير — تظهر بطاقتها للتشويق وتُفعَّل لاحقاً
+    if (gameId == 'snake' || gameId == 'domino') {
+      _showNotice('هذه اللعبة قيد التطوير — قريباً! 🚧'.tr,
+          icon: Icons.construction_rounded);
+      return;
+    }
     final Widget destination =
         gameId == 'okey' ? const OkeyRulesScreen() : GameScreen(gameId: gameId);
     Navigator.of(context).push(
@@ -244,6 +251,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         child: TitleBanner(),
                       ),
                     ),
+
+                    // إعلان الإدارة المباشر — يظهر فقط إذا نُشر من لوحة الأدمن
+                    const AnnouncementBanner(),
+
                     const SizedBox(height: 14),
 
                     // ----------------------------------------------------
@@ -289,7 +300,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     ],
                                   ),
                                   const SizedBox(height: 18),
-                                  Center(child: card(4)),
+                                  Row(
+                                    children: [
+                                      card(4),
+                                      SizedBox(width: gap),
+                                      card(5),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 18),
+                                  Center(child: card(6)),
                                 ],
                               );
                             },

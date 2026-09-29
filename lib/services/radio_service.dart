@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
@@ -170,8 +171,24 @@ class RadioService extends ChangeNotifier {
   }
 
   dynamic _audioElement;
+  AudioPlayer? _nativePlayer;
+  StreamSubscription<PlayerState>? _nativeStateSub;
   bool _isPlaying = false;
   bool get isPlaying => _isPlaying;
+
+  /// مشغّل المنصات الأصلية (iOS/Android) عبر audioplayers
+  AudioPlayer _ensureNativePlayer() {
+    final p = _nativePlayer;
+    if (p != null) return p;
+    final player = AudioPlayer()..setReleaseMode(ReleaseMode.stop);
+    player.setVolume(_volume);
+    _nativeStateSub = player.onPlayerStateChanged.listen((state) {
+      _isPlaying = state == PlayerState.playing;
+      notifyListeners();
+    });
+    _nativePlayer = player;
+    return player;
+  }
 
   int _currentStationIndex = 0;
   int get currentStationIndex => _currentStationIndex;
@@ -225,8 +242,13 @@ class RadioService extends ChangeNotifier {
         debugPrint('Error playing radio station: $e');
       }
     } else {
-      _isPlaying = true;
-      notifyListeners();
+      try {
+        _ensureNativePlayer().play(UrlSource(stations[index].url));
+      } catch (e) {
+        debugPrint('Error playing radio station: $e');
+        _isPlaying = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -242,7 +264,11 @@ class RadioService extends ChangeNotifier {
         playStation(_currentStationIndex);
       }
     } else {
-      _isPlaying = !_isPlaying;
+      if (_isPlaying) {
+        _nativePlayer?.pause();
+      } else {
+        playStation(_currentStationIndex);
+      }
     }
     notifyListeners();
   }
@@ -258,8 +284,19 @@ class RadioService extends ChangeNotifier {
       try {
         platform.setRadioAudioVolume(_audioElement, _volume);
       } catch (_) {}
+    } else {
+      _nativePlayer?.setVolume(_volume);
     }
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _nativeStateSub?.cancel();
+    _nativePlayer?.dispose();
+    _groupsSub?.cancel();
+    _songsSub?.cancel();
+    super.dispose();
   }
 
   void stop() {
@@ -267,6 +304,8 @@ class RadioService extends ChangeNotifier {
       try {
         platform.stopRadioAudio(_audioElement);
       } catch (_) {}
+    } else {
+      _nativePlayer?.stop();
     }
     _isPlaying = false;
     notifyListeners();

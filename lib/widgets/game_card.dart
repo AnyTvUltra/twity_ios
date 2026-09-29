@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../models.dart';
 import '../utils/haptics.dart';
+import '../l10n/app_lang.dart';
 import 'game_artwork.dart';
 
 class GameCard extends StatefulWidget {
@@ -228,6 +229,32 @@ class _GameCardState extends State<GameCard>
                     child: CustomPaint(
                       size: const Size(36, 26),
                       painter: _MiniCrownPainter(),
+                    ),
+                  ),
+
+                // شارة "قريباً" للألعاب المعلنة قيد التطوير
+                if (widget.game.comingSoon)
+                  Positioned(
+                    top: 10,
+                    left: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.55),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color:
+                                const Color(0xFFFFD54F).withOpacity(0.7),
+                            width: 1),
+                      ),
+                      child: Text(
+                        'قريباً ⏳'.tr,
+                        style: const TextStyle(
+                            color: Color(0xFFFFD54F),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900),
+                      ),
                     ),
                   ),
 

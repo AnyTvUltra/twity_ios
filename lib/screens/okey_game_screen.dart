@@ -17,6 +17,7 @@ import '../games/okey/widgets/okey_win_overlay.dart';
 import '../games/okey/utils/okey_audio.dart';
 import '../services/firebase_service.dart';
 import '../services/auth_service.dart';
+import '../services/game_settings_service.dart';
 import '../services/store_service.dart';
 import '../services/voice_service.dart';
 import '../widgets/radio_player_widget.dart';
@@ -92,7 +93,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   @override
   void initState() {
     super.initState();
-    _engine = OkeyEngine(rules: widget.rules);
+    _engine = OkeyEngine(rules: widget.rules, turnDuration: GameSettingsService().defaultTurnTimer);
     _syncHumanProfile();
 
     SystemChrome.setPreferredOrientations([
@@ -533,7 +534,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       winnerName: 'الانسحاب (Surrender)'.tr,
       winType: 'surrender',
       roundDurationSeconds:
-          OkeyEngine.defaultTurnDuration - _engine.turnTimeRemaining,
+          _engine.turnDuration - _engine.turnTimeRemaining,
     );
     Navigator.of(context).pop();
   }
@@ -1823,7 +1824,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                 borderRadius: BorderRadius.circular(2),
                 child: LinearProgressIndicator(
                   value: (_engine.turnTimeRemaining /
-                          OkeyEngine.defaultTurnDuration)
+                          _engine.turnDuration)
                       .clamp(0.0, 1.0),
                   backgroundColor: Colors.white12,
                   valueColor: AlwaysStoppedAnimation<Color>(
@@ -2408,53 +2409,162 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         _buildIndicator(),
         const SizedBox(width: 8),
         _buildDrawTower(canDraw),
-        const SizedBox(width: 6),
-        // شريط الرمي: كومة اليسار (تؤخذ) بجانب الرزمة، ثم المقابل، اليمين، أنت
-        _discardStack(
-          key: _leftDiscardKey,
-          pile: leftPile,
-          label: 'يسار'.tr,
-          accent: const Color(0xFF38BDF8),
-          active: canTakeLeft,
-          takeable: !hidden(3),
-          faceDown: hidden(3),
-          onTap: _executeDrawFromLeft,
-        ),
-        const SizedBox(width: 4),
-        _discardStack(
-          pile: _engine.discardPiles[2],
-          label: widget.teamMode ? 'شريك'.tr : 'مقابل'.tr,
-          accent: widget.teamMode
-              ? const Color(0xFF4ADE80)
-              : const Color(0xFF94A3B8),
-          faceDown: hidden(2),
-        ),
-        const SizedBox(width: 4),
-        _discardStack(
-          pile: _engine.discardPiles[1],
-          label: 'يمين'.tr,
-          accent: const Color(0xFF94A3B8),
-          faceDown: hidden(1),
-        ),
-        const SizedBox(width: 4),
-        _discardStack(
-          key: _discardKey,
-          pile: _engine.discardPiles[0],
-          label: 'أنت'.tr,
-          accent: const Color(0xFFEF4444),
-          active: canDiscard,
-          onTap: () {
-            final sel = _engine.selectedTileIndex;
-            if (canDiscard && sel != null) {
-              _executeDiscard(sel);
-            } else if (canDiscard) {
-              _showGameNotice('اختر حجراً أو اسحبه إلى الطاولة لرميه'.tr,
-                  icon: Icons.pan_tool_alt_rounded);
-            }
-          },
-        ),
+        const SizedBox(width: 10),
+        // كومة رمي موحّدة مبعثرة لكل اللاعبين — مثل طاولة حقيقية
+        _buildScatterPile(canDraw: canDraw, canDiscard: canDiscard,
+            canTakeLeft: canTakeLeft),
       ],
     );
+  }
+
+  /// كومة أحجار مرمية مشتركة ومبعثرة: أحجار الجميع في مكان واحد
+  /// بزوايا وإزاحات عشوائية ثابتة. حجر اليسار الأخير وحده قابل للأخذ
+  /// (توهّج أخضر + لمس أو سحب)، وأحجار الفول تبقى مقلوبة بيضاء.
+  Widget _buildScatterPile({
+    required bool canDraw,
+    required bool canDiscard,
+    required bool canTakeLeft,
+  }) {
+    // اجمع مرميات اللاعبين الأربعة بالترتيب (صاحب اللاعب الأخير يظهر فوقاً)
+    final entries = <MapEntry<int, OkeyTile>>[];
+    for (var p = 0; p < 4; p++) {
+      for (final t in _engine.discardPiles[p]) {
+        entries.add(MapEntry(p, t));
+      }
+    }
+    final total = entries.length;
+    // نعرض آخر 22 حجراً كحد أقصى حتى لا تتكاثر الكومة بلا حدود
+    const maxShown = 22;
+    final shown = entries.length > maxShown
+        ? entries.sublist(entries.length - maxShown)
+        : entries;
+    // الحجر الوحيد القابل للأخذ = آخر رمية للاعب اليسار
+    final leftTopTile =
+        _engine.discardPiles[3].isNotEmpty ? _engine.discardPiles[3].last : null;
+
+    const w = 118.0, h = 78.0;
+    const tw = 20.0, th = 28.0;
+    return GestureDetector(
+      onTap: () {
+        if (canDiscard) {
+          final sel = _engine.selectedTileIndex;
+          if (sel != null) {
+            _executeDiscard(sel);
+          } else {
+            _showGameNotice('اختر حجراً أو اسحبه إلى الطاولة لرميه'.tr,
+                icon: Icons.pan_tool_alt_rounded);
+          }
+        }
+      },
+      child: Container(
+        key: _discardKey,
+        width: w,
+        height: h,
+        decoration: BoxDecoration(
+          color: const Color(0x8C142040),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: canDiscard
+                ? const Color(0xFFEF4444).withOpacity(0.7)
+                : Colors.white.withOpacity(0.10),
+            width: canDiscard ? 1.4 : 0.8,
+          ),
+        ),
+        child: total == 0
+            ? Center(
+                child: Icon(Icons.layers_clear_rounded,
+                    color: Colors.white.withOpacity(0.18), size: 22))
+            : Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  // عداد الأحجار المرمية
+                  Positioned(
+                    left: 4,
+                    bottom: 2,
+                    child: Text('$total',
+                        style: TextStyle(
+                            color: Colors.white.withOpacity(0.35),
+                            fontSize: 8,
+                            fontWeight: FontWeight.w900)),
+                  ),
+                  for (var i = 0; i < shown.length; i++)
+                    _scatteredTile(
+                      entries: shown,
+                      i: i,
+                      w: w, h: h, tw: tw, th: th,
+                      isTakeable: canTakeLeft &&
+                          identical(shown[i].value, leftTopTile) &&
+                          shown[i].key == 3,
+                    ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _scatteredTile({
+    required List<MapEntry<int, OkeyTile>> entries,
+    required int i,
+    required double w,
+    required double h,
+    required double tw,
+    required double th,
+    required bool isTakeable,
+  }) {
+    // بذرة ثابتة لكل حجر حتى لا "يقفز" عند كل إعادة بناء
+    final seed = (entries[i].value.hashCode ^
+            (entries[i].key * 7919) ^
+            (i * 104729)) &
+        0x7fffffff;
+    final r = math.Random(seed);
+    final dx = 8 + r.nextDouble() * (w - tw - 16);
+    final dy = 4 + r.nextDouble() * (h - th - 8);
+    final angle = (r.nextDouble() - 0.5) * 0.9; // ±25°
+    final faceDown =
+        entries[i].key != 0 && _engine.players[entries[i].key].playStyle == OkeyPlayStyle.full;
+
+    Widget tile = Transform.rotate(
+      angle: angle,
+      child: faceDown
+          ? _tileBack(tw, th)
+          : OkeyTileWidget(tile: entries[i].value, width: tw, height: th),
+    );
+    if (isTakeable) {
+      tile = Draggable<int>(
+        key: _leftDiscardKey,
+        data: OkeyDrag.leftPile,
+        maxSimultaneousDrags: 1,
+        onDragStarted: () => AppHaptics.selection(),
+        dragAnchorStrategy: (d, c, p) => const Offset(
+            _rackTileW / 2, _rackTileH / 2 + _rackTileH * 0.28),
+        feedback: Material(
+          color: Colors.transparent,
+          elevation: 10,
+          child: OkeyTileWidget(
+              tile: entries[i].value,
+              isDragging: true,
+              width: _rackTileW,
+              height: _rackTileH),
+        ),
+        childWhenDragging: Opacity(opacity: 0.25, child: tile),
+        child: GestureDetector(
+          onTap: _executeDrawFromLeft,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(5),
+              boxShadow: [
+                BoxShadow(
+                    color: const Color(0xFF4ADE80).withOpacity(0.75),
+                    blurRadius: 9,
+                    spreadRadius: 1.5),
+              ],
+            ),
+            child: tile,
+          ),
+        ),
+      );
+    }
+    return Positioned(left: dx, top: dy, child: tile);
   }
 
   Widget _buildIndicator() {
@@ -2586,112 +2696,6 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     );
   }
 
-  /// كومة رمي لاعب: آخر حجر ظاهر فوق ما قبله، مع عدد الأحجار
-  Widget _discardStack({
-    Key? key,
-    required List<OkeyTile> pile,
-    required String label,
-    required Color accent,
-    bool active = false,
-    bool takeable = false,
-    bool faceDown = false,
-    VoidCallback? onTap,
-  }) {
-    const w = 22.0, h = 30.0;
-    // مرميات الفول تظهر ظهراً أبيض للجميع
-    Widget tileView(OkeyTile t) => faceDown
-        ? _tileBack(w, h)
-        : OkeyTileWidget(tile: t, width: w, height: h);
-    final top = pile.isNotEmpty ? pile.last : null;
-    final under = pile.length > 1 ? pile[pile.length - 2] : null;
-    Widget face = SizedBox(
-      width: w + 4,
-      height: h + 3,
-      child: Stack(
-        children: [
-          if (under != null)
-            Positioned(
-              left: 3,
-              top: 0,
-              child: Opacity(opacity: 0.55, child: tileView(under)),
-            ),
-          Positioned(
-            left: 0,
-            top: 3,
-            child: top != null
-                ? tileView(top)
-                : Container(
-                    width: w,
-                    height: h,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.white24),
-                      borderRadius: BorderRadius.circular(3),
-                      color: Colors.white.withOpacity(0.04),
-                    ),
-                  ),
-          ),
-        ],
-      ),
-    );
-    // كومة اليسار فقط تُسحب منها (باللمس أو بالسحب إلى الرف)
-    if (takeable && top != null) {
-      face = Draggable<int>(
-        data: OkeyDrag.leftPile,
-        maxSimultaneousDrags: active ? 1 : 0,
-        onDragStarted: () => AppHaptics.selection(),
-        dragAnchorStrategy: (d, c, p) => const Offset(
-            _rackTileW / 2, _rackTileH / 2 + _rackTileH * 0.28),
-        feedback: Material(
-          color: Colors.transparent,
-          elevation: 10,
-          child: OkeyTileWidget(
-              tile: top,
-              isDragging: true,
-              width: _rackTileW,
-              height: _rackTileH),
-        ),
-        childWhenDragging: Opacity(opacity: 0.35, child: face),
-        child: face,
-      );
-    }
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        key: key,
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.fromLTRB(4, 3, 4, 3),
-        decoration: BoxDecoration(
-          color: active
-              ? accent.withOpacity(0.14)
-              : const Color(0x8C142040),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: active ? accent : accent.withOpacity(0.28),
-            width: active ? 1.6 : 0.9,
-          ),
-          boxShadow: [
-            if (active)
-              BoxShadow(color: accent.withOpacity(0.35), blurRadius: 10),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            face,
-            const SizedBox(height: 2),
-            Text(
-              takeable && active ? 'خذ ⬇'.tr : label,
-              style: TextStyle(
-                color: active ? accent : Colors.white54,
-                fontSize: 7.5,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildBottomPlayerBadge(String timerString, bool isTurn) {
     final player = _engine.players[0];
@@ -2803,7 +2807,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                     borderRadius: BorderRadius.circular(2),
                     child: LinearProgressIndicator(
                       value: (_engine.turnTimeRemaining /
-                              OkeyEngine.defaultTurnDuration)
+                              _engine.turnDuration)
                           .clamp(0.0, 1.0),
                       backgroundColor: Colors.white12,
                       valueColor: AlwaysStoppedAnimation<Color>(

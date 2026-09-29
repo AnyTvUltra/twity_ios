@@ -44,6 +44,18 @@ class AppColors {
   static const Color backgammonBorderLight = Color(0xFF38BDF8);
   static const Color backgammonGlow = Color(0xFF0EA5E9);
 
+  // Card 6: Snakes & Ladders (الحية والدرج) - Jungle Lime
+  static const Color snakeBg = Color(0xFF33691E);
+  static const Color snakeBorder = Color(0xFF7CB342);
+  static const Color snakeBorderLight = Color(0xFFAED581);
+  static const Color snakeGlow = Color(0xFF8BC34A);
+
+  // Card 7: Dominoes (دومينو) - Slate Ivory
+  static const Color dominoBg = Color(0xFF374151);
+  static const Color dominoBorder = Color(0xFF6B7280);
+  static const Color dominoBorderLight = Color(0xFF9CA3AF);
+  static const Color dominoGlow = Color(0xFFD1D5DB);
+
   // UI Surfaces & Text
   static const Color surfaceDark = Color(0xB3121C3A);
   static const Color surfacePill = Color(0x99162648);
@@ -160,6 +172,26 @@ class AppGradients {
       Color(0xFF1792A6),
       Color(0xFF0C6170),
       Color(0xFF07404B),
+    ],
+  );
+
+  static const LinearGradient snakeCard = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Color(0xFF689F38),
+      Color(0xFF33691E),
+      Color(0xFF1B3A0F),
+    ],
+  );
+
+  static const LinearGradient dominoCard = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Color(0xFF64748B),
+      Color(0xFF374151),
+      Color(0xFF1F2937),
     ],
   );
 

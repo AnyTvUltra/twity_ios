@@ -19,9 +19,266 @@ class GameArtwork extends StatelessWidget {
         return const _Okey3DArtwork();
       case 'backgammon':
         return const _Backgammon3DArtwork();
+      case 'snake':
+        return const _SnakeArtwork();
+      case 'domino':
+        return const _DominoArtwork();
       default:
         return const SizedBox();
     }
+  }
+}
+
+// ----------------------------------------------------
+// 6. SNAKES & LADDERS (الحية والدرج) ARTWORK
+// ----------------------------------------------------
+class _SnakeArtwork extends StatelessWidget {
+  const _SnakeArtwork();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      clipBehavior: Clip.none,
+      children: [
+        // ظل أرضي
+        Positioned(
+          bottom: 0,
+          child: Container(
+            width: 100,
+            height: 20,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(11),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.45),
+                  blurRadius: 11,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+          ),
+        ),
+        // لوحة صغيرة مربعات
+        Positioned(
+          bottom: 8,
+          left: 14,
+          child: Transform.rotate(
+            angle: -0.12,
+            child: Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFAF3E0),
+                borderRadius: BorderRadius.circular(7),
+                border: Border.all(color: const Color(0xFF33691E), width: 1.6),
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.black.withOpacity(0.35),
+                      blurRadius: 7,
+                      offset: const Offset(2, 3)),
+                ],
+              ),
+              child: GridView.count(
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 4,
+                padding: const EdgeInsets.all(4),
+                mainAxisSpacing: 2,
+                crossAxisSpacing: 2,
+                children: List.generate(
+                    16,
+                    (i) => Container(
+                          decoration: BoxDecoration(
+                            color: (i + i ~/ 4) % 2 == 0
+                                ? const Color(0xFFAED581)
+                                : const Color(0xFFFFF9C4),
+                            borderRadius: BorderRadius.circular(1.5),
+                          ),
+                        )),
+              ),
+            ),
+          ),
+        ),
+        // سلّم مائل
+        Positioned(
+          bottom: 20,
+          right: 26,
+          child: Transform.rotate(
+            angle: 0.35,
+            child: Container(
+              width: 14,
+              height: 58,
+              decoration: BoxDecoration(
+                color: const Color(0xFF8D5B36),
+                borderRadius: BorderRadius.circular(4),
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.black.withOpacity(0.35),
+                      blurRadius: 4,
+                      offset: const Offset(1, 2)),
+                ],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: List.generate(
+                    4,
+                    (_) => Container(
+                          height: 2,
+                          margin: const EdgeInsets.symmetric(horizontal: 2),
+                          color: const Color(0xFF452712),
+                        )),
+              ),
+            ),
+          ),
+        ),
+        // حية
+        const Positioned(
+          top: -4,
+          left: 30,
+          child: Text('🐍', style: TextStyle(fontSize: 38)),
+        ),
+        // نرد
+        Positioned(
+          bottom: 6,
+          right: 8,
+          child: Container(
+            width: 22,
+            height: 22,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(5),
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.black.withOpacity(0.35),
+                    blurRadius: 4,
+                    offset: const Offset(1, 2)),
+              ],
+            ),
+            child: const Center(
+              child: Text('⚅',
+                  style: TextStyle(
+                      fontSize: 15, color: Colors.black87, height: 1)),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ----------------------------------------------------
+// 7. DOMINOES (دومينو) ARTWORK
+// ----------------------------------------------------
+class _DominoArtwork extends StatelessWidget {
+  const _DominoArtwork();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      clipBehavior: Clip.none,
+      children: [
+        // ظل أرضي
+        Positioned(
+          bottom: 0,
+          child: Container(
+            width: 96,
+            height: 20,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(11),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.45),
+                  blurRadius: 11,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+          ),
+        ),
+        // قطعة دومينو خلفية
+        Positioned(
+          bottom: 14,
+          left: 22,
+          child: Transform.rotate(
+            angle: -0.3,
+            child: _buildDominoTile(top: 3, bottom: 5, dim: true),
+          ),
+        ),
+        // قطعة دومينو أمامية
+        Positioned(
+          bottom: 10,
+          right: 20,
+          child: Transform.rotate(
+            angle: 0.18,
+            child: _buildDominoTile(top: 6, bottom: 6),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDominoTile(
+      {required int top, required int bottom, bool dim = false}) {
+    const dots = {
+      1: [4],
+      2: [0, 8],
+      3: [0, 4, 8],
+      4: [0, 2, 6, 8],
+      5: [0, 2, 4, 6, 8],
+      6: [0, 2, 3, 5, 6, 8],
+    };
+    Widget half(int n) => SizedBox(
+          width: 26,
+          height: 26,
+          child: GridView.count(
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 3,
+            padding: const EdgeInsets.all(2),
+            children: List.generate(
+                9,
+                (i) => Center(
+                      child: (dots[n] ?? const []).contains(i)
+                          ? Container(
+                              width: 4.5,
+                              height: 4.5,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: dim
+                                    ? const Color(0xFF64748B)
+                                    : const Color(0xFF1F2937),
+                              ),
+                            )
+                          : const SizedBox(),
+                    )),
+          ),
+        );
+    return Container(
+      width: 30,
+      height: 58,
+      decoration: BoxDecoration(
+        color: dim ? const Color(0xFFE5E7EB) : const Color(0xFFFFFBEB),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: const Color(0xFF9CA3AF), width: 1),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.35),
+              blurRadius: 5,
+              offset: const Offset(1, 3)),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          half(top),
+          Container(
+              height: 1.4,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              color: const Color(0xFF6B7280)),
+          half(bottom),
+        ],
+      ),
+    );
   }
 }
 

@@ -35,6 +35,9 @@ class OkeyEngine extends ChangeNotifier {
   // Turn Timer
   int turnTimeRemaining = 72; // 01:12
   static const int defaultTurnDuration = 72;
+
+  /// مهلة الدور الفعلية (ثواني) — تُضبط من إعدادات السيرفر عبر الشاشة
+  final int turnDuration;
   Timer? _turnCountdownTimer;
   Timer? _botTimer;
   bool isDisposed = false;
@@ -49,7 +52,8 @@ class OkeyEngine extends ChangeNotifier {
   /// قانون الكونكان المختار (سليمانية / أربيل / تركي)
   final OkeyRules rules;
 
-  OkeyEngine({OkeyRules? rules}) : rules = rules ?? OkeyRules.turkish {
+  OkeyEngine({OkeyRules? rules, this.turnDuration = defaultTurnDuration})
+      : rules = rules ?? OkeyRules.turkish {
     initGame();
   }
 
@@ -205,7 +209,7 @@ class OkeyEngine extends ChangeNotifier {
 
   void _startTurnTimer() {
     _turnCountdownTimer?.cancel();
-    turnTimeRemaining = defaultTurnDuration;
+    turnTimeRemaining = turnDuration;
 
     _turnCountdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (isDisposed) {
@@ -697,7 +701,7 @@ class OkeyEngine extends ChangeNotifier {
     FirebaseService().logGameResult(
       winnerName: p.name,
       winType: type.name,
-      roundDurationSeconds: defaultTurnDuration - turnTimeRemaining,
+      roundDurationSeconds: turnDuration - turnTimeRemaining,
     );
 
     notifyListeners();

@@ -110,6 +110,12 @@
       increment,
       where 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import {
+      getStorage,
+      ref as storageRef,
+      uploadBytesResumable,
+      getDownloadURL
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBZ1GzN3LUvWxmSf1ZRVC9wDstNNzgJpmw",
@@ -125,14 +131,17 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
+    const storage = getStorage(app);
 
     // Export to window for React component access
     window.db = db;
     window.fbAuth = auth;
+    window.fbStorage = storage;
     window.fbAuthTools = { signInWithEmailAndPassword, onAuthStateChanged, signOut };
     window.fbTools = {
       collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, onSnapshot, serverTimestamp, query, orderBy, limit, increment, where
     };
+    window.fbStorageTools = { storageRef, uploadBytesResumable, getDownloadURL };
     window.firebaseReady = true;
     window.dispatchEvent(new Event('firebase-ready'));
   </script>
@@ -325,6 +334,8 @@
       const [showAddSongModal, setShowAddSongModal] = useState(false);
       const [newGroup, setNewGroup] = useState({ name: '', flag: '🎵' });
       const [newSong, setNewSong] = useState({ groupId: '', name: '', genre: '', url: '' });
+      const [songFile, setSongFile] = useState(null);
+      const [songUploadProgress, setSongUploadProgress] = useState(-1); // -1 = لا يوجد رفع
       const [selectedRadioGroup, setSelectedRadioGroup] = useState('all');
 
       // Modals
@@ -404,7 +415,7 @@
         if (!isAuthenticated) return;
 
         const initFirebaseListeners = () => {
-          if (!window.db || !window.fbTools) return;
+          if (!window.db || !window.fbTools) { showToast('⚠️ الاتصال بالسيرفر غير جاهز — انتظر لحظة أو حدّث الصفحة', 'error'); return; }
           const { collection, doc, onSnapshot, query, orderBy, limit } = window.fbTools;
           setFbStatus('ready');
 
@@ -543,7 +554,7 @@
 
       // إرسال إشعار عام لجميع اللاعبين — يظهر داخل التطبيق فوراً
       const sendBroadcast = async () => {
-        if (!window.db || !window.fbTools) return;
+        if (!window.db || !window.fbTools) { showToast('⚠️ الاتصال بالسيرفر غير جاهز — انتظر لحظة أو حدّث الصفحة', 'error'); return; }
         if (!broadcast.body.trim()) {
           showToast('اكتب نص الإشعار أولاً', 'error');
           return;
@@ -566,7 +577,7 @@
       };
 
       const deleteBroadcast = async (id) => {
-        if (!window.db || !window.fbTools) return;
+        if (!window.db || !window.fbTools) { showToast('⚠️ الاتصال بالسيرفر غير جاهز — انتظر لحظة أو حدّث الصفحة', 'error'); return; }
         try {
           const { doc, deleteDoc } = window.fbTools;
           await deleteDoc(doc(window.db, 'broadcasts', id));
@@ -585,7 +596,7 @@
 
       // Actions: Update Game Settings
       const handleSaveSettings = async (newConfig) => {
-        if (!window.db || !window.fbTools) return;
+        if (!window.db || !window.fbTools) { showToast('⚠️ الاتصال بالسيرفر غير جاهز — انتظر لحظة أو حدّث الصفحة', 'error'); return; }
         try {
           const { doc, setDoc, serverTimestamp } = window.fbTools;
           await setDoc(doc(window.db, 'config', 'game_settings'), {
@@ -602,7 +613,7 @@
 
       // Actions: Update Player (عملات 🪙 أو جواهر 💎)
       const handleUpdatePlayerBalance = async (playerId, deltaOrNewValue, isAbsolute = false, field = 'chips') => {
-        if (!window.db || !window.fbTools) return;
+        if (!window.db || !window.fbTools) { showToast('⚠️ الاتصال بالسيرفر غير جاهز — انتظر لحظة أو حدّث الصفحة', 'error'); return; }
         try {
           const { doc, updateDoc, serverTimestamp } = window.fbTools;
           const player = players.find(p => p.id === playerId);
@@ -630,7 +641,7 @@
 
       // Actions: Toggle Player Ban
       const handleToggleBan = async (player) => {
-        if (!window.db || !window.fbTools) return;
+        if (!window.db || !window.fbTools) { showToast('⚠️ الاتصال بالسيرفر غير جاهز — انتظر لحظة أو حدّث الصفحة', 'error'); return; }
         try {
           const { doc, updateDoc, serverTimestamp } = window.fbTools;
           const newBannedState = !player.isBanned;
@@ -907,22 +918,43 @@
       const handleAddRadioSong = async (e) => {
         e && e.preventDefault();
         if (!newSong.groupId) { showToast('اختر المجموعة أولاً', 'error'); return; }
-        if (!newSong.name.trim() || !newSong.url.trim()) { showToast('اكتب اسم الأغنية ورابطها', 'error'); return; }
+        if (!newSong.name.trim()) { showToast('اكتب اسم الأغنية', 'error'); return; }
+        if (!songFile && !newSong.url.trim()) { showToast('ارفع ملف الأغنية أو ضع رابطها', 'error'); return; }
         try {
+          let url = newSong.url.trim();
+          // رفع ملف الأغنية إلى Firebase Storage إن اختير ملف
+          if (songFile) {
+            if (!window.fbStorage) { showToast('التخزين غير متاح — حدّث الصفحة', 'error'); return; }
+            const { storageRef, uploadBytesResumable, getDownloadURL } = window.fbStorageTools;
+            const safeName = songFile.name.replace(/[^\w.\-]+/g, '_');
+            const fileRef = storageRef(window.fbStorage, `radio_songs/${Date.now()}_${safeName}`);
+            setSongUploadProgress(0);
+            url = await new Promise((resolve, reject) => {
+              const task = uploadBytesResumable(fileRef, songFile, { contentType: songFile.type || 'audio/mpeg' });
+              task.on('state_changed',
+                (snap) => setSongUploadProgress(Math.round(snap.bytesTransferred / snap.totalBytes * 100)),
+                reject,
+                async () => resolve(await getDownloadURL(task.snapshot.ref)));
+            });
+          }
           const { collection, addDoc, serverTimestamp } = window.fbTools;
           await addDoc(collection(window.db, 'radio_songs'), {
             groupId: newSong.groupId,
             name: newSong.name.trim(),
             genre: newSong.genre.trim(),
-            url: newSong.url.trim(),
+            url,
+            type: songFile ? 'file' : 'stream',
             active: true,
             sort: radioSongs.filter(s => s.groupId === newSong.groupId).length,
             createdAt: serverTimestamp()
           });
           setShowAddSongModal(false);
           setNewSong({ groupId: '', name: '', genre: '', url: '' });
+          setSongFile(null);
+          setSongUploadProgress(-1);
           showToast('🎶 تمت إضافة الأغنية للراديو!');
         } catch (err) {
+          setSongUploadProgress(-1);
           showToast('فشل: ' + err.message, 'error');
         }
       };
@@ -2513,12 +2545,30 @@
                     <input type="text" value={newSong.genre} onChange={(e) => setNewSong(prev => ({ ...prev, genre: e.target.value }))} placeholder="مثال: طرب، ديني، أخبار" className="w-full bg-dark-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500" />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-gray-300 block mb-1">رابط البث / الأغنية (URL)</label>
-                    <input type="url" value={newSong.url} onChange={(e) => setNewSong(prev => ({ ...prev, url: e.target.value }))} placeholder="https://...stream.mp3" dir="ltr" className="w-full bg-dark-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sky-300 text-sm focus:outline-none focus:border-sky-500" />
+                    <label className="text-xs font-bold text-gray-300 block mb-1">ملف الأغنية (MP3) — يُرفع للسيرفر ويظهر لكل اللاعبين</label>
+                    <label className={`flex items-center justify-center gap-2 w-full border-2 border-dashed rounded-xl px-4 py-3 text-sm cursor-pointer transition ${songFile ? 'border-emerald-500 bg-emerald-500/10 text-emerald-300' : 'border-gray-600 bg-dark-800 text-gray-400 hover:border-emerald-500 hover:text-emerald-300'}`}>
+                      <input type="file" accept="audio/*" className="hidden" onChange={(e) => { const f = e.target.files[0] || null; setSongFile(f); if (f && !newSong.name.trim()) setNewSong(prev => ({ ...prev, name: f.name.replace(/\.[^.]+$/, '') })); }} />
+                      {songFile ? `🎵 ${songFile.name} (${(songFile.size / 1048576).toFixed(1)} MB)` : '📁 اختر ملف صوتي من جهازك'}
+                    </label>
                   </div>
+                  <div>
+                    <label className="text-xs font-bold text-gray-300 block mb-1">أو رابط البث المباشر (URL) — لمحطات الراديو الحية</label>
+                    <input type="url" value={newSong.url} onChange={(e) => setNewSong(prev => ({ ...prev, url: e.target.value }))} placeholder="https://...stream.mp3" dir="ltr" disabled={!!songFile} className="w-full bg-dark-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sky-300 text-sm focus:outline-none focus:border-sky-500 disabled:opacity-40" />
+                  </div>
+                  {songUploadProgress >= 0 && (
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[11px] font-bold text-gray-400">
+                        <span>جاري رفع الأغنية...</span>
+                        <span className="text-emerald-400">{songUploadProgress}%</span>
+                      </div>
+                      <div className="w-full h-2 bg-dark-900 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-300" style={{ width: `${songUploadProgress}%` }} />
+                      </div>
+                    </div>
+                  )}
                   <div className="pt-2 flex justify-end gap-2">
                     <button type="button" onClick={() => setShowAddSongModal(false)} className="px-4 py-2.5 text-xs text-gray-400 hover:text-white font-bold rounded-xl">إلغاء</button>
-                    <button type="submit" className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl transition">إضافة الأغنية</button>
+                    <button type="submit" disabled={songUploadProgress >= 0} className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl transition disabled:opacity-50">{songUploadProgress >= 0 ? '⏳ جاري الرفع...' : 'إضافة الأغنية'}</button>
                   </div>
                 </form>
               </div>
