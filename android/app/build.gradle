@@ -5,6 +5,11 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+// تسجيل الدخول عبر Google يحتاج google-services.json — يُطبّق البلجن فقط عند وجود الملف
+if (file("google-services.json").exists()) {
+    apply plugin: "com.google.gms.google-services"
+}
+
 // مفتاح توقيع الإصدار لـ Google Play — يُقرأ من android/key.properties (غير مرفوع إلى Git)
 def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file("key.properties")
