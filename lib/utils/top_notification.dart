@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'haptics.dart';
-import '../theme_mode.dart';
 
 class TopNotification {
   static OverlayEntry? _currentEntry;
@@ -116,30 +115,31 @@ class _TopNotificationWidgetState extends State<_TopNotificationWidget>
                 onTap: _dismiss,
                 child: Center(
                   child: Container(
-                    constraints: BoxConstraints(maxWidth: 420),
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
+                      gradient: const LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          L(0xFF3B1E6D),
-                          L(0xFF1E0E35),
+                          Color(0xFF3B1E6D),
+                          Color(0xFF1E0E35),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: L(0xFFFFD54F).withOpacity(0.6),
+                        color: const Color(0xFFFFD54F).withOpacity(0.6),
                         width: 1.2,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: L(0xFF000000).withOpacity(0.55),
+                          color: Colors.black.withOpacity(0.55),
                           blurRadius: 16,
-                          offset: Offset(0, 6),
+                          offset: const Offset(0, 6),
                         ),
                         BoxShadow(
-                          color: L(0xFFFFD54F).withOpacity(0.2),
+                          color: const Color(0xFFFFD54F).withOpacity(0.2),
                           blurRadius: 10,
                         ),
                       ],
@@ -148,17 +148,18 @@ class _TopNotificationWidgetState extends State<_TopNotificationWidget>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          widget.icon ?? Icons.notifications_active_rounded,
-                          color: L(0xFFFFD54F),
+                          widget.icon ??
+                              Icons.notifications_active_rounded,
+                          color: const Color(0xFFFFD54F),
                           size: 20,
                         ),
-                        SizedBox(width: 10),
+                        const SizedBox(width: 10),
                         Flexible(
                           child: Text(
                             widget.message,
                             textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: L(0xFFFFFFFF),
+                            style: const TextStyle(
+                              color: Colors.white,
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.2,
@@ -176,4 +177,6 @@ class _TopNotificationWidgetState extends State<_TopNotificationWidget>
       ),
     );
   }
+
+
 }

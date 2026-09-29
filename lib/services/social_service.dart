@@ -18,8 +18,7 @@ class ChatMessage {
     required this.isMe,
   });
 
-  factory ChatMessage.fromMap(
-      String id, Map<String, dynamic> data, String myUid) {
+  factory ChatMessage.fromMap(String id, Map<String, dynamic> data, String myUid) {
     DateTime time = DateTime.now();
     if (data['timestamp'] is Timestamp) {
       time = (data['timestamp'] as Timestamp).toDate();
@@ -128,19 +127,13 @@ class SocialService {
         .doc(uid)
         .collection('friends')
         .snapshots()
-        .map((snap) =>
-            snap.docs.map((d) => {'uid': d.id, ...d.data()}).toList());
+        .map((snap) => snap.docs.map((d) => {'uid': d.id, ...d.data()}).toList());
   }
 
   /// إضافة صديق مباشرة (تُستخدم داخلياً عند قبول الطلب)
   Future<void> addFriend(String myUid, AppUser friend) async {
     try {
-      await _firestore
-          .collection('users')
-          .doc(myUid)
-          .collection('friends')
-          .doc(friend.uid)
-          .set({
+      await _firestore.collection('users').doc(myUid).collection('friends').doc(friend.uid).set({
         'username': friend.username,
         'displayName': friend.displayName,
         'photoUrl': friend.photoUrl,
@@ -163,7 +156,8 @@ class SocialService {
         .where('status', isEqualTo: 'pending')
         .snapshots()
         .map((snap) {
-      final list = snap.docs.map(FriendRequest.fromDoc).toList();
+      final list =
+          snap.docs.map(FriendRequest.fromDoc).toList();
       list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       return list;
     });
@@ -198,15 +192,20 @@ class SocialService {
       if (existing.exists) return 'هذا اللاعب صديقك بالفعل'.tr;
 
       // هل يوجد طلب معلّق سابق؟
-      final pending =
-          await _firestore.collection('friend_requests').doc(reqId).get();
-      if (pending.exists && (pending.data()?['status'] == 'pending')) {
+      final pending = await _firestore
+          .collection('friend_requests')
+          .doc(reqId)
+          .get();
+      if (pending.exists &&
+          (pending.data()?['status'] == 'pending')) {
         return 'أرسلت طلباً لهذا اللاعب بالفعل — بانتظار موافقته'.tr;
       }
 
       // إذا كان الطرف الآخر أرسل لي طلباً → قبول متبادل فوري
-      final reverse =
-          await _firestore.collection('friend_requests').doc(reverseId).get();
+      final reverse = await _firestore
+          .collection('friend_requests')
+          .doc(reverseId)
+          .get();
       if (reverse.exists && reverse.data()?['status'] == 'pending') {
         await acceptFriendRequest(reverseId);
         return null;
@@ -231,8 +230,10 @@ class SocialService {
   /// قبول طلب صداقة: إضافة الطرفين لقوائم بعضهما وحذف الطلب
   Future<void> acceptFriendRequest(String requestId) async {
     try {
-      final doc =
-          await _firestore.collection('friend_requests').doc(requestId).get();
+      final doc = await _firestore
+          .collection('friend_requests')
+          .doc(requestId)
+          .get();
       if (!doc.exists) return;
       final d = doc.data()!;
       final fromUid = d['fromUid'] as String;
@@ -247,7 +248,8 @@ class SocialService {
       };
 
       // بيانات المستقبِل (الذي وافق) نجلبها من حسابه
-      final toDoc = await _firestore.collection('users').doc(toUid).get();
+      final toDoc =
+          await _firestore.collection('users').doc(toUid).get();
       final toData = toDoc.exists
           ? {
               'username': toDoc.data()?['username'] ?? '',
@@ -311,12 +313,7 @@ class SocialService {
   /// حذف صديق
   Future<void> removeFriend(String myUid, String friendUid) async {
     try {
-      await _firestore
-          .collection('users')
-          .doc(myUid)
-          .collection('friends')
-          .doc(friendUid)
-          .delete();
+      await _firestore.collection('users').doc(myUid).collection('friends').doc(friendUid).delete();
     } catch (e) {
       debugPrint('Error removing friend: $e');
     }
@@ -325,12 +322,7 @@ class SocialService {
   /// حظر لاعب
   Future<void> blockUser(String myUid, String blockedUid, String reason) async {
     try {
-      await _firestore
-          .collection('users')
-          .doc(myUid)
-          .collection('blocked')
-          .doc(blockedUid)
-          .set({
+      await _firestore.collection('users').doc(myUid).collection('blocked').doc(blockedUid).set({
         'reason': reason,
         'blockedAt': FieldValue.serverTimestamp(),
       });
@@ -344,12 +336,7 @@ class SocialService {
   /// إلغاء حظر لاعب
   Future<void> unblockUser(String myUid, String blockedUid) async {
     try {
-      await _firestore
-          .collection('users')
-          .doc(myUid)
-          .collection('blocked')
-          .doc(blockedUid)
-          .delete();
+      await _firestore.collection('users').doc(myUid).collection('blocked').doc(blockedUid).delete();
     } catch (e) {
       debugPrint('Error unblocking user: $e');
     }
@@ -362,8 +349,7 @@ class SocialService {
   }
 
   /// بث رسائل محادثة معينة
-  Stream<List<ChatMessage>> getMessagesStream(
-      String conversationId, String myUid) {
+  Stream<List<ChatMessage>> getMessagesStream(String conversationId, String myUid) {
     return _firestore
         .collection('conversations')
         .doc(conversationId)
@@ -371,9 +357,7 @@ class SocialService {
         .orderBy('timestamp', descending: false)
         .limitToLast(60)
         .snapshots()
-        .map((snap) => snap.docs
-            .map((d) => ChatMessage.fromMap(d.id, d.data(), myUid))
-            .toList());
+        .map((snap) => snap.docs.map((d) => ChatMessage.fromMap(d.id, d.data(), myUid)).toList());
   }
 
   /// بث قائمة محادثاتي الحقيقية مع آخر رسالة وعدد غير المقروء
@@ -383,34 +367,32 @@ class SocialService {
         .where('participants', arrayContains: myUid)
         .snapshots()
         .map((snap) {
-      final list = snap.docs
-          .map((doc) {
-            final d = doc.data();
-            final participants =
-                (d['participants'] as List?)?.cast<String>() ?? [];
-            final otherUid = participants.firstWhere(
-              (p) => p != myUid,
-              orElse: () => '',
-            );
-            final pdata =
-                (d['participantData'] as Map?)?.cast<String, dynamic>() ?? {};
-            final other =
-                (pdata[otherUid] as Map?)?.cast<String, dynamic>() ?? {};
-            return ConversationSummary(
-              id: doc.id,
-              otherUid: otherUid,
-              otherName: other['name'] ?? 'لاعب'.tr,
-              otherUsername: other['username'] ?? '',
-              otherPhoto: other['photo'] ?? '',
-              lastMessage: d['lastMessage'] ?? '',
-              lastTime: d['lastUpdated'] is Timestamp
-                  ? (d['lastUpdated'] as Timestamp).toDate()
-                  : DateTime.now(),
-              unreadCount: (d['unread_$myUid'] as num?)?.toInt() ?? 0,
-            );
-          })
-          .where((c) => c.otherUid.isNotEmpty)
-          .toList();
+      final list = snap.docs.map((doc) {
+        final d = doc.data();
+        final participants =
+            (d['participants'] as List?)?.cast<String>() ?? [];
+        final otherUid = participants.firstWhere(
+          (p) => p != myUid,
+          orElse: () => '',
+        );
+        final pdata =
+            (d['participantData'] as Map?)?.cast<String, dynamic>() ?? {};
+        final other =
+            (pdata[otherUid] as Map?)?.cast<String, dynamic>() ?? {};
+        return ConversationSummary(
+          id: doc.id,
+          otherUid: otherUid,
+          otherName: other['name'] ?? 'لاعب'.tr,
+          otherUsername: other['username'] ?? '',
+          otherPhoto: other['photo'] ?? '',
+          lastMessage: d['lastMessage'] ?? '',
+          lastTime: d['lastUpdated'] is Timestamp
+              ? (d['lastUpdated'] as Timestamp).toDate()
+              : DateTime.now(),
+          unreadCount:
+              (d['unread_$myUid'] as num?)?.toInt() ?? 0,
+        );
+      }).where((c) => c.otherUid.isNotEmpty).toList();
       list.sort((a, b) => b.lastTime.compareTo(a.lastTime));
       return list;
     });
@@ -447,11 +429,7 @@ class SocialService {
 
     try {
       // 1. إضافة الرسالة
-      await _firestore
-          .collection('conversations')
-          .doc(convId)
-          .collection('messages')
-          .add({
+      await _firestore.collection('conversations').doc(convId).collection('messages').add({
         'senderId': senderUid,
         'senderName': senderName,
         'text': cleanText,

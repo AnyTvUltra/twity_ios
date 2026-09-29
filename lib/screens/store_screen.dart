@@ -13,8 +13,6 @@ import '../widgets/gem_icon.dart';
 import '../utils/format.dart';
 import '../l10n/app_lang.dart';
 
-import '../theme_mode.dart';
-
 /// متجر الكسنات: أحجار، طاولة، استكانة، خلفية
 class StoreScreen extends StatefulWidget {
   const StoreScreen({super.key});
@@ -36,7 +34,8 @@ class _StoreScreenState extends State<StoreScreen>
   void initState() {
     super.initState();
     _store.initialize();
-    _tabController = TabController(length: _categories.length + 1, vsync: this);
+    _tabController =
+        TabController(length: _categories.length + 1, vsync: this);
     _store.addListener(_onStoreChanged);
   }
 
@@ -87,7 +86,7 @@ class _StoreScreenState extends State<StoreScreen>
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: L(0xFF0A1122),
+        backgroundColor: const Color(0xFF0A1122),
         body: AppBackground(
           light: true,
           child: SafeArea(
@@ -95,11 +94,12 @@ class _StoreScreenState extends State<StoreScreen>
               children: [
                 // ── الترويسة ──
                 Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   child: Row(
                     children: [
                       IconButton(
-                        icon: Icon(Icons.arrow_back_ios_rounded,
+                        icon: const Icon(Icons.arrow_back_ios_rounded,
                             color: LightGlass.text, size: 20),
                         onPressed: () => Navigator.of(context).pop(),
                       ),
@@ -118,24 +118,27 @@ class _StoreScreenState extends State<StoreScreen>
                       ClipRRect(
                         borderRadius: BorderRadius.circular(14),
                         child: BackdropFilter(
-                          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                          filter:
+                              ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                           child: Container(
-                            padding: EdgeInsets.symmetric(
+                            padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
                               color: LightGlass.cardStrong,
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
-                                  color: L(0xFFFFD54F).withOpacity(0.5)),
+                                  color:
+                                      const Color(0xFFFFD54F).withOpacity(0.5)),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text('🪙', style: TextStyle(fontSize: 13)),
-                                SizedBox(width: 4),
+                                const Text('🪙',
+                                    style: TextStyle(fontSize: 13)),
+                                const SizedBox(width: 4),
                                 Text(
                                   formatBalance(user?.chips ?? 0),
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     color: LightGlass.gold,
                                     fontWeight: FontWeight.w900,
                                     fontSize: 12,
@@ -144,15 +147,16 @@ class _StoreScreenState extends State<StoreScreen>
                                 Container(
                                   width: 1,
                                   height: 12,
-                                  margin: EdgeInsets.symmetric(horizontal: 6),
-                                  color: L(0xFFFFFFFF).withOpacity(0.18),
+                                  margin: const EdgeInsets.symmetric(
+                                      horizontal: 6),
+                                  color: Colors.white.withOpacity(0.18),
                                 ),
-                                GemIcon(size: 15),
-                                SizedBox(width: 4),
+                                const GemIcon(size: 15),
+                                const SizedBox(width: 4),
                                 Text(
                                   formatBalance(user?.gems ?? 0),
-                                  style: TextStyle(
-                                    color: L(0xFF7DD3FC),
+                                  style: const TextStyle(
+                                    color: Color(0xFF7DD3FC),
                                     fontWeight: FontWeight.w900,
                                     fontSize: 12,
                                   ),
@@ -184,7 +188,7 @@ class _StoreScreenState extends State<StoreScreen>
                         _categories.length,
                         Icons.payments_rounded,
                         'شحن الرصيد'.tr,
-                        accent: L(0xFFFFD54F),
+                        accent: const Color(0xFFFFD54F),
                       ),
                     ],
                   ),
@@ -222,9 +226,9 @@ class _StoreScreenState extends State<StoreScreen>
             _tabController.animateTo(index);
           },
           child: AnimatedContainer(
-            duration: Duration(milliseconds: 180),
-            margin: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-            padding: EdgeInsets.symmetric(horizontal: 13),
+            duration: const Duration(milliseconds: 180),
+            margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 13),
             decoration: BoxDecoration(
               gradient: selected
                   ? LinearGradient(
@@ -233,12 +237,12 @@ class _StoreScreenState extends State<StoreScreen>
                       colors: [accent, accent.withOpacity(0.65)],
                     )
                   : null,
-              color: selected ? null : L(0xFF141C34),
+              color: selected ? null : const Color(0xFF141C34),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: selected
                     ? accent.withOpacity(0.9)
-                    : L(0xFFFFFFFF).withOpacity(0.10),
+                    : Colors.white.withOpacity(0.10),
                 width: selected ? 1.3 : 1,
               ),
               boxShadow: selected
@@ -246,7 +250,7 @@ class _StoreScreenState extends State<StoreScreen>
                       BoxShadow(
                           color: accent.withOpacity(0.35),
                           blurRadius: 12,
-                          offset: Offset(0, 3)),
+                          offset: const Offset(0, 3)),
                     ]
                   : null,
             ),
@@ -254,14 +258,20 @@ class _StoreScreenState extends State<StoreScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(icon,
-                    size: 17, color: selected ? L(0xFFFFFFFF) : L(0xFF94A3B8)),
-                SizedBox(width: 6),
+                    size: 17,
+                    color: selected
+                        ? Colors.white
+                        : const Color(0xFF94A3B8)),
+                const SizedBox(width: 6),
                 Text(
                   label,
                   style: TextStyle(
-                    color: selected ? L(0xFFFFFFFF) : L(0xFF94A3B8),
+                    color: selected
+                        ? Colors.white
+                        : const Color(0xFF94A3B8),
                     fontSize: 11.5,
-                    fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
+                    fontWeight:
+                        selected ? FontWeight.w900 : FontWeight.w600,
                   ),
                 ),
               ],
@@ -273,8 +283,9 @@ class _StoreScreenState extends State<StoreScreen>
   }
 
   Widget _buildCategoryGrid(String category) {
-    final categoryItems =
-        _store.items.where((e) => e.category == category && !e.hidden).toList();
+    final categoryItems = _store.items
+        .where((e) => e.category == category && !e.hidden)
+        .toList();
 
     if (categoryItems.isEmpty) {
       return Center(
@@ -283,12 +294,12 @@ class _StoreScreenState extends State<StoreScreen>
           children: [
             Icon(StoreCategory.icon(category),
                 color: LightGlass.textFaint, size: 48),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             Text(
               'لا توجد كسنات متاحة في هذه الفئة بعد'.tr,
               style: TextStyle(color: LightGlass.textMuted, fontSize: 13),
             ),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text(
               'ترقّب التصاميم الجديدة قريباً!'.tr,
               style: TextStyle(color: LightGlass.textFaint, fontSize: 11),
@@ -308,7 +319,8 @@ class _StoreScreenState extends State<StoreScreen>
         childAspectRatio: 0.78,
       ),
       itemCount: categoryItems.length,
-      itemBuilder: (context, index) => _buildItemCard(categoryItems[index]),
+      itemBuilder: (context, index) =>
+          _buildItemCard(categoryItems[index]),
     );
   }
 
@@ -316,202 +328,210 @@ class _StoreScreenState extends State<StoreScreen>
     final owned = _store.isOwned(item.id);
     final equipped = _store.isEquipped(item);
     final user = AuthService().currentUser;
-    final locked =
-        item.requiredWins > 0 && (user?.wins ?? 0) < item.requiredWins;
+    final locked = item.requiredWins > 0 &&
+        (user?.wins ?? 0) < item.requiredWins;
 
     return GestureDetector(
       onTap: () => _showSkinPreview(item),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: equipped
-                    ? [
-                        L(0xFF1E3A5F).withOpacity(0.95),
-                        L(0xFF152A4A).withOpacity(0.9),
-                      ]
-                    : [
-                        L(0xFF1B2438).withOpacity(0.85),
-                        L(0xFF141C30).withOpacity(0.7),
-                      ],
-              ),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: equipped ? L(0xFF3B82F6) : LightGlass.border,
-                width: equipped ? 1.6 : 1,
-              ),
+      borderRadius: BorderRadius.circular(18),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: equipped
+                  ? [
+                      const Color(0xFF1E3A5F).withOpacity(0.95),
+                      const Color(0xFF152A4A).withOpacity(0.9),
+                    ]
+                  : [
+                      const Color(0xFF1B2438).withOpacity(0.85),
+                      const Color(0xFF141C30).withOpacity(0.7),
+                    ],
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // معاينة الموك اب + شارة "محدود"
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(10, 12, 10, 4),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        SkinMockup(
-                          category: item.category,
-                          image: item.imageBase64.isNotEmpty
-                              ? item.provider
-                              : null,
-                          width: double.infinity,
-                          height: double.infinity,
-                          zoom: item.zoom,
-                          offsetX: item.offsetX,
-                          offsetY: item.offsetY,
-                          effect: item.effect,
-                          item: item,
-                        ),
-                        if (item.limited)
-                          Positioned(
-                            top: 4,
-                            left: 4,
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 7, vertical: 3),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(colors: [
-                                  L(0xFFF472B6),
-                                  L(0xFFA855F7),
-                                ]),
-                                borderRadius: BorderRadius.circular(9),
-                                boxShadow: [
-                                  BoxShadow(
-                                      color: L(0xFFA855F7).withOpacity(0.4),
-                                      blurRadius: 8),
-                                ],
-                              ),
-                              child: Text(
-                                'محدود ⏳'.tr,
-                                style: TextStyle(
-                                    color: L(0xFFFFFFFF),
-                                    fontSize: 8.5,
-                                    fontWeight: FontWeight.w900),
-                              ),
-                            ),
-                          ),
-                        if (item.requiredWins > 0)
-                          Positioned(
-                            top: 4,
-                            right: 4,
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 7, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: L(0xFF0A1122).withOpacity(0.75),
-                                borderRadius: BorderRadius.circular(9),
-                                border: Border.all(
-                                    color: L(0xFFFFD54F).withOpacity(0.6)),
-                              ),
-                              child: Text(
-                                '🏆 {} فوزاً'.trp([item.requiredWins]),
-                                style: TextStyle(
-                                    color: L(0xFFFFD54F),
-                                    fontSize: 8.5,
-                                    fontWeight: FontWeight.w900),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // الاسم والسعر
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12),
-                  child: Row(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: equipped
+                  ? const Color(0xFF3B82F6)
+                  : LightGlass.border,
+              width: equipped ? 1.6 : 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // معاينة الموك اب + شارة "محدود"
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 12, 10, 4),
+                  child: Stack(
+                    fit: StackFit.expand,
                     children: [
-                      Expanded(
-                        child: Text(
-                          item.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: LightGlass.text,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 12.5,
+                      SkinMockup(
+                        category: item.category,
+                        image: item.imageBase64.isNotEmpty
+                            ? item.provider
+                            : null,
+                        width: double.infinity,
+                        height: double.infinity,
+                        zoom: item.zoom,
+                        offsetX: item.offsetX,
+                        offsetY: item.offsetY,
+                        effect: item.effect,
+                        item: item,
+                      ),
+                      if (item.limited)
+                        Positioned(
+                          top: 4,
+                          left: 4,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 7, vertical: 3),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(colors: [
+                                Color(0xFFF472B6),
+                                Color(0xFFA855F7),
+                              ]),
+                              borderRadius: BorderRadius.circular(9),
+                              boxShadow: [
+                                BoxShadow(
+                                    color: const Color(0xFFA855F7)
+                                        .withOpacity(0.4),
+                                    blurRadius: 8),
+                              ],
+                            ),
+                            child: Text(
+                              'محدود ⏳'.tr,
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8.5,
+                                  fontWeight: FontWeight.w900),
+                            ),
                           ),
                         ),
-                      ),
-                      if (!owned)
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (item.currency == StoreCurrency.gems)
-                              GemIcon(size: 13)
-                            else
-                              Text('🪙', style: TextStyle(fontSize: 11)),
-                            SizedBox(width: 3),
-                            Text(
-                              formatBalance(item.price),
-                              style: TextStyle(
-                                color: item.currency == StoreCurrency.gems
-                                    ? L(0xFF7DD3FC)
-                                    : LightGlass.gold,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 11.5,
-                              ),
+                      if (item.requiredWins > 0)
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 7, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0A1122)
+                                  .withOpacity(0.75),
+                              borderRadius: BorderRadius.circular(9),
+                              border: Border.all(
+                                  color: const Color(0xFFFFD54F)
+                                      .withOpacity(0.6)),
                             ),
-                          ],
+                            child: Text(
+                              '🏆 {} فوزاً'.trp([item.requiredWins]),
+                              style: const TextStyle(
+                                  color: Color(0xFFFFD54F),
+                                  fontSize: 8.5,
+                                  fontWeight: FontWeight.w900),
+                            ),
+                          ),
                         ),
                     ],
                   ),
                 ),
-                SizedBox(height: 8),
+              ),
 
-                // زر الإجراء
-                Padding(
-                  padding: EdgeInsets.fromLTRB(10, 0, 10, 10),
-                  child: SizedBox(
-                    height: 34,
-                    child: ElevatedButton(
-                      onPressed: (_processing || locked)
-                          ? null
-                          : () => _handleItemAction(item),
-                      style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        backgroundColor: locked
-                            ? L(0xFF1E293B)
-                            : equipped
-                                ? L(0xFF334155)
-                                : owned
-                                    ? L(0xFF10B981)
-                                    : L(0xFFFFD54F),
-                        disabledBackgroundColor: locked ? L(0xFF1E293B) : null,
-                        foregroundColor:
-                            equipped || owned ? L(0xFFFFFFFF) : L(0xFF1B0B30),
-                        disabledForegroundColor: L(0xFF64748B),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
-                      ),
+              // الاسم والسعر
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
+                  children: [
+                    Expanded(
                       child: Text(
-                        locked
-                            ? '🔒 يتطلب {} فوزاً'.trp([item.requiredWins])
-                            : equipped
-                                ? 'مُجهَّزة ✓ — إلغاء'.tr
-                                : owned
-                                    ? 'تجهيز الكسنة'.tr
-                                    : item.price == 0
-                                        ? 'مجانية — تجهيز'.tr
-                                        : 'شراء وتجهيز'.tr,
+                        item.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                            fontWeight: FontWeight.w900, fontSize: 11.5),
+                          color: LightGlass.text,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12.5,
+                        ),
                       ),
+                    ),
+                    if (!owned)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (item.currency == StoreCurrency.gems)
+                            const GemIcon(size: 13)
+                          else
+                            const Text('🪙', style: TextStyle(fontSize: 11)),
+                          const SizedBox(width: 3),
+                          Text(
+                            formatBalance(item.price),
+                            style: TextStyle(
+                              color: item.currency == StoreCurrency.gems
+                                  ? const Color(0xFF7DD3FC)
+                                  : LightGlass.gold,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 11.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // زر الإجراء
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+                child: SizedBox(
+                  height: 34,
+                  child: ElevatedButton(
+                    onPressed: (_processing || locked)
+                        ? null
+                        : () => _handleItemAction(item),
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      backgroundColor: locked
+                          ? const Color(0xFF1E293B)
+                          : equipped
+                              ? const Color(0xFF334155)
+                              : owned
+                                  ? const Color(0xFF10B981)
+                                  : const Color(0xFFFFD54F),
+                      disabledBackgroundColor: locked
+                          ? const Color(0xFF1E293B)
+                          : null,
+                      foregroundColor: equipped || owned
+                          ? Colors.white
+                          : const Color(0xFF1B0B30),
+                      disabledForegroundColor: const Color(0xFF64748B),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: Text(
+                      locked
+                          ? '🔒 يتطلب {} فوزاً'.trp([item.requiredWins])
+                          : equipped
+                              ? 'مُجهَّزة ✓ — إلغاء'.tr
+                              : owned
+                                  ? 'تجهيز الكسنة'.tr
+                                  : item.price == 0
+                                      ? 'مجانية — تجهيز'.tr
+                                      : 'شراء وتجهيز'.tr,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w900, fontSize: 11.5),
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
+      ),
       ),
     );
   }
@@ -522,8 +542,8 @@ class _StoreScreenState extends State<StoreScreen>
     final owned = _store.isOwned(item.id);
     final equipped = _store.isEquipped(item);
     final user = AuthService().currentUser;
-    final locked =
-        item.requiredWins > 0 && (user?.wins ?? 0) < item.requiredWins;
+    final locked = item.requiredWins > 0 &&
+        (user?.wins ?? 0) < item.requiredWins;
     AppHaptics.selection();
     showModalBottomSheet(
       context: context,
@@ -532,74 +552,79 @@ class _StoreScreenState extends State<StoreScreen>
       builder: (ctx) => Directionality(
         textDirection: AppLangController.instance.direction,
         child: Container(
-          constraints:
-              BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.72),
+          constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(ctx).size.height * 0.72),
           decoration: BoxDecoration(
-            color: L(0xFF10172E),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border.all(color: L(0xFF8B5CF6).withOpacity(0.35)),
+            color: const Color(0xFF10172E),
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border.all(
+                color: const Color(0xFF8B5CF6).withOpacity(0.35)),
           ),
-          padding: EdgeInsets.fromLTRB(18, 12, 18, 22),
+          padding: const EdgeInsets.fromLTRB(18, 12, 18, 22),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 40,
-                height: 4,
+                width: 40, height: 4,
                 decoration: BoxDecoration(
-                    color: L(0x3DFFFFFF),
+                    color: Colors.white24,
                     borderRadius: BorderRadius.circular(4)),
               ),
-              SizedBox(height: 14),
+              const SizedBox(height: 14),
               Row(children: [
                 Expanded(
                   child: Text(item.name,
-                      style: TextStyle(
-                          color: L(0xFFFFFFFF),
+                      style: const TextStyle(
+                          color: Colors.white,
                           fontSize: 16,
                           fontWeight: FontWeight.w900),
                       overflow: TextOverflow.ellipsis),
                 ),
                 if (item.limited)
                   Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                          colors: [L(0xFFF472B6), L(0xFFA855F7)]),
+                      gradient: const LinearGradient(colors: [
+                        Color(0xFFF472B6), Color(0xFFA855F7)]),
                       borderRadius: BorderRadius.circular(9),
                     ),
                     child: Text('محدود ⏳'.tr,
-                        style: TextStyle(
-                            color: L(0xFFFFFFFF),
+                        style: const TextStyle(
+                            color: Colors.white,
                             fontSize: 10,
                             fontWeight: FontWeight.w900)),
                   ),
               ]),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Align(
                 alignment: AlignmentDirectional.centerStart,
                 child: Text(
                   'هكذا ستبدو على أدواتك داخل اللعبة'.tr,
-                  style: TextStyle(color: L(0x8AFFFFFF), fontSize: 11),
+                  style: const TextStyle(
+                      color: Colors.white54, fontSize: 11),
                 ),
               ),
-              SizedBox(height: 14),
+              const SizedBox(height: 14),
               // المسرح — نفس طريقة عرض الاستكانة لكل الفئات
               ClipRRect(
                 borderRadius: BorderRadius.circular(18),
                 child: Container(
                   height: 190,
                   width: double.infinity,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     gradient: RadialGradient(
-                      colors: [L(0xFF1E2B4D), L(0xFF0A0F22)],
+                      colors: [Color(0xFF1E2B4D), Color(0xFF0A0F22)],
                       radius: 1.1,
                     ),
                   ),
                   child: Center(
                     child: SkinMockup(
                       category: item.category,
-                      image: item.imageBase64.isNotEmpty ? item.provider : null,
+                      image: item.imageBase64.isNotEmpty
+                          ? item.provider
+                          : null,
                       width: double.infinity,
                       height: 190,
                       zoom: item.zoom,
@@ -611,26 +636,27 @@ class _StoreScreenState extends State<StoreScreen>
                   ),
                 ),
               ),
-              SizedBox(height: 14),
+              const SizedBox(height: 14),
               Row(children: [
                 // السعر
                 if (!owned)
                   Container(
-                    padding: EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 9),
                     decoration: BoxDecoration(
-                      color: L(0xFFFFFFFF).withOpacity(0.06),
+                      color: Colors.white.withOpacity(0.06),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: L(0x1FFFFFFF)),
+                      border: Border.all(color: Colors.white12),
                     ),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       if (item.currency == StoreCurrency.gems)
-                        GemIcon(size: 16)
+                        const GemIcon(size: 16)
                       else
-                        Text('🪙', style: TextStyle(fontSize: 14)),
-                      SizedBox(width: 5),
+                        const Text('🪙', style: TextStyle(fontSize: 14)),
+                      const SizedBox(width: 5),
                       Text(formatBalance(item.price),
-                          style: TextStyle(
-                              color: L(0xFFFFFFFF),
+                          style: const TextStyle(
+                              color: Colors.white,
                               fontSize: 13,
                               fontWeight: FontWeight.w900)),
                     ]),
@@ -649,13 +675,13 @@ class _StoreScreenState extends State<StoreScreen>
                             },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: locked
-                            ? L(0xFF1E293B)
+                            ? const Color(0xFF1E293B)
                             : equipped
-                                ? L(0xFF334155)
+                                ? const Color(0xFF334155)
                                 : owned
-                                    ? L(0xFF10B981)
-                                    : L(0xFF8B5CF6),
-                        disabledBackgroundColor: L(0xFF1E293B),
+                                    ? const Color(0xFF10B981)
+                                    : const Color(0xFF8B5CF6),
+                        disabledBackgroundColor: const Color(0xFF1E293B),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(13)),
                       ),
@@ -671,8 +697,8 @@ class _StoreScreenState extends State<StoreScreen>
                                       : item.price == 0
                                           ? 'مجانية — تجهيز'.tr
                                           : 'شراء وتجهيز'.tr,
-                          style: TextStyle(
-                              color: L(0xFFFFFFFF),
+                          style: const TextStyle(
+                              color: Colors.white,
                               fontWeight: FontWeight.w900,
                               fontSize: 13.5),
                         ),
@@ -706,7 +732,8 @@ class _StoreScreenState extends State<StoreScreen>
           .snapshots(),
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator(color: L(0xFF38BDF8)));
+          return const Center(
+              child: CircularProgressIndicator(color: Color(0xFF38BDF8)));
         }
         final packs = snap.data?.docs ?? [];
         if (packs.isEmpty) {
@@ -750,7 +777,7 @@ class _StoreScreenState extends State<StoreScreen>
     final amount = (data['amount'] as num?)?.toInt() ?? 0;
     final price = (data['priceUsd'] as num?)?.toDouble() ?? 0;
     final title = data['title'] ?? 'باقة'.tr;
-    final color = isGems ? L(0xFF38BDF8) : L(0xFFFFD54F);
+    final color = isGems ? const Color(0xFF38BDF8) : const Color(0xFFFFD54F);
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(18),
@@ -763,13 +790,13 @@ class _StoreScreenState extends State<StoreScreen>
               end: Alignment.bottomRight,
               colors: [
                 color.withOpacity(0.16),
-                L(0xFF141C30).withOpacity(0.85),
+                const Color(0xFF141C30).withOpacity(0.85),
               ],
             ),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: color.withOpacity(0.45), width: 1.2),
           ),
-          padding: EdgeInsets.all(14),
+          padding: const EdgeInsets.all(14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -784,30 +811,39 @@ class _StoreScreenState extends State<StoreScreen>
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: isGems
-                            ? [L(0xFFBAE6FD), L(0xFF38BDF8), L(0xFF0369A1)]
-                            : [L(0xFFFFF9C4), L(0xFFFFD54F), L(0xFFFF8F00)],
+                            ? const [
+                                Color(0xFFBAE6FD),
+                                Color(0xFF38BDF8),
+                                Color(0xFF0369A1)
+                              ]
+                            : const [
+                                Color(0xFFFFF9C4),
+                                Color(0xFFFFD54F),
+                                Color(0xFFFF8F00)
+                              ],
                       ),
                       boxShadow: [
-                        BoxShadow(color: color.withOpacity(0.45), blurRadius: 8)
+                        BoxShadow(
+                            color: color.withOpacity(0.45), blurRadius: 8)
                       ],
                     ),
                     child: Center(
                       child: isGems
-                          ? GemIcon(size: 24)
-                          : Icon(
+                          ? const GemIcon(size: 24)
+                          : const Icon(
                               Icons.monetization_on_rounded,
-                              color: L(0xFF7C2D12),
+                              color: Color(0xFF7C2D12),
                               size: 22,
                             ),
                     ),
                   ),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(title,
-                            style: TextStyle(
+                            style: const TextStyle(
                                 color: LightGlass.text,
                                 fontWeight: FontWeight.w800,
                                 fontSize: 12.5)),
@@ -821,10 +857,11 @@ class _StoreScreenState extends State<StoreScreen>
                                   fontWeight: FontWeight.w900,
                                   fontSize: 15),
                             ),
-                            SizedBox(width: 3),
+                            const SizedBox(width: 3),
                             isGems
-                                ? GemIcon(size: 14)
-                                : Text('🪙', style: TextStyle(fontSize: 12)),
+                                ? const GemIcon(size: 14)
+                                : const Text('🪙',
+                                    style: TextStyle(fontSize: 12)),
                           ],
                         ),
                       ],
@@ -832,23 +869,25 @@ class _StoreScreenState extends State<StoreScreen>
                   ),
                 ],
               ),
-              Spacer(),
+              const Spacer(),
               Row(
                 children: [
                   Text(
                     '\$${price.toStringAsFixed(price == price.roundToDouble() ? 0 : 2)}',
-                    style: TextStyle(
-                        color: L(0xFF4ADE80),
+                    style: const TextStyle(
+                        color: Color(0xFF4ADE80),
                         fontWeight: FontWeight.w900,
                         fontSize: 16),
                   ),
-                  Spacer(),
+                  const Spacer(),
                   ElevatedButton(
                     onPressed:
                         _processing ? null : () => _buyPack(doc.id, data),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: color,
-                      foregroundColor: isGems ? L(0xFF082F49) : L(0xFF451A03),
+                      foregroundColor: isGems
+                          ? const Color(0xFF082F49)
+                          : const Color(0xFF451A03),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 8),
                       minimumSize: Size.zero,

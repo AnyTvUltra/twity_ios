@@ -38,11 +38,7 @@ class BgBoardTheme {
     required this.lightPoint,
     this.grain = const Color(0xFF8A4B1C),
     this.grainAlpha = 0.13,
-    this.metal = const [
-      Color(0xFFFFE9A8),
-      Color(0xFFD4A437),
-      Color(0xFF8A6415)
-    ],
+    this.metal = const [Color(0xFFFFE9A8), Color(0xFFD4A437), Color(0xFF8A6415)],
     this.ornament = const Color(0xFF7A3E12),
     this.pointStroke = const Color(0xFF3A1606),
     this.effect = SkinEffect.none,

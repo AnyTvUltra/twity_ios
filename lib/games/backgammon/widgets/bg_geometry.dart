@@ -20,8 +20,8 @@ class BgGeom {
     barW = w * 0.052;
     leftTray = Rect.fromLTWH(frame, frame, trayW, h - frame * 2);
     rightTray = Rect.fromLTWH(w - frame - trayW, frame, trayW, h - frame * 2);
-    field = Rect.fromLTRB(
-        leftTray.right + rim, frame, rightTray.left - rim, h - frame);
+    field = Rect.fromLTRB(leftTray.right + rim, frame, rightTray.left - rim,
+        h - frame);
     final cx = field.center.dx;
     bar = Rect.fromLTRB(cx - barW / 2, 0, cx + barW / 2, h);
     leftHalf = Rect.fromLTRB(field.left, field.top, bar.left, field.bottom);
@@ -57,8 +57,7 @@ class BgGeom {
 
   /// أحجار البار: اللاعب 0 في النصف العلوي، اللاعب 1 في السفلي
   Offset barChecker(int side, int k, int n) {
-    final s =
-        math.min(d * 0.95, (field.height * 0.36 - d) / math.max(1, n - 1));
+    final s = math.min(d * 0.95, (field.height * 0.36 - d) / math.max(1, n - 1));
     final cy = size.height / 2;
     if (side == 0) return Offset(bar.center.dx, cy - d * 0.9 - k * s);
     return Offset(bar.center.dx, cy + d * 0.9 + k * s);

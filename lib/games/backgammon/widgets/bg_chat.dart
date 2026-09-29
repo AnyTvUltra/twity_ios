@@ -15,18 +15,7 @@ class BgChat {
   BgChat._();
 
   static const emojis = [
-    '😂',
-    '😎',
-    '🔥',
-    '👏',
-    '😡',
-    '😭',
-    '🤯',
-    '😏',
-    '🎲',
-    '👍',
-    '❤️',
-    '😴',
+    '😂', '😎', '🔥', '👏', '😡', '😭', '🤯', '😏', '🎲', '👍', '❤️', '😴',
   ];
 
   static final phrases = [
@@ -47,18 +36,9 @@ class BgChat {
     if (rnd.nextDouble() > 0.6) return null;
     if (m.emoji) {
       const map = {
-        '😂': '😂',
-        '😎': '😏',
-        '🔥': '🔥',
-        '👏': '🙏',
-        '😡': '😂',
-        '😭': '😏',
-        '🤯': '😎',
-        '😏': '😤',
-        '🎲': '🎲',
-        '👍': '👍',
-        '❤️': '❤️',
-        '😴': '😂',
+        '😂': '😂', '😎': '😏', '🔥': '🔥', '👏': '🙏', '😡': '😂',
+        '😭': '😏', '🤯': '😎', '😏': '😤', '🎲': '🎲', '👍': '👍',
+        '❤️': '❤️', '😴': '😂',
       };
       return BgChatMsg(map[m.text] ?? '😎', emoji: true);
     }
@@ -67,8 +47,7 @@ class BgChat {
     if (m.text.startsWith('ضربة معلم'.tr) || m.text.startsWith('أحسنت'.tr)) {
       return BgChatMsg('شكراً 🙏'.tr);
     }
-    if (m.text.startsWith('ما هذا الحظ'.tr))
-      return BgChatMsg('😎', emoji: true);
+    if (m.text.startsWith('ما هذا الحظ'.tr)) return BgChatMsg('😎', emoji: true);
     if (m.text.startsWith('هه'.tr)) return BgChatMsg('😂', emoji: true);
     return BgChatMsg(emojis[rnd.nextInt(emojis.length)], emoji: true);
   }
@@ -95,7 +74,8 @@ class BgChatPanel extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: _mint.withValues(alpha: 0.35)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 24),
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.5), blurRadius: 24),
           BoxShadow(
               color: _mint.withValues(alpha: 0.12),
               blurRadius: 30,
@@ -253,9 +233,7 @@ class _BgChatBubbleState extends State<BgChatBubble>
           final outT = ((t - 0.82) / 0.18).clamp(0.0, 1.0);
           final pop = Curves.elasticOut.transform(inT);
           final opacity = 1 - outT;
-          return widget.msg.emoji
-              ? _emoji(t, pop, opacity)
-              : _text(pop, opacity);
+          return widget.msg.emoji ? _emoji(t, pop, opacity) : _text(pop, opacity);
         },
       ),
     );

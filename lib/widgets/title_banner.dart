@@ -2,7 +2,6 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../l10n/app_lang.dart';
-import '../theme_mode.dart';
 
 class TitleBanner extends StatelessWidget {
   const TitleBanner({super.key});
@@ -10,7 +9,7 @@ class TitleBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       child: Stack(
         clipBehavior: Clip.hardEdge,
         alignment: Alignment.topCenter,
@@ -31,14 +30,13 @@ class TitleBanner extends StatelessWidget {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          L(0xFFFFFFFF).withOpacity(0.12),
-                          L(0xFF6D5DFF).withOpacity(0.08),
-                          L(0xFF061126).withOpacity(0.20),
+                          Colors.white.withOpacity(0.12),
+                          const Color(0xFF6D5DFF).withOpacity(0.08),
+                          const Color(0xFF061126).withOpacity(0.20),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(24),
-                      border:
-                          Border.all(color: L(0xFFFFFFFF).withOpacity(0.14)),
+                      border: Border.all(color: Colors.white.withOpacity(0.14)),
                     ),
                   ),
                 ),
@@ -57,30 +55,30 @@ class TitleBanner extends StatelessWidget {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    Positioned(
+                    const Positioned(
                       left: 6,
                       top: 14,
-                      child: _SparkleStar(color: L(0xFF60A5FA), size: 12),
+                      child: _SparkleStar(color: Color(0xFF60A5FA), size: 12),
                     ),
-                    Positioned(
+                    const Positioned(
                       left: 24,
                       top: 4,
-                      child: _SparkleStar(color: L(0xFFFFD54F), size: 14),
+                      child: _SparkleStar(color: Color(0xFFFFD54F), size: 14),
                     ),
-                    Positioned(
+                    const Positioned(
                       right: 22,
                       top: 6,
-                      child: _SparkleStar(color: L(0xFFFFD54F), size: 14),
+                      child: _SparkleStar(color: Color(0xFFFFD54F), size: 14),
                     ),
-                    Positioned(
+                    const Positioned(
                       right: 6,
                       top: 16,
-                      child: _SparkleStar(color: L(0xFF60A5FA), size: 12),
+                      child: _SparkleStar(color: Color(0xFF60A5FA), size: 12),
                     ),
 
                     // Golden 3D Crown
                     CustomPaint(
-                      size: Size(54, 38),
+                      size: const Size(54, 38),
                       painter: _CrownPainter(),
                     ),
                   ],
@@ -94,7 +92,7 @@ class TitleBanner extends StatelessWidget {
                   alignment: Alignment.center,
                   children: [
                     Transform.translate(
-                      offset: Offset(0, 3),
+                      offset: const Offset(0, 3),
                       child: Text(
                         'یەڵا یاری'.tr,
                         style: TextStyle(
@@ -104,7 +102,7 @@ class TitleBanner extends StatelessWidget {
                           foreground: Paint()
                             ..style = PaintingStyle.stroke
                             ..strokeWidth = 6
-                            ..color = Color(0xFF5D2E05),
+                            ..color = const Color(0xFF5D2E05),
                         ),
                       ),
                     ),
@@ -117,18 +115,18 @@ class TitleBanner extends StatelessWidget {
                         foreground: Paint()
                           ..style = PaintingStyle.stroke
                           ..strokeWidth = 4
-                          ..color = Color(0xFF7A3E00),
+                          ..color = const Color(0xFF7A3E00),
                       ),
                     ),
                     ShaderMask(
-                      shaderCallback: (bounds) => LinearGradient(
+                      shaderCallback: (bounds) => const LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          L(0xFFFFFBEA),
-                          L(0xFFFFEA79),
-                          L(0xFFFFB300),
-                          L(0xFFE67E00),
+                          Color(0xFFFFFBEA),
+                          Color(0xFFFFEA79),
+                          Color(0xFFFFB300),
+                          Color(0xFFE67E00),
                         ],
                       ).createShader(bounds),
                       child: Text(
@@ -136,11 +134,11 @@ class TitleBanner extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 34,
                           fontWeight: FontWeight.w900,
-                          color: L(0xFFFFFFFF),
+                          color: Colors.white,
                           height: 1.1,
                           shadows: [
                             Shadow(
-                              color: L(0xFFFFB300),
+                              color: Color(0xFFFFB300),
                               blurRadius: 16,
                             ),
                           ],
@@ -158,7 +156,7 @@ class TitleBanner extends StatelessWidget {
                   alignment: Alignment.center,
                   children: [
                     Transform.translate(
-                      offset: Offset(0, 3.5),
+                      offset: const Offset(0, 3.5),
                       child: Text(
                         'Yalla Yari',
                         style: TextStyle(
@@ -168,7 +166,7 @@ class TitleBanner extends StatelessWidget {
                           foreground: Paint()
                             ..style = PaintingStyle.stroke
                             ..strokeWidth = 6.5
-                            ..color = Color(0xFF1B0B33),
+                            ..color = const Color(0xFF1B0B33),
                         ),
                       ),
                     ),
@@ -181,29 +179,29 @@ class TitleBanner extends StatelessWidget {
                         foreground: Paint()
                           ..style = PaintingStyle.stroke
                           ..strokeWidth = 4
-                          ..color = Color(0xFF38146B),
+                          ..color = const Color(0xFF38146B),
                       ),
                     ),
                     ShaderMask(
-                      shaderCallback: (bounds) => LinearGradient(
+                      shaderCallback: (bounds) => const LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          L(0xFFFFFFFF),
-                          L(0xFFF3E8FF),
-                          L(0xFFD8B4FE),
+                          Colors.white,
+                          Color(0xFFF3E8FF),
+                          Color(0xFFD8B4FE),
                         ],
                       ).createShader(bounds),
-                      child: Text(
+                      child: const Text(
                         'Yalla Yari',
                         style: TextStyle(
                           fontSize: 27,
                           fontWeight: FontWeight.w900,
-                          color: L(0xFFFFFFFF),
+                          color: Colors.white,
                           height: 1.1,
                           shadows: [
                             Shadow(
-                              color: L(0xFFC084FC),
+                              color: Color(0xFFC084FC),
                               blurRadius: 10,
                             ),
                           ],
@@ -213,7 +211,7 @@ class TitleBanner extends StatelessWidget {
                   ],
                 ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
 
               // Subtitle dark capsule
               ClipRRect(
@@ -221,21 +219,21 @@ class TitleBanner extends StatelessWidget {
                 child: BackdropFilter(
                   filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
                   child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 22, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          L(0xFFFFFFFF).withOpacity(0.18),
-                          L(0xFF253A72).withOpacity(0.46),
-                          L(0xFF111B3E).withOpacity(0.62),
+                          Colors.white.withOpacity(0.18),
+                          const Color(0xFF253A72).withOpacity(0.46),
+                          const Color(0xFF111B3E).withOpacity(0.62),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(22),
-                      border:
-                          Border.all(color: L(0xFFFFFFFF).withOpacity(0.28)),
+                      border: Border.all(color: Colors.white.withOpacity(0.28)),
                       boxShadow: [
                         BoxShadow(
-                          color: L(0xFF7C5CFF).withOpacity(0.16),
+                          color: const Color(0xFF7C5CFF).withOpacity(0.16),
                           blurRadius: 14,
                         ),
                       ],
@@ -244,7 +242,7 @@ class TitleBanner extends StatelessWidget {
                       'اختر لعبتك المفضلة واستمتع بالوقت!'.tr,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: L(0xFFF4F5FF),
+                        color: Color(0xFFF4F5FF),
                         fontSize: 12.5,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.2,
@@ -291,23 +289,23 @@ class _CrownPainter extends CustomPainter {
       ..quadraticBezierTo(w * 0.5, h * 0.96, w * 0.1, h * 0.9)
       ..close();
 
-    final shadowPaint = Paint()..color = L(0xFF6B4300);
+    final shadowPaint = Paint()..color = const Color(0xFF6B4300);
     canvas.drawPath(crownPath.shift(const Offset(0, 2)), shadowPaint);
 
     final crownPaint = Paint()
-      ..shader = LinearGradient(
+      ..shader = const LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          L(0xFFFFFDE7),
-          L(0xFFFFEE58),
-          L(0xFFFFB300),
-          L(0xFFE65100),
+          Color(0xFFFFFDE7),
+          Color(0xFFFFEE58),
+          Color(0xFFFFB300),
+          Color(0xFFE65100),
         ],
       ).createShader(Rect.fromLTWH(0, 0, w, h));
     canvas.drawPath(crownPath, crownPaint);
 
-    final jewelPaint = Paint()..color = L(0xFFE91E63);
+    final jewelPaint = Paint()..color = const Color(0xFFE91E63);
     canvas.drawCircle(Offset(w * 0.5, h * 0.08), 2.5, jewelPaint);
     canvas.drawCircle(Offset(w * 0.35, h * 0.18), 2.0, jewelPaint);
     canvas.drawCircle(Offset(w * 0.65, h * 0.18), 2.0, jewelPaint);
@@ -318,7 +316,7 @@ class _CrownPainter extends CustomPainter {
       ..lineTo(w * 0.9, h * 0.9)
       ..quadraticBezierTo(w * 0.5, h * 0.96, w * 0.1, h * 0.9)
       ..close();
-    final bandPaint = Paint()..color = L(0xFFFF8F00);
+    final bandPaint = Paint()..color = const Color(0xFFFF8F00);
     canvas.drawPath(bandPath, bandPaint);
   }
 
@@ -379,22 +377,22 @@ class _StickyNoteWidget extends StatelessWidget {
         filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Container(
           width: 70,
-          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                L(0xFFFFFFFF).withOpacity(0.72),
-                L(0xFFFFE8A3).withOpacity(0.54),
-                L(0xFFFFFFFF).withOpacity(0.24),
+                Colors.white.withOpacity(0.72),
+                const Color(0xFFFFE8A3).withOpacity(0.54),
+                Colors.white.withOpacity(0.24),
               ],
             ),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: L(0xFFFFFFFF).withOpacity(0.72)),
+            border: Border.all(color: Colors.white.withOpacity(0.72)),
             boxShadow: [
               BoxShadow(
-                color: L(0xFFFFD76A).withOpacity(0.18),
+                color: const Color(0xFFFFD76A).withOpacity(0.18),
                 blurRadius: 12,
               ),
             ],
@@ -410,14 +408,14 @@ class _StickyNoteWidget extends StatelessWidget {
                   height: 10,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [L(0xFFE53935), L(0xFFB71C1C)],
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFE53935), Color(0xFFB71C1C)],
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: L(0xFF000000).withOpacity(0.4),
+                        color: Colors.black.withOpacity(0.4),
                         blurRadius: 3,
-                        offset: Offset(1, 1),
+                        offset: const Offset(1, 1),
                       ),
                     ],
                   ),
@@ -431,7 +429,7 @@ class _StickyNoteWidget extends StatelessWidget {
                     'الـلـعـب\nمـتـعـة\nلا تنتهي'.tr,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: L(0xFF42210B),
+                      color: Color(0xFF42210B),
                       fontSize: 9.5,
                       fontWeight: FontWeight.w800,
                       height: 1.15,

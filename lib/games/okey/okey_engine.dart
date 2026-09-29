@@ -442,8 +442,8 @@ class OkeyEngine extends ChangeNotifier {
     if (recycled.isEmpty) return;
     recycled.shuffle(_random);
     drawDeck.addAll(recycled);
-    onNotice?.call('🔄 نفدت رزمة السحب — أُعيد خلط {} حجراً مرموياً'
-        .trp([recycled.length]));
+    onNotice?.call(
+        '🔄 نفدت رزمة السحب — أُعيد خلط {} حجراً مرموياً'.trp([recycled.length]));
   }
 
   /// Draw from center stock
@@ -1053,8 +1053,10 @@ class OkeyEngine extends ChangeNotifier {
         while (j < rowStart + 14 && rack[j] != null) {
           j++;
         }
-        final block = rack.sublist(i, j).whereType<OkeyTile>().toList();
-        if (block.length >= 3 && (_isValidRun(block) || _isValidSet(block))) {
+        final block =
+            rack.sublist(i, j).whereType<OkeyTile>().toList();
+        if (block.length >= 3 &&
+            (_isValidRun(block) || _isValidSet(block))) {
           groups.add(block);
         }
         i = j;
@@ -1151,11 +1153,9 @@ class OkeyEngine extends ChangeNotifier {
 
     // الإدراج في الموضع الصحيح للعرض المرتب
     if (meld.isRun && !tile.isRealOkey) {
-      final values = meld.tiles
-          .where((t) => !t.isRealOkey)
-          .map((t) => t.value)
-          .toList()
-        ..sort();
+      final values =
+          meld.tiles.where((t) => !t.isRealOkey).map((t) => t.value).toList()
+            ..sort();
       if (tile.value == 1 && values.isNotEmpty && values.last == 13) {
         meld.tiles.add(tile); // التفاف 12-13-1
       } else {
@@ -1175,11 +1175,9 @@ class OkeyEngine extends ChangeNotifier {
 
     selectedTileIndex = null;
     OkeyAudio.playTileDiscard();
-    final ownerName = meld.ownerIndex == 0
-        ? 'بيرك'.tr
-        : 'بير {}'.trp([players[meld.ownerIndex].name]);
-    onNotice
-        ?.call('✨ صرفت حجراً على {} (+{} نقطة)'.trp([ownerName, tile.value]));
+    final ownerName =
+        meld.ownerIndex == 0 ? 'بيرك'.tr : 'بير {}'.trp([players[meld.ownerIndex].name]);
+    onNotice?.call('✨ صرفت حجراً على {} (+{} نقطة)'.trp([ownerName, tile.value]));
     notifyListeners();
     return true;
   }
@@ -1207,8 +1205,8 @@ class OkeyEngine extends ChangeNotifier {
       tableMelds.remove(meld);
     }
     if (returned > 0) {
-      onNotice?.call('لم تكتمل نقاط الافتتاح ({}) — أُعيدت الأحجار إلى رفّك'
-          .trp([rules.openingPoints]));
+      onNotice?.call(
+          'لم تكتمل نقاط الافتتاح ({}) — أُعيدت الأحجار إلى رفّك'.trp([rules.openingPoints]));
     }
   }
 
@@ -1270,8 +1268,7 @@ class OkeyEngine extends ChangeNotifier {
       bot.hasOpened = true;
       bot.openedPoints = points;
     }
-    onNotice?.call(
-        '🀄 {} أنزل مجموعة على الطاولة (+{} نقطة)'.trp([bot.name, points]));
+    onNotice?.call('🀄 {} أنزل مجموعة على الطاولة (+{} نقطة)'.trp([bot.name, points]));
     notifyListeners();
   }
 
@@ -1331,8 +1328,7 @@ class OkeyEngine extends ChangeNotifier {
         onNotice?.call('🎉 فتحت اللعب بـ {} نقطة!'.trp([total]));
       } else {
         onNotice?.call(
-            'مجموعتك {} نقطة — المجموع {}/{}. أنزل المزيد قبل الرمي وإلا ستُعاد الأحجار'
-                .trp([group.points, total, rules.openingPoints]));
+            'مجموعتك {} نقطة — المجموع {}/{}. أنزل المزيد قبل الرمي وإلا ستُعاد الأحجار'.trp([group.points, total, rules.openingPoints]));
       }
     }
 

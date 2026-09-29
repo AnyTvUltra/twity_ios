@@ -54,8 +54,7 @@ class VoiceService extends ChangeNotifier {
 
       // Realtime speaking activity simulation/detection
       _speakingSimTimer?.cancel();
-      _speakingSimTimer =
-          Timer.periodic(const Duration(milliseconds: 600), (t) {
+      _speakingSimTimer = Timer.periodic(const Duration(milliseconds: 600), (t) {
         if (!_isMicOn) {
           _isSpeaking = false;
           t.cancel();

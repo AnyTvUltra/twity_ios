@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import '../l10n/app_lang.dart';
 import '../utils/net_probe_stub.dart'
     if (dart.library.io) '../utils/net_probe_io.dart';
-import '../theme_mode.dart';
 
 /// بوابة الإنترنت — تغلف التطبيق كله: بلا اتصال تظهر شاشة حظر صارمة
 /// لا يمكن تجاوزها، وعند عودة الاتصال يعود التطبيق تلقائياً.
@@ -33,7 +32,8 @@ class _ConnectivityGateState extends State<ConnectivityGate> {
       // المنصّة لا تدعم الإضافة (اختبارات) — نفترض الاتصال
     }
     // فحص دوري حقيقي كل 10 ثوانٍ (الواجهة قد تكون متصلة بلا إنترنت فعلي)
-    _probeTimer = Timer.periodic(const Duration(seconds: 10), (_) => _check());
+    _probeTimer =
+        Timer.periodic(const Duration(seconds: 10), (_) => _check());
   }
 
   Future<void> _check() async {
@@ -76,44 +76,45 @@ class _OfflineScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: L(0xFF0A0E1F),
+      backgroundColor: const Color(0xFF0A0E1F),
       body: Center(
         child: Padding(
-          padding: EdgeInsets.all(32),
+          padding: const EdgeInsets.all(32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: EdgeInsets.all(24),
+                padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: L(0xFFEF4444).withOpacity(0.12),
+                  color: const Color(0xFFEF4444).withOpacity(0.12),
                   border: Border.all(
-                      color: L(0xFFEF4444).withOpacity(0.4), width: 1.5),
+                      color: const Color(0xFFEF4444).withOpacity(0.4),
+                      width: 1.5),
                 ),
-                child: Icon(Icons.wifi_off_rounded,
-                    color: L(0xFFEF4444), size: 56),
+                child: const Icon(Icons.wifi_off_rounded,
+                    color: Color(0xFFEF4444), size: 56),
               ),
-              SizedBox(height: 24),
+              const SizedBox(height: 24),
               Text('لا يوجد اتصال بالإنترنت'.tr,
-                  style: TextStyle(
-                      color: L(0xFFFFFFFF),
+                  style: const TextStyle(
+                      color: Colors.white,
                       fontSize: 20,
                       fontWeight: FontWeight.w900)),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               Text(
                 'هذه اللعبة تحتاج اتصالاً بالإنترنت.\nفعّل Wi-Fi أو بيانات الهاتف وسيستأنف التطبيق تلقائياً.'
                     .tr,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                    color: L(0xFFB8C4DC), fontSize: 13.5, height: 1.7),
+                style: const TextStyle(
+                    color: Color(0xFFB8C4DC), fontSize: 13.5, height: 1.7),
               ),
-              SizedBox(height: 28),
-              SizedBox(
+              const SizedBox(height: 28),
+              const SizedBox(
                 width: 26,
                 height: 26,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2.5, color: L(0xFFFFD54F)),
+                    strokeWidth: 2.5, color: Color(0xFFFFD54F)),
               ),
             ],
           ),

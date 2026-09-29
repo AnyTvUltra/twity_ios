@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
-import '../theme_mode.dart';
 
 class AppBackground extends StatelessWidget {
   final Widget child;
@@ -12,19 +11,15 @@ class AppBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final day = UiTheme.instance.isLight;
     return Stack(
       children: [
         // Base Gradient
         Positioned.fill(
-          child: AnimatedContainer(
-            duration: UiTheme.transition,
+          child: Container(
             decoration: BoxDecoration(
-              gradient: day
-                  ? AppGradients.dayBackground
-                  : (light
-                      ? AppGradients.lightBackground
-                      : AppGradients.fullBackground),
+              gradient: light
+                  ? AppGradients.lightBackground
+                  : AppGradients.fullBackground,
             ),
           ),
         ),
@@ -33,7 +28,7 @@ class AppBackground extends StatelessWidget {
         Positioned.fill(
           child: RepaintBoundary(
             child: CustomPaint(
-              painter: _AmbiancePainter(light: light, day: day),
+              painter: _AmbiancePainter(light: light),
             ),
           ),
         ),
@@ -49,16 +44,11 @@ class AppBackground extends StatelessWidget {
 
 class _AmbiancePainter extends CustomPainter {
   final bool light;
-  final bool day;
 
-  _AmbiancePainter({this.light = false, this.day = false});
+  _AmbiancePainter({this.light = false});
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (day) {
-      _paintDay(canvas, size);
-      return;
-    }
     if (light) {
       _paintLight(canvas, size);
       return;
@@ -68,8 +58,8 @@ class _AmbiancePainter extends CustomPainter {
     final lampGlowPaint = Paint()
       ..shader = RadialGradient(
         colors: [
-          L(0xFF7C5CFF).withOpacity(0.30),
-          L(0xFF4F46E5).withOpacity(0.12),
+          const Color(0xFF7C5CFF).withOpacity(0.30),
+          const Color(0xFF4F46E5).withOpacity(0.12),
           Colors.transparent,
         ],
         stops: const [0.0, 0.45, 1.0],
@@ -90,7 +80,7 @@ class _AmbiancePainter extends CustomPainter {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          L(0xFF8B5CF6).withOpacity(0.10),
+          const Color(0xFF8B5CF6).withOpacity(0.10),
           Colors.transparent,
         ],
       ).createShader(Rect.fromLTWH(
@@ -103,11 +93,11 @@ class _AmbiancePainter extends CustomPainter {
         Rect.fromLTWH(0, size.height * 0.28, size.width, size.height * 0.72);
     final tableGlowPaint = Paint()
       ..shader = RadialGradient(
-        center: Alignment(0, 0.2),
+        center: const Alignment(0, 0.2),
         radius: 0.85,
         colors: [
-          L(0xFF2563EB).withOpacity(0.18),
-          L(0xFF06B6D4).withOpacity(0.08),
+          const Color(0xFF2563EB).withOpacity(0.18),
+          const Color(0xFF06B6D4).withOpacity(0.08),
           Colors.transparent,
         ],
         stops: const [0.0, 0.6, 1.0],
@@ -117,7 +107,7 @@ class _AmbiancePainter extends CustomPainter {
 
     // 4. Subtle wood plank horizontal grain lines
     final plankPaint = Paint()
-      ..color = L(0xFF9DB7FF).withOpacity(0.025)
+      ..color = const Color(0xFF9DB7FF).withOpacity(0.025)
       ..strokeWidth = 1.0;
 
     for (double y = size.height * 0.35;
@@ -127,7 +117,8 @@ class _AmbiancePainter extends CustomPainter {
     }
 
     // 5. Floating atmospheric dust motes / glowing specks
-    final speckPaint = Paint()..color = L(0xFFFFE082).withOpacity(0.3);
+    final speckPaint = Paint()
+      ..color = const Color(0xFFFFE082).withOpacity(0.3);
     final randomSpecks = [
       Offset(size.width * 0.12, size.height * 0.2),
       Offset(size.width * 0.25, size.height * 0.16),
@@ -149,35 +140,37 @@ class _AmbiancePainter extends CustomPainter {
     final glowPaint = Paint()
       ..shader = RadialGradient(
         colors: [
-          L(0xFF38BDF8).withOpacity(0.14),
-          L(0xFF4F46E5).withOpacity(0.07),
+          const Color(0xFF38BDF8).withOpacity(0.14),
+          const Color(0xFF4F46E5).withOpacity(0.07),
           Colors.transparent,
         ],
         stops: const [0.0, 0.45, 1.0],
       ).createShader(Rect.fromCircle(
           center: Offset(size.width * 0.15, size.height * 0.10),
           radius: size.width * 0.55));
-    canvas.drawCircle(Offset(size.width * 0.15, size.height * 0.10),
-        size.width * 0.55, glowPaint);
+    canvas.drawCircle(
+        Offset(size.width * 0.15, size.height * 0.10), size.width * 0.55,
+        glowPaint);
 
     // 2. توهج بنفسجي خافت أسفل اليمين
     final skyPaint = Paint()
       ..shader = RadialGradient(
         colors: [
-          L(0xFF7C5CFF).withOpacity(0.12),
-          L(0xFF38BDF8).withOpacity(0.05),
+          const Color(0xFF7C5CFF).withOpacity(0.12),
+          const Color(0xFF38BDF8).withOpacity(0.05),
           Colors.transparent,
         ],
         stops: const [0.0, 0.55, 1.0],
       ).createShader(Rect.fromCircle(
           center: Offset(size.width * 0.9, size.height * 0.9),
           radius: size.width * 0.6));
-    canvas.drawCircle(Offset(size.width * 0.9, size.height * 0.9),
-        size.width * 0.6, skyPaint);
+    canvas.drawCircle(
+        Offset(size.width * 0.9, size.height * 0.9), size.width * 0.6,
+        skyPaint);
 
     // 3. خطوط زجاجية خافتة
     final streakPaint = Paint()
-      ..color = L(0xFFFFFFFF).withOpacity(0.03)
+      ..color = Colors.white.withOpacity(0.03)
       ..strokeWidth = 1.0;
     for (double y = size.height * 0.25;
         y < size.height;
@@ -186,27 +179,7 @@ class _AmbiancePainter extends CustomPainter {
     }
   }
 
-  /// توهجات باستيل شديدة الخفة للوضع النهاري
-  void _paintDay(Canvas canvas, Size size) {
-    void glow(Offset c, double r, Color color, double o) {
-      canvas.drawCircle(
-          c,
-          r,
-          Paint()
-            ..shader = RadialGradient(
-              colors: [color.withOpacity(o), Colors.transparent],
-            ).createShader(Rect.fromCircle(center: c, radius: r)));
-    }
-
-    glow(Offset(size.width * 0.9, size.height * 0.05), size.width * 0.6,
-        L(0xFFBBD3F7), 0.20);
-    glow(Offset(size.width * 0.05, size.height * 0.35), size.width * 0.5,
-        L(0xFFF3E3C0), 0.18);
-    glow(Offset(size.width * 0.5, size.height * 1.0), size.width * 0.7,
-        L(0xFFD9CBF5), 0.13);
-  }
-
   @override
   bool shouldRepaint(covariant _AmbiancePainter oldDelegate) =>
-      oldDelegate.light != light || oldDelegate.day != day;
+      oldDelegate.light != light;
 }

@@ -16,7 +16,6 @@ import 'profile_screen.dart';
 import 'okey_rules_screen.dart';
 import 'store_screen.dart';
 import '../l10n/app_lang.dart';
-import '../theme_mode.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -118,7 +117,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: L(0xFF160926),
+      backgroundColor: const Color(0xFF160926),
       body: SizedBox.expand(
         child: Stack(
           fit: StackFit.expand,
@@ -219,7 +218,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   onStoreTap: () {
                     AppHaptics.selection();
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const StoreScreen()),
+                      MaterialPageRoute(
+                          builder: (_) => const StoreScreen()),
                     );
                   },
                 ),

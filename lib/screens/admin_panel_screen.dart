@@ -12,8 +12,6 @@ import '../widgets/skin_mockup.dart';
 import '../widgets/user_avatar.dart';
 import '../l10n/app_lang.dart';
 
-import '../theme_mode.dart';
-
 /// لوحة الإدارة والتحكم الكاملة للتطبيق - مرتبطة بسحابة Firebase
 class AdminPanelScreen extends StatefulWidget {
   const AdminPanelScreen({super.key});
@@ -22,8 +20,7 @@ class AdminPanelScreen extends StatefulWidget {
   State<AdminPanelScreen> createState() => _AdminPanelScreenState();
 }
 
-class _AdminPanelScreenState extends State<AdminPanelScreen>
-    with SingleTickerProviderStateMixin {
+class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerProviderStateMixin {
   bool _isAuthenticated = false;
   bool _checking = true;
   String _denyReason = '';
@@ -64,8 +61,10 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       return;
     }
     try {
-      final doc =
-          await _firebase.firestore.collection('admins').doc(user.uid).get();
+      final doc = await _firebase.firestore
+          .collection('admins')
+          .doc(user.uid)
+          .get();
       setState(() {
         _isAuthenticated = doc.exists;
         _checking = false;
@@ -84,10 +83,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
   Future<void> _loadRemoteConfig() async {
     if (!_firebase.isInitialized) return;
     try {
-      final doc = await _firebase.firestore
-          .collection('config')
-          .doc('game_settings')
-          .get();
+      final doc = await _firebase.firestore.collection('config').doc('game_settings').get();
       if (doc.exists && doc.data() != null) {
         final data = doc.data()!;
         setState(() {
@@ -117,8 +113,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       });
       AppHaptics.heavy();
       if (mounted) {
-        TopNotification.show(
-            context, '✅ تم حفظ ونشر الإعدادات بنجاح في السحابة!'.tr);
+        TopNotification.show(context, '✅ تم حفظ ونشر الإعدادات بنجاح في السحابة!'.tr);
       }
     } catch (e) {
       if (mounted) {
@@ -138,23 +133,22 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: L(0xFF0D111A),
+        backgroundColor: const Color(0xFF0D111A),
         appBar: AppBar(
-          backgroundColor: L(0xFF161C28),
+          backgroundColor: const Color(0xFF161C28),
           elevation: 2,
           leading: IconButton(
-            icon: Icon(Icons.arrow_back_ios_rounded, color: L(0xFFFFFFFF)),
+            icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
             onPressed: () => Navigator.of(context).pop(),
           ),
           title: Row(
             children: [
-              Icon(Icons.admin_panel_settings_rounded,
-                  color: L(0xFF4ADE80), size: 24),
+              Icon(Icons.admin_panel_settings_rounded, color: Color(0xFF4ADE80), size: 24),
               SizedBox(width: 10),
               Text(
                 'لوحة التحكم الإدارية (Admin Panel)'.tr,
                 style: TextStyle(
-                  color: L(0xFFFFFFFF),
+                  color: Colors.white,
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
                 ),
@@ -164,14 +158,13 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           actions: [
             IconButton(
               tooltip: 'فتح لوحة الويب للكمبيوتر (Desktop Dashboard)'.tr,
-              icon: Icon(Icons.open_in_new_rounded, color: L(0xFF38BDF8)),
+              icon: const Icon(Icons.open_in_new_rounded, color: Color(0xFF38BDF8)),
               onPressed: () => openAdminWeb(),
             ),
             if (_isAuthenticated)
               IconButton(
                 tooltip: 'تسجيل خروج'.tr,
-                icon: const Icon(Icons.lock_outline_rounded,
-                    color: Colors.redAccent),
+                icon: const Icon(Icons.lock_outline_rounded, color: Colors.redAccent),
                 onPressed: () {
                   setState(() {
                     _isAuthenticated = false;
@@ -184,52 +177,35 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           bottom: _isAuthenticated
               ? TabBar(
                   controller: _tabController,
-                  indicatorColor: L(0xFF4ADE80),
-                  labelColor: L(0xFF4ADE80),
-                  unselectedLabelColor: L(0x99FFFFFF),
-                  labelStyle:
-                      TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  indicatorColor: Color(0xFF4ADE80),
+                  labelColor: Color(0xFF4ADE80),
+                  unselectedLabelColor: Colors.white60,
+                  labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                   isScrollable: true,
                   tabs: [
-                    Tab(
-                        icon: Icon(Icons.dashboard_rounded, size: 18),
-                        text: 'الإحصائيات'.tr),
-                    Tab(
-                        icon: Icon(Icons.people_alt_rounded, size: 18),
-                        text: 'الحسابات'.tr),
-                    Tab(
-                        icon: Icon(Icons.report_rounded, size: 18),
-                        text: 'البلاغات'.tr),
-                    Tab(
-                        icon: Icon(Icons.tune_rounded, size: 18),
-                        text: 'إعدادات اللعبة'.tr),
-                    Tab(
-                        icon: Icon(Icons.storefront_rounded, size: 18),
-                        text: 'المتجر والسكنات'.tr),
-                    Tab(
-                        icon: Icon(Icons.workspace_premium_rounded, size: 18),
-                        text: 'طلبات VIP'.tr),
-                    Tab(
-                        icon: Icon(Icons.history_rounded, size: 18),
-                        text: 'سجل المباريات'.tr),
+                    Tab(icon: Icon(Icons.dashboard_rounded, size: 18), text: 'الإحصائيات'.tr),
+                    Tab(icon: Icon(Icons.people_alt_rounded, size: 18), text: 'الحسابات'.tr),
+                    Tab(icon: Icon(Icons.report_rounded, size: 18), text: 'البلاغات'.tr),
+                    Tab(icon: Icon(Icons.tune_rounded, size: 18), text: 'إعدادات اللعبة'.tr),
+                    Tab(icon: Icon(Icons.storefront_rounded, size: 18), text: 'المتجر والسكنات'.tr),
+                    Tab(icon: Icon(Icons.workspace_premium_rounded, size: 18), text: 'طلبات VIP'.tr),
+                    Tab(icon: Icon(Icons.history_rounded, size: 18), text: 'سجل المباريات'.tr),
                   ],
                 )
               : null,
         ),
-        body: _isAuthenticated
-            ? TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildOverviewTab(),
-                  _buildPlayersTab(),
-                  _buildReportsTab(),
-                  _buildConfigTab(),
-                  _buildStoreTab(),
-                  _buildVipRequestsTab(),
-                  _buildHistoryTab(),
-                ],
-              )
-            : _buildAccessScreen(),
+        body: _isAuthenticated ? TabBarView(
+          controller: _tabController,
+          children: [
+            _buildOverviewTab(),
+            _buildPlayersTab(),
+            _buildReportsTab(),
+            _buildConfigTab(),
+            _buildStoreTab(),
+            _buildVipRequestsTab(),
+            _buildHistoryTab(),
+          ],
+        ) : _buildAccessScreen(),
       ),
     );
   }
@@ -243,11 +219,11 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(color: L(0xFF4ADE80)),
+            CircularProgressIndicator(color: Color(0xFF4ADE80)),
             SizedBox(height: 16),
             Text(
               'جارٍ التحقق من صلاحيات الإدارة...'.tr,
-              style: TextStyle(color: L(0x99FFFFFF), fontSize: 13),
+              style: TextStyle(color: Colors.white60, fontSize: 13),
             ),
           ],
         ),
@@ -256,19 +232,19 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
 
     return Center(
       child: SingleChildScrollView(
-        padding: EdgeInsets.all(24),
+        padding: const EdgeInsets.all(24),
         child: Container(
           width: 400,
-          padding: EdgeInsets.all(24),
+          padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: L(0xFF161C28),
+            color: const Color(0xFF161C28),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: L(0x334ADE80), width: 1.5),
+            border: Border.all(color: const Color(0x334ADE80), width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: L(0xFF000000).withOpacity(0.6),
+                color: Colors.black.withOpacity(0.6),
                 blurRadius: 20,
-                offset: Offset(0, 8),
+                offset: const Offset(0, 8),
               ),
             ],
           ),
@@ -278,58 +254,52 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
               Container(
                 width: 64,
                 height: 64,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
-                    colors: [L(0xFFEF4444), L(0xFF991B1B)],
+                    colors: [Color(0xFFEF4444), Color(0xFF991B1B)],
                   ),
                 ),
-                child: Icon(Icons.lock_rounded, color: L(0xFFFFFFFF), size: 34),
+                child: const Icon(Icons.lock_rounded, color: Colors.white, size: 34),
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               Text(
                 'منطقة الإدارة الآمنة'.tr,
                 style: TextStyle(
-                  color: L(0xFFFFFFFF),
+                  color: Colors.white,
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 _denyReason.isEmpty
                     ? 'الوصول مقيّد لحسابات المدير المسجلة في مجموعة admins'.tr
                     : _denyReason,
-                style: TextStyle(color: L(0x99FFFFFF), fontSize: 12),
+                style: const TextStyle(color: Colors.white60, fontSize: 12),
                 textAlign: TextAlign.center,
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               OutlinedButton.icon(
                 onPressed: () => openAdminWeb(),
-                icon: Icon(Icons.desktop_windows_rounded,
-                    size: 16, color: L(0xFF38BDF8)),
+                icon: const Icon(Icons.desktop_windows_rounded, size: 16, color: Color(0xFF38BDF8)),
                 label: Text(
                   'فتح لوحة الويب للكمبيوتر (Desktop Dashboard) ↗'.tr,
-                  style: TextStyle(
-                      color: L(0xFF38BDF8),
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold),
+                  style: TextStyle(color: Color(0xFF38BDF8), fontSize: 12, fontWeight: FontWeight.bold),
                 ),
                 style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: L(0x5538BDF8)),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  side: const BorderSide(color: Color(0x5538BDF8)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 ),
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               TextButton.icon(
                 onPressed: () => Navigator.of(context).pop(),
-                icon: Icon(Icons.arrow_back_rounded,
-                    size: 16, color: L(0x8AFFFFFF)),
+                icon: const Icon(Icons.arrow_back_rounded, size: 16, color: Colors.white54),
                 label: Text(
                   'عودة'.tr,
-                  style: TextStyle(color: L(0x8AFFFFFF), fontSize: 12),
+                  style: TextStyle(color: Colors.white54, fontSize: 12),
                 ),
               ),
             ],
@@ -360,7 +330,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         }
 
         return ListView(
-          padding: EdgeInsets.all(18),
+          padding: const EdgeInsets.all(18),
           children: [
             // بطاقات الإحصائيات الرئيسية
             Row(
@@ -370,75 +340,69 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                     icon: Icons.people_alt_rounded,
                     title: 'إجمالي الحسابات المسجلة'.tr,
                     value: '$totalPlayers',
-                    color: L(0xFF3B82F6),
+                    color: const Color(0xFF3B82F6),
                   ),
                 ),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Expanded(
                   child: _buildStatCard(
                     icon: Icons.monetization_on_rounded,
                     title: 'إجمالي العملات المتداولة'.tr,
                     value: '$totalChips 🪙',
-                    color: L(0xFFEAB308),
+                    color: const Color(0xFFEAB308),
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
                   child: _buildStatCard(
                     icon: Icons.cloud_done_rounded,
                     title: 'حالة السحابة (Firebase)'.tr,
-                    value: _firebase.isInitialized
-                        ? 'متصل بنجاح ✅'.tr
-                        : 'جاري التهيئة...'.tr,
-                    color: L(0xFF22C55E),
+                    value: _firebase.isInitialized ? 'متصل بنجاح ✅'.tr : 'جاري التهيئة...'.tr,
+                    color: const Color(0xFF22C55E),
                   ),
                 ),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Expanded(
                   child: _buildStatCard(
                     icon: Icons.language_rounded,
                     title: 'استضافة Cloudflare'.tr,
                     value: 'جاهز للنشر 🌐'.tr,
-                    color: L(0xFFF97316),
+                    color: const Color(0xFFF97316),
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
 
             // شريط الإعلانات العاجل المباشر
             Container(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: L(0xFF161C28),
+                color: const Color(0xFF161C28),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: L(0x334ADE80)),
+                border: Border.all(color: const Color(0x334ADE80)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.campaign_rounded,
-                          color: L(0xFF4ADE80), size: 20),
+                      Icon(Icons.campaign_rounded, color: Color(0xFF4ADE80), size: 20),
                       SizedBox(width: 8),
                       Text(
                         'شريط الإعلانات العام لجميع اللاعبين:'.tr,
-                        style: TextStyle(
-                            color: L(0xFFFFFFFF),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13),
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
                       ),
                     ],
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
                     _announcement,
-                    style: TextStyle(color: L(0xB3FFFFFF), fontSize: 13),
+                    style: const TextStyle(color: Colors.white70, fontSize: 13),
                   ),
                 ],
               ),
@@ -456,16 +420,16 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     required Color color,
   }) {
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: L(0xFF161C28),
+        color: const Color(0xFF161C28),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: color.withOpacity(0.35), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: L(0xFF000000).withOpacity(0.3),
+            color: Colors.black.withOpacity(0.3),
             blurRadius: 8,
-            offset: Offset(0, 3),
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -473,28 +437,22 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: EdgeInsets.all(8),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: color.withOpacity(0.15),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: color, size: 20),
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           Text(
             title,
-            style: TextStyle(
-                color: L(0x99FFFFFF),
-                fontSize: 11.5,
-                fontWeight: FontWeight.w600),
+            style: const TextStyle(color: Colors.white60, fontSize: 11.5, fontWeight: FontWeight.w600),
           ),
-          SizedBox(height: 4),
+          const SizedBox(height: 4),
           Text(
             value,
-            style: TextStyle(
-                color: L(0xFFFFFFFF),
-                fontSize: 18,
-                fontWeight: FontWeight.w900),
+            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
           ),
         ],
       ),
@@ -509,8 +467,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
   Widget _buildPlayersTab() {
     if (!_firebase.isInitialized) {
       return Center(
-        child: Text('قاعدة البيانات غير متصلة'.tr,
-            style: TextStyle(color: L(0x99FFFFFF))),
+        child: Text('قاعدة البيانات غير متصلة'.tr, style: TextStyle(color: Colors.white60)),
       );
     }
 
@@ -518,23 +475,21 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       children: [
         // شريط البحث
         Padding(
-          padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
           child: TextField(
-            style: TextStyle(color: L(0xFFFFFFFF), fontSize: 13),
+            style: const TextStyle(color: Colors.white, fontSize: 13),
             decoration: InputDecoration(
               hintText: 'ابحث بالاسم أو اسم المستخدم...'.tr,
-              hintStyle: TextStyle(color: L(0x61FFFFFF), fontSize: 12),
-              prefixIcon:
-                  Icon(Icons.search_rounded, color: L(0x61FFFFFF), size: 20),
+              hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
+              prefixIcon: const Icon(Icons.search_rounded, color: Colors.white38, size: 20),
               filled: true,
-              fillColor: L(0xFF161C28),
+              fillColor: const Color(0xFF161C28),
               border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none),
-              contentPadding: EdgeInsets.symmetric(vertical: 10),
+              contentPadding: const EdgeInsets.symmetric(vertical: 10),
             ),
-            onChanged: (v) =>
-                setState(() => _userSearch = v.trim().toLowerCase()),
+            onChanged: (v) => setState(() => _userSearch = v.trim().toLowerCase()),
           ),
         ),
         Expanded(
@@ -543,27 +498,23 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             stream: _firebase.firestore.collection('users').snapshots(),
             builder: (context, snapshot) {
               if (!snapshot.hasData) {
-                return Center(
-                    child: CircularProgressIndicator(color: L(0xFF4ADE80)));
+                return const Center(child: CircularProgressIndicator(color: Color(0xFF4ADE80)));
               }
 
               var docs = snapshot.data!.docs;
               if (_userSearch.isNotEmpty) {
                 docs = docs.where((d) {
                   final data = d.data() as Map<String, dynamic>;
-                  final name =
-                      (data['displayName'] ?? '').toString().toLowerCase();
-                  final username =
-                      (data['username'] ?? '').toString().toLowerCase();
-                  return name.contains(_userSearch) ||
-                      username.contains(_userSearch);
+                  final name = (data['displayName'] ?? '').toString().toLowerCase();
+                  final username = (data['username'] ?? '').toString().toLowerCase();
+                  return name.contains(_userSearch) || username.contains(_userSearch);
                 }).toList();
               }
 
               if (docs.isEmpty) {
                 return Center(
                   child: Text('لا توجد حسابات مطابقة'.tr,
-                      style: TextStyle(color: L(0x99FFFFFF))),
+                      style: TextStyle(color: Colors.white60)),
                 );
               }
 
@@ -589,14 +540,14 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                       vipUntilTs.toDate().isAfter(DateTime.now());
 
                   return Container(
-                    padding: EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: L(0xFF161C28),
+                      color: const Color(0xFF161C28),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: isBanned
                             ? Colors.redAccent.withOpacity(0.7)
-                            : L(0x22FFFFFF),
+                            : const Color(0x22FFFFFF),
                         width: 1,
                       ),
                     ),
@@ -605,8 +556,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                         Row(
                           children: [
                             // الصورة الرمزية
-                            UserAvatar(photoUrl: photo, name: name, size: 46),
-                            SizedBox(width: 12),
+                            UserAvatar(
+                                photoUrl: photo, name: name, size: 46),
+                            const SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -616,8 +568,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                                       Flexible(
                                         child: Text(
                                           name,
-                                          style: TextStyle(
-                                              color: L(0xFFFFFFFF),
+                                          style: const TextStyle(
+                                              color: Colors.white,
                                               fontWeight: FontWeight.bold,
                                               fontSize: 14),
                                           overflow: TextOverflow.ellipsis,
@@ -629,8 +581,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                                           padding: const EdgeInsets.symmetric(
                                               horizontal: 5, vertical: 1),
                                           decoration: BoxDecoration(
-                                            color:
-                                                Colors.orange.withOpacity(0.15),
+                                            color: Colors.orange.withOpacity(0.15),
                                             borderRadius:
                                                 BorderRadius.circular(5),
                                           ),
@@ -640,9 +591,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                                                   fontSize: 9)),
                                         ),
                                       if (isBanned) ...[
-                                        SizedBox(width: 6),
+                                        const SizedBox(width: 6),
                                         Container(
-                                          padding: EdgeInsets.symmetric(
+                                          padding: const EdgeInsets.symmetric(
                                               horizontal: 6, vertical: 2),
                                           decoration: BoxDecoration(
                                             color: Colors.red.withOpacity(0.2),
@@ -661,14 +612,15 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                                     ],
                                   ),
                                   Text('@$username',
-                                      style: TextStyle(
-                                          color: L(0xFF38BDF8), fontSize: 11)),
+                                      style: const TextStyle(
+                                          color: Color(0xFF38BDF8),
+                                          fontSize: 11)),
                                 ],
                               ),
                             ),
                             IconButton(
-                              icon: Icon(Icons.edit_rounded,
-                                  color: L(0xFF4ADE80), size: 20),
+                              icon: const Icon(Icons.edit_rounded,
+                                  color: Color(0xFF4ADE80), size: 20),
                               tooltip: 'تعديل بيانات الحساب'.tr,
                               onPressed: () =>
                                   _showEditUserDialog(doc.id, data),
@@ -678,7 +630,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                                 isVip
                                     ? Icons.workspace_premium_rounded
                                     : Icons.workspace_premium_outlined,
-                                color: isVip ? L(0xFFFFD54F) : L(0x61FFFFFF),
+                                color: isVip
+                                    ? const Color(0xFFFFD54F)
+                                    : Colors.white38,
                                 size: 20,
                               ),
                               tooltip: isVip
@@ -693,7 +647,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                                       ? null
                                       : Timestamp.fromDate(DateTime.now()
                                           .add(const Duration(days: 30))),
-                                  'updatedAt': FieldValue.serverTimestamp(),
+                                  'updatedAt':
+                                      FieldValue.serverTimestamp(),
                                 });
                                 if (mounted) {
                                   TopNotification.show(
@@ -710,12 +665,12 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                                 isBanned
                                     ? Icons.lock_open_rounded
                                     : Icons.block_rounded,
-                                color:
-                                    isBanned ? Colors.green : Colors.redAccent,
+                                color: isBanned
+                                    ? Colors.green
+                                    : Colors.redAccent,
                                 size: 20,
                               ),
-                              tooltip:
-                                  isBanned ? 'فك الحظر'.tr : 'حظر الحساب'.tr,
+                              tooltip: isBanned ? 'فك الحظر'.tr : 'حظر الحساب'.tr,
                               onPressed: () {
                                 _firebase.firestore
                                     .collection('users')
@@ -762,16 +717,17 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(emoji, style: TextStyle(fontSize: 11)),
-            SizedBox(width: 3),
+            Text(emoji, style: const TextStyle(fontSize: 11)),
+            const SizedBox(width: 3),
             Text(value,
-                style: TextStyle(
-                    color: L(0xFFFFFFFF),
+                style: const TextStyle(
+                    color: Colors.white,
                     fontSize: 11.5,
                     fontWeight: FontWeight.w800)),
           ],
         ),
-        Text(label, style: TextStyle(color: L(0x61FFFFFF), fontSize: 9)),
+        Text(label,
+            style: const TextStyle(color: Colors.white38, fontSize: 9)),
       ],
     );
   }
@@ -783,7 +739,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     if (!_firebase.isInitialized) {
       return Center(
           child: Text('قاعدة البيانات غير متصلة'.tr,
-              style: TextStyle(color: L(0x99FFFFFF))));
+              style: TextStyle(color: Colors.white60)));
     }
 
     return StreamBuilder<QuerySnapshot>(
@@ -794,13 +750,15 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return Center(child: CircularProgressIndicator(color: L(0xFF4ADE80)));
+          return const Center(
+              child:
+                  CircularProgressIndicator(color: Color(0xFF4ADE80)));
         }
         final docs = snapshot.data!.docs;
         if (docs.isEmpty) {
           return Center(
             child: Text('لا توجد بلاغات — كل شيء نظيف! ✅'.tr,
-                style: TextStyle(color: L(0x99FFFFFF))),
+                style: TextStyle(color: Colors.white60)),
           );
         }
 
@@ -813,14 +771,14 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             final d = doc.data() as Map<String, dynamic>;
             final isPending = d['status'] == 'pending';
             return Container(
-              padding: EdgeInsets.all(12),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: L(0xFF161C28),
+                color: const Color(0xFF161C28),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: isPending
-                      ? L(0xFFEF4444).withOpacity(0.5)
-                      : L(0x22FFFFFF),
+                      ? const Color(0xFFEF4444).withOpacity(0.5)
+                      : const Color(0x22FFFFFF),
                 ),
               ),
               child: Column(
@@ -832,21 +790,23 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                           isPending
                               ? Icons.report_problem_rounded
                               : Icons.check_circle_rounded,
-                          color: isPending ? L(0xFFEF4444) : L(0xFF4ADE80),
+                          color: isPending
+                              ? const Color(0xFFEF4444)
+                              : const Color(0xFF4ADE80),
                           size: 20),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           '{}'.trp([d['reason'] ?? 'بلاغ']),
-                          style: TextStyle(
-                              color: L(0xFFFFFFFF),
+                          style: const TextStyle(
+                              color: Colors.white,
                               fontWeight: FontWeight.bold,
                               fontSize: 13),
                         ),
                       ),
                       Container(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
                           color: isPending
                               ? Colors.red.withOpacity(0.15)
@@ -856,36 +816,39 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                         child: Text(
                           isPending ? 'معلّق'.tr : 'تمت المعالجة'.tr,
                           style: TextStyle(
-                              color:
-                                  isPending ? Colors.redAccent : L(0xFF4ADE80),
+                              color: isPending
+                                  ? Colors.redAccent
+                                  : const Color(0xFF4ADE80),
                               fontSize: 10,
                               fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
                   ),
-                  SizedBox(height: 6),
+                  const SizedBox(height: 6),
                   Text(
-                    'المُبلِغ: {}  ←  المُبلَغ عنه: @{}'.trp(
-                        [d['reporterName'] ?? '', d['reportedUsername'] ?? '']),
-                    style: TextStyle(color: L(0xB3FFFFFF), fontSize: 11.5),
+                    'المُبلِغ: {}  ←  المُبلَغ عنه: @{}'.trp([d['reporterName'] ?? '', d['reportedUsername'] ?? '']),
+                    style: const TextStyle(
+                        color: Colors.white70, fontSize: 11.5),
                   ),
                   if ((d['details'] ?? '').toString().isNotEmpty) ...[
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text('التفاصيل: {}'.trp([d['details']]),
-                        style: TextStyle(color: L(0x61FFFFFF), fontSize: 11)),
+                        style: const TextStyle(
+                            color: Colors.white38, fontSize: 11)),
                   ],
                   if (isPending)
                     Align(
                       alignment: Alignment.centerLeft,
                       child: TextButton.icon(
-                        onPressed: () =>
-                            doc.reference.update({'status': 'resolved'}),
-                        icon: Icon(Icons.check_rounded,
-                            size: 16, color: L(0xFF4ADE80)),
+                        onPressed: () => doc.reference
+                            .update({'status': 'resolved'}),
+                        icon: const Icon(Icons.check_rounded,
+                            size: 16, color: Color(0xFF4ADE80)),
                         label: Text('تمت المعالجة'.tr,
                             style: TextStyle(
-                                color: L(0xFF4ADE80), fontSize: 11.5)),
+                                color: Color(0xFF4ADE80),
+                                fontSize: 11.5)),
                       ),
                     ),
                 ],
@@ -900,53 +863,56 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
   void _showEditUserDialog(String docId, Map<String, dynamic> data) {
     final nameCtrl =
         TextEditingController(text: data['displayName'] ?? data['name'] ?? '');
-    final chipsCtrl = TextEditingController(text: '${data['chips'] ?? 0}');
-    final ratingCtrl = TextEditingController(text: '${data['rating'] ?? 1000}');
-    final levelCtrl = TextEditingController(text: '${data['level'] ?? 1}');
+    final chipsCtrl =
+        TextEditingController(text: '${data['chips'] ?? 0}');
+    final ratingCtrl =
+        TextEditingController(text: '${data['rating'] ?? 1000}');
+    final levelCtrl =
+        TextEditingController(text: '${data['level'] ?? 1}');
 
     showDialog(
       context: context,
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
         child: AlertDialog(
-          backgroundColor: L(0xFF161C28),
+          backgroundColor: const Color(0xFF161C28),
           title: Text('تعديل: {}'.trp([data['displayName'] ?? data['name']]),
-              style:
-                  TextStyle(color: L(0xFFFFFFFF), fontWeight: FontWeight.bold)),
+              style: const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.bold)),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
                   controller: nameCtrl,
-                  style: TextStyle(color: L(0xFFFFFFFF)),
+                  style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                       labelText: 'الاسم المعروض'.tr,
-                      labelStyle: TextStyle(color: L(0x99FFFFFF))),
+                      labelStyle: TextStyle(color: Colors.white60)),
                 ),
                 TextField(
                   controller: chipsCtrl,
                   keyboardType: TextInputType.number,
-                  style: TextStyle(color: L(0xFFFFFFFF)),
+                  style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                       labelText: 'الرصيد (عملات)'.tr,
-                      labelStyle: TextStyle(color: L(0x99FFFFFF))),
+                      labelStyle: TextStyle(color: Colors.white60)),
                 ),
                 TextField(
                   controller: ratingCtrl,
                   keyboardType: TextInputType.number,
-                  style: TextStyle(color: L(0xFFFFFFFF)),
+                  style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                       labelText: 'التقييم (Rating)'.tr,
-                      labelStyle: TextStyle(color: L(0x99FFFFFF))),
+                      labelStyle: TextStyle(color: Colors.white60)),
                 ),
                 TextField(
                   controller: levelCtrl,
                   keyboardType: TextInputType.number,
-                  style: TextStyle(color: L(0xFFFFFFFF)),
+                  style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                       labelText: 'المستوى (Level)'.tr,
-                      labelStyle: TextStyle(color: L(0x99FFFFFF))),
+                      labelStyle: TextStyle(color: Colors.white60)),
                 ),
               ],
             ),
@@ -954,7 +920,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: Text('إلغاء'.tr, style: TextStyle(color: L(0x99FFFFFF))),
+              child: Text('إلغاء'.tr,
+                  style: TextStyle(color: Colors.white60)),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -987,16 +954,16 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
   // ══════════════════════════════════════════════════════════
   Widget _buildConfigTab() {
     return ListView(
-      padding: EdgeInsets.all(18),
+      padding: const EdgeInsets.all(18),
       children: [
         // بطاقة وضع الصيانة
         Container(
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: L(0xFF161C28),
+            color: const Color(0xFF161C28),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: _maintenanceMode ? Colors.orangeAccent : L(0x22FFFFFF),
+              color: _maintenanceMode ? Colors.orangeAccent : const Color(0x22FFFFFF),
               width: 1.2,
             ),
           ),
@@ -1005,20 +972,14 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             children: [
               Row(
                 children: [
-                  Icon(Icons.build_circle_rounded,
-                      color: Colors.orangeAccent, size: 24),
+                  Icon(Icons.build_circle_rounded, color: Colors.orangeAccent, size: 24),
                   SizedBox(width: 10),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('وضع الصيانة (Maintenance Mode)'.tr,
-                          style: TextStyle(
-                              color: L(0xFFFFFFFF),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13)),
+                      Text('وضع الصيانة (Maintenance Mode)'.tr, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
                       SizedBox(height: 2),
-                      Text('قفل اللعبة مؤقتاً لتحديث النظام'.tr,
-                          style: TextStyle(color: L(0x99FFFFFF), fontSize: 11)),
+                      Text('قفل اللعبة مؤقتاً لتحديث النظام'.tr, style: TextStyle(color: Colors.white60, fontSize: 11)),
                     ],
                   ),
                 ],
@@ -1031,23 +992,19 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             ],
           ),
         ),
-        SizedBox(height: 14),
+        const SizedBox(height: 14),
 
         // الرصيد الابتدائي
         Container(
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: L(0xFF161C28),
+            color: const Color(0xFF161C28),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('الرصيد الابتدائي للاعبين الجدد (Starting Bakiye):'.tr,
-                  style: TextStyle(
-                      color: L(0xFFFFFFFF),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13)),
+              Text('الرصيد الابتدائي للاعبين الجدد (Starting Bakiye):'.tr, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
               const SizedBox(height: 10),
               Row(
                 children: [100, 500, 1000, 1250, 2000].map((val) {
@@ -1055,17 +1012,16 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                   return GestureDetector(
                     onTap: () => setState(() => _startingChips = val),
                     child: Container(
-                      margin: EdgeInsets.only(left: 8),
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      margin: const EdgeInsets.only(left: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
-                        color: isSel ? L(0xFF22C55E) : L(0x22FFFFFF),
+                        color: isSel ? const Color(0xFF22C55E) : const Color(0x22FFFFFF),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         '$val',
                         style: TextStyle(
-                          color: isSel ? L(0xFFFFFFFF) : L(0xB3FFFFFF),
+                          color: isSel ? Colors.white : Colors.white70,
                           fontWeight: isSel ? FontWeight.w900 : FontWeight.w500,
                         ),
                       ),
@@ -1076,23 +1032,19 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             ],
           ),
         ),
-        SizedBox(height: 14),
+        const SizedBox(height: 14),
 
         // مدة الدور
         Container(
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: L(0xFF161C28),
+            color: const Color(0xFF161C28),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('مدة مؤقت الدور الافتراضية (Turn Timer):'.tr,
-                  style: TextStyle(
-                      color: L(0xFFFFFFFF),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13)),
+              Text('مدة مؤقت الدور الافتراضية (Turn Timer):'.tr, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
               const SizedBox(height: 10),
               Row(
                 children: [30, 45, 60, 72, 90].map((val) {
@@ -1100,17 +1052,16 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                   return GestureDetector(
                     onTap: () => setState(() => _defaultTurnTimer = val),
                     child: Container(
-                      margin: EdgeInsets.only(left: 8),
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      margin: const EdgeInsets.only(left: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
-                        color: isSel ? L(0xFF22C55E) : L(0x22FFFFFF),
+                        color: isSel ? const Color(0xFF22C55E) : const Color(0x22FFFFFF),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         '${val}s',
                         style: TextStyle(
-                          color: isSel ? L(0xFFFFFFFF) : L(0xB3FFFFFF),
+                          color: isSel ? Colors.white : Colors.white70,
                           fontWeight: isSel ? FontWeight.w900 : FontWeight.w500,
                         ),
                       ),
@@ -1121,53 +1072,46 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             ],
           ),
         ),
-        SizedBox(height: 14),
+        const SizedBox(height: 14),
 
         // نص الإعلان العام
         Container(
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: L(0xFF161C28),
+            color: const Color(0xFF161C28),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('نص الإعلان وشريط التنبيهات العاجل:'.tr,
-                  style: TextStyle(
-                      color: L(0xFFFFFFFF),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13)),
-              SizedBox(height: 10),
+              Text('نص الإعلان وشريط التنبيهات العاجل:'.tr, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+              const SizedBox(height: 10),
               TextFormField(
                 initialValue: _announcement,
-                style: TextStyle(color: L(0xFFFFFFFF), fontSize: 13),
+                style: const TextStyle(color: Colors.white, fontSize: 13),
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: L(0x33000000),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10)),
+                  fillColor: const Color(0x33000000),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 onChanged: (val) => _announcement = val,
               ),
             ],
           ),
         ),
-        SizedBox(height: 24),
+        const SizedBox(height: 24),
 
         // زر الحفظ والنشر السحابي
         SizedBox(
           height: 48,
           child: ElevatedButton.icon(
             onPressed: _saveRemoteConfig,
-            icon: Icon(Icons.cloud_upload_rounded),
-            label: Text('حفظ ونشر الإعدادات في السحابة'.tr,
-                style: TextStyle(fontWeight: FontWeight.bold)),
+            icon: const Icon(Icons.cloud_upload_rounded),
+            label: Text('حفظ ونشر الإعدادات في السحابة'.tr, style: TextStyle(fontWeight: FontWeight.bold)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: L(0xFF22C55E),
-              foregroundColor: L(0xFFFFFFFF),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+              backgroundColor: const Color(0xFF22C55E),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
           ),
         ),
@@ -1183,20 +1127,20 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       children: [
         // زر إضافة تصميم جديد
         Padding(
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           child: SizedBox(
             width: double.infinity,
             height: 46,
             child: ElevatedButton.icon(
               onPressed: _showAddSkinDialog,
-              icon: Icon(Icons.add_photo_alternate_rounded),
+              icon: const Icon(Icons.add_photo_alternate_rounded),
               label: Text(
                 'إضافة تصميم جديد للمتجر (موك اب)'.tr,
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: L(0xFF7C3AED),
-                foregroundColor: L(0xFFFFFFFF),
+                backgroundColor: const Color(0xFF7C3AED),
+                foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
               ),
@@ -1209,7 +1153,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           child: !_firebase.isInitialized
               ? Center(
                   child: Text('قاعدة البيانات غير متصلة'.tr,
-                      style: TextStyle(color: L(0x99FFFFFF))))
+                      style: TextStyle(color: Colors.white60)))
               : StreamBuilder<QuerySnapshot>(
                   stream: _firebase.firestore
                       .collection('store_items')
@@ -1217,16 +1161,16 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                       .snapshots(),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) {
-                      return Center(
-                          child:
-                              CircularProgressIndicator(color: L(0xFF4ADE80)));
+                      return const Center(
+                          child: CircularProgressIndicator(
+                              color: Color(0xFF4ADE80)));
                     }
                     final docs = snapshot.data!.docs;
                     if (docs.isEmpty) {
                       return Center(
                         child: Text(
                           'لا توجد كسنات في المتجر بعد — أضف أول تصميم!'.tr,
-                          style: TextStyle(color: L(0x99FFFFFF)),
+                          style: TextStyle(color: Colors.white60),
                         ),
                       );
                     }
@@ -1238,13 +1182,13 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                         final doc = docs[index];
                         final item = StoreItem.fromDoc(doc);
                         return Container(
-                          padding: EdgeInsets.all(10),
+                          padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: L(0xFF161C28),
+                            color: const Color(0xFF161C28),
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
                               color: item.active
-                                  ? L(0x334ADE80)
+                                  ? const Color(0x334ADE80)
                                   : Colors.redAccent.withOpacity(0.4),
                             ),
                           ),
@@ -1267,21 +1211,23 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                                   item: item,
                                 ),
                               ),
-                              SizedBox(width: 12),
+                              const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
                                   children: [
                                     Text(item.name,
-                                        style: TextStyle(
-                                            color: L(0xFFFFFFFF),
+                                        style: const TextStyle(
+                                            color: Colors.white,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 13)),
-                                    SizedBox(height: 3),
+                                    const SizedBox(height: 3),
                                     Text(
                                       '${StoreCategory.label(item.category)} • ${StoreCurrency.icon(item.currency)} ${item.price}',
-                                      style: TextStyle(
-                                          color: L(0x99FFFFFF), fontSize: 11),
+                                      style: const TextStyle(
+                                          color: Colors.white60,
+                                          fontSize: 11),
                                     ),
                                   ],
                                 ),
@@ -1293,8 +1239,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                                       ? Icons.visibility_rounded
                                       : Icons.visibility_off_rounded,
                                   color: item.active
-                                      ? L(0xFF4ADE80)
-                                      : L(0x61FFFFFF),
+                                      ? const Color(0xFF4ADE80)
+                                      : Colors.white38,
                                 ),
                                 onPressed: () {
                                   doc.reference
@@ -1393,11 +1339,11 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           return Directionality(
             textDirection: TextDirection.rtl,
             child: AlertDialog(
-              backgroundColor: L(0xFF161C28),
+              backgroundColor: const Color(0xFF161C28),
               title: Text(
                 'تصميم كسنة جديدة (موك اب)'.tr,
                 style: TextStyle(
-                    color: L(0xFFFFFFFF),
+                    color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 16),
               ),
@@ -1414,16 +1360,20 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                         children: StoreCategory.all.map((cat) {
                           final sel = selectedCategory == cat;
                           return GestureDetector(
-                            onTap: () =>
-                                setDialogState(() => selectedCategory = cat),
+                            onTap: () => setDialogState(
+                                () => selectedCategory = cat),
                             child: Container(
-                              padding: EdgeInsets.symmetric(
+                              padding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 8),
                               decoration: BoxDecoration(
-                                color: sel ? L(0xFF7C3AED) : L(0x22FFFFFF),
+                                color: sel
+                                    ? const Color(0xFF7C3AED)
+                                    : const Color(0x22FFFFFF),
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
-                                  color: sel ? L(0xFFA78BFA) : L(0x1FFFFFFF),
+                                  color: sel
+                                      ? const Color(0xFFA78BFA)
+                                      : Colors.white12,
                                 ),
                               ),
                               child: Row(
@@ -1431,14 +1381,16 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                                 children: [
                                   Icon(StoreCategory.icon(cat),
                                       size: 14,
-                                      color:
-                                          sel ? L(0xFFFFFFFF) : L(0x8AFFFFFF)),
-                                  SizedBox(width: 5),
+                                      color: sel
+                                          ? Colors.white
+                                          : Colors.white54),
+                                  const SizedBox(width: 5),
                                   Text(
                                     StoreCategory.label(cat),
                                     style: TextStyle(
-                                      color:
-                                          sel ? L(0xFFFFFFFF) : L(0xB3FFFFFF),
+                                      color: sel
+                                          ? Colors.white
+                                          : Colors.white70,
                                       fontSize: 11.5,
                                       fontWeight: sel
                                           ? FontWeight.w800
@@ -1451,7 +1403,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                           );
                         }).toList(),
                       ),
-                      SizedBox(height: 14),
+                      const SizedBox(height: 14),
 
                       // زر رفع الصورة
                       OutlinedButton.icon(
@@ -1461,53 +1413,57 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                               ? Icons.upload_rounded
                               : Icons.check_circle_rounded,
                           color: imageBase64 == null
-                              ? L(0xFF38BDF8)
-                              : L(0xFF4ADE80),
+                              ? const Color(0xFF38BDF8)
+                              : const Color(0xFF4ADE80),
                           size: 18,
                         ),
                         label: Text(
                           imageBase64 == null
                               ? 'اختيار صورة التصميم'.tr
                               : 'تم اختيار الصورة ✓ — تغييرها'.tr,
-                          style: TextStyle(color: L(0xFFFFFFFF), fontSize: 12),
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 12),
                         ),
                         style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: L(0x5538BDF8)),
-                          padding: EdgeInsets.symmetric(
+                          side: const BorderSide(color: Color(0x5538BDF8)),
+                          padding: const EdgeInsets.symmetric(
                               horizontal: 14, vertical: 10),
                         ),
                       ),
-                      SizedBox(height: 14),
+                      const SizedBox(height: 14),
 
                       // المعاينة الحية على القطعة المختارة (موك اب)
                       Container(
-                        padding: EdgeInsets.all(10),
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: L(0xFF0D111A),
+                          color: const Color(0xFF0D111A),
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: L(0x1FFFFFFF)),
+                          border: Border.all(color: Colors.white12),
                         ),
                         child: Column(
                           children: [
                             Text(
                               'معاينة حية على القطعة:'.tr,
                               style: TextStyle(
-                                  color: L(0x8AFFFFFF), fontSize: 10.5),
+                                  color: Colors.white54, fontSize: 10.5),
                             ),
                             const SizedBox(height: 8),
                             GestureDetector(
                               onPanUpdate: imageBase64 == null
                                   ? null
                                   : (d) => setDialogState(() {
-                                        imgOffX = (imgOffX + d.delta.dx / 150)
+                                        imgOffX = (imgOffX +
+                                                d.delta.dx / 150)
                                             .clamp(-1.0, 1.0);
-                                        imgOffY = (imgOffY + d.delta.dy / 75)
+                                        imgOffY = (imgOffY +
+                                                d.delta.dy / 75)
                                             .clamp(-1.0, 1.0);
                                       }),
                               child: SkinMockup(
                                 category: selectedCategory,
                                 image: imageBase64 != null
-                                    ? MemoryImage(base64Decode(imageBase64!))
+                                    ? MemoryImage(
+                                        base64Decode(imageBase64!))
                                     : null,
                                 width: 300,
                                 height: 150,
@@ -1529,26 +1485,29 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                               ),
                             ),
                             if (imageBase64 != null) ...[
-                              SizedBox(height: 8),
+                              const SizedBox(height: 8),
                               Row(
                                 children: [
-                                  Icon(Icons.zoom_in_rounded,
-                                      color: L(0x8AFFFFFF), size: 16),
+                                  const Icon(Icons.zoom_in_rounded,
+                                      color: Colors.white54, size: 16),
                                   Expanded(
                                     child: Slider(
                                       value: imgZoom,
                                       min: 0.6,
                                       max: 3.0,
                                       divisions: 48,
-                                      activeColor: L(0xFFA78BFA),
-                                      onChanged: (v) =>
-                                          setDialogState(() => imgZoom = v),
+                                      activeColor:
+                                          const Color(0xFFA78BFA),
+                                      onChanged: (v) => setDialogState(
+                                          () => imgZoom = v),
                                     ),
                                   ),
                                   IconButton(
                                     tooltip: 'إعادة الضبط'.tr,
-                                    icon: Icon(Icons.restart_alt_rounded,
-                                        color: L(0x8AFFFFFF), size: 18),
+                                    icon: const Icon(
+                                        Icons.restart_alt_rounded,
+                                        color: Colors.white54,
+                                        size: 18),
                                     onPressed: () => setDialogState(() {
                                       imgZoom = 1.0;
                                       imgOffX = 0;
@@ -1558,39 +1517,41 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                                 ],
                               ),
                               Text(
-                                'اسحب الصورة لتحريكها على القطعة • حرّك المنزلق للتكبير'
-                                    .tr,
+                                'اسحب الصورة لتحريكها على القطعة • حرّك المنزلق للتكبير'.tr,
                                 style: TextStyle(
-                                    color: L(0x61FFFFFF), fontSize: 9.5),
+                                    color: Colors.white38,
+                                    fontSize: 9.5),
                               ),
                             ],
                           ],
                         ),
                       ),
-                      SizedBox(height: 14),
+                      const SizedBox(height: 14),
 
                       // الاسم والسعر
                       TextField(
                         controller: nameCtrl,
-                        style: TextStyle(color: L(0xFFFFFFFF), fontSize: 13),
+                        style: const TextStyle(
+                            color: Colors.white, fontSize: 13),
                         decoration: InputDecoration(
                           labelText: 'اسم التصميم'.tr,
-                          labelStyle: TextStyle(color: L(0x99FFFFFF)),
+                          labelStyle: TextStyle(color: Colors.white60),
                           hintText: 'مثال: رخام ملكي'.tr,
-                          hintStyle: TextStyle(color: L(0x4DFFFFFF)),
+                          hintStyle: TextStyle(color: Colors.white30),
                         ),
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       TextField(
                         controller: priceCtrl,
                         keyboardType: TextInputType.number,
-                        style: TextStyle(color: L(0xFFFFFFFF), fontSize: 13),
+                        style: const TextStyle(
+                            color: Colors.white, fontSize: 13),
                         decoration: InputDecoration(
                           labelText: 'السعر'.tr,
-                          labelStyle: TextStyle(color: L(0x99FFFFFF)),
+                          labelStyle: TextStyle(color: Colors.white60),
                         ),
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       // اختيار عملة البيع
                       Row(
                         children: [
@@ -1603,22 +1564,25 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                                 onTap: () => setDialogState(
                                     () => selectedCurrency = c.$1),
                                 child: AnimatedContainer(
-                                  duration: Duration(milliseconds: 150),
-                                  margin: EdgeInsets.symmetric(horizontal: 3),
-                                  padding: EdgeInsets.symmetric(vertical: 9),
+                                  duration:
+                                      const Duration(milliseconds: 150),
+                                  margin:
+                                      const EdgeInsets.symmetric(horizontal: 3),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 9),
                                   decoration: BoxDecoration(
                                     color: selectedCurrency == c.$1
                                         ? (c.$1 == StoreCurrency.gems
-                                            ? L(0x3338BDF8)
-                                            : L(0x33FFD54F))
-                                        : L(0xFFFFFFFF).withOpacity(0.05),
+                                            ? const Color(0x3338BDF8)
+                                            : const Color(0x33FFD54F))
+                                        : Colors.white.withOpacity(0.05),
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(
                                       color: selectedCurrency == c.$1
                                           ? (c.$1 == StoreCurrency.gems
-                                              ? L(0xFF38BDF8)
-                                              : L(0xFFFFD54F))
-                                          : L(0x1FFFFFFF),
+                                              ? const Color(0xFF38BDF8)
+                                              : const Color(0xFFFFD54F))
+                                          : Colors.white12,
                                     ),
                                   ),
                                   child: Text(
@@ -1626,8 +1590,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       color: selectedCurrency == c.$1
-                                          ? L(0xFFFFFFFF)
-                                          : L(0x8AFFFFFF),
+                                          ? Colors.white
+                                          : Colors.white54,
                                       fontSize: 11.5,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -1644,22 +1608,22 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
               actions: [
                 TextButton(
                   onPressed: saving ? null : () => Navigator.of(ctx).pop(),
-                  child:
-                      Text('إلغاء'.tr, style: TextStyle(color: L(0x99FFFFFF))),
+                  child: Text('إلغاء'.tr,
+                      style: TextStyle(color: Colors.white60)),
                 ),
                 ElevatedButton.icon(
                   onPressed: saving ? null : save,
                   icon: saving
-                      ? SizedBox(
+                      ? const SizedBox(
                           width: 14,
                           height: 14,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: L(0xFFFFFFFF)))
-                      : Icon(Icons.publish_rounded, size: 16),
+                              strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.publish_rounded, size: 16),
                   label: Text(saving ? 'جاري النشر...'.tr : 'نشر في المتجر'.tr),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: L(0xFF22C55E),
-                    foregroundColor: L(0xFFFFFFFF),
+                    backgroundColor: const Color(0xFF22C55E),
+                    foregroundColor: Colors.white,
                   ),
                 ),
               ],
@@ -1680,7 +1644,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
     if (!_firebase.isInitialized) {
       return Center(
           child: Text('قاعدة البيانات غير متصلة'.tr,
-              style: TextStyle(color: L(0x99FFFFFF))));
+              style: TextStyle(color: Colors.white60)));
     }
 
     return StreamBuilder<QuerySnapshot>(
@@ -1691,13 +1655,15 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return Center(child: CircularProgressIndicator(color: L(0xFF4ADE80)));
+          return const Center(
+              child:
+                  CircularProgressIndicator(color: Color(0xFF4ADE80)));
         }
         final docs = snapshot.data!.docs;
         if (docs.isEmpty) {
           return Center(
             child: Text('لا توجد طلبات اشتراك VIP بعد'.tr,
-                style: TextStyle(color: L(0x99FFFFFF))),
+                style: TextStyle(color: Colors.white60)),
           );
         }
 
@@ -1710,17 +1676,18 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             final d = doc.data() as Map<String, dynamic>;
             final isPending = d['status'] == 'pending';
             final ts = d['createdAt'];
-            final created = ts is Timestamp ? ts.toDate() : null;
+            final created =
+                ts is Timestamp ? ts.toDate() : null;
 
             return Container(
               padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: L(0xFF161C28),
+                color: Color(0xFF161C28),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: isPending
-                      ? L(0xFFFFD54F).withOpacity(0.5)
-                      : L(0x22FFFFFF),
+                      ? Color(0xFFFFD54F).withOpacity(0.5)
+                      : Color(0x22FFFFFF),
                 ),
               ),
               child: Row(
@@ -1729,7 +1696,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                     isPending
                         ? Icons.hourglass_top_rounded
                         : Icons.workspace_premium_rounded,
-                    color: isPending ? L(0xFFFFD54F) : L(0xFF4ADE80),
+                    color: isPending
+                        ? Color(0xFFFFD54F)
+                        : Color(0xFF4ADE80),
                     size: 26,
                   ),
                   SizedBox(width: 10),
@@ -1738,12 +1707,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '{}  @{}'.trp([
-                            d['displayName'] ?? 'لاعب',
-                            d['username'] ?? ''
-                          ]),
+                          '{}  @{}'.trp([d['displayName'] ?? 'لاعب', d['username'] ?? '']),
                           style: TextStyle(
-                              color: L(0xFFFFFFFF),
+                              color: Colors.white,
                               fontWeight: FontWeight.bold,
                               fontSize: 13),
                         ),
@@ -1752,7 +1718,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                               (created != null
                                   ? '  •  ${created.day}/${created.month}/${created.year}'
                                   : ''),
-                          style: TextStyle(color: L(0x8AFFFFFF), fontSize: 11),
+                          style: const TextStyle(
+                              color: Colors.white54, fontSize: 11),
                         ),
                       ],
                     ),
@@ -1760,13 +1727,13 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                   if (isPending) ...[
                     IconButton(
                       tooltip: 'تفعيل VIP — 30 يوماً'.tr,
-                      icon: Icon(Icons.check_circle_rounded,
-                          color: L(0xFF4ADE80), size: 26),
+                      icon: const Icon(Icons.check_circle_rounded,
+                          color: Color(0xFF4ADE80), size: 26),
                       onPressed: () => _approveVip(doc, d),
                     ),
                     IconButton(
                       tooltip: 'رفض الطلب'.tr,
-                      icon: Icon(Icons.cancel_rounded,
+                      icon: const Icon(Icons.cancel_rounded,
                           color: Colors.redAccent, size: 26),
                       onPressed: () =>
                           doc.reference.update({'status': 'rejected'}),
@@ -1776,7 +1743,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                       d['status'] == 'approved' ? 'مُفعّل ✓'.tr : 'مرفوض'.tr,
                       style: TextStyle(
                           color: d['status'] == 'approved'
-                              ? L(0xFF4ADE80)
+                              ? const Color(0xFF4ADE80)
                               : Colors.redAccent,
                           fontSize: 11,
                           fontWeight: FontWeight.bold),
@@ -1791,11 +1758,13 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
   }
 
   /// تفعيل VIP: تحديث vipUntil على المستخدم + وضع الطلب "مقبول"
-  Future<void> _approveVip(DocumentSnapshot doc, Map<String, dynamic> d) async {
+  Future<void> _approveVip(
+      DocumentSnapshot doc, Map<String, dynamic> d) async {
     final uid = d['uid'] as String?;
     if (uid == null) return;
     try {
-      final userRef = _firebase.firestore.collection('users').doc(uid);
+      final userRef =
+          _firebase.firestore.collection('users').doc(uid);
       final snap = await userRef.get();
       final data = snap.data();
       // يمدّد من نهاية الاشتراك الحالي إن كان فعّالاً
@@ -1806,7 +1775,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       }
       final isPlus = d['plan'] == 'vipPlus';
       await userRef.update({
-        'vipUntil': Timestamp.fromDate(base.add(const Duration(days: 30))),
+        'vipUntil':
+            Timestamp.fromDate(base.add(const Duration(days: 30))),
         'vipTier': isPlus ? 'vipPlus' : 'vip',
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -1814,8 +1784,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       if (mounted) {
         TopNotification.show(
             context,
-            'تم تفعيل {} لـ {} — 30 يوماً 👑'
-                .trp([isPlus ? 'VIP+' : 'VIP', d['displayName'] ?? '']));
+            'تم تفعيل {} لـ {} — 30 يوماً 👑'.trp([isPlus ? 'VIP+' : 'VIP', d['displayName'] ?? '']));
       }
     } catch (e) {
       if (mounted) {
@@ -1827,9 +1796,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
 
   Widget _buildHistoryTab() {
     if (!_firebase.isInitialized) {
-      return Center(
-          child: Text('قاعدة البيانات غير متصلة'.tr,
-              style: TextStyle(color: L(0x99FFFFFF))));
+      return Center(child: Text('قاعدة البيانات غير متصلة'.tr, style: TextStyle(color: Colors.white60)));
     }
 
     return StreamBuilder<QuerySnapshot>(
@@ -1840,14 +1807,13 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return Center(child: CircularProgressIndicator(color: L(0xFF4ADE80)));
+          return const Center(child: CircularProgressIndicator(color: Color(0xFF4ADE80)));
         }
 
         final docs = snapshot.data!.docs;
         if (docs.isEmpty) {
           return Center(
-            child: Text('لا توجد مباريات مسجلة بعد'.tr,
-                style: TextStyle(color: L(0x99FFFFFF))),
+            child: Text('لا توجد مباريات مسجلة بعد'.tr, style: TextStyle(color: Colors.white60)),
           );
         }
 
@@ -1862,31 +1828,22 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
             final duration = data['durationSeconds'] ?? 0;
 
             return Container(
-              padding: EdgeInsets.all(12),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: L(0xFF161C28),
+                color: const Color(0xFF161C28),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.emoji_events_rounded,
-                      color: L(0xFFFFD54F), size: 22),
-                  SizedBox(width: 12),
+                  const Icon(Icons.emoji_events_rounded, color: Color(0xFFFFD54F), size: 22),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('الفائز: {}'.trp([winner]),
-                            style: TextStyle(
-                                color: L(0xFFFFFFFF),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13)),
-                        SizedBox(height: 2),
-                        Text(
-                            'نوع الفوز: {} | المدة: {}s'
-                                .trp([winType, duration]),
-                            style:
-                                TextStyle(color: L(0x99FFFFFF), fontSize: 11)),
+                        Text('الفائز: {}'.trp([winner]), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                        const SizedBox(height: 2),
+                        Text('نوع الفوز: {} | المدة: {}s'.trp([winType, duration]), style: const TextStyle(color: Colors.white60, fontSize: 11)),
                       ],
                     ),
                   ),

@@ -54,8 +54,8 @@ class _GemPainter extends CustomPainter {
       ..close();
     canvas.drawPath(
       f1,
-      facet(const Color(0xFF7DD3FC), const Color(0xFF38BDF8), Alignment.topLeft,
-          Alignment.bottomRight, bounds),
+      facet(const Color(0xFF7DD3FC), const Color(0xFF38BDF8),
+          Alignment.topLeft, Alignment.bottomRight, bounds),
     );
 
     // الوجه الأوسط
@@ -91,8 +91,8 @@ class _GemPainter extends CustomPainter {
       ..close();
     canvas.drawPath(
       b1,
-      facet(const Color(0xFF0EA5E9), const Color(0xFF0369A1), Alignment.topLeft,
-          Alignment.bottomRight, bounds),
+      facet(const Color(0xFF0EA5E9), const Color(0xFF0369A1),
+          Alignment.topLeft, Alignment.bottomRight, bounds),
     );
 
     // الوجه الأيمن

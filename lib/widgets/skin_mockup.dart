@@ -47,17 +47,17 @@ class SkinMockup extends StatelessWidget {
   /// الخشب الحقيقي قاعدة لكل الفئات ما عدا الأحجار
   bool get _woodBase => category != StoreCategory.tile;
 
-  Widget _skinLayer() =>
-      (item?.model3d.isNotEmpty ?? false) && category == StoreCategory.rack
-          ? OkeyRack3DModel(modelPath: item!.model3d)
-          : _effect != SkinEffect.none
-              ? AnimatedSkinLayer(effect: _effect, woodUnderlay: _woodBase)
-              : SkinTransformImage(
-                  image: image!,
-                  zoom: zoom,
-                  offsetX: offsetX,
-                  offsetY: offsetY,
-                );
+  Widget _skinLayer() => (item?.model3d.isNotEmpty ?? false) &&
+          category == StoreCategory.rack
+      ? OkeyRack3DModel(modelPath: item!.model3d)
+      : _effect != SkinEffect.none
+          ? AnimatedSkinLayer(effect: _effect, woodUnderlay: _woodBase)
+          : SkinTransformImage(
+              image: image!,
+              zoom: zoom,
+              offsetX: offsetX,
+              offsetY: offsetY,
+            );
 
   @override
   Widget build(BuildContext context) {
@@ -120,8 +120,8 @@ class SkinMockup extends StatelessWidget {
                   ],
                 ),
                 child: Center(
-                  child:
-                      Text('🀄', style: TextStyle(fontSize: avatarSize * 0.5)),
+                  child: Text('🀄',
+                      style: TextStyle(fontSize: avatarSize * 0.5)),
                 ),
               ),
               // الإطار حولها — متحرك (نار/جليد) أو صورة
@@ -140,8 +140,8 @@ class SkinMockup extends StatelessWidget {
                   height: frameSize,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border:
-                        Border.all(color: const Color(0xFFFFD54F), width: 3),
+                    border: Border.all(
+                        color: const Color(0xFFFFD54F), width: 3),
                   ),
                 ),
             ],
@@ -188,6 +188,7 @@ class SkinMockup extends StatelessWidget {
     );
   }
 
+
   // ══════════════════════════════════════════════════════════
   // موك اب الطاولة — إطار خشبي سميك + سطح الكسنة بمنظور
   // ══════════════════════════════════════════════════════════
@@ -230,7 +231,8 @@ class SkinMockup extends StatelessWidget {
                     if (_hasSkin)
                       _skinLayer()
                     else
-                      SkinTransformImage.fromItem(StoreService.defaultWoodItem),
+                      SkinTransformImage.fromItem(
+                          StoreService.defaultWoodItem),
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -373,7 +375,8 @@ class SkinMockup extends StatelessWidget {
                               ? const Color(0xFFEBD9B4)
                               : const Color(0xFF769656),
                           child: (r + c).isOdd && _hasSkin
-                              ? Opacity(opacity: 0.55, child: _skinLayer())
+                              ? Opacity(
+                                  opacity: 0.55, child: _skinLayer())
                               : null,
                         ),
                       ),
@@ -437,9 +440,11 @@ class SkinMockup extends StatelessWidget {
                       ]),
                       boxShadow: [
                         BoxShadow(
-                            color: accent.withOpacity(0.4), blurRadius: 10),
+                            color: accent.withOpacity(0.4),
+                            blurRadius: 10),
                       ],
-                      border: Border.all(color: Colors.white.withOpacity(0.25)),
+                      border: Border.all(
+                          color: Colors.white.withOpacity(0.25)),
                     ),
                     child: Center(
                       child: Text(glyphs[i],
@@ -447,7 +452,8 @@ class SkinMockup extends StatelessWidget {
                               fontSize: height * 0.19,
                               color: Colors.white,
                               shadows: const [
-                                Shadow(color: Colors.black54, blurRadius: 4)
+                                Shadow(
+                                    color: Colors.black54, blurRadius: 4)
                               ])),
                     ),
                   ),
@@ -498,53 +504,52 @@ class SkinMockup extends StatelessWidget {
               ),
             ),
             Stack(
-              alignment: Alignment.center,
-              children: [
-                // طاولة مصغّرة بمنظور
-                ClipPath(
-                  clipper: _TrapezoidClipper(inset: 0.06),
-                  child: Container(
-                    width: width * 0.55,
-                    height: height * 0.42,
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Color(0xFF6B3A1C), Color(0xFF2C1205)],
-                      ),
-                    ),
-                    child: Center(
-                      child: Container(
-                        width: width * 0.42,
-                        height: height * 0.26,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1E5C38),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                      ),
-                    ),
+          alignment: Alignment.center,
+          children: [
+            // طاولة مصغّرة بمنظور
+            ClipPath(
+              clipper: _TrapezoidClipper(inset: 0.06),
+              child: Container(
+                width: width * 0.55,
+                height: height * 0.42,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0xFF6B3A1C), Color(0xFF2C1205)],
                   ),
                 ),
-                // استكانة مصغّرة أسفل المشهد
-                Positioned(
-                  bottom: 6,
+                child: Center(
                   child: Container(
-                    width: width * 0.5,
-                    height: height * 0.16,
+                    width: width * 0.42,
+                    height: height * 0.26,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF5A2E16), Color(0xFF241006)],
-                      ),
-                      borderRadius: BorderRadius.circular(4),
-                      boxShadow: [
-                        BoxShadow(
-                            color: Colors.black.withOpacity(0.5),
-                            blurRadius: 5),
-                      ],
+                      color: const Color(0xFF1E5C38),
+                      borderRadius: BorderRadius.circular(6),
                     ),
                   ),
                 ),
-              ],
+              ),
+            ),
+            // استكانة مصغّرة أسفل المشهد
+            Positioned(
+              bottom: 6,
+              child: Container(
+                width: width * 0.5,
+                height: height * 0.16,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF5A2E16), Color(0xFF241006)],
+                  ),
+                  borderRadius: BorderRadius.circular(4),
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.black.withOpacity(0.5), blurRadius: 5),
+                  ],
+                ),
+              ),
+            ),
+          ],
             ),
           ],
         ),

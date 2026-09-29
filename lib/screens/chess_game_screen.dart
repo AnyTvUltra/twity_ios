@@ -12,8 +12,6 @@ import '../utils/top_notification.dart';
 import '../widgets/user_avatar.dart';
 import '../l10n/app_lang.dart';
 
-import '../theme_mode.dart';
-
 class ChessGameScreen extends StatefulWidget {
   /// true = ضد الذكاء الاصطناعي، false = لاعبان على نفس الجهاز
   final bool vsAI;
@@ -50,16 +48,16 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
   bool? _endWinnerWhite;
   bool _endIsDraw = false;
 
-  static final _bgTop = L(0xFF0B1120);
-  static final _bgMid = L(0xFF070B16);
-  static final _bgBot = L(0xFF04060E);
-  static final _emerald = L(0xFF34D399);
-  static final _mint = L(0xFF3FF5A8); // Neon Mint — لون الدور والأزرار
-  static final _cyan = L(0xFF38BDF8);
-  static final _gold = L(0xFFFFD54F);
-  static final _red = L(0xFFEF4444);
-  static final _textWhite = L(0xFFF1F5FF);
-  static final _textDim = L(0xFF8EA3C8);
+  static const _bgTop = Color(0xFF0B1120);
+  static const _bgMid = Color(0xFF070B16);
+  static const _bgBot = Color(0xFF04060E);
+  static const _emerald = Color(0xFF34D399);
+  static const _mint = Color(0xFF3FF5A8); // Neon Mint — لون الدور والأزرار
+  static const _cyan = Color(0xFF38BDF8);
+  static const _gold = Color(0xFFFFD54F);
+  static const _red = Color(0xFFEF4444);
+  static const _textWhite = Color(0xFFF1F5FF);
+  static const _textDim = Color(0xFF8EA3C8);
 
   @override
   void initState() {
@@ -77,10 +75,13 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
           if (_blackSecs == 0) _flagFall(ChessColor.black);
         }
       });
-      final secs = _engine.turn == ChessColor.white ? _whiteSecs : _blackSecs;
+      final secs = _engine.turn == ChessColor.white
+          ? _whiteSecs
+          : _blackSecs;
       if (secs > 0 && secs <= 10) ChessAudio.lowTime();
     });
-    WidgetsBinding.instance.addPostFrameCallback((_) => ChessAudio.gameStart());
+    WidgetsBinding.instance.addPostFrameCallback(
+        (_) => ChessAudio.gameStart());
   }
 
   @override
@@ -99,7 +100,8 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
       if (mounted) setState(() => _pieceTint = null);
       return;
     }
-    final data = await img.toByteData(format: ui.ImageByteFormat.rawRgba);
+    final data =
+        await img.toByteData(format: ui.ImageByteFormat.rawRgba);
     if (data == null || !mounted) return;
     final px = data.buffer.asUint8List();
     int r = 0, g = 0, b = 0, n = 0;
@@ -111,7 +113,8 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
       n++;
     }
     if (n == 0) return;
-    setState(() => _pieceTint = Color.fromARGB(255, r ~/ n, g ~/ n, b ~/ n));
+    setState(() =>
+        _pieceTint = Color.fromARGB(255, r ~/ n, g ~/ n, b ~/ n));
   }
 
   bool get _isOver =>
@@ -121,8 +124,8 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
       _timeoutResult != null;
 
   void _flagFall(ChessColor loser) {
-    _timeoutResult = 'انتهى الوقت! فاز {} ⏱️'
-        .trp([loser == ChessColor.white ? "الأسود" : "الأبيض"]);
+    _timeoutResult =
+        'انتهى الوقت! فاز {} ⏱️'.trp([loser == ChessColor.white ? "الأسود" : "الأبيض"]);
     _endWinnerWhite = loser == ChessColor.black;
     _gameOverShown = true;
     _playEndFx();
@@ -149,7 +152,9 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
         _targets = {};
         _captures = {};
         for (final m in _engine.legalMovesFrom(sq)) {
-          (_engine.board[m.to] != null || m.isEnPassant ? _captures : _targets)
+          (_engine.board[m.to] != null || m.isEnPassant
+                  ? _captures
+                  : _targets)
               .add(m.to);
         }
       });
@@ -198,7 +203,8 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
   }
 
   void _executeMove(ChessMove m) {
-    final capture = _engine.board[m.to] != null || m.isEnPassant;
+    final capture =
+        _engine.board[m.to] != null || m.isEnPassant;
     setState(() {
       _selected = null;
       _targets = {};
@@ -236,7 +242,8 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
       ChessAudio.draw();
       return;
     }
-    final winnerIsWhite = _endWinnerWhite ?? (_engine.turn == ChessColor.black);
+    final winnerIsWhite =
+        _endWinnerWhite ?? (_engine.turn == ChessColor.black);
     if (!widget.vsAI || winnerIsWhite) {
       ChessAudio.win();
     } else {
@@ -245,13 +252,16 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
   }
 
   void _scheduleAI() {
-    if (!widget.vsAI || _isOver || _engine.turn != ChessColor.black) return;
+    if (!widget.vsAI ||
+        _isOver ||
+        _engine.turn != ChessColor.black) return;
     final token = ++_aiToken;
     Future.delayed(const Duration(milliseconds: 500), () {
       if (!mounted || token != _aiToken) return;
       final move = ChessAI.bestMove(_engine);
       if (move != null && mounted) {
-        final capture = _engine.board[move.to] != null || move.isEnPassant;
+        final capture =
+            _engine.board[move.to] != null || move.isEnPassant;
         _engine.makeMove(move);
         _playMoveFx(move, capture: capture);
         _checkGameOver();
@@ -321,21 +331,23 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
                       onTap: () {
                         ChessAudio.select();
                         Navigator.of(ctx).pop();
-                        _executeMove(
-                            candidates.firstWhere((m) => m.promotion == t));
+                        _executeMove(candidates
+                            .firstWhere((m) => m.promotion == t));
                       },
                       child: Container(
                         width: 58,
                         height: 58,
-                        padding: EdgeInsets.all(6),
+                        padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: L(0x2E141C3C),
+                          color: const Color(0x2E141C3C),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                              color: _gold.withOpacity(0.6), width: 1.3),
+                              color: _gold.withOpacity(0.6),
+                              width: 1.3),
                           boxShadow: [
                             BoxShadow(
-                                color: _gold.withOpacity(0.25), blurRadius: 10),
+                                color: _gold.withOpacity(0.25),
+                                blurRadius: 10),
                           ],
                         ),
                         child: Image.asset(
@@ -367,11 +379,12 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.emoji_events_rounded, color: _gold, size: 52),
-              SizedBox(height: 10),
+              const Icon(Icons.emoji_events_rounded,
+                  color: _gold, size: 52),
+              const SizedBox(height: 10),
               Text(_resultText,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                       color: _textWhite,
                       fontSize: 17,
                       fontWeight: FontWeight.w900)),
@@ -410,8 +423,9 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.flag_rounded, color: _red, size: 40),
-              SizedBox(height: 10),
+              const Icon(Icons.flag_rounded,
+                  color: _red, size: 40),
+              const SizedBox(height: 10),
               Text('الاستسلام؟'.tr,
                   style: TextStyle(
                       color: _textWhite,
@@ -419,13 +433,14 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
                       fontWeight: FontWeight.w900)),
               const SizedBox(height: 6),
               Text('ستخسر هذه المباراة فوراً'.tr,
-                  style: TextStyle(color: _textDim, fontSize: 12)),
+                  style:
+                      TextStyle(color: _textDim, fontSize: 12)),
               const SizedBox(height: 18),
               Row(
                 children: [
                   Expanded(
-                    child:
-                        _ghostButton('إلغاء'.tr, () => Navigator.of(ctx).pop()),
+                    child: _ghostButton('إلغاء'.tr,
+                        () => Navigator.of(ctx).pop()),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -433,12 +448,9 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
                       Navigator.of(ctx).pop();
                       _timeoutResult = widget.vsAI
                           ? 'استسلمت — فاز الذكاء الاصطناعي'.tr
-                          : 'استسلم {}'.trp([
-                              _engine.turn == ChessColor.white
-                                  ? "الأبيض"
-                                  : "الأسود"
-                            ]);
-                      _endWinnerWhite = _engine.turn == ChessColor.black;
+                          : 'استسلم {}'.trp([_engine.turn == ChessColor.white ? "الأبيض" : "الأسود"]);
+                      _endWinnerWhite =
+                          _engine.turn == ChessColor.black;
                       _gameOverShown = true;
                       _playEndFx();
                       _showGameOverDialog();
@@ -503,16 +515,17 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => ClipRRect(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+        borderRadius:
+            const BorderRadius.vertical(top: Radius.circular(26)),
         child: BackdropFilter(
           filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
-            padding: EdgeInsets.all(20),
-            decoration: BoxDecoration(
+            padding: const EdgeInsets.all(20),
+            decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [L(0xF2152150), L(0xF20A0F24)],
+                colors: [Color(0xF2152150), Color(0xF20A0F24)],
               ),
             ),
             child: Column(
@@ -522,7 +535,7 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: L(0x40FFFFFF),
+                    color: const Color(0x40FFFFFF),
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -547,7 +560,8 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
                       : 'تشغيل الأصوات'.tr,
                   enabled: true,
                   onTap: () {
-                    ChessAudio.soundEnabled = !ChessAudio.soundEnabled;
+                    ChessAudio.soundEnabled =
+                        !ChessAudio.soundEnabled;
                     if (ChessAudio.soundEnabled) {
                       ChessAudio.tap();
                     }
@@ -585,12 +599,14 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
       child: Opacity(
         opacity: enabled ? 1 : 0.4,
         child: Container(
-          margin: EdgeInsets.only(bottom: 8),
-          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.symmetric(
+              horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: L(0x2E141C3C),
+            color: const Color(0x2E141C3C),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: L(0x22FFFFFF), width: 1),
+            border: Border.all(
+                color: const Color(0x22FFFFFF), width: 1),
           ),
           child: Row(
             children: [
@@ -598,12 +614,13 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(title,
-                    style: TextStyle(
+                    style: const TextStyle(
                         color: _textWhite,
                         fontSize: 13.5,
                         fontWeight: FontWeight.w800)),
               ),
-              Icon(Icons.arrow_forward_ios_rounded, color: _textDim, size: 13),
+              const Icon(Icons.arrow_forward_ios_rounded,
+                  color: _textDim, size: 13),
             ],
           ),
         ),
@@ -639,7 +656,7 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
     return Scaffold(
       backgroundColor: _bgBot,
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -649,19 +666,22 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            RepaintBoundary(child: CustomPaint(painter: _ChessDecorPainter())),
+            const RepaintBoundary(
+                child: CustomPaint(painter: _ChessDecorPainter())),
             SafeArea(
               child: AnimatedBuilder(
-                animation: Listenable.merge([_engine, StoreService()]),
+                animation: Listenable.merge(
+                    [_engine, StoreService()]),
                 builder: (context, _) => Column(
                   children: [
                     // ═══ Top Bar ═══
                     Padding(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
                       child: Row(
                         children: [
-                          _glassCircle(Icons.arrow_back_ios_new_rounded,
+                          _glassCircle(
+                              Icons.arrow_back_ios_new_rounded,
                               () => Navigator.of(context).pop()),
                           Expanded(
                             child: Stack(
@@ -675,7 +695,8 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
                                     shape: BoxShape.circle,
                                     gradient: RadialGradient(
                                       colors: [
-                                        L(0xFF7C4DFF).withOpacity(0.30),
+                                        const Color(0xFF7C4DFF)
+                                            .withOpacity(0.30),
                                         Colors.transparent,
                                       ],
                                     ),
@@ -683,56 +704,66 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
                                 ),
                                 Column(
                                   children: [
-                                    Icon(Icons.workspace_premium_rounded,
+                                    Icon(
+                                        Icons
+                                            .workspace_premium_rounded,
                                         color: _gold, size: 12),
                                     SizedBox(height: 1),
                                     Text('يلا ياري'.tr,
                                         style: TextStyle(
                                             color: _textWhite,
                                             fontSize: 14.5,
-                                            fontWeight: FontWeight.w900)),
+                                            fontWeight:
+                                                FontWeight.w900)),
                                     Text('CHESS',
                                         style: TextStyle(
                                             color: _textDim,
                                             fontSize: 7.5,
                                             letterSpacing: 5.5,
-                                            fontWeight: FontWeight.w800)),
+                                            fontWeight:
+                                                FontWeight.w800)),
                                   ],
                                 ),
                               ],
                             ),
                           ),
-                          _glassCircle(
-                              Icons.settings_rounded, _showSettingsSheet),
+                          _glassCircle(Icons.settings_rounded,
+                              _showSettingsSheet),
                         ],
                       ),
                     ),
 
                     // ═══ بطاقتا اللاعبين ═══
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14),
                       child: Row(
                         children: [
                           Expanded(
                             child: _playerCard(
                               name: user?.displayName ?? 'أنت'.tr,
-                              subtitle: '${user?.rating ?? 1200}',
+                              subtitle:
+                                  '${user?.rating ?? 1200}',
                               avatar: UserAvatar(
                                   photoUrl: user?.photoUrl ?? '',
                                   name: user?.displayName ?? '',
                                   size: 42),
                               time: _fmt(_whiteSecs),
-                              isActive:
-                                  _engine.turn == ChessColor.white && !_isOver,
+                              isActive: _engine.turn ==
+                                      ChessColor.white &&
+                                  !_isOver,
                               accent: _gold,
                               flip: true,
-                              badge: _engine.inCheck(ChessColor.white)
+                              badge: _engine.inCheck(
+                                      ChessColor.white)
                                   ? 'كش!'.tr
-                                  : (_engine.turn == ChessColor.white &&
+                                  : (_engine.turn ==
+                                              ChessColor.white &&
                                           !_isOver
                                       ? 'دورك'.tr
                                       : null),
-                              badgeColor: _engine.inCheck(ChessColor.white)
+                              badgeColor: _engine.inCheck(
+                                      ChessColor.white)
                                   ? _red
                                   : _mint,
                             ),
@@ -740,24 +771,30 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: _playerCard(
-                              name: widget.vsAI ? 'AI' : 'اللاعب الأسود'.tr,
+                              name: widget.vsAI
+                                  ? 'AI'
+                                  : 'اللاعب الأسود'.tr,
                               subtitle: widget.vsAI
                                   ? 'Expert'
                                   : '${user?.rating ?? 1200}',
                               avatar: _aiAvatar(),
                               time: _fmt(_blackSecs),
-                              isActive:
-                                  _engine.turn == ChessColor.black && !_isOver,
+                              isActive: _engine.turn ==
+                                      ChessColor.black &&
+                                  !_isOver,
                               accent: _cyan,
-                              badge: _engine.inCheck(ChessColor.black)
+                              badge: _engine.inCheck(
+                                      ChessColor.black)
                                   ? 'كش!'.tr
-                                  : (_engine.turn == ChessColor.black &&
+                                  : (_engine.turn ==
+                                              ChessColor.black &&
                                           !_isOver
                                       ? (widget.vsAI
                                           ? 'Thinking...'
                                           : 'دوره'.tr)
                                       : null),
-                              badgeColor: _engine.inCheck(ChessColor.black)
+                              badgeColor: _engine.inCheck(
+                                      ChessColor.black)
                                   ? _red
                                   : _cyan,
                             ),
@@ -771,7 +808,8 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
                     Expanded(
                       child: Center(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16),
                           child: AspectRatio(
                             aspectRatio: 1,
                             child: ChessBoardWidget(
@@ -782,8 +820,8 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
                               onSquareTap: _onSquareTap,
                               onPieceDrop: _onDrop,
                               introSeed: _introSeed,
-                              boardImage:
-                                  StoreService().equippedUiImage('chessBoard'),
+                              boardImage: StoreService()
+                                  .equippedUiImage('chessBoard'),
                               pieceTint: _pieceTint,
                             ),
                           ),
@@ -795,25 +833,32 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
 
                     // ═══ أزرار التحكم ═══
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14),
                       child: Row(
                         children: [
                           Expanded(
                             flex: 2,
-                            child: _controlButton('إعدادات'.tr,
-                                Icons.settings_rounded, _showSettingsSheet),
+                            child: _controlButton(
+                                'إعدادات'.tr,
+                                Icons.settings_rounded,
+                                _showSettingsSheet),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             flex: 2,
-                            child: _controlButton('تعادل'.tr,
-                                Icons.handshake_rounded, _offerDraw),
+                            child: _controlButton(
+                                'تعادل'.tr,
+                                Icons.handshake_rounded,
+                                _offerDraw),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             flex: 2,
-                            child: _controlButton('استسلام'.tr,
-                                Icons.flag_rounded, _showResignDialog),
+                            child: _controlButton(
+                                'استسلام'.tr,
+                                Icons.flag_rounded,
+                                _showResignDialog),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -848,17 +893,19 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
       height: 42,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [L(0xFF7DD3FC), L(0xFF1D4ED8)],
+          colors: [Color(0xFF7DD3FC), Color(0xFF1D4ED8)],
         ),
-        border: Border.all(color: _cyan.withOpacity(0.8), width: 1.6),
+        border: Border.all(
+            color: _cyan.withOpacity(0.8), width: 1.6),
         boxShadow: [
           BoxShadow(color: _cyan.withOpacity(0.45), blurRadius: 12),
         ],
       ),
-      child: Icon(Icons.smart_toy_rounded, color: L(0xFFFFFFFF), size: 21),
+      child: const Icon(Icons.smart_toy_rounded,
+          color: Colors.white, size: 21),
     );
   }
 
@@ -878,174 +925,193 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
       child: BackdropFilter(
         filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: AnimatedContainer(
-          duration: Duration(milliseconds: 220),
-          padding: EdgeInsets.all(10),
+          duration: const Duration(milliseconds: 220),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: isActive ? L(0x3D1A2450) : L(0x2A10162E),
+            color: isActive
+                ? const Color(0x3D1A2450)
+                : const Color(0x2A10162E),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: isActive ? _mint.withOpacity(0.9) : L(0x22FFFFFF),
+              color: isActive
+                  ? _mint.withOpacity(0.9)
+                  : const Color(0x22FFFFFF),
               width: isActive ? 1.5 : 1.0,
             ),
             boxShadow: [
               BoxShadow(
                   color: isActive
                       ? _mint.withOpacity(0.28)
-                      : L(0xFF000000).withOpacity(0.25),
+                      : Colors.black.withOpacity(0.25),
                   blurRadius: isActive ? 16 : 8),
             ],
           ),
           child: Opacity(
             opacity: isActive ? 1.0 : 0.68,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Builder(builder: (context) {
-                  final avatarW = Stack(
-                    children: [
-                      // حلقة متوهجة حول الأفاتار
-                      Container(
-                        width: 42,
-                        height: 42,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Builder(builder: (context) {
+                final avatarW = Stack(
+                  children: [
+                    // حلقة متوهجة حول الأفاتار
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                            color: accent.withOpacity(0.85),
+                            width: 1.8),
+                        boxShadow: [
+                          BoxShadow(
+                              color: accent.withOpacity(0.4),
+                              blurRadius: 10),
+                        ],
+                      ),
+                      child: avatar,
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      left: flip ? null : 0,
+                      right: flip ? 0 : null,
+                      child: Container(
+                        width: 10,
+                        height: 10,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
+                          color: isActive
+                              ? accent
+                              : const Color(0xFF64748B),
                           border: Border.all(
-                              color: accent.withOpacity(0.85), width: 1.8),
-                          boxShadow: [
-                            BoxShadow(
-                                color: accent.withOpacity(0.4), blurRadius: 10),
-                          ],
+                              color: _bgMid, width: 1.5),
                         ),
-                        child: avatar,
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        left: flip ? null : 0,
-                        right: flip ? 0 : null,
-                        child: Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: isActive ? accent : L(0xFF64748B),
-                            border: Border.all(color: _bgMid, width: 1.5),
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                  final nameCol = Expanded(
-                    child: Column(
-                      crossAxisAlignment: flip
-                          ? CrossAxisAlignment.end
-                          : CrossAxisAlignment.start,
-                      children: [
-                        Text(name,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                                color: _textWhite,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w900)),
-                        const SizedBox(height: 2),
-                        Row(
-                          mainAxisAlignment: flip
-                              ? MainAxisAlignment.end
-                              : MainAxisAlignment.start,
-                          children: [
-                            Icon(Icons.military_tech_rounded,
-                                color: _gold, size: 12),
-                            SizedBox(width: 3),
-                            Flexible(
-                              child: Text(subtitle,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                      color: _textDim,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w700)),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  );
-                  return Row(
-                    children: flip
-                        ? [nameCol, const SizedBox(width: 8), avatarW]
-                        : [avatarW, const SizedBox(width: 8), nameCol],
-                  );
-                }),
-                SizedBox(height: 8),
-                Row(
-                  textDirection: flip ? TextDirection.rtl : TextDirection.ltr,
-                  children: [
-                    // شارة الحالة
-                    if (badge != null)
-                      Container(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
-                        decoration: BoxDecoration(
-                          color: badgeColor.withOpacity(0.18),
-                          borderRadius: BorderRadius.circular(9),
-                          border: Border.all(
-                              color: badgeColor.withOpacity(0.7), width: 1),
-                          boxShadow: [
-                            BoxShadow(
-                                color: badgeColor.withOpacity(0.3),
-                                blurRadius: 8),
-                          ],
-                        ),
-                        child: Text(badge,
-                            style: TextStyle(
-                                color: badgeColor,
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w900)),
-                      )
-                    else
-                      SizedBox(height: 20),
-                    Spacer(),
-                    // المؤقت
-                    Container(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 8, vertical: 4.5),
-                      decoration: BoxDecoration(
-                        gradient: isActive
-                            ? LinearGradient(colors: [
-                                _mint,
-                                Color.lerp(_mint, L(0xFF000000), 0.22)!,
-                              ])
-                            : null,
-                        color: isActive ? null : L(0x1FFFFFFF),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: isActive ? _mint : L(0x22FFFFFF),
-                          width: 1,
-                        ),
-                        boxShadow: isActive
-                            ? [
-                                BoxShadow(
-                                    color: _mint.withOpacity(0.4),
-                                    blurRadius: 10),
-                              ]
-                            : null,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.schedule_rounded,
-                              color: isActive ? L(0xFF0B1120) : _textDim,
-                              size: 11),
-                          SizedBox(width: 3),
-                          Text(time,
-                              style: TextStyle(
-                                  color: isActive ? L(0xFF0B1120) : _textDim,
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w900)),
-                        ],
                       ),
                     ),
                   ],
-                ),
-              ],
+                );
+                final nameCol = Expanded(
+                  child: Column(
+                    crossAxisAlignment: flip
+                        ? CrossAxisAlignment.end
+                        : CrossAxisAlignment.start,
+                    children: [
+                      Text(name,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              color: _textWhite,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w900)),
+                      const SizedBox(height: 2),
+                      Row(
+                        mainAxisAlignment: flip
+                            ? MainAxisAlignment.end
+                            : MainAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.military_tech_rounded,
+                              color: _gold, size: 12),
+                          const SizedBox(width: 3),
+                          Flexible(
+                            child: Text(subtitle,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                    color: _textDim,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+                return Row(
+                  children: flip
+                      ? [nameCol, const SizedBox(width: 8), avatarW]
+                      : [avatarW, const SizedBox(width: 8), nameCol],
+                );
+              }),
+              const SizedBox(height: 8),
+              Row(
+                textDirection:
+                    flip ? TextDirection.rtl : TextDirection.ltr,
+                children: [
+                  // شارة الحالة
+                  if (badge != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 9, vertical: 3.5),
+                      decoration: BoxDecoration(
+                        color: badgeColor.withOpacity(0.18),
+                        borderRadius: BorderRadius.circular(9),
+                        border: Border.all(
+                            color: badgeColor.withOpacity(0.7),
+                            width: 1),
+                        boxShadow: [
+                          BoxShadow(
+                              color: badgeColor.withOpacity(0.3),
+                              blurRadius: 8),
+                        ],
+                      ),
+                      child: Text(badge,
+                          style: TextStyle(
+                              color: badgeColor,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w900)),
+                    )
+                  else
+                    const SizedBox(height: 20),
+                  const Spacer(),
+                  // المؤقت
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4.5),
+                    decoration: BoxDecoration(
+                      gradient: isActive
+                          ? LinearGradient(colors: [
+                              _mint,
+                              Color.lerp(_mint, Colors.black, 0.22)!,
+                            ])
+                          : null,
+                      color: isActive
+                          ? null
+                          : const Color(0x1FFFFFFF),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: isActive
+                            ? _mint
+                            : const Color(0x22FFFFFF),
+                        width: 1,
+                      ),
+                      boxShadow: isActive
+                          ? [
+                              BoxShadow(
+                                  color: _mint.withOpacity(0.4),
+                                  blurRadius: 10),
+                            ]
+                          : null,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.schedule_rounded,
+                            color: isActive
+                                ? const Color(0xFF0B1120)
+                                : _textDim,
+                            size: 11),
+                        const SizedBox(width: 3),
+                        Text(time,
+                            style: TextStyle(
+                                color: isActive
+                                    ? const Color(0xFF0B1120)
+                                    : _textDim,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w900)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
             ),
           ),
         ),
@@ -1064,9 +1130,10 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: L(0x2E16204A),
+              color: const Color(0x2E16204A),
               borderRadius: BorderRadius.circular(13),
-              border: Border.all(color: L(0x26FFFFFF), width: 1),
+              border: Border.all(
+                  color: const Color(0x26FFFFFF), width: 1),
             ),
             child: Icon(icon, color: _textDim, size: 16),
           ),
@@ -1075,17 +1142,19 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
     );
   }
 
-  Widget _primaryButton(String text, IconData icon, VoidCallback onTap) {
+  Widget _primaryButton(
+      String text, IconData icon, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [L(0xFF3FF5A8), L(0xFF0EA96A)],
+          gradient: const LinearGradient(
+            colors: [Color(0xFF3FF5A8), Color(0xFF0EA96A)],
           ),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: L(0xFF8AFFD0), width: 1.3),
+          border: Border.all(
+              color: const Color(0xFF8AFFD0), width: 1.3),
           boxShadow: [
             BoxShadow(
                 color: _mint.withOpacity(0.42),
@@ -1096,11 +1165,11 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: L(0xFFFFFFFF), size: 17),
-            SizedBox(width: 5),
+            Icon(icon, color: Colors.white, size: 17),
+            const SizedBox(width: 5),
             Text(text,
-                style: TextStyle(
-                    color: L(0xFFFFFFFF),
+                style: const TextStyle(
+                    color: Colors.white,
                     fontWeight: FontWeight.w900,
                     fontSize: 12.5)),
           ],
@@ -1109,7 +1178,8 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
     );
   }
 
-  Widget _controlButton(String text, IconData icon, VoidCallback onTap) {
+  Widget _controlButton(
+      String text, IconData icon, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: ClipRRect(
@@ -1117,11 +1187,13 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
         child: BackdropFilter(
           filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
-            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+            padding: const EdgeInsets.symmetric(
+                vertical: 12, horizontal: 6),
             decoration: BoxDecoration(
-              color: L(0x33141C3C),
+              color: const Color(0x33141C3C),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: L(0x33FFFFFF), width: 1),
+              border: Border.all(
+                  color: const Color(0x33FFFFFF), width: 1),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -1131,7 +1203,7 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
                 Flexible(
                   child: Text(text,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      style: const TextStyle(
                           color: _textDim,
                           fontWeight: FontWeight.w800,
                           fontSize: 10)),
@@ -1150,15 +1222,16 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
       child: BackdropFilter(
         filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
         child: Container(
-          padding: padding ?? EdgeInsets.all(16),
+          padding: padding ?? const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
+            gradient: const LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [L(0xF2152150), L(0xF20A0F24)],
+              colors: [Color(0xF2152150), Color(0xF20A0F24)],
             ),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: L(0x44FFFFFF), width: 1.1),
+            border: Border.all(
+                color: const Color(0x44FFFFFF), width: 1.1),
           ),
           child: child,
         ),
@@ -1166,37 +1239,40 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
     );
   }
 
-  Widget _goldButton(String text, VoidCallback onTap, {IconData? icon}) {
+  Widget _goldButton(String text, VoidCallback onTap,
+      {IconData? icon}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
+          gradient: const LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              L(0xFFFFE082),
+              Color(0xFFFFE082),
               _gold,
-              L(0xFFE8A820),
+              Color(0xFFE8A820),
             ],
           ),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: L(0xFFFFE9A8), width: 1.2),
+          border: Border.all(
+              color: const Color(0xFFFFE9A8), width: 1.2),
           boxShadow: [
-            BoxShadow(color: _gold.withOpacity(0.3), blurRadius: 12),
+            BoxShadow(
+                color: _gold.withOpacity(0.3), blurRadius: 12),
           ],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (icon != null) ...[
-              Icon(icon, color: L(0xFF1B0B30), size: 16),
-              SizedBox(width: 5),
+              Icon(icon, color: const Color(0xFF1B0B30), size: 16),
+              const SizedBox(width: 5),
             ],
             Text(text,
-                style: TextStyle(
-                    color: L(0xFF1B0B30),
+                style: const TextStyle(
+                    color: Color(0xFF1B0B30),
                     fontWeight: FontWeight.w900,
                     fontSize: 13)),
           ],
@@ -1213,15 +1289,16 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
         child: BackdropFilter(
           filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
-            padding: EdgeInsets.symmetric(vertical: 12),
+            padding: const EdgeInsets.symmetric(vertical: 12),
             decoration: BoxDecoration(
-              color: L(0x2E141C3C),
+              color: const Color(0x2E141C3C),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: L(0x33FFFFFF), width: 1),
+              border: Border.all(
+                  color: const Color(0x33FFFFFF), width: 1),
             ),
             child: Center(
               child: Text(text,
-                  style: TextStyle(
+                  style: const TextStyle(
                       color: _textWhite,
                       fontWeight: FontWeight.w700,
                       fontSize: 13)),
@@ -1269,44 +1346,49 @@ class _WinOverlayState extends State<_WinOverlay>
           fit: StackFit.expand,
           children: [
             Container(
-                color: L(0xFF000000)
-                    .withOpacity(0.25 * _ctrl.value.clamp(0.0, 1.0))),
+                color: Colors.black.withOpacity(
+                    0.25 * _ctrl.value.clamp(0.0, 1.0))),
             CustomPaint(painter: _ConfettiPainter(_ctrl.value)),
             Center(
               child: Transform.scale(
                 scale: Curves.elasticOut
-                    .transform(_ctrl.value.clamp(0.0, 0.75) / 0.75)
+                    .transform(
+                        _ctrl.value.clamp(0.0, 0.75) / 0.75)
                     .clamp(0.0, 1.3),
                 child: Opacity(
                   opacity: (_ctrl.value * 3).clamp(0.0, 1.0),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.emoji_events_rounded,
-                          color: L(0xFFFFD54F), size: 72),
-                      SizedBox(height: 8),
+                      const Icon(Icons.emoji_events_rounded,
+                          color: Color(0xFFFFD54F), size: 72),
+                      const SizedBox(height: 8),
                       Container(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 26, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 26, vertical: 12),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(colors: [
-                            L(0xFFFFE082),
-                            L(0xFFFFD54F),
-                            L(0xFFE8A820),
+                          gradient: const LinearGradient(colors: [
+                            Color(0xFFFFE082),
+                            Color(0xFFFFD54F),
+                            Color(0xFFE8A820),
                           ]),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: L(0xFFFFF3C4), width: 1.5),
+                          borderRadius:
+                              BorderRadius.circular(20),
+                          border: Border.all(
+                              color: const Color(0xFFFFF3C4),
+                              width: 1.5),
                           boxShadow: [
                             BoxShadow(
-                                color: L(0xFFFFD54F).withOpacity(0.5),
+                                color: const Color(0xFFFFD54F)
+                                    .withOpacity(0.5),
                                 blurRadius: 30,
                                 spreadRadius: 2),
                           ],
                         ),
                         child: Text(
                           widget.text,
-                          style: TextStyle(
-                              color: L(0xFF1B0B30),
+                          style: const TextStyle(
+                              color: Color(0xFF1B0B30),
                               fontSize: 18,
                               fontWeight: FontWeight.w900),
                         ),
@@ -1327,12 +1409,12 @@ class _ConfettiPainter extends CustomPainter {
   final double t;
   _ConfettiPainter(this.t);
 
-  static final _colors = [
-    L(0xFFFFD54F),
-    L(0xFF38BDF8),
-    L(0xFF34D399),
-    L(0xFFF472B6),
-    L(0xFFFFFFFF),
+  static const _colors = [
+    Color(0xFFFFD54F),
+    Color(0xFF38BDF8),
+    Color(0xFF34D399),
+    Color(0xFFF472B6),
+    Color(0xFFFFFFFF),
   ];
 
   @override
@@ -1341,7 +1423,8 @@ class _ConfettiPainter extends CustomPainter {
       final seed = i * 37.7;
       final x = (seed * 13.7 % 1.0) * size.width;
       final speed = 0.55 + (i % 5) * 0.12;
-      final y = ((t * speed + (seed % 1.0)) % 1.0) * size.height;
+      final y =
+          ((t * speed + (seed % 1.0)) % 1.0) * size.height;
       final wobble = math.sin(t * 12 + i) * 14;
       final fade = 1 - t;
       canvas.save();
@@ -1350,7 +1433,8 @@ class _ConfettiPainter extends CustomPainter {
       canvas.drawRect(
         const Rect.fromLTWH(-3, -1.5, 6, 3),
         Paint()
-          ..color = _colors[i % _colors.length].withOpacity(fade.clamp(0, 1)),
+          ..color = _colors[i % _colors.length]
+              .withOpacity(fade.clamp(0, 1)),
       );
       canvas.restore();
     }
@@ -1372,32 +1456,34 @@ class _ChessDecorPainter extends CustomPainter {
           Paint()
             ..shader = RadialGradient(
               colors: [color.withOpacity(o), Colors.transparent],
-            ).createShader(Rect.fromCircle(center: c, radius: r)));
+            ).createShader(
+                Rect.fromCircle(center: c, radius: r)));
     }
 
-    glow(Offset(size.width * 0.9, size.height * 0.03), size.width * 0.55,
-        L(0xFF2540A0), 0.28);
-    glow(Offset(size.width * 0.08, size.height * 0.55), size.width * 0.45,
-        L(0xFF7C5CFF), 0.13);
-    glow(Offset(size.width * 0.5, size.height * 1.06), size.width * 0.65,
-        L(0xFF8A6400), 0.15);
+    glow(Offset(size.width * 0.9, size.height * 0.03),
+        size.width * 0.55, const Color(0xFF2540A0), 0.28);
+    glow(Offset(size.width * 0.08, size.height * 0.55),
+        size.width * 0.45, const Color(0xFF7C5CFF), 0.13);
+    glow(Offset(size.width * 0.5, size.height * 1.06),
+        size.width * 0.65, const Color(0xFF8A6400), 0.15);
 
     // إضاءة جانبية خافتة إضافية لعمق المشهد
-    glow(Offset(size.width * -0.05, size.height * 0.62), size.width * 0.4,
-        L(0xFF1E2A50), 0.5);
-    glow(Offset(size.width * 1.05, size.height * 0.38), size.width * 0.38,
-        L(0xFF1A2545), 0.45);
+    glow(Offset(size.width * -0.05, size.height * 0.62),
+        size.width * 0.4, const Color(0xFF1E2A50), 0.5);
+    glow(Offset(size.width * 1.05, size.height * 0.38),
+        size.width * 0.38, const Color(0xFF1A2545), 0.45);
 
     // ═══ زخارف زوايا رفيعة أنيقة (كالمرجع) ═══
     final ornament = Paint()
-      ..color = L(0xFF7C4DFF).withOpacity(0.16)
+      ..color = const Color(0xFF7C4DFF).withOpacity(0.16)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
     const m = 26.0, len = 30.0;
     for (final flipX in [false, true]) {
       for (final flipY in [false, true]) {
         canvas.save();
-        canvas.translate(flipX ? size.width : 0, flipY ? size.height : 0);
+        canvas.translate(flipX ? size.width : 0,
+            flipY ? size.height : 0);
         if (flipX) canvas.scale(-1, 1);
         if (flipY) canvas.scale(1, -1);
         // زاوية L رفيعة مع خط قصير داخلي

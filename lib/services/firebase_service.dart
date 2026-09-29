@@ -95,10 +95,7 @@ class FirebaseService {
       await firestore.collection('players').doc(playerId).update({
         'chips': chips,
         'rating': rating,
-        if (isWin)
-          'wins': FieldValue.increment(1)
-        else
-          'losses': FieldValue.increment(1),
+        if (isWin) 'wins': FieldValue.increment(1) else 'losses': FieldValue.increment(1),
         'updatedAt': FieldValue.serverTimestamp(),
       });
       debugPrint('Player $playerId stats updated in Firestore!');

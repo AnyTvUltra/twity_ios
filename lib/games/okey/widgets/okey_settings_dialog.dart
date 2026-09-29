@@ -225,13 +225,15 @@ class _OkeySettingsDialogState extends State<OkeySettingsDialog> {
                 ),
                 Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: [AppLanguage.ar, AppLanguage.ku].map((lang) {
+                  children:
+                      [AppLanguage.ar, AppLanguage.ku].map((lang) {
                     final isSel = _lang == lang;
                     return GestureDetector(
                       onTap: () {
                         AppHaptics.selection();
                         AppLangController.instance.setLang(lang);
-                        GameNotice.show(context,
+                        GameNotice.show(
+                            context,
                             'تم اختيار اللغة: {}'.trp([lang.nativeName]));
                       },
                       child: Container(

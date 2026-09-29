@@ -65,8 +65,7 @@ class OkeyPlayerBadge extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color:
-                    isTurn ? const Color(0xFF4ADE80) : const Color(0xFF6B7280),
+                color: isTurn ? const Color(0xFF4ADE80) : const Color(0xFF6B7280),
                 width: isTurn ? 2.2 : 1.2,
               ),
               boxShadow: [

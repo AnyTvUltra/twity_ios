@@ -1,6 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'screens/home_screen.dart' hide AnimatedBuilder;
+import 'screens/home_screen.dart';
 import 'screens/game_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/okey_lobby_screen.dart';
@@ -16,14 +16,12 @@ import 'widgets/maintenance_gate.dart';
 import 'widgets/update_dialog.dart';
 import 'utils/top_notification.dart';
 import 'l10n/app_lang.dart';
-import 'theme_mode.dart';
 
 final _navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppLangController.instance.load();
-  await UiTheme.instance.load();
   await FirebaseService().initialize();
   AuthService().initialize();
   StoreService().initialize();
@@ -74,6 +72,7 @@ class _GameHubAppState extends State<GameHubApp> {
     super.dispose();
   }
 
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -87,8 +86,7 @@ class _GameHubAppState extends State<GameHubApp> {
           PointerDeviceKind.trackpad,
           PointerDeviceKind.stylus,
         },
-        physics: const BouncingScrollPhysics(
-            parent: AlwaysScrollableScrollPhysics()),
+        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
       ),
       theme: ThemeData(
         brightness: Brightness.dark,
@@ -113,13 +111,10 @@ class _GameHubAppState extends State<GameHubApp> {
         ),
       ),
       builder: (context, child) {
-        return AnimatedBuilder(
-          animation: UiTheme.instance,
-          builder: (context, _) => Directionality(
-            textDirection: AppLangController.instance.direction,
-            // بوابة الإنترنت تغلف كل الشاشات — بلا اتصال تظهر شاشة حظر
-            child: ConnectivityGate(child: child ?? const SizedBox()),
-          ),
+        return Directionality(
+          textDirection: AppLangController.instance.direction,
+          // بوابة الإنترنت تغلف كل الشاشات — بلا اتصال تظهر شاشة حظر
+          child: ConnectivityGate(child: child ?? const SizedBox()),
         );
       },
       home: _AuthGate(),
@@ -129,8 +124,7 @@ class _GameHubAppState extends State<GameHubApp> {
         '/games/solitaire': (context) => GameScreen(gameId: 'solitaire'),
         '/games/ludo': (context) => GameScreen(gameId: 'ludo'),
         '/games/okey': (context) => OkeyLobbyScreen(),
-        '/games/backgammon': (context) =>
-            const GameScreen(gameId: 'backgammon'),
+        '/games/backgammon': (context) => const GameScreen(gameId: 'backgammon'),
         '/admin': (context) => const AdminPanelScreen(),
       },
     );

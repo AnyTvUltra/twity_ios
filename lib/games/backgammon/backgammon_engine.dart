@@ -245,8 +245,8 @@ class BackgammonEngine extends ChangeNotifier {
     if (cached != null) return cached;
     int best = 0;
     for (final m in _singles(s, side, dice)) {
-      final l =
-          1 + _maxLen(applyTo(s, side, m), side, _without(dice, m.die), memo);
+      final l = 1 +
+          _maxLen(applyTo(s, side, m), side, _without(dice, m.die), memo);
       if (l > best) best = l;
       if (best == dice.length) break;
     }
@@ -265,8 +265,8 @@ class BackgammonEngine extends ChangeNotifier {
     var legal = singles
         .where((m) =>
             1 +
-                _maxLen(
-                    applyTo(s, side, m), side, _without(dice, m.die), memo) ==
+                _maxLen(applyTo(s, side, m), side, _without(dice, m.die),
+                    memo) ==
             max)
         .toList();
     if (max == 1 && dice.length == 2 && dice[0] != dice[1]) {
@@ -371,7 +371,9 @@ class BackgammonEngine extends ChangeNotifier {
       if (big.isNotEmpty) pool = big;
     }
 
-    final scored = pool.map((e) => (e.$1, evaluate(e.$2, turn))).toList()
+    final scored = pool
+        .map((e) => (e.$1, evaluate(e.$2, turn)))
+        .toList()
       ..sort((a, b) => b.$2.compareTo(a.$2));
 
     switch (level) {
@@ -387,31 +389,7 @@ class BackgammonEngine extends ChangeNotifier {
   }
 
   static const List<int> _shotOdds = [
-    0,
-    11,
-    12,
-    14,
-    15,
-    15,
-    17,
-    6,
-    6,
-    5,
-    3,
-    2,
-    3,
-    0,
-    0,
-    1,
-    1,
-    0,
-    1,
-    0,
-    1,
-    0,
-    0,
-    0,
-    1
+    0, 11, 12, 14, 15, 15, 17, 6, 6, 5, 3, 2, 3, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1
   ];
 
   /// تقييم الوضع من منظور [side] — كلما زاد كان أفضل

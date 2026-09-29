@@ -13,8 +13,8 @@ enum AppLanguage {
   final TextDirection direction;
   const AppLanguage(this.code, this.nativeName, this.direction);
 
-  static AppLanguage fromCode(String? code) => AppLanguage.values
-      .firstWhere((l) => l.code == code, orElse: () => AppLanguage.ar);
+  static AppLanguage fromCode(String? code) =>
+      AppLanguage.values.firstWhere((l) => l.code == code, orElse: () => AppLanguage.ar);
 }
 
 /// متحكّم اللغة — يُحمَّل مرة واحدة عند بدء التطبيق ويُحفظ الاختيار محلياً

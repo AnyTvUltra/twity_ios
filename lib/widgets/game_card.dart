@@ -4,7 +4,6 @@ import '../models.dart';
 import '../utils/haptics.dart';
 import '../l10n/app_lang.dart';
 import 'game_artwork.dart';
-import '../theme_mode.dart';
 
 class GameCard extends StatefulWidget {
   final GameModel game;
@@ -112,11 +111,11 @@ class _GameCardState extends State<GameCard>
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
                                     colors: [
-                                      L(0xFFFFFFFF).withOpacity(0.18),
+                                      Colors.white.withOpacity(0.18),
                                       Colors.transparent,
-                                      L(0xFF000000).withOpacity(0.25),
+                                      Colors.black.withOpacity(0.25),
                                     ],
-                                    stops: [0.0, 0.35, 1.0],
+                                    stops: const [0.0, 0.35, 1.0],
                                   ),
                                 ),
                               ),
@@ -130,7 +129,7 @@ class _GameCardState extends State<GameCard>
                                 Expanded(
                                   flex: 58,
                                   child: Padding(
-                                    padding: EdgeInsets.only(
+                                    padding: const EdgeInsets.only(
                                         top: 14, left: 6, right: 6),
                                     child: GameArtwork(gameId: widget.game.id),
                                   ),
@@ -140,7 +139,8 @@ class _GameCardState extends State<GameCard>
                                 Expanded(
                                   flex: 42,
                                   child: Padding(
-                                    padding: EdgeInsets.fromLTRB(8, 0, 8, 14),
+                                    padding:
+                                        const EdgeInsets.fromLTRB(8, 0, 8, 14),
                                     child: Column(
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
@@ -151,14 +151,14 @@ class _GameCardState extends State<GameCard>
                                           child: Text(
                                             widget.game.title,
                                             textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                              color: L(0xFFFFFFFF),
+                                            style: const TextStyle(
+                                              color: Colors.white,
                                               fontSize: 18,
                                               fontWeight: FontWeight.w900,
                                               letterSpacing: 0.2,
                                               shadows: [
                                                 Shadow(
-                                                  color: L(0x8A000000),
+                                                  color: Colors.black54,
                                                   blurRadius: 4,
                                                   offset: Offset(0, 1.5),
                                                 ),
@@ -166,7 +166,7 @@ class _GameCardState extends State<GameCard>
                                             ),
                                           ),
                                         ),
-                                        SizedBox(height: 2),
+                                        const SizedBox(height: 2),
 
                                         // Subtitle / Description
                                         Text(
@@ -176,12 +176,12 @@ class _GameCardState extends State<GameCard>
                                           overflow: TextOverflow.ellipsis,
                                           style: TextStyle(
                                             color:
-                                                L(0xFFFFFFFF).withOpacity(0.85),
+                                                Colors.white.withOpacity(0.85),
                                             fontSize: 10,
                                             fontWeight: FontWeight.w500,
-                                            shadows: [
+                                            shadows: const [
                                               Shadow(
-                                                color: L(0x73000000),
+                                                color: Colors.black45,
                                                 blurRadius: 3,
                                                 offset: Offset(0, 1),
                                               ),
@@ -202,7 +202,7 @@ class _GameCardState extends State<GameCard>
                               child: Icon(
                                 Icons.auto_awesome_rounded,
                                 size: 11,
-                                color: L(0xFFFFFFFF).withOpacity(0.4),
+                                color: Colors.white.withOpacity(0.4),
                               ),
                             ),
                             Positioned(
@@ -211,7 +211,7 @@ class _GameCardState extends State<GameCard>
                               child: Icon(
                                 Icons.auto_awesome_rounded,
                                 size: 11,
-                                color: L(0xFFFFFFFF).withOpacity(0.4),
+                                color: Colors.white.withOpacity(0.4),
                               ),
                             ),
                           ],
@@ -227,7 +227,7 @@ class _GameCardState extends State<GameCard>
                     top: -14,
                     right: 12,
                     child: CustomPaint(
-                      size: Size(36, 26),
+                      size: const Size(36, 26),
                       painter: _MiniCrownPainter(),
                     ),
                   ),
@@ -238,18 +238,20 @@ class _GameCardState extends State<GameCard>
                     top: 10,
                     left: 12,
                     child: Container(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: L(0xFF000000).withOpacity(0.55),
+                        color: Colors.black.withOpacity(0.55),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                            color: L(0xFFFFD54F).withOpacity(0.7), width: 1),
+                            color:
+                                const Color(0xFFFFD54F).withOpacity(0.7),
+                            width: 1),
                       ),
                       child: Text(
                         'قريباً ⏳'.tr,
-                        style: TextStyle(
-                            color: L(0xFFFFD54F),
+                        style: const TextStyle(
+                            color: Color(0xFFFFD54F),
                             fontSize: 10,
                             fontWeight: FontWeight.w900),
                       ),
@@ -316,8 +318,8 @@ class _CardShapePainter extends CustomPainter {
       ));
 
     // 1. Drop Shadow under card (hardware accelerated)
-    canvas.drawPath(path.shift(Offset(0, 7)),
-        Paint()..color = L(0xFF000000).withOpacity(0.28));
+    canvas.drawPath(path.shift(const Offset(0, 7)),
+        Paint()..color = Colors.black.withOpacity(0.28));
     canvas.drawPath(path.shift(const Offset(0, 2)),
         Paint()..color = glowColor.withOpacity(0.10));
 
@@ -386,20 +388,20 @@ class _PlayButton extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            L(0xFFFFFFFF).withOpacity(0.38),
+            Colors.white.withOpacity(0.38),
             glowColor.withOpacity(0.72),
             glowColor.withOpacity(0.34),
           ],
         ),
         border: Border.all(
-          color: L(0xFFFFFFFF).withOpacity(0.9),
+          color: Colors.white.withOpacity(0.9),
           width: 2.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: L(0xFF000000).withOpacity(0.4),
+            color: Colors.black.withOpacity(0.4),
             blurRadius: 6,
-            offset: Offset(0, 3),
+            offset: const Offset(0, 3),
           ),
           BoxShadow(
             color: glowColor.withOpacity(0.55),
@@ -407,10 +409,10 @@ class _PlayButton extends StatelessWidget {
           ),
         ],
       ),
-      child: Center(
+      child: const Center(
         child: Icon(
           Icons.arrow_forward_ios_rounded,
-          color: L(0xFFFFFFFF),
+          color: Colors.white,
           size: 16,
         ),
       ),
@@ -439,16 +441,16 @@ class _MiniCrownPainter extends CustomPainter {
 
     // Shadow
     canvas.drawPath(
-      crownPath.shift(Offset(0, 2)),
-      Paint()..color = L(0xFF000000).withOpacity(0.35),
+      crownPath.shift(const Offset(0, 2)),
+      Paint()..color = Colors.black.withOpacity(0.35),
     );
 
     // Gold Gradient
     final crownPaint = Paint()
-      ..shader = LinearGradient(
+      ..shader = const LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [L(0xFFFFF9C4), L(0xFFFFD54F), L(0xFFFF8F00)],
+        colors: [Color(0xFFFFF9C4), Color(0xFFFFD54F), Color(0xFFFF8F00)],
       ).createShader(Rect.fromLTWH(0, 0, w, h));
     canvas.drawPath(crownPath, crownPaint);
 

@@ -32,4 +32,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'game-651a3.firebasestorage.app',
     iosBundleId: 'com.yallayari.game',
   );
+
 }
