@@ -579,6 +579,15 @@ class ProfileScreen extends StatelessWidget {
                                     ),
                                   ),
                                 ),
+                                _glassIcon(
+                                    t.light
+                                        ? Icons.dark_mode_rounded
+                                        : Icons.light_mode_rounded,
+                                    t.purple, () {
+                                  AppHaptics.selection();
+                                  UiTheme.instance.toggle();
+                                }, t),
+                                const SizedBox(width: 8),
                                 _glassIcon(Icons.help_outline_rounded, t.gold,
                                     () => _showSupportTicketDialog(context), t),
                                 const SizedBox(width: 8),
