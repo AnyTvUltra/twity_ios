@@ -11,6 +11,7 @@ import 'services/radio_service.dart';
 import 'services/store_service.dart';
 import 'services/broadcast_service.dart';
 import 'services/game_settings_service.dart';
+import 'widgets/connectivity_gate.dart';
 import 'widgets/maintenance_gate.dart';
 import 'widgets/update_dialog.dart';
 import 'l10n/app_lang.dart';
@@ -136,7 +137,8 @@ class _GameHubAppState extends State<GameHubApp> {
       builder: (context, child) {
         return Directionality(
           textDirection: AppLangController.instance.direction,
-          child: child ?? const SizedBox(),
+          // بوابة الإنترنت تغلف كل الشاشات — بلا اتصال تظهر شاشة حظر
+          child: ConnectivityGate(child: child ?? const SizedBox()),
         );
       },
       home: _AuthGate(),

@@ -58,8 +58,9 @@ class _UpdateDialogState extends State<UpdateDialog>
     final url = widget.info.url.isNotEmpty
         ? widget.info.url
         : 'https://twity-game-hub.pages.dev';
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
+    final uri = Uri.tryParse(url);
+    // أمان: لا نفتح إلا روابط HTTPS — الرابط يأتي من Firestore
+    if (uri != null && uri.scheme == 'https' && await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
     if (mounted && !widget.info.required) {

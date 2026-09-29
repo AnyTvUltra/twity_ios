@@ -182,6 +182,7 @@ class OkeyRoomService {
 
           await _firestore.collection('rooms').doc(doc.id).update({
             'players': FieldValue.arrayUnion([newPlayer.toMap()]),
+            'playerUids': FieldValue.arrayUnion([user.uid]),
           });
 
           // خصم العملات
@@ -212,6 +213,7 @@ class OkeyRoomService {
         'status': 'waiting',
         'hostUid': user.uid,
         'players': [hostPlayer.toMap()],
+        'playerUids': [user.uid],
         'currentTurnSeat': 0,
         'turnPhase': 'draw',
         'drawDeckCount': 48,
@@ -278,6 +280,7 @@ class OkeyRoomService {
 
       await docRef.update({
         'players': currentPlayers.map((p) => p.toMap()).toList(),
+        'playerUids': currentPlayers.map((p) => p.uid).toList(),
         'status': 'playing',
         'currentTurnSeat': 0,
         'turnPhase': 'discard', // اللاعب الأول لديه 15 حجر ويرمي أولاً

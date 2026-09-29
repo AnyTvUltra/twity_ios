@@ -1,7 +1,7 @@
 rules_version = '2';
 
 // ═══════════════════════════════════════════════════════════════
-// قواعد أمان Firestore - Twity Game Hub
+// قواعد أمان Firestore - Twity Game Hub (نسخة مقوّاة)
 //
 // قبل النشر: أنشئ مجموعة admins في Firestore وأضف وثيقة
 // بمعرّف = UID لحساب الأدمن (Authentication ← Users ← UID)
@@ -20,6 +20,29 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
+    // الحقول التي تغيّرت في طلب التحديث
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    // هل تغيّر الحقل بمقدار لا يتجاوز حدّاً معيّناً؟ (مضاد للتلاعب اليدوي)
+    function deltaWithin(field, limit) {
+      return !changedKeys().hasAny([field])
+        || (request.resource.data[field] is number
+            && request.resource.data[field] - resource.data.get(field, 0) <= limit
+            && resource.data.get(field, 0) - request.resource.data[field] <= limit);
+    }
+
+    // طابع زمني جديد يجب أن يكون ≈ الآن — يمنع إعادة ضبط عدّادات
+    // الهدايا/العجلة للماضي لتخطي فترة الانتظار
+    function freshTs(field) {
+      return !changedKeys().hasAny([field])
+        || (request.resource.data[field] is timestamp
+            && request.resource.data[field] <= request.time
+            && request.resource.data[field]
+                >= request.time - duration.value(10, 'm'));
+    }
+
     // ── صلاحيات الأدمن: تُدار يدويًا من الكونسول فقط ──
     // أي مستخدم يستطيع قراءة وثيقته فقط ليتحقق هل هو مدير
     match /admins/{uid} {
@@ -28,42 +51,88 @@ service cloud.firestore {
     }
 
     // ── الحسابات ──
-    // قراءة مفتوحة (بحث اللاعبين)، التعديل للمالك أو الأدمن فقط
     match /users/{uid} {
-      allow read: if true;
-      allow create: if signedIn();
-      allow update, delete: if request.auth.uid == uid || isAdmin();
+      // القراءة للمسجّلين فقط (بحث اللاعبين) — كانت مفتوحة للجميع
+      allow read: if signedIn();
+      // إنشاء الحساب: للمالك بأرصدة افتتاحية واقعية، أو للأدمن
+      allow create: if isAdmin() || (signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.chips <= 2000
+        && request.resource.data.gems <= 100
+        && (!('vipTier' in request.resource.data)
+            || request.resource.data.vipTier == '')
+        && (!('banned' in request.resource.data)
+            || request.resource.data.banned == false));
+      // التعديل: للمالك ضمن قيود، أو للأدمن بلا قيود
+      allow update: if isAdmin() || (
+        request.auth.uid == uid
+        // حقول يمنع على المستخدم تغييرها بنفسه (تصعيد صلاحيات/اشتراك)
+        && !changedKeys().hasAny(
+            ['uid', 'email', 'vipUntil', 'vipTier', 'banned', 'isBanned',
+             'isAdmin', 'role', 'createdAt'])
+        // الاقتصاد والإحصائيات: تغيّر محدود السقف لكل تحديث
+        && deltaWithin('chips', 50000)
+        && deltaWithin('gems', 2000)
+        && deltaWithin('wins', 2)
+        && deltaWithin('losses', 2)
+        && deltaWithin('level', 1)
+        && deltaWithin('rating', 300)
+        // عدّادات المكافآت: لا يمكن إرجاعها للماضي
+        && freshTs('lastDailyGiftClaim')
+        && freshTs('lastWheelSpin')
+        && freshTs('lastLootBox')
+        && (!changedKeys().hasAny(['wheelSpinCount'])
+            || request.resource.data.wheelSpinCount
+                <= resource.data.get('wheelSpinCount', 0) + 1)
+        && (!changedKeys().hasAny(['dailyGiftStreak'])
+            || request.resource.data.dailyGiftStreak
+                <= resource.data.get('dailyGiftStreak', 0) + 1)
+      );
+      allow delete: if request.auth.uid == uid || isAdmin();
 
-      // الأصدقاء والمحظورين: كتابة ثنائية الاتجاه (قبول الطلبات)
-      match /{sub=**} {
+      // الأصدقاء: المالك يدير قائمته، والطرف الآخر يضيف نفسه فقط
+      // (عند قبول طلب الصداقة تُكتب وثيقة بمعرّف كاتبها)
+      match /friends/{friendUid} {
         allow read: if signedIn();
-        allow write: if signedIn();
+        allow write: if request.auth.uid == uid
+            || (signedIn() && friendUid == request.auth.uid);
+      }
+      match /blocked/{blockedUid} {
+        allow read, write: if request.auth.uid == uid;
+      }
+      match /{sub=**} {
+        allow read: if request.auth.uid == uid || isAdmin();
+        allow write: if request.auth.uid == uid;
       }
     }
 
     // ── المتجر والإعدادات: قراءة عامة، كتابة للأدمن فقط ──
     match /store_items/{id} {
-      allow read: if true;
+      allow read: if signedIn();
       allow write: if isAdmin();
     }
     match /config/{id} {
-      allow read: if true;
+      allow read: if signedIn();
       allow write: if isAdmin();
     }
 
     // ── البلاغات وتذاكر الدعم: إنشاء للمستخدمين، إدارة للأدمن ──
     match /reports/{id} {
-      allow create: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.reporterUid == request.auth.uid
+        && request.resource.data.status == 'pending';
       allow read, update, delete: if isAdmin();
     }
     match /support_tickets/{id} {
-      allow create: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.status == 'open';
       allow read, update, delete: if isAdmin();
     }
 
     // ── باقات الشحن: قراءة عامة، إدارة للأدمن فقط ──
     match /coin_packs/{id} {
-      allow read: if true;
+      allow read: if signedIn();
       allow write: if isAdmin();
     }
 
@@ -117,45 +186,95 @@ service cloud.firestore {
 
     // ── إشعارات الإدارة: قراءة للجميع، إرسال للأدمن فقط ──
     match /broadcasts/{id} {
-      allow read: if true;
+      allow read: if signedIn();
       allow write: if isAdmin();
     }
 
     // ── الراديو: قراءة عامة، إدارة للأدمن فقط ──
     match /radio_groups/{id} {
-      allow read: if true;
+      allow read: if signedIn();
       allow write: if isAdmin();
     }
     match /radio_songs/{id} {
-      allow read: if true;
+      allow read: if signedIn();
       allow write: if isAdmin();
     }
 
-    // ── الاجتماعي: يتطلب تسجيل دخول ──
+    // ── طلبات الصداقة: بين الطرفين فقط ──
     match /friend_requests/{id} {
-      allow read, write: if signedIn();
+      allow read: if isAdmin() || (signedIn()
+        && (resource.data.fromUid == request.auth.uid
+            || resource.data.toUid == request.auth.uid));
+      allow create: if signedIn()
+        && request.resource.data.fromUid == request.auth.uid
+        && request.resource.data.status == 'pending';
+      allow update: if isAdmin() || (signedIn()
+        && (resource.data.fromUid == request.auth.uid
+            || resource.data.toUid == request.auth.uid));
+      allow delete: if isAdmin() || (signedIn()
+        && (resource.data.fromUid == request.auth.uid
+            || resource.data.toUid == request.auth.uid));
     }
+
+    // ── الإشعارات الشخصية: يقرأها المستلم فقط ──
     match /notifications/{id} {
-      allow read, write: if signedIn();
+      allow read: if isAdmin() || (signedIn()
+        && resource.data.toUid == request.auth.uid);
+      allow create: if signedIn()
+        && request.resource.data.fromUid == request.auth.uid;
+      allow update, delete: if isAdmin() || (signedIn()
+        && resource.data.toUid == request.auth.uid);
     }
+
+    // ── المحادثات الخاصة: المشاركون فقط ──
     match /conversations/{id} {
-      allow read, write: if signedIn();
+      allow read: if isAdmin() || (signedIn()
+        && request.auth.uid in resource.data.participants);
+      allow create: if signedIn()
+        && request.auth.uid in request.resource.data.participants;
+      allow update: if isAdmin() || (signedIn()
+        && request.auth.uid in resource.data.participants);
+      allow delete: if isAdmin();
+
       match /messages/{m} {
-        allow read, write: if signedIn();
+        allow read: if isAdmin() || (signedIn()
+          && request.auth.uid in get(/databases/$(database)/documents/conversations/$(id)).data.participants);
+        allow create: if signedIn()
+          && request.auth.uid in get(/databases/$(database)/documents/conversations/$(id)).data.participants
+          && request.resource.data.senderId == request.auth.uid;
+        allow update, delete: if isAdmin();
       }
     }
 
     // ── اللعب ──
+    // الغرف: القراءة للمسجلين، والتحديث لأعضاء الغرفة فقط
+    // (playerUids قائمة نصية توازي players لأغراض فحص العضوية)
     match /rooms/{id} {
-      allow read, write: if signedIn();
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.hostUid == request.auth.uid;
+      allow update: if isAdmin() || (signedIn()
+        // الغرف القديمة قد تفتقد playerUids — نسمح للتوافقية
+        && (!('playerUids' in resource.data)
+            || request.auth.uid in resource.data.playerUids));
+      allow delete: if isAdmin()
+        || (signedIn() && resource.data.hostUid == request.auth.uid);
     }
+    // ملفات اللاعبين القديمة: المالك فقط ضمن سقف تغيّر
     match /players/{id} {
-      allow read: if true;
-      allow write: if signedIn();
+      allow read: if signedIn();
+      allow create: if signedIn() && request.auth.uid == id;
+      allow update: if isAdmin() || (request.auth.uid == id
+        && deltaWithin('chips', 50000)
+        && deltaWithin('wins', 2)
+        && deltaWithin('losses', 2)
+        && deltaWithin('rating', 300));
+      allow delete: if isAdmin();
     }
+    // سجل المباريات: إنشاء للاعبين، القراءة والإدارة للأدمن
     match /game_history/{id} {
-      allow read: if true;
-      allow write: if signedIn();
+      allow create: if signedIn();
+      allow read, update, delete: if isAdmin();
     }
 
     // ── أي شيء آخر: مرفوض ──
