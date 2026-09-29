@@ -352,33 +352,6 @@ class OkeyTablePainter extends CustomPainter {
     }
 
     // ══════════════════════════════════════════════════════════
-    // 8. الأسهم التوجيهية — علامات زجاجية شفافة أنيقة
-    // ══════════════════════════════════════════════════════════
-    final arrowPaint = Paint()
-      ..color = _rimLight.withOpacity(0.34)
-      ..strokeWidth = 1.6
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    final arrowTipPaint = Paint()
-      ..color = _rimLight.withOpacity(0.40)
-      ..style = PaintingStyle.fill;
-
-    final leftX = w * 0.28;
-    final leftY1 = h * 0.54;
-    final leftY2 = h * 0.34;
-    _drawArrow(canvas, Offset(leftX, leftY1), Offset(leftX, leftY2),
-        arrowPaint, arrowTipPaint,
-        isUp: true);
-
-    final rightX = w * 0.72;
-    final rightY1 = h * 0.34;
-    final rightY2 = h * 0.54;
-    _drawArrow(canvas, Offset(rightX, rightY1), Offset(rightX, rightY2),
-        arrowPaint, arrowTipPaint,
-        isUp: false);
-
-    // ══════════════════════════════════════════════════════════
     // 9. مؤشر خفيف في المنتصف
     // ══════════════════════════════════════════════════════════
     _drawText(
@@ -389,30 +362,6 @@ class OkeyTablePainter extends CustomPainter {
       color: _rimLight.withOpacity(0.35),
       isBold: false,
     );
-  }
-
-  void _drawArrow(
-    Canvas canvas,
-    Offset start,
-    Offset end,
-    Paint linePaint,
-    Paint tipPaint, {
-    required bool isUp,
-  }) {
-    canvas.drawLine(start, end, linePaint);
-
-    final tip = Path();
-    if (isUp) {
-      tip.moveTo(end.dx, end.dy - 2);
-      tip.lineTo(end.dx - 5.5, end.dy + 8);
-      tip.lineTo(end.dx + 5.5, end.dy + 8);
-    } else {
-      tip.moveTo(end.dx, end.dy + 2);
-      tip.lineTo(end.dx - 5.5, end.dy - 8);
-      tip.lineTo(end.dx + 5.5, end.dy - 8);
-    }
-    tip.close();
-    canvas.drawPath(tip, tipPaint);
   }
 
   void _drawText(

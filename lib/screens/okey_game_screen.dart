@@ -1528,16 +1528,24 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   /// منطقتك: إسقاط Per مميّز هنا = نزول على الطاولة
   Widget _myMeldDropZone(Widget child) {
     return DragTarget<int>(
-      onWillAcceptWithDetails: (details) => _engine
-          .getHighlightedSlotIndices()
-          .contains(_rackSlotOf(details.data)),
+      // نقبل كل حجر من الرف: المميّز ينزل كبير، وغيره يُرمى على الطاولة
+      onWillAcceptWithDetails: (details) =>
+          _rackSlotOf(details.data) != -1,
       onAcceptWithDetails: (details) {
+        final slot = _rackSlotOf(details.data);
+        final isPer =
+            _engine.getHighlightedSlotIndices().contains(slot);
+        if (!isPer) {
+          // حجر مفرد غير مميّز أُفلت هنا = رمي عادي على الطاولة
+          _dropOnTable(details.data, details.offset);
+          return;
+        }
         if (!_engine.humanCanLayMelds) {
           _showGameNotice(
               'أنت تلعب {} — لا نزول على الطاولة'.trp([_engine.players[0].playStyle.label]));
           return;
         }
-        if (_engine.layMeldContainingSlot(_rackSlotOf(details.data))) {
+        if (_engine.layMeldContainingSlot(slot)) {
           AppHaptics.medium();
         } else {
           _showGameNotice('هذه الأحجار لا تكوّن Per صحيحاً'.tr);
@@ -1613,15 +1621,18 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     final ownerColor =
         isMine ? const Color(0xFF4ADE80) : const Color(0xFF38BDF8);
     return DragTarget<int>(
-      onWillAcceptWithDetails: (details) {
-        if (!_engine.players[0].hasOpened) return false;
-        if (!OkeyDrag.isRackTile(details.data)) return false;
-        final tile = _engine.players[0].rackTiles[details.data];
-        return tile != null && _engine.canLayOffTile(tile, meld);
-      },
+      onWillAcceptWithDetails: (details) =>
+          OkeyDrag.isRackTile(details.data),
       onAcceptWithDetails: (details) {
-        if (_engine.layTileOnMeld(details.data, meldIndex)) {
+        if (_engine.players[0].hasOpened &&
+            _engine.layTileOnMeld(details.data, meldIndex)) {
           AppHaptics.light();
+          return;
+        }
+        // ليس صرفاً صالحاً — يُعامل كرمي على الطاولة إن كان دور الرمي
+        if (_engine.turnPhase == OkeyTurnPhase.awaitingDiscard &&
+            _engine.currentTurnIndex == 0) {
+          _executeDiscard(details.data, dropGlobal: details.offset);
         } else {
           _showGameNotice('هذا الحجر لا يصرف على هذا البير'.tr);
         }
@@ -2446,16 +2457,13 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     const tw = 20.0, th = 28.0;
     return GestureDetector(
       onTap: () {
-        if (canDiscard) {
-          final sel = _engine.selectedTileIndex;
-          if (sel != null) {
-            _executeDiscard(sel);
-          } else {
-            _showGameNotice('اختر حجراً أو اسحبه إلى الطاولة لرميه'.tr,
-                icon: Icons.pan_tool_alt_rounded);
-          }
+        if (canDiscard && _engine.selectedTileIndex != null) {
+          _executeDiscard(_engine.selectedTileIndex!);
+        } else {
+          _showDiscardViewer();
         }
       },
+      onLongPress: _showDiscardViewer,
       child: Container(
         key: _discardKey,
         width: w,
@@ -2489,8 +2497,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                   ),
                   for (var i = 0; i < shown.length; i++)
                     _scatteredTile(
-                      entries: shown,
-                      i: i,
+                      entry: shown[i],
+                      // بذرة بموقعه العالمي في الكومة — لا يتحرك أي حجر
+                      // عند انزلاق نافذة العرض أو سحب حجر منها
+                      seedIndex: i + (entries.length - shown.length),
                       w: w, h: h, tw: tw, th: th,
                       isTakeable: canTakeLeft &&
                           identical(shown[i].value, leftTopTile) &&
@@ -2502,32 +2512,164 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     );
   }
 
+  /// نافذة عرض مرميات كل لاعب — للاطلاع فقط، لا يمكن أخذ أي حجر منها
+  void _showDiscardViewer() {
+    final total = _engine.discardPiles.fold<int>(0, (s, p) => s + p.length);
+    if (total == 0) {
+      _showGameNotice('لا أحجار مرمية بعد'.tr,
+          icon: Icons.layers_clear_rounded);
+      return;
+    }
+    AppHaptics.selection();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Directionality(
+        textDirection: AppLangController.instance.direction,
+        child: Container(
+          constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(ctx).size.height * 0.55),
+          decoration: BoxDecoration(
+            color: const Color(0xFF141C34),
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(22)),
+            border: Border.all(
+                color: const Color(0xFFFFD54F).withOpacity(0.3)),
+          ),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(4)),
+              ),
+              const SizedBox(height: 10),
+              Row(children: [
+                const Icon(Icons.layers_rounded,
+                    color: Color(0xFFFFD54F), size: 18),
+                const SizedBox(width: 8),
+                Text('الأحجار المرمية'.tr,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900)),
+                const Spacer(),
+                Text('$total',
+                    style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800)),
+              ]),
+              const SizedBox(height: 4),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Text('للاطلاع فقط — لا يمكن أخذ الأحجار من هنا'.tr,
+                    style: const TextStyle(
+                        color: Colors.white38, fontSize: 10.5)),
+              ),
+              const SizedBox(height: 10),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    for (var p = 0; p < 4; p++)
+                      if (_engine.discardPiles[p].isNotEmpty)
+                        _discardViewerRow(p),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _discardViewerRow(int p) {
+    final pile = _engine.discardPiles[p];
+    final isFull = p != 0 &&
+        _engine.players[p].playStyle == OkeyPlayStyle.full;
+    final colors = [
+      const Color(0xFF4ADE80),
+      const Color(0xFF38BDF8),
+      const Color(0xFFF472B6),
+      const Color(0xFFFBBF24),
+    ];
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors[p].withOpacity(0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(Icons.person_rounded, color: colors[p], size: 14),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                p == 0 ? 'أنت'.tr : _engine.players[p].name,
+                style: TextStyle(
+                    color: colors[p],
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w800),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Text('${pile.length}',
+                style: const TextStyle(
+                    color: Colors.white38,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700)),
+          ]),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 4,
+            runSpacing: 4,
+            children: [
+              for (final t in pile)
+                isFull
+                    ? _tileBack(18, 25)
+                    : OkeyTileWidget(tile: t, width: 18, height: 25),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _scatteredTile({
-    required List<MapEntry<int, OkeyTile>> entries,
-    required int i,
+    required MapEntry<int, OkeyTile> entry,
+    required int seedIndex,
     required double w,
     required double h,
     required double tw,
     required double th,
     required bool isTakeable,
   }) {
-    // بذرة ثابتة لكل حجر حتى لا "يقفز" عند كل إعادة بناء
-    final seed = (entries[i].value.hashCode ^
-            (entries[i].key * 7919) ^
-            (i * 104729)) &
+    // بذرة ثابتة لكل حجر (لاعبه + ترتيبه العالمي) حتى لا "يقفز" أبداً
+    final seed = (entry.value.hashCode ^
+            (entry.key * 7919) ^
+            (seedIndex * 104729)) &
         0x7fffffff;
     final r = math.Random(seed);
     final dx = 8 + r.nextDouble() * (w - tw - 16);
     final dy = 4 + r.nextDouble() * (h - th - 8);
     final angle = (r.nextDouble() - 0.5) * 0.9; // ±25°
     final faceDown =
-        entries[i].key != 0 && _engine.players[entries[i].key].playStyle == OkeyPlayStyle.full;
+        entry.key != 0 && _engine.players[entry.key].playStyle == OkeyPlayStyle.full;
 
     Widget tile = Transform.rotate(
       angle: angle,
       child: faceDown
           ? _tileBack(tw, th)
-          : OkeyTileWidget(tile: entries[i].value, width: tw, height: th),
+          : OkeyTileWidget(tile: entry.value, width: tw, height: th),
     );
     if (isTakeable) {
       tile = Draggable<int>(
@@ -2541,7 +2683,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           color: Colors.transparent,
           elevation: 10,
           child: OkeyTileWidget(
-              tile: entries[i].value,
+              tile: entry.value,
               isDragging: true,
               width: _rackTileW,
               height: _rackTileH),

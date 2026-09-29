@@ -986,17 +986,27 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                       spreadRadius: -4),
                 ],
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.bolt_rounded, color: Colors.white),
-                  SizedBox(width: 8),
-                  Text('بدء اللعبة فوراً (ملء المقاعد بروبوتات)'.tr,
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 14)),
-                ],
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.bolt_rounded, color: Colors.white),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        'بدء اللعبة فوراً (ملء المقاعد بروبوتات)'.tr,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 14,
+                            height: 1.2),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

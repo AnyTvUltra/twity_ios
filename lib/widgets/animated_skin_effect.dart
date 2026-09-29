@@ -22,6 +22,9 @@ enum SkinEffect {
   aurora,
   dragon,
   ember,
+  wood,
+  walnut,
+  mahogany,
 }
 
 const _kEffectMap = {
@@ -39,6 +42,9 @@ const _kEffectMap = {
   'aurora': SkinEffect.aurora,
   'dragon': SkinEffect.dragon,
   'ember': SkinEffect.ember,
+  'wood': SkinEffect.wood,
+  'walnut': SkinEffect.walnut,
+  'mahogany': SkinEffect.mahogany,
 };
 
 /// تحويل اسم تأثير نصي إلى SkinEffect
@@ -75,6 +81,9 @@ SkinEffect skinEffectOf(StoreItem? item) {
   if (n.contains('صقيع'.tr) || n.contains('كريستال'.tr) || n.contains('crystal')) {
     return SkinEffect.crystal;
   }
+  // ملاحظة: تأثيرات الخشب (wood/walnut/mahogany) تُفعَّل فقط عبر
+  // حقل effect الصريح في العنصر — لا مطابقة بالاسم حتى لا تستبدل
+  // السكنات المصوّرة الموجودة
   return SkinEffect.none;
 }
 
@@ -109,6 +118,12 @@ Color skinAccentColor(SkinEffect e) {
       return const Color(0xFFFBBF24);
     case SkinEffect.ember:
       return const Color(0xFFFF7847);
+    case SkinEffect.wood:
+      return const Color(0xFFD9A05B);
+    case SkinEffect.walnut:
+      return const Color(0xFF9A6537);
+    case SkinEffect.mahogany:
+      return const Color(0xFFBF6B4A);
     case SkinEffect.none:
       return Colors.transparent;
   }
@@ -998,6 +1013,9 @@ class _FxSurfacePainter extends CustomPainter {
       case SkinEffect.aurora: _aurora(canvas, size, tt, rng); break;
       case SkinEffect.dragon: _dragon(canvas, size, tt, rng); break;
       case SkinEffect.ember: _ember(canvas, size, tt, rng); break;
+      case SkinEffect.wood: _woodPlanks(canvas, size, tt, rng, 0); break;
+      case SkinEffect.walnut: _woodPlanks(canvas, size, tt, rng, 1); break;
+      case SkinEffect.mahogany: _woodPlanks(canvas, size, tt, rng, 2); break;
       default: break;
     }
     _pointerGlow(canvas, size);
@@ -1523,6 +1541,120 @@ class _FxSurfacePainter extends CustomPainter {
     }
     _sparks(c, s, rng, 10, const Color(0xFFFCA5A5), const Color(0xFF7F1D1D),
         spread: 0.6);
+  }
+
+  // ── خشبة استكانة كلاسيكية: ألواح خشبية + مسامير نحاسية يمين ويسار ──
+  void _woodPlanks(Canvas c, Size s, double tt, math.Random rng, int kind) {
+    const palettes = [
+      // بلوط فاتح
+      [Color(0xFFA9764A), Color(0xFF8A5A30), Color(0xFF5F3A1A)],
+      // جوز داكن
+      [Color(0xFF6E452A), Color(0xFF4E2E17), Color(0xFF2F1B0C)],
+      // ماهوجني محمر
+      [Color(0xFF8A4630), Color(0xFF64301E), Color(0xFF3E1C0F)],
+    ];
+    final cols = palettes[kind];
+    _bg(c, s, cols);
+
+    // عروق الخشب — خطوط متموجة بطول القطعة
+    final grain = dark2(kind);
+    for (int i = 0; i < 8; i++) {
+      final y0 = s.height * (0.10 + rng.nextDouble() * 0.8);
+      final path = Path()..moveTo(-4, y0);
+      double x = -4, y = y0;
+      while (x < s.width + 8) {
+        x += s.width * 0.11;
+        y = y0 +
+            math.sin(x * 0.02 + i * 1.6) * s.height * 0.035 +
+            (rng.nextDouble() - 0.5) * 2.5;
+        path.lineTo(x, y);
+      }
+      c.drawPath(
+        path,
+        Paint()
+          ..color = grain.withOpacity(0.28)
+          ..strokeWidth = 0.9 + rng.nextDouble() * 1.1
+          ..style = PaintingStyle.stroke,
+      );
+    }
+
+    // عقدة خشبية أو اثنتان (دوائر متحدة المركز)
+    for (int i = 0; i < 2; i++) {
+      final cx = s.width * (0.28 + i * 0.44 + rng.nextDouble() * 0.08);
+      final cy = s.height * (0.3 + rng.nextDouble() * 0.4);
+      for (int k = 3; k >= 1; k--) {
+        c.drawOval(
+          Rect.fromCenter(
+              center: Offset(cx, cy),
+              width: k * s.height * 0.16,
+              height: k * s.height * 0.11),
+          Paint()
+            ..color = grain.withOpacity(0.10 + 0.05 * k)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.0,
+        );
+      }
+    }
+
+    // لمعة سطح + ظل سفلي (إحساس لاكر)
+    c.drawRect(
+      Offset.zero & s,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0x2EFFFFFF), Colors.transparent, Color(0x33000000)],
+          stops: [0.0, 0.38, 1.0],
+        ).createShader(Offset.zero & s),
+    );
+
+    // مسامير نحاسية على الطرفين (يمين ويسار) — 3 لكل طرف
+    final nailR = (s.shortestSide * 0.085).clamp(2.2, 7.0);
+    for (final side in [0, 1]) {
+      final cx = side == 0
+          ? s.shortestSide * 0.16 + nailR
+          : s.width - s.shortestSide * 0.16 - nailR;
+      for (int k = 0; k < 3; k++) {
+        _nail(c, Offset(cx, s.height * (0.24 + k * 0.26)),
+            nailR, tt, side * 3 + k);
+      }
+    }
+  }
+
+  Color dark2(int kind) => kind == 0
+      ? const Color(0xFF573517)
+      : kind == 1
+          ? const Color(0xFF241305)
+          : const Color(0xFF3A1B0D);
+
+  /// رأس مسمار نحاسي — ظل + جسم معدني + لمعة خفيفة تتحرك
+  void _nail(Canvas c, Offset p, double r, double tt, int i) {
+    c.drawCircle(
+      p.translate(r * 0.14, r * 0.2),
+      r,
+      Paint()..color = Colors.black.withOpacity(0.4),
+    );
+    c.drawCircle(
+      p,
+      r,
+      Paint()
+        ..shader = const RadialGradient(
+          colors: [Color(0xFFFFE9A8), Color(0xFFC9912F), Color(0xFF5F3E10)],
+          stops: [0.0, 0.55, 1.0],
+        ).createShader(Rect.fromCircle(
+            center: p.translate(-r * 0.35, -r * 0.35), radius: r * 1.5)),
+    );
+    c.drawCircle(
+      p,
+      r * 0.58,
+      Paint()..color = const Color(0xFF7A5016).withOpacity(0.65),
+    );
+    final glint = 0.5 + 0.5 * math.sin(tt * 1.4 + i * 2.2);
+    c.drawCircle(
+      p.translate(-r * 0.3, -r * 0.32),
+      r * 0.22,
+      Paint()..color = Colors.white.withOpacity(0.45 + 0.35 * glint),
+    );
   }
 
   @override

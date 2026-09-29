@@ -41,7 +41,7 @@ class RadioService extends ChangeNotifier {
   RadioService._internal();
 
   /// محطات احتياطية تُستخدم إن لم توجد بيانات في Firestore
-  static List<RadioStation> _fallbackStations = [
+  static List<RadioStation> get _fallbackStations => [
     RadioStation(
       id: 'quran',
       name: 'إذاعة القرآن الكريم (القاهرة)'.tr,
@@ -84,7 +84,7 @@ class RadioService extends ChangeNotifier {
     ),
   ];
 
-  static List<RadioGroup> _fallbackGroups = [
+  static List<RadioGroup> get _fallbackGroups => [
     RadioGroup(id: '_default', name: 'محطات عامة'.tr, flag: '📻'),
   ];
 

@@ -9,7 +9,7 @@ import '../services/rewards_service.dart';
 import '../services/social_service.dart';
 import '../utils/haptics.dart';
 import '../utils/format.dart';
-import '../utils/legal_links.dart';
+import 'legal_screen.dart';
 import '../widgets/gem_icon.dart';
 import '../utils/top_notification.dart';
 import '../widgets/user_avatar.dart';
@@ -558,7 +558,7 @@ class ProfileScreen extends StatelessWidget {
 
                 return SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: 100),
+                  padding: const EdgeInsets.only(bottom: 150),
                   child: Column(
                     children: [
                       // ═══ الهيدر ═══
@@ -1046,8 +1046,11 @@ class ProfileScreen extends StatelessWidget {
                                     title: 'سياسة الخصوصية'.tr,
                                     subtitle:
                                         'البيانات التي نجمعها وكيف نحميها'.tr,
-                                    onTap:
-                                        LegalLinks.openPrivacy,
+                                    onTap: () =>
+                                        Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                                builder: (_) =>
+                                                    const LegalScreen())),
                                   ),
                                   _glassDivider(),
                                   _SettingsTile(
@@ -1057,8 +1060,12 @@ class ProfileScreen extends StatelessWidget {
                                     title: 'شروط الاستخدام'.tr,
                                     subtitle:
                                         'قواعد اللعب والعملات الافتراضية'.tr,
-                                    onTap:
-                                        LegalLinks.openTerms,
+                                    onTap: () =>
+                                        Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                                builder: (_) =>
+                                                    const LegalScreen(
+                                                        initialTab: 1))),
                                   ),
                                   _glassDivider(),
                                   _SettingsTile(

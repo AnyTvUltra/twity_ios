@@ -4,7 +4,7 @@ import '../services/auth_service.dart';
 import '../utils/haptics.dart';
 
 import '../utils/top_notification.dart';
-import '../utils/legal_links.dart';
+import 'legal_screen.dart';
 import '../widgets/app_background.dart';
 import 'package:flutter/gestures.dart';
 import '../l10n/app_lang.dart';
@@ -377,7 +377,10 @@ class _AuthScreenState extends State<AuthScreen> {
                                 color: Color(0xFF7DD3FC),
                                 fontWeight: FontWeight.w700),
                             recognizer: TapGestureRecognizer()
-                              ..onTap = LegalLinks.openTerms,
+                              ..onTap = () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          const LegalScreen(initialTab: 1))),
                           ),
                           TextSpan(text: ' و'.tr),
                           TextSpan(
@@ -386,7 +389,9 @@ class _AuthScreenState extends State<AuthScreen> {
                                 color: Color(0xFF7DD3FC),
                                 fontWeight: FontWeight.w700),
                             recognizer: TapGestureRecognizer()
-                              ..onTap = LegalLinks.openPrivacy,
+                              ..onTap = () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                      builder: (_) => const LegalScreen())),
                           ),
                         ],
                       ),

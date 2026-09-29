@@ -28,7 +28,7 @@ class OkeyRules {
     this.jokerBelowIndicator = false,
   });
 
-  static final sulaymaniyah = OkeyRules(
+  static OkeyRules get sulaymaniyah => OkeyRules(
     variant: OkeyRulesVariant.sulaymaniyah,
     name: 'قانون سليمانية'.tr,
     subtitle: 'افتتاح سريع 51 نقطة'.tr,
@@ -38,7 +38,7 @@ class OkeyRules {
     jokerBelowIndicator: true,
   );
 
-  static final erbil = OkeyRules(
+  static OkeyRules get erbil => OkeyRules(
     variant: OkeyRulesVariant.erbil,
     name: 'قانون أربيل'.tr,
     subtitle: 'احترافي — بدون أزواج'.tr,
@@ -47,7 +47,7 @@ class OkeyRules {
     allowSevenPairs: false,
   );
 
-  static final turkish = OkeyRules(
+  static OkeyRules get turkish => OkeyRules(
     variant: OkeyRulesVariant.turkish,
     name: 'القانون التركي'.tr,
     subtitle: 'الكلاسيكي — 101 + أزواج'.tr,

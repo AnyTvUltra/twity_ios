@@ -13,6 +13,12 @@ class BroadcastService {
   static const _seenKey = 'last_broadcast_id';
   StreamSubscription<QuerySnapshot>? _sub;
 
+  /// عدد الإشعارات الإدارية غير المقروءة — يظهر كشارة على جرس الإشعارات
+  final ValueNotifier<int> unreadCount = ValueNotifier<int>(0);
+
+  /// يُستدعى عند فتح لوحة الإشعارات لتصفير الشارة
+  void markAllSeen() => unreadCount.value = 0;
+
   /// يبدأ الاستماع — onMessage تُستدعى برسالة جديدة لم تُعرض بعد
   void initialize(void Function(String title, String body) onMessage) {
     _sub?.cancel();
@@ -39,6 +45,7 @@ class BroadcastService {
       final title = (data['title'] ?? '📢 إشعار'.tr).toString();
       final body = (data['body'] ?? '').toString();
       if (body.isEmpty) return;
+      unreadCount.value++;
       onMessage(title, body);
     }, onError: (e) => debugPrint('Broadcast listener error: $e'));
   }

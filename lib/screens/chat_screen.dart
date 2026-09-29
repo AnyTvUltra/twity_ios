@@ -1064,6 +1064,7 @@ class NotificationsSheet extends StatelessWidget {
 
   static void show(BuildContext context,
       {void Function(AppUser)? onOpenChat}) {
+    BroadcastService.instance.markAllSeen();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,

@@ -72,6 +72,10 @@ class SkinMockup extends StatelessWidget {
         return _buildBackgroundMockup();
       case StoreCategory.frame:
         return _buildFrameMockup();
+      case StoreCategory.chessBoard:
+        return _buildChessBoardMockup();
+      case StoreCategory.chessPieces:
+        return _buildChessPiecesMockup();
       case StoreCategory.bgBoard:
       case StoreCategory.bgCheckers:
         return BgSkinPreview(category: category, itemId: item?.id ?? '');
@@ -336,6 +340,129 @@ class SkinMockup extends StatelessWidget {
     tiles[24] = mk(24, OkeyTileColor.red, 2);
     tiles[26] = mk(26, OkeyTileColor.blue, 13);
     return tiles;
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // موك اب لوحة الشطرنج — رقعة 8×8 حقيقية + الكسنة على الخانات الداكنة
+  // ══════════════════════════════════════════════════════════
+  Widget _buildChessBoardMockup() {
+    final side = height.clamp(60.0, 200.0);
+    return Center(
+      child: Container(
+        width: side,
+        height: side,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.45),
+                blurRadius: 10,
+                offset: const Offset(0, 4)),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Stack(fit: StackFit.expand, children: [
+            // الرقعة — الخانات الداكنة تلبس الكسنة
+            Column(children: [
+              for (var r = 0; r < 8; r++)
+                Expanded(
+                  child: Row(children: [
+                    for (var c = 0; c < 8; c++)
+                      Expanded(
+                        child: Container(
+                          color: (r + c).isEven
+                              ? const Color(0xFFEBD9B4)
+                              : const Color(0xFF769656),
+                          child: (r + c).isOdd && _hasSkin
+                              ? Opacity(
+                                  opacity: 0.55, child: _skinLayer())
+                              : null,
+                        ),
+                      ),
+                  ]),
+                ),
+            ]),
+            // لمعة زجاجية
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withOpacity(0.14),
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.18),
+                  ],
+                ),
+              ),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // موك اب أحجار الشطرنج — قطع ملوّنة بألوان الكسنة فوق شريط رقعة
+  // ══════════════════════════════════════════════════════════
+  Widget _buildChessPiecesMockup() {
+    const glyphs = ['♜', '♞', '♝', '♛'];
+    final accent = item == null
+        ? const Color(0xFFEBD9B4)
+        : skinAccentColor(skinEffectOf(item));
+    return Center(
+      child: Container(
+        width: width * 0.86,
+        height: height * 0.62,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF1B2438), Color(0xFF0E1526)],
+          ),
+          border: Border.all(color: Colors.white.withOpacity(0.12)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            for (var i = 0; i < glyphs.length; i++)
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: height * 0.34,
+                    height: height * 0.34,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(colors: [
+                        accent.withOpacity(0.9),
+                        accent.withOpacity(0.35),
+                      ]),
+                      boxShadow: [
+                        BoxShadow(
+                            color: accent.withOpacity(0.4),
+                            blurRadius: 10),
+                      ],
+                      border: Border.all(
+                          color: Colors.white.withOpacity(0.25)),
+                    ),
+                    child: Center(
+                      child: Text(glyphs[i],
+                          style: TextStyle(
+                              fontSize: height * 0.19,
+                              color: Colors.white,
+                              shadows: const [
+                                Shadow(
+                                    color: Colors.black54, blurRadius: 4)
+                              ])),
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   // ══════════════════════════════════════════════════════════

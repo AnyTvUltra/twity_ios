@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../services/broadcast_service.dart';
 import '../services/social_service.dart';
 import '../screens/chat_screen.dart';
 import 'radio_player_widget.dart';
@@ -403,7 +404,10 @@ class _NotificationBellWidget extends StatelessWidget {
           builder: (context, convSnap) {
             final unread = (convSnap.data ?? [])
                 .fold<int>(0, (s, c) => s + c.unreadCount);
-            final total = reqCount + unread;
+            return ValueListenableBuilder<int>(
+              valueListenable: BroadcastService.instance.unreadCount,
+              builder: (context, broadcastUnread, _) {
+            final total = reqCount + unread + broadcastUnread;
             return Stack(
               clipBehavior: Clip.none,
               alignment: Alignment.center,
@@ -438,6 +442,8 @@ class _NotificationBellWidget extends StatelessWidget {
                     ),
                   ),
               ],
+            );
+              },
             );
           },
         );

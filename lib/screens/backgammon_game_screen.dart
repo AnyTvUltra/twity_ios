@@ -89,7 +89,10 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
   int? _selected;
   Map<int, List<BgMove>> _paths = {};
   int? _dragFrom;
-  Offset? _dragPos;
+
+  /// موضع الحجر المسحوب — ValueNotifier حتى لا يُعاد بناء اللوح مع كل
+  /// حركة إصبع (سبب التقطيع في السحب)
+  final ValueNotifier<Offset?> _dragVN = ValueNotifier<Offset?>(null);
   int? _hover;
 
   String? _notice;
@@ -192,6 +195,7 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
     _fx.dispose();
     _lid.dispose();
     _intro.dispose();
+    _dragVN.dispose();
     _e.dispose();
     super.dispose();
   }
@@ -660,30 +664,31 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
     final key = _key(src!, _e.turn);
     setState(() {
       _dragFrom = src;
-      _dragPos = p;
       _hidden[key] = (_hidden[key] ?? 0) + 1;
     });
+    _dragVN.value = p;
   }
 
   void _onPanUpdate(Offset p) {
     if (_dragFrom == null) return;
     final hit = _g!.hitTest(p);
-    setState(() {
-      _dragPos = p;
-      _hover = hit != null && _paths.containsKey(hit) ? hit : null;
-    });
+    final newHover = hit != null && _paths.containsKey(hit) ? hit : null;
+    // تحريك الحجر فورياً بدون إعادة بناء اللوح — setState فقط عند
+    // تغيّر خانة الهدف لتحديث توهّجها
+    _dragVN.value = p;
+    if (newHover != _hover) setState(() => _hover = newHover);
   }
 
   void _onPanEnd() {
     final src = _dragFrom;
-    final pos = _dragPos;
+    final pos = _dragVN.value;
+    _dragVN.value = null;
     if (src == null || pos == null) return;
     final key = _key(src, _e.turn);
     final target = _hover;
     setState(() {
       _hidden[key] = (_hidden[key] ?? 1) - 1;
       _dragFrom = null;
-      _dragPos = null;
       _hover = null;
     });
     if (target != null) {
@@ -1403,7 +1408,12 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
                   ..._checkers(g, set),
                 ..._dice(g),
                 ..._flights.map((f) => _flightWidget(g, f, set)),
-                if (_dragPos != null) _dragWidget(g, set),
+                ValueListenableBuilder<Offset?>(
+                  valueListenable: _dragVN,
+                  builder: (_, pos, __) => pos == null
+                      ? const SizedBox.shrink()
+                      : _dragWidget(g, set, pos),
+                ),
                 ..._bursts.map((b) => _burstWidget(g, b)),
               ],
             ),
@@ -1678,8 +1688,7 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
     );
   }
 
-  Widget _dragWidget(BgGeom g, BgCheckerSet set) {
-    final p = _dragPos!;
+  Widget _dragWidget(BgGeom g, BgCheckerSet set, Offset p) {
     final size = g.d * 1.22;
     return Positioned(
       left: p.dx - size / 2,

@@ -196,7 +196,7 @@ class StoreItem {
     final p = _provider;
     if (p != null) return p;
     final ImageProvider created =
-        isAssetImage ? AssetImage(assetPath) : MemoryImage(bytes);
+        isAssetImage ? AssetImage(assetPath) as ImageProvider : MemoryImage(bytes);
     _provider = created;
     return created;
   }
@@ -777,6 +777,56 @@ class StoreService extends ChangeNotifier {
             price: c.$3,
             currency: c.$4,
             imageBase64: '',
+          ),
+        // ── استكانات خشبية بمسامير نحاسية (رسوم إجرائية، بلا صور) ──
+        StoreItem(
+          id: 'builtin_rack_wood_oak',
+          name: 'استكانة البلوط بالمسامير'.tr,
+          category: StoreCategory.rack,
+          price: 40,
+          currency: StoreCurrency.gems,
+          imageBase64: '',
+          effect: 'wood',
+        ),
+        StoreItem(
+          id: 'builtin_rack_wood_walnut',
+          name: 'استكانة الجوز بالمسامير'.tr,
+          category: StoreCategory.rack,
+          price: 40,
+          currency: StoreCurrency.gems,
+          imageBase64: '',
+          effect: 'walnut',
+        ),
+        StoreItem(
+          id: 'builtin_rack_wood_mahogany',
+          name: 'استكانة الماهوجني بالمسامير'.tr,
+          category: StoreCategory.rack,
+          price: 45,
+          currency: StoreCurrency.gems,
+          imageBase64: '',
+          effect: 'mahogany',
+        ),
+        // ── إطارات بروفايل جديدة — تصاميم متحركة متنوعة ──
+        for (final f in [
+          ('storm', 'إطار العاصفة البرّاقة'.tr, 55),
+          ('galaxy', 'إطار السديم البنفسجي'.tr, 65),
+          ('aurora', 'إطار الشفق القطبي'.tr, 55),
+          ('neon', 'إطار النيون النعناعي'.tr, 50),
+          ('dragon', 'إطار التنين الذهبي'.tr, 75),
+          ('ember', 'إطار الجمر الخالد'.tr, 50),
+          ('crystal', 'إطار الكريستال البنفسجي'.tr, 55),
+          ('ocean', 'إطار المحيط الليلي'.tr, 55),
+          ('lava', 'إطار اللافا الملتهب'.tr, 60),
+          ('blaze', 'إطار النار الملكية'.tr, 60),
+        ])
+          StoreItem(
+            id: 'builtin_frame_${f.$1}',
+            name: f.$2,
+            category: StoreCategory.frame,
+            price: f.$3,
+            currency: StoreCurrency.gems,
+            imageBase64: '',
+            effect: f.$1,
           ),
       ];
 

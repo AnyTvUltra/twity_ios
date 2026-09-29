@@ -14,6 +14,7 @@ import 'services/game_settings_service.dart';
 import 'widgets/connectivity_gate.dart';
 import 'widgets/maintenance_gate.dart';
 import 'widgets/update_dialog.dart';
+import 'utils/top_notification.dart';
 import 'l10n/app_lang.dart';
 
 final _navigatorKey = GlobalKey<NavigatorState>();
@@ -28,39 +29,14 @@ void main() async {
   RadioService().initialize();
   GameSettingsService().initialize();
 
-  // إشعارات الإدارة — تظهر كحوار منبثق عند وصول رسالة جديدة
+  // إشعارات الإدارة — شريط متحرك من الأعلى، وتبقى قابلة للعرض من جرس الإشعارات
   BroadcastService.instance.initialize((title, body) {
     final ctx = _navigatorKey.currentContext;
     if (ctx == null) return;
-    showDialog(
-      context: ctx,
-      builder: (_) => Directionality(
-        textDirection: AppLangController.instance.direction,
-        child: AlertDialog(
-          backgroundColor: const Color(0xFF141C34),
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: BorderSide(
-                  color: const Color(0xFFFFD54F).withOpacity(0.5))),
-          title: Text(title,
-              style: const TextStyle(
-                  color: Color(0xFFF1F5FF),
-                  fontWeight: FontWeight.w900,
-                  fontSize: 16)),
-          content: Text(body,
-              style: const TextStyle(
-                  color: Color(0xFFB8C4DC), fontSize: 13, height: 1.5)),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: Text('حسناً'.tr,
-                  style: TextStyle(
-                      color: Color(0xFFFFD54F),
-                      fontWeight: FontWeight.w900)),
-            ),
-          ],
-        ),
-      ),
+    TopNotification.show(
+      ctx,
+      '$title\n$body',
+      icon: Icons.notifications_active_rounded,
     );
   });
 

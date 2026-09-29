@@ -170,53 +170,27 @@ class _StoreScreenState extends State<StoreScreen>
                   ),
                 ),
 
-                // ── تبويبات الفئات ──
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: BackdropFilter(
-                      filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: LightGlass.cardSoft,
-                          borderRadius: BorderRadius.circular(16),
-                          border:
-                              Border.all(color: LightGlass.border),
+                // ── أقسام المتجر — شريط أيقونات زجاجي قابل للتمرير ──
+                SizedBox(
+                  height: 64,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    children: [
+                      for (var i = 0; i < _categories.length; i++)
+                        _categoryChip(
+                          i,
+                          StoreCategory.icon(_categories[i]),
+                          StoreCategory.label(_categories[i]),
                         ),
-                        child: TabBar(
-                          controller: _tabController,
-                          indicator: BoxDecoration(
-                            color: LightGlass.cardStrong,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.10),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          indicatorSize: TabBarIndicatorSize.tab,
-                          dividerColor: Colors.transparent,
-                          labelColor: LightGlass.accentBlue,
-                          unselectedLabelColor: LightGlass.textMuted,
-                          labelStyle: const TextStyle(
-                              fontWeight: FontWeight.w800, fontSize: 12),
-                          padding: const EdgeInsets.all(4),
-                          tabs: [
-                            ..._categories.map((c) => Tab(
-                                  icon: Icon(StoreCategory.icon(c), size: 16),
-                                  text: StoreCategory.label(c),
-                                )),
-                            Tab(
-                              icon: Icon(Icons.payments_rounded, size: 16),
-                              text: 'شحن الرصيد'.tr,
-                            ),
-                          ],
-                        ),
+                      _categoryChip(
+                        _categories.length,
+                        Icons.payments_rounded,
+                        'شحن الرصيد'.tr,
+                        accent: const Color(0xFFFFD54F),
                       ),
-                    ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -236,6 +210,75 @@ class _StoreScreenState extends State<StoreScreen>
           ),
         ),
       ),
+    );
+  }
+
+  /// زر قسم زجاجي: أيقونة + اسم — تدرّج بنفسجي للمحدّد
+  Widget _categoryChip(int index, IconData icon, String label,
+      {Color accent = const Color(0xFF8B5CF6)}) {
+    return AnimatedBuilder(
+      animation: _tabController,
+      builder: (context, _) {
+        final selected = _tabController.index == index;
+        return GestureDetector(
+          onTap: () {
+            AppHaptics.selection();
+            _tabController.animateTo(index);
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 13),
+            decoration: BoxDecoration(
+              gradient: selected
+                  ? LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [accent, accent.withOpacity(0.65)],
+                    )
+                  : null,
+              color: selected ? null : const Color(0xFF141C34),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: selected
+                    ? accent.withOpacity(0.9)
+                    : Colors.white.withOpacity(0.10),
+                width: selected ? 1.3 : 1,
+              ),
+              boxShadow: selected
+                  ? [
+                      BoxShadow(
+                          color: accent.withOpacity(0.35),
+                          blurRadius: 12,
+                          offset: const Offset(0, 3)),
+                    ]
+                  : null,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon,
+                    size: 17,
+                    color: selected
+                        ? Colors.white
+                        : const Color(0xFF94A3B8)),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: selected
+                        ? Colors.white
+                        : const Color(0xFF94A3B8),
+                    fontSize: 11.5,
+                    fontWeight:
+                        selected ? FontWeight.w900 : FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -288,7 +331,9 @@ class _StoreScreenState extends State<StoreScreen>
     final locked = item.requiredWins > 0 &&
         (user?.wins ?? 0) < item.requiredWins;
 
-    return ClipRRect(
+    return GestureDetector(
+      onTap: () => _showSkinPreview(item),
+      child: ClipRRect(
       borderRadius: BorderRadius.circular(18),
       child: BackdropFilter(
         filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
@@ -483,6 +528,185 @@ class _StoreScreenState extends State<StoreScreen>
                   ),
                 ),
               ),
+            ],
+          ),
+        ),
+      ),
+      ),
+    );
+  }
+
+  /// معاينة واقعية عند الضغط على أي كسنة — تعرضها على أدوات اللعب
+  /// الحقيقية (استكانة/أحجار/طاولة/إطار) قبل الشراء
+  void _showSkinPreview(StoreItem item) {
+    final owned = _store.isOwned(item.id);
+    final equipped = _store.isEquipped(item);
+    final user = AuthService().currentUser;
+    final locked = item.requiredWins > 0 &&
+        (user?.wins ?? 0) < item.requiredWins;
+    AppHaptics.selection();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Directionality(
+        textDirection: AppLangController.instance.direction,
+        child: Container(
+          constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(ctx).size.height * 0.72),
+          decoration: BoxDecoration(
+            color: const Color(0xFF10172E),
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border.all(
+                color: const Color(0xFF8B5CF6).withOpacity(0.35)),
+          ),
+          padding: const EdgeInsets.fromLTRB(18, 12, 18, 22),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(4)),
+              ),
+              const SizedBox(height: 14),
+              Row(children: [
+                Expanded(
+                  child: Text(item.name,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900),
+                      overflow: TextOverflow.ellipsis),
+                ),
+                if (item.limited)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(colors: [
+                        Color(0xFFF472B6), Color(0xFFA855F7)]),
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: Text('محدود ⏳'.tr,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900)),
+                  ),
+              ]),
+              const SizedBox(height: 4),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(
+                  'هكذا ستبدو على أدواتك داخل اللعبة'.tr,
+                  style: const TextStyle(
+                      color: Colors.white54, fontSize: 11),
+                ),
+              ),
+              const SizedBox(height: 14),
+              // المسرح — نفس طريقة عرض الاستكانة لكل الفئات
+              ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: Container(
+                  height: 190,
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    gradient: RadialGradient(
+                      colors: [Color(0xFF1E2B4D), Color(0xFF0A0F22)],
+                      radius: 1.1,
+                    ),
+                  ),
+                  child: Center(
+                    child: SkinMockup(
+                      category: item.category,
+                      image: item.imageBase64.isNotEmpty
+                          ? item.provider
+                          : null,
+                      width: double.infinity,
+                      height: 190,
+                      zoom: item.zoom,
+                      offsetX: item.offsetX,
+                      offsetY: item.offsetY,
+                      effect: item.effect,
+                      item: item,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Row(children: [
+                // السعر
+                if (!owned)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 9),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.06),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white12),
+                    ),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      if (item.currency == StoreCurrency.gems)
+                        const GemIcon(size: 16)
+                      else
+                        const Text('🪙', style: TextStyle(fontSize: 14)),
+                      const SizedBox(width: 5),
+                      Text(formatBalance(item.price),
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w900)),
+                    ]),
+                  ),
+                if (!owned) const SizedBox(width: 10),
+                // زر الإجراء
+                Expanded(
+                  child: SizedBox(
+                    height: 44,
+                    child: ElevatedButton(
+                      onPressed: (_processing || locked)
+                          ? null
+                          : () {
+                              Navigator.of(ctx).pop();
+                              _handleItemAction(item);
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: locked
+                            ? const Color(0xFF1E293B)
+                            : equipped
+                                ? const Color(0xFF334155)
+                                : owned
+                                    ? const Color(0xFF10B981)
+                                    : const Color(0xFF8B5CF6),
+                        disabledBackgroundColor: const Color(0xFF1E293B),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(13)),
+                      ),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          locked
+                              ? '🔒 يتطلب {} فوزاً'.trp([item.requiredWins])
+                              : equipped
+                                  ? 'مُجهَّزة ✓ — إلغاء'.tr
+                                  : owned
+                                      ? 'تجهيز الكسنة'.tr
+                                      : item.price == 0
+                                          ? 'مجانية — تجهيز'.tr
+                                          : 'شراء وتجهيز'.tr,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 13.5),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ]),
             ],
           ),
         ),

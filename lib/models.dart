@@ -35,7 +35,7 @@ class GameModel {
 }
 
 class GamesData {
-  static List<GameModel> games = [
+  static List<GameModel> get games => [
     GameModel(
       id: 'chess',
       title: 'شطرنج'.tr,
