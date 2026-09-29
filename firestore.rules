@@ -108,11 +108,11 @@ service cloud.firestore {
 
     // ── المتجر والإعدادات: قراءة عامة، كتابة للأدمن فقط ──
     match /store_items/{id} {
-      allow read: if signedIn();
+      allow read: if true;
       allow write: if isAdmin();
     }
     match /config/{id} {
-      allow read: if signedIn();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
@@ -186,17 +186,17 @@ service cloud.firestore {
 
     // ── إشعارات الإدارة: قراءة للجميع، إرسال للأدمن فقط ──
     match /broadcasts/{id} {
-      allow read: if signedIn();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
     // ── الراديو: قراءة عامة، إدارة للأدمن فقط ──
     match /radio_groups/{id} {
-      allow read: if signedIn();
+      allow read: if true;
       allow write: if isAdmin();
     }
     match /radio_songs/{id} {
-      allow read: if signedIn();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
