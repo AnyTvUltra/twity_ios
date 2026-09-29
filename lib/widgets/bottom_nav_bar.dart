@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../l10n/app_lang.dart';
+import '../theme_mode.dart';
 
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -49,55 +50,55 @@ class BottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      minimum: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 640),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(30),
-            child: BackdropFilter(
-              filter: ui.ImageFilter.blur(sigmaX: 26, sigmaY: 26),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.white.withValues(alpha: 0.12),
-                      const Color(0xFF0B1220).withValues(alpha: 0.66),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.42),
-                      blurRadius: 26,
-                      offset: const Offset(0, 12),
+    return AnimatedBuilder(
+      animation: UiTheme.instance,
+      builder: (context, _) {
+        final t = PT(UiTheme.instance.isLight);
+        return SafeArea(
+          top: false,
+          minimum: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 640),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: 26, sigmaY: 26),
+                  child: AnimatedContainer(
+                    duration: UiTheme.transition,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: t.navGradient,
+                      ),
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(color: t.navBorder),
+                      boxShadow: t.navShadow,
                     ),
-                  ],
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 8),
-                  child: Row(
-                    children: [
-                      for (final entry in _entries)
-                        Expanded(child: _buildNavItem(entry)),
-                    ],
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 8),
+                      child: Row(
+                        children: [
+                          for (final entry in _entries)
+                            Expanded(child: _buildNavItem(entry, t)),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildNavItem(_NavEntry entry) {
+  Widget _buildNavItem(_NavEntry entry, PT t) {
     final isSelected = currentIndex == entry.index;
+    final light = t.light;
 
     return GestureDetector(
       onTap: () => onIndexChanged(entry.index),
@@ -113,21 +114,26 @@ class BottomNavBar extends StatelessWidget {
               ? LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    entry.accent.withValues(alpha: 0.34),
-                    entry.accentDeep.withValues(alpha: 0.30),
-                  ],
+                  colors: light
+                      ? const [Color(0xFF3BD9B4), Color(0xFF14A98A)]
+                      : [
+                          entry.accent.withValues(alpha: 0.34),
+                          entry.accentDeep.withValues(alpha: 0.30),
+                        ],
                 )
               : null,
           border: Border.all(
             color: isSelected
-                ? entry.accent.withValues(alpha: 0.55)
+                ? (light
+                    ? const Color(0xFF21C7A0).withValues(alpha: 0.5)
+                    : entry.accent.withValues(alpha: 0.55))
                 : Colors.transparent,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: entry.accent.withValues(alpha: 0.24),
+                    color: (light ? const Color(0xFF21C7A0) : entry.accent)
+                        .withValues(alpha: 0.24),
                     blurRadius: 16,
                     offset: const Offset(0, 4),
                   ),
@@ -145,19 +151,23 @@ class BottomNavBar extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: isSelected
-                    ? Colors.white.withValues(alpha: 0.14)
-                    : Colors.white.withValues(alpha: 0.05),
+                    ? Colors.white.withValues(alpha: light ? 0.22 : 0.14)
+                    : t.navIconCircle,
                 border: Border.all(
                   color: isSelected
-                      ? entry.accent.withValues(alpha: 0.75)
-                      : Colors.white.withValues(alpha: 0.10),
+                      ? (light
+                          ? Colors.white.withValues(alpha: 0.55)
+                          : entry.accent.withValues(alpha: 0.75))
+                      : (light
+                          ? const Color(0xFFE3E9F3)
+                          : Colors.white.withValues(alpha: 0.10)),
                 ),
               ),
               child: Icon(
                 isSelected ? entry.activeIcon : entry.icon,
                 color: isSelected
-                    ? entry.accent
-                    : const Color(0xFF94A3B8),
+                    ? (light ? Colors.white : entry.accent)
+                    : t.navInactive,
                 size: isSelected ? 19 : 18,
               ),
             ),
@@ -168,7 +178,7 @@ class BottomNavBar extends StatelessWidget {
                 entry.label,
                 maxLines: 1,
                 style: TextStyle(
-                  color: isSelected ? Colors.white : const Color(0xFF94A3B8),
+                  color: isSelected ? Colors.white : t.navInactive,
                   fontSize: 10.5,
                   height: 1,
                   fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
@@ -183,11 +193,12 @@ class BottomNavBar extends StatelessWidget {
               width: isSelected ? 22 : 0,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(3),
-                color: entry.accent,
+                color: light ? Colors.white : entry.accent,
                 boxShadow: [
                   if (isSelected)
                     BoxShadow(
-                      color: entry.accent.withValues(alpha: 0.6),
+                      color: (light ? Colors.white : entry.accent)
+                          .withValues(alpha: 0.6),
                       blurRadius: 8,
                     ),
                 ],
