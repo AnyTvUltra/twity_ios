@@ -128,7 +128,7 @@ class _WeeklyStrip extends StatelessWidget {
               border: Border.all(
                   color: claimable
                       ? DailyRewardsPanel._gold.withOpacity(0.45)
-                      : Colors.white.withOpacity(0.12),
+                      : L(0xFFFFFFFF).withOpacity(0.12),
                   width: 1.2),
               boxShadow: claimable
                   ? [
@@ -261,7 +261,7 @@ class _WeeklyStrip extends StatelessWidget {
                               : null,
                           color: isPast
                               ? DailyRewardsPanel._emerald.withOpacity(0.18)
-                              : (isCurrent ? null : Color(0x2E141C3C)),
+                              : (isCurrent ? null : L(0x2E141C3C)),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isCurrent
@@ -269,7 +269,7 @@ class _WeeklyStrip extends StatelessWidget {
                                 : (isPast
                                     ? DailyRewardsPanel._emerald
                                         .withOpacity(0.7)
-                                    : Color(0x26FFFFFF)),
+                                    : L(0x26FFFFFF)),
                             width: isCurrent ? 1.6 : 1,
                           ),
                           boxShadow: isCurrent
@@ -810,7 +810,7 @@ class _WheelCard extends StatelessWidget {
                               L(0xFF0284C7),
                             ])
                           : null,
-                      color: spinsLeft > 0 ? null : Color(0x2EFFFFFF),
+                      color: spinsLeft > 0 ? null : L(0x2EFFFFFF),
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: spinsLeft > 0
                           ? [
@@ -914,11 +914,11 @@ class _LootBoxCard extends StatelessWidget {
                           blurRadius: 10),
                     ],
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Text('📦', style: TextStyle(fontSize: 21)),
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -959,7 +959,7 @@ class _LootBoxCard extends StatelessWidget {
                               L(0xFF9333EA),
                             ])
                           : null,
-                      color: canOpen ? null : Color(0x2EFFFFFF),
+                      color: canOpen ? null : L(0x2EFFFFFF),
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: canOpen
                           ? [
@@ -1141,7 +1141,7 @@ class _DailyWheelDialogState extends State<DailyWheelDialog>
                                   Border.all(color: L(0xFF3E2C00), width: 2),
                               boxShadow: [
                                 BoxShadow(
-                                    color: Colors.black.withOpacity(0.4),
+                                    color: L(0xFF000000).withOpacity(0.4),
                                     blurRadius: 8),
                               ],
                             ),
@@ -1199,7 +1199,8 @@ class _DailyWheelDialogState extends State<DailyWheelDialog>
                           : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: DailyRewardsPanel._gold,
-                        disabledBackgroundColor: Colors.white.withOpacity(0.08),
+                        disabledBackgroundColor:
+                            L(0xFFFFFFFF).withOpacity(0.08),
                         foregroundColor: L(0xFF1B0B30),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
@@ -1254,7 +1255,7 @@ class _PointerPainter extends CustomPainter {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.4
-        ..color = L(0xFF3E2C00),
+        ..color = const Color(0xFF3E2C00),
     );
   }
 
@@ -1277,7 +1278,7 @@ class _WheelPainter extends CustomPainter {
     canvas.drawCircle(
       c.translate(0, 3),
       r,
-      Paint()..color = Colors.black.withOpacity(0.45),
+      Paint()..color = L(0xFF000000).withOpacity(0.45),
     );
 
     // المقاطع
@@ -1315,15 +1316,14 @@ class _WheelPainter extends CustomPainter {
       final tp = TextPainter(
         text: TextSpan(
           children: [
-            TextSpan(
-                text: '${seg.emoji}\n', style: const TextStyle(fontSize: 13)),
+            TextSpan(text: '${seg.emoji}\n', style: TextStyle(fontSize: 13)),
             TextSpan(
               text: seg.label,
-              style: const TextStyle(
-                  color: Colors.white,
+              style: TextStyle(
+                  color: L(0xFFFFFFFF),
                   fontSize: 9.5,
                   fontWeight: FontWeight.w900,
-                  shadows: [Shadow(color: Colors.black54, blurRadius: 3)]),
+                  shadows: [Shadow(color: L(0x8A000000), blurRadius: 3)]),
             ),
           ],
         ),
@@ -1356,7 +1356,7 @@ class _WheelPainter extends CustomPainter {
       canvas.drawCircle(
         Offset(c.dx + math.cos(a) * (r - 3), c.dy + math.sin(a) * (r - 3)),
         2.2,
-        Paint()..color = L(0xFFFFF8DC),
+        Paint()..color = const Color(0xFFFFF8DC),
       );
     }
   }
@@ -1532,7 +1532,8 @@ class _LootBoxDialogState extends State<LootBoxDialog>
                           : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: purple,
-                        disabledBackgroundColor: Colors.white.withOpacity(0.08),
+                        disabledBackgroundColor:
+                            L(0xFFFFFFFF).withOpacity(0.08),
                         foregroundColor: L(0xFF2E1065),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),

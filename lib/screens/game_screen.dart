@@ -63,13 +63,12 @@ class _GameScreenState extends State<GameScreen> {
             children: [
               // ═══ الهيدر الزجاجي ═══
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 child: Row(
                   children: [
                     _glassIcon(Icons.arrow_back_ios_new_rounded, _textDim,
                         () => Navigator.of(context).pop()),
-                    const SizedBox(width: 10),
+                    SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         game.title,
@@ -86,19 +85,18 @@ class _GameScreenState extends State<GameScreen> {
                       child: BackdropFilter(
                         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 11, vertical: 6),
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 11, vertical: 6),
                           decoration: BoxDecoration(
-                            color: const Color(0x3A16204A),
+                            color: L(0x3A16204A),
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                                color: const Color(0x33FFFFFF), width: 1),
+                            border: Border.all(color: L(0x33FFFFFF), width: 1),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Text('🪙', style: TextStyle(fontSize: 13)),
-                              const SizedBox(width: 4),
+                              Text('🪙', style: TextStyle(fontSize: 13)),
+                              SizedBox(width: 4),
                               Text(
                                 formatBalance(user?.chips ?? 0),
                                 style: TextStyle(
@@ -109,12 +107,11 @@ class _GameScreenState extends State<GameScreen> {
                               Container(
                                 width: 1,
                                 height: 13,
-                                margin:
-                                    const EdgeInsets.symmetric(horizontal: 7),
-                                color: const Color(0x33FFFFFF),
+                                margin: EdgeInsets.symmetric(horizontal: 7),
+                                color: L(0x33FFFFFF),
                               ),
-                              const GemIcon(size: 13),
-                              const SizedBox(width: 4),
+                              GemIcon(size: 13),
+                              SizedBox(width: 4),
                               Text(
                                 formatBalance(user?.gems ?? 0),
                                 style: TextStyle(
@@ -134,12 +131,11 @@ class _GameScreenState extends State<GameScreen> {
               // ═══ المحتوى ═══
               Expanded(
                 child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  physics: BouncingScrollPhysics(),
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                   child: Column(
                     children: [
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
 
                       // بطاقة العمل الفني الزجاجية
                       ClipRRect(
@@ -153,13 +149,13 @@ class _GameScreenState extends State<GameScreen> {
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                                 colors: [
-                                  const Color(0x401B2A5E),
-                                  const Color(0x2A101838),
+                                  L(0x401B2A5E),
+                                  L(0x2A101838),
                                 ],
                               ),
                               borderRadius: BorderRadius.circular(26),
-                              border: Border.all(
-                                  color: const Color(0x33FFFFFF), width: 1.1),
+                              border:
+                                  Border.all(color: L(0x33FFFFFF), width: 1.1),
                               boxShadow: [
                                 BoxShadow(
                                     color: _neonBlue.withOpacity(0.15),
@@ -171,12 +167,12 @@ class _GameScreenState extends State<GameScreen> {
                               children: [
                                 Positioned.fill(
                                   child: Padding(
-                                    padding: const EdgeInsets.all(18),
+                                    padding: EdgeInsets.all(18),
                                     child: GameArtwork(gameId: game.id),
                                   ),
                                 ),
                                 if (game.hasCrown)
-                                  const Positioned(
+                                  Positioned(
                                     top: 10,
                                     right: 14,
                                     child: Text('👑',
@@ -187,7 +183,7 @@ class _GameScreenState extends State<GameScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 18),
+                      SizedBox(height: 18),
 
                       // العنوان + الوصف
                       Text(
@@ -197,7 +193,7 @@ class _GameScreenState extends State<GameScreen> {
                           fontSize: 26,
                           fontWeight: FontWeight.w900,
                           shadows: [
-                            Shadow(color: Color(0x66FFB300), blurRadius: 12),
+                            Shadow(color: L(0x66FFB300), blurRadius: 12),
                           ],
                         ),
                       ),
@@ -240,13 +236,10 @@ class _GameScreenState extends State<GameScreen> {
                                             L(0xFF1D4ED8),
                                           ])
                                         : null,
-                                    color:
-                                        isSel ? null : const Color(0x2E141C3C),
+                                    color: isSel ? null : L(0x2E141C3C),
                                     borderRadius: BorderRadius.circular(14),
                                     border: Border.all(
-                                      color: isSel
-                                          ? _neonBlue
-                                          : const Color(0x26FFFFFF),
+                                      color: isSel ? _neonBlue : L(0x26FFFFFF),
                                       width: isSel ? 1.6 : 1,
                                     ),
                                     boxShadow: isSel
@@ -264,7 +257,7 @@ class _GameScreenState extends State<GameScreen> {
                                       _modes[index],
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
-                                        color: isSel ? Colors.white : _textDim,
+                                        color: isSel ? L(0xFFFFFFFF) : _textDim,
                                         fontSize: 11.5,
                                         fontWeight: isSel
                                             ? FontWeight.w900
@@ -308,12 +301,11 @@ class _GameScreenState extends State<GameScreen> {
                                             L(0xFFE8A820),
                                           ])
                                         : null,
-                                    color: isSel ? null : Color(0x2E141C3C),
+                                    color: isSel ? null : L(0x2E141C3C),
                                     borderRadius: BorderRadius.circular(16),
                                     border: Border.all(
-                                      color: isSel
-                                          ? L(0xFFFFE9A8)
-                                          : Color(0x26FFFFFF),
+                                      color:
+                                          isSel ? L(0xFFFFE9A8) : L(0x26FFFFFF),
                                       width: isSel ? 1.5 : 1,
                                     ),
                                     boxShadow: isSel
@@ -408,7 +400,7 @@ class _GameScreenState extends State<GameScreen> {
                                   blurRadius: 22,
                                   spreadRadius: -2),
                               BoxShadow(
-                                  color: Colors.black.withOpacity(0.4),
+                                  color: L(0xFF000000).withOpacity(0.4),
                                   blurRadius: 12,
                                   offset: Offset(0, 6)),
                             ],
@@ -426,7 +418,7 @@ class _GameScreenState extends State<GameScreen> {
                                     borderRadius: BorderRadius.circular(20),
                                     gradient: LinearGradient(
                                       colors: [
-                                        Colors.white.withOpacity(0.5),
+                                        L(0xFFFFFFFF).withOpacity(0.5),
                                         Colors.transparent,
                                       ],
                                     ),
@@ -507,9 +499,9 @@ class _GameScreenState extends State<GameScreen> {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: const Color(0x2E16204A),
+              color: L(0x2E16204A),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0x26FFFFFF), width: 1),
+              border: Border.all(color: L(0x26FFFFFF), width: 1),
             ),
             child: Icon(icon, color: color, size: 17),
           ),

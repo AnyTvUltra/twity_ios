@@ -42,10 +42,10 @@ class _RadioPlayerSheetState extends State<RadioPlayerSheet> {
               colors: [L(0xFF1B2338), L(0xFF0D1424)],
             ),
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border.all(color: Color(0x40FFD54F), width: 1.2),
+            border: Border.all(color: L(0x40FFD54F), width: 1.2),
             boxShadow: [
               BoxShadow(
-                  color: Colors.black.withOpacity(0.7),
+                  color: L(0xFF000000).withOpacity(0.7),
                   blurRadius: 24,
                   offset: Offset(0, -6)),
             ],
@@ -58,7 +58,7 @@ class _RadioPlayerSheetState extends State<RadioPlayerSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.white24,
+                  color: L(0x3DFFFFFF),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -73,7 +73,7 @@ class _RadioPlayerSheetState extends State<RadioPlayerSheet> {
                       Container(
                         padding: EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Color(0x33FFD54F),
+                          color: L(0x33FFD54F),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(Icons.radio_rounded,
@@ -86,14 +86,14 @@ class _RadioPlayerSheetState extends State<RadioPlayerSheet> {
                           Text(
                             'راديو اللعبة المباشر 📻'.tr,
                             style: TextStyle(
-                                color: Colors.white,
+                                color: L(0xFFFFFFFF),
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold),
                           ),
                           Text(
                             'صوت شخصي خاص بك لا يؤثر على باقي اللاعبين'.tr,
                             style:
-                                TextStyle(color: Colors.white54, fontSize: 11),
+                                TextStyle(color: L(0x8AFFFFFF), fontSize: 11),
                           ),
                         ],
                       ),
@@ -101,7 +101,7 @@ class _RadioPlayerSheetState extends State<RadioPlayerSheet> {
                   ),
                   IconButton(
                     icon: Icon(Icons.close_rounded,
-                        color: Colors.white60, size: 20),
+                        color: L(0x99FFFFFF), size: 20),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -119,7 +119,7 @@ class _RadioPlayerSheetState extends State<RadioPlayerSheet> {
                   ),
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(
-                    color: radio.isPlaying ? L(0xFFFFD54F) : Colors.white12,
+                    color: radio.isPlaying ? L(0xFFFFD54F) : L(0x1FFFFFFF),
                     width: 1,
                   ),
                 ),
@@ -135,7 +135,7 @@ class _RadioPlayerSheetState extends State<RadioPlayerSheet> {
                           Text(
                             radio.currentStation.name,
                             style: TextStyle(
-                                color: Colors.white,
+                                color: L(0xFFFFFFFF),
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold),
                             maxLines: 1,
@@ -172,12 +172,12 @@ class _RadioPlayerSheetState extends State<RadioPlayerSheet> {
               Row(
                 children: [
                   Icon(Icons.volume_mute_rounded,
-                      color: Colors.white54, size: 18),
+                      color: L(0x8AFFFFFF), size: 18),
                   Expanded(
                     child: SliderTheme(
                       data: SliderTheme.of(context).copyWith(
                         activeTrackColor: L(0xFFFFD54F),
-                        inactiveTrackColor: Colors.white12,
+                        inactiveTrackColor: L(0x1FFFFFFF),
                         thumbColor: L(0xFFFFD54F),
                         trackHeight: 3,
                         thumbShape:
@@ -192,25 +192,25 @@ class _RadioPlayerSheetState extends State<RadioPlayerSheet> {
                   Icon(Icons.volume_up_rounded, color: L(0xFFFFD54F), size: 18),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
 
               // Stations List
               Align(
                 alignment: Alignment.centerRight,
                 child: Text('اختر مجموعة ثم محطة:'.tr,
                     style: TextStyle(
-                        color: Colors.white70,
+                        color: L(0xB3FFFFFF),
                         fontSize: 12.5,
                         fontWeight: FontWeight.bold)),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
 
               // مجموعات الأغاني
               SizedBox(
                 height: 34,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
+                  physics: BouncingScrollPhysics(),
                   children: [
                     _groupChip('all', '📻', 'الكل'.tr),
                     ...groups.map(
@@ -219,7 +219,7 @@ class _RadioPlayerSheetState extends State<RadioPlayerSheet> {
                   ],
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
 
               SizedBox(
                 height: 140,
@@ -227,7 +227,7 @@ class _RadioPlayerSheetState extends State<RadioPlayerSheet> {
                     ? Center(
                         child: Text('لا توجد أغاني في هذه المجموعة'.tr,
                             style:
-                                TextStyle(color: Colors.white38, fontSize: 12)),
+                                TextStyle(color: L(0x61FFFFFF), fontSize: 12)),
                       )
                     : ListView.builder(
                         shrinkWrap: true,
@@ -247,7 +247,8 @@ class _RadioPlayerSheetState extends State<RadioPlayerSheet> {
                             title: Text(
                               station.name,
                               style: TextStyle(
-                                color: isCurrent ? L(0xFFFFD54F) : Colors.white,
+                                color:
+                                    isCurrent ? L(0xFFFFD54F) : L(0xFFFFFFFF),
                                 fontSize: 13,
                                 fontWeight: isCurrent
                                     ? FontWeight.bold
@@ -256,7 +257,7 @@ class _RadioPlayerSheetState extends State<RadioPlayerSheet> {
                             ),
                             subtitle: Text(station.genre,
                                 style: TextStyle(
-                                    color: Colors.white38, fontSize: 10.5)),
+                                    color: L(0x61FFFFFF), fontSize: 10.5)),
                             trailing: isCurrent && radio.isPlaying
                                 ? Icon(Icons.graphic_eq_rounded,
                                     color: L(0xFFFFD54F), size: 18)
@@ -288,10 +289,10 @@ class _RadioPlayerSheetState extends State<RadioPlayerSheet> {
         margin: EdgeInsetsDirectional.only(end: 8),
         padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: sel ? Color(0x33FFD54F) : Colors.white.withOpacity(0.06),
+          color: sel ? L(0x33FFD54F) : L(0xFFFFFFFF).withOpacity(0.06),
           borderRadius: BorderRadius.circular(17),
           border: Border.all(
-            color: sel ? L(0xFFFFD54F) : Colors.white12,
+            color: sel ? L(0xFFFFD54F) : L(0x1FFFFFFF),
             width: 1,
           ),
         ),
@@ -303,7 +304,7 @@ class _RadioPlayerSheetState extends State<RadioPlayerSheet> {
             Text(
               name,
               style: TextStyle(
-                color: sel ? L(0xFFFFD54F) : Colors.white70,
+                color: sel ? L(0xFFFFD54F) : L(0xB3FFFFFF),
                 fontSize: 11.5,
                 fontWeight: FontWeight.bold,
               ),

@@ -187,19 +187,19 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
   Widget _buildHeader() {
     final user = AuthService().currentUser;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 10, 10, 6),
+      padding: EdgeInsets.fromLTRB(10, 10, 10, 6),
       child: Row(
         children: [
           _glassIcon(Icons.arrow_back_ios_new_rounded, _textDim,
               () => Navigator.of(context).pop()),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           // رصيد اللاعب: عملات + جواهر داخل كبسولة زجاجية واحدة
           _glassCapsule(
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('🪙', style: TextStyle(fontSize: 13)),
-                const SizedBox(width: 4),
+                Text('🪙', style: TextStyle(fontSize: 13)),
+                SizedBox(width: 4),
                 Text(
                   formatBalance(user?.chips ?? 0),
                   style: TextStyle(
@@ -210,8 +210,8 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                 Container(
                   width: 1,
                   height: 14,
-                  margin: const EdgeInsets.symmetric(horizontal: 7),
-                  color: const Color(0x33FFFFFF),
+                  margin: EdgeInsets.symmetric(horizontal: 7),
+                  color: L(0x33FFFFFF),
                 ),
                 const GemIcon(size: 13),
                 const SizedBox(width: 4),
@@ -259,11 +259,11 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
-            color: const Color(0x3A16204A),
+            color: L(0x3A16204A),
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0x33FFFFFF), width: 1),
+            border: Border.all(color: L(0x33FFFFFF), width: 1),
             boxShadow: [
               BoxShadow(
                   color: _neonBlue.withOpacity(0.12),
@@ -288,9 +288,9 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
             width: 34,
             height: 34,
             decoration: BoxDecoration(
-              color: const Color(0x2E16204A),
+              color: L(0x2E16204A),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0x26FFFFFF), width: 1),
+              border: Border.all(color: L(0x26FFFFFF), width: 1),
             ),
             child: Icon(icon, color: color, size: 17),
           ),
@@ -352,17 +352,17 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
             setState(() => _teamMode = team);
           },
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+            duration: Duration(milliseconds: 180),
+            padding: EdgeInsets.symmetric(vertical: 10, horizontal: 8),
             decoration: BoxDecoration(
               color: selected
                   ? _neonBlue.withOpacity(0.16)
-                  : Colors.white.withOpacity(0.05),
+                  : L(0xFFFFFFFF).withOpacity(0.05),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: selected
                     ? _neonBlue.withOpacity(0.8)
-                    : Colors.white.withOpacity(0.12),
+                    : L(0xFFFFFFFF).withOpacity(0.12),
                 width: selected ? 1.5 : 1,
               ),
             ),
@@ -419,18 +419,18 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          padding: EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                const Color(0x401B2A5E),
-                const Color(0x2A101838),
+                L(0x401B2A5E),
+                L(0x2A101838),
               ],
             ),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0x40FFD54F), width: 1.1),
+            border: Border.all(color: L(0x40FFD54F), width: 1.1),
             boxShadow: [
               BoxShadow(
                   color: _gold.withOpacity(0.12),
@@ -440,7 +440,7 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                   color: _neonBlue.withOpacity(0.14),
                   blurRadius: 30,
                   spreadRadius: -6,
-                  offset: const Offset(0, 10)),
+                  offset: Offset(0, 10)),
             ],
           ),
           child: Row(
@@ -450,8 +450,8 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                 height: 58,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: const RadialGradient(
-                    colors: [Color(0x40FFD54F), Colors.transparent],
+                  gradient: RadialGradient(
+                    colors: [L(0x40FFD54F), Colors.transparent],
                   ),
                   boxShadow: [
                     BoxShadow(color: _gold.withOpacity(0.3), blurRadius: 22),
@@ -548,13 +548,13 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                           L(0xFF14286B).withOpacity(0.85),
                         ]
                       : [
-                          Color(0x2E141C3C),
-                          Color(0x1E0C1230),
+                          L(0x2E141C3C),
+                          L(0x1E0C1230),
                         ],
                 ),
                 borderRadius: BorderRadius.circular(26),
                 border: Border.all(
-                  color: isSelected ? accent : Color(0x2EFFFFFF),
+                  color: isSelected ? accent : L(0x2EFFFFFF),
                   width: isSelected ? 1.8 : 1.0,
                 ),
                 boxShadow: [
@@ -583,7 +583,7 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                           accent.withOpacity(isSelected ? 0.6 : 0.32),
                           L(0xFF0A1230),
                         ],
-                        center: const Alignment(0, -0.35),
+                        center: Alignment(0, -0.35),
                         radius: 1.1,
                       ),
                       border: Border.all(
@@ -602,7 +602,7 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                         style: TextStyle(
                           color: isVip
                               ? _gold
-                              : (isSelected ? Colors.white : medalColor),
+                              : (isSelected ? L(0xFFFFFFFF) : medalColor),
                           fontWeight: FontWeight.w900,
                           fontSize: stakes >= 1000 ? 13 : 16.5,
                           shadows: [
@@ -639,12 +639,12 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                             ),
                           ],
                         ),
-                        const SizedBox(height: 6),
+                        SizedBox(height: 6),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text('🪙', style: TextStyle(fontSize: 11)),
-                            const SizedBox(width: 4),
+                            Text('🪙', style: TextStyle(fontSize: 11)),
+                            SizedBox(width: 4),
                             Flexible(
                               child: Text(
                                 'الجائزة الإجمالية للفائز: {} عملة ذهبية'
@@ -661,17 +661,17 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                       ],
                     ),
                   ),
-                  const SizedBox(width: 14),
+                  SizedBox(width: 14),
 
                   // دائرة الاختيار — يسار البطاقة (آخر عنصر RTL)
                   AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
+                    duration: Duration(milliseconds: 200),
                     width: 24,
                     height: 24,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: isSelected ? accent : const Color(0x55FFFFFF),
+                        color: isSelected ? accent : L(0x55FFFFFF),
                         width: 2,
                       ),
                       boxShadow: isSelected
@@ -743,7 +743,7 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                           blurRadius: 26 * glow,
                           spreadRadius: -2),
                       BoxShadow(
-                          color: Colors.black.withOpacity(0.4),
+                          color: L(0xFF000000).withOpacity(0.4),
                           blurRadius: 12,
                           offset: Offset(0, 6)),
                     ],
@@ -762,7 +762,7 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                             borderRadius: BorderRadius.circular(20),
                             gradient: LinearGradient(
                               colors: [
-                                Colors.white.withOpacity(0.55),
+                                L(0xFFFFFFFF).withOpacity(0.55),
                                 Colors.transparent,
                               ],
                             ),
@@ -820,7 +820,7 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
   Widget _buildWaitingRoom() {
     final room = _currentRoom!;
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -829,12 +829,11 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
               child: Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0x2E16204A),
+                  color: L(0x2E16204A),
                   borderRadius: BorderRadius.circular(22),
-                  border:
-                      Border.all(color: const Color(0x40FFD54F), width: 1.1),
+                  border: Border.all(color: L(0x40FFD54F), width: 1.1),
                   boxShadow: [
                     BoxShadow(
                         color: _gold.withOpacity(0.1),
@@ -881,14 +880,12 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                     filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: player != null
-                            ? const Color(0x2E1B2A5E)
-                            : const Color(0x180E1430),
+                        color: player != null ? L(0x2E1B2A5E) : L(0x180E1430),
                         borderRadius: BorderRadius.circular(22),
                         border: Border.all(
                           color: player != null
                               ? _neonBlue.withOpacity(0.7)
-                              : const Color(0x1EFFFFFF),
+                              : L(0x1EFFFFFF),
                           width: player != null ? 1.4 : 1,
                         ),
                         boxShadow: player != null
@@ -909,12 +906,12 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: player != null
-                                  ? const Color(0x331B2A5E)
-                                  : const Color(0x14000000),
+                                  ? L(0x331B2A5E)
+                                  : L(0x14000000),
                               border: Border.all(
                                 color: player != null
                                     ? _neonBlue.withOpacity(0.5)
-                                    : const Color(0x1EFFFFFF),
+                                    : L(0x1EFFFFFF),
                               ),
                             ),
                             child: Center(
@@ -980,19 +977,19 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                 ],
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+                padding: EdgeInsets.symmetric(horizontal: 12),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.bolt_rounded, color: Colors.white),
-                    const SizedBox(width: 8),
+                    Icon(Icons.bolt_rounded, color: L(0xFFFFFFFF)),
+                    SizedBox(width: 8),
                     Flexible(
                       child: Text(
                         'بدء اللعبة فوراً (ملء المقاعد بروبوتات)'.tr,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                            color: Colors.white,
+                        style: TextStyle(
+                            color: L(0xFFFFFFFF),
                             fontWeight: FontWeight.w900,
                             fontSize: 14,
                             height: 1.2),

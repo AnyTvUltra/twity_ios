@@ -63,7 +63,7 @@ class ProfileScreen extends StatelessWidget {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: t.light ? L(0xFFD8DFEB) : const Color(0x40FFFFFF),
+                    color: t.light ? L(0xFFD8DFEB) : L(0x40FFFFFF),
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -209,7 +209,7 @@ class ProfileScreen extends StatelessWidget {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                   backgroundColor: L(0xFFDC2626),
-                  foregroundColor: Colors.white),
+                  foregroundColor: L(0xFFFFFFFF)),
               onPressed: () => Navigator.of(ctx).pop(true),
               child: Text('احذف حسابي'.tr,
                   style: TextStyle(fontWeight: FontWeight.w900)),
@@ -264,14 +264,12 @@ class ProfileScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: controller.lang == lang
                             ? t.purple.withOpacity(0.14)
-                            : (t.light ? L(0xFFF3F6FB) : Color(0x14FFFFFF)),
+                            : (t.light ? L(0xFFF3F6FB) : L(0x14FFFFFF)),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
                           color: controller.lang == lang
                               ? t.purple
-                              : (t.light
-                                  ? L(0xFFE2E8F2)
-                                  : const Color(0x22FFFFFF)),
+                              : (t.light ? L(0xFFE2E8F2) : L(0x22FFFFFF)),
                           width: 1.2,
                         ),
                       ),
@@ -360,7 +358,7 @@ class ProfileScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text('عنوان الموضوع:'.tr,
                     style: TextStyle(color: t.textDim, fontSize: 12)),
-                const SizedBox(height: 6),
+                SizedBox(height: 6),
                 TextField(
                   controller: subjectController,
                   style: TextStyle(color: t.text, fontSize: 13),
@@ -544,13 +542,13 @@ class ProfileScreen extends StatelessWidget {
                         : '0.0';
 
                     return SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.only(bottom: 150),
+                      physics: BouncingScrollPhysics(),
+                      padding: EdgeInsets.only(bottom: 150),
                       child: Column(
                         children: [
                           // ═══ الهيدر ═══
                           Padding(
-                            padding: const EdgeInsets.symmetric(
+                            padding: EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 12),
                             child: Row(
                               children: [
@@ -564,8 +562,8 @@ class ProfileScreen extends StatelessWidget {
                                       shadows: t.light
                                           ? null
                                           : [
-                                              const Shadow(
-                                                  color: Color(0x33FFFFFF),
+                                              Shadow(
+                                                  color: L(0x33FFFFFF),
                                                   blurRadius: 10),
                                             ],
                                     ),
@@ -597,7 +595,7 @@ class ProfileScreen extends StatelessWidget {
 
                           // ═══ بطاقة اللاعب الرئيسية ═══
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            padding: EdgeInsets.symmetric(horizontal: 16),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(30),
                               child: BackdropFilter(
@@ -605,7 +603,7 @@ class ProfileScreen extends StatelessWidget {
                                     ImageFilter.blur(sigmaX: 18, sigmaY: 18),
                                 child: AnimatedContainer(
                                   duration: UiTheme.transition,
-                                  padding: const EdgeInsets.all(18),
+                                  padding: EdgeInsets.all(18),
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       begin: Alignment.topLeft,
@@ -630,7 +628,7 @@ class ProfileScreen extends StatelessWidget {
                                             gradient: LinearGradient(
                                               colors: [
                                                 Colors.transparent,
-                                                Colors.white.withOpacity(0.35),
+                                                L(0xFFFFFFFF).withOpacity(0.35),
                                                 Colors.transparent,
                                               ],
                                             ),
@@ -701,13 +699,14 @@ class ProfileScreen extends StatelessWidget {
                                                           gradient:
                                                               LinearGradient(
                                                                   colors: [
-                                                                const Color(
+                                                                Color(
                                                                     0xFFFFE082),
                                                                 t.gold,
                                                               ]),
                                                           border: Border.all(
                                                               color: t.light
-                                                                  ? Colors.white
+                                                                  ? L(
+                                                                      0xFFFFFFFF)
                                                                   : const Color(
                                                                       0xFF0A0F24),
                                                               width: 2),
@@ -998,7 +997,7 @@ class ProfileScreen extends StatelessWidget {
                                           value: t.light,
                                           onChanged: (v) =>
                                               UiTheme.instance.setLight(v),
-                                          activeColor: Colors.white,
+                                          activeColor: L(0xFFFFFFFF),
                                           activeTrackColor: t.emerald,
                                         ),
                                       ),
@@ -1567,16 +1566,14 @@ class _SocialRewardsCard extends StatelessWidget {
                                 horizontal: 12, vertical: 10),
                             decoration: BoxDecoration(
                               color: alreadyReferred
-                                  ? (t.light
-                                      ? L(0xFFF1F4F9)
-                                      : Color(0x2EFFFFFF))
+                                  ? (t.light ? L(0xFFF1F4F9) : L(0x2EFFFFFF))
                                   : t.gold.withOpacity(0.10),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                   color: alreadyReferred
                                       ? (t.light
                                           ? L(0xFFD9E0EC)
-                                          : Colors.white24)
+                                          : L(0x3DFFFFFF))
                                       : t.gold.withOpacity(0.55)),
                             ),
                             child: Text(

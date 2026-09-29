@@ -134,7 +134,7 @@ class _TopNotificationWidgetState extends State<_TopNotificationWidget>
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.55),
+                          color: L(0xFF000000).withOpacity(0.55),
                           blurRadius: 16,
                           offset: Offset(0, 6),
                         ),
@@ -152,13 +152,13 @@ class _TopNotificationWidgetState extends State<_TopNotificationWidget>
                           color: L(0xFFFFD54F),
                           size: 20,
                         ),
-                        const SizedBox(width: 10),
+                        SizedBox(width: 10),
                         Flexible(
                           child: Text(
                             widget.message,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: L(0xFFFFFFFF),
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.2,

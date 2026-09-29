@@ -66,20 +66,19 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          const RepaintBoundary(
+          RepaintBoundary(
               child: CustomPaint(painter: _AchievementsDecorPainter())),
           SafeArea(
             bottom: false,
             child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.only(bottom: 150),
+              physics: BouncingScrollPhysics(),
+              padding: EdgeInsets.only(bottom: 150),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // ═══ الهيدر ═══
                   Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     child: Row(
                       children: [
                         Expanded(
@@ -92,22 +91,21 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                               fontSize: 21,
                               fontWeight: FontWeight.w900,
                               shadows: [
-                                Shadow(
-                                    color: Color(0x33FFFFFF), blurRadius: 10),
+                                Shadow(color: L(0x33FFFFFF), blurRadius: 10),
                               ],
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(18),
                           child: BackdropFilter(
                             filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(
+                              padding: EdgeInsets.symmetric(
                                   horizontal: 11, vertical: 6),
                               decoration: BoxDecoration(
-                                color: const Color(0x3A16204A),
+                                color: L(0x3A16204A),
                                 borderRadius: BorderRadius.circular(18),
                                 border: Border.all(
                                     color: _gold.withOpacity(0.5), width: 1),
@@ -139,15 +137,15 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
 
-                  const DailyRewardsPanel(),
+                  DailyRewardsPanel(),
 
-                  const SizedBox(height: 22),
+                  SizedBox(height: 22),
 
                   // ═══ المهام اليومية ═══
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: EdgeInsets.symmetric(horizontal: 20),
                     child: Row(
                       children: [
                         Container(
@@ -161,7 +159,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                             ]),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'المهام اليومية (تتجدد كل 24 ساعة)'.tr,
@@ -174,15 +172,15 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: const Color(0x2E141C3C),
+                            color: L(0x2E141C3C),
                             borderRadius: BorderRadius.circular(9),
-                            border: Border.all(
-                                color: const Color(0x26FFFFFF), width: 0.9),
+                            border:
+                                Border.all(color: L(0x26FFFFFF), width: 0.9),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -251,11 +249,11 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 22),
+                  SizedBox(height: 22),
 
                   // ═══ كؤوس التميز ═══
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: EdgeInsets.symmetric(horizontal: 20),
                     child: Row(
                       children: [
                         Container(
@@ -327,13 +325,13 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(12),
+          margin: EdgeInsets.only(bottom: 10),
+          padding: EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0x2E141C3C),
+            color: L(0x2E141C3C),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isDone && !isClaimed ? _gold : const Color(0x26FFFFFF),
+              color: isDone && !isClaimed ? _gold : L(0x26FFFFFF),
               width: isDone && !isClaimed ? 1.5 : 1,
             ),
             boxShadow: isDone && !isClaimed
@@ -358,7 +356,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                 ),
                 child: Icon(icon, color: color, size: 21),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -371,7 +369,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: 7),
+                    SizedBox(height: 7),
                     Row(
                       children: [
                         Expanded(
@@ -379,7 +377,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                             borderRadius: BorderRadius.circular(4),
                             child: LinearProgressIndicator(
                               value: progressRatio,
-                              backgroundColor: const Color(0x2EFFFFFF),
+                              backgroundColor: L(0x2EFFFFFF),
                               valueColor: AlwaysStoppedAnimation<Color>(
                                 isDone ? _emerald : color,
                               ),
@@ -424,7 +422,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                         : null,
                     color: isClaimed
                         ? _emerald.withOpacity(0.15)
-                        : (isDone ? null : Color(0x2EFFFFFF)),
+                        : (isDone ? null : L(0x2EFFFFFF)),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isDone && !isClaimed

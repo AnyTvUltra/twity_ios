@@ -208,6 +208,7 @@ class PT {
 
 /// خريطة: كل لون داكن مستخدم في الواجهة -> بديله النهاري.
 final Map<int, Color> _dayMap = {
+  0xFF000000: const Color(0xFF111B3A), // أسود معتم -> كحلي (نصوص/أيقونات)
   // خلفيات داكنة -> أفتح ما يمكن
   0xFF050914: const Color(0xFFF5F8FC),
   0xFF070D1C: const Color(0xFFF3F6FB),
@@ -244,7 +245,13 @@ final Map<int, Color> _dayMap = {
   0xFF8E9BC0: const Color(0xFF6B7A99),
   0xFF7C8AA5: const Color(0xFF8A97B2),
   0xFF64748B: const Color(0xFF7C8AA5),
-  // ألوان مميزة: إبقاء الروح لكن أفتح/أكثر قراءةً على الأبيض
+  0xFF8EA3C8: const Color(0xFF5E7090),
+  0xFF9FB3D1: const Color(0xFF64748E),
+  0xFFA5B4D0: const Color(0xFF6B7C9C),
+  0xFF6B7B9E: const Color(0xFF54648A),
+  0xFF55648C: const Color(0xFF4E5E80),
+  0xFF4A5A80: const Color(0xFF44547A),
+// ألوان مميزة: إبقاء الروح لكن أفتح/أكثر قراءةً على الأبيض
   0xFFF7C948: const Color(0xFFE8AD22),
   0xFFFFD54F: const Color(0xFFE8AD22),
   0xFFFFC94D: const Color(0xFFE8A920),
@@ -276,31 +283,48 @@ Color L(int argb) {
   return _dayMap[argb] ?? _autoLight(Color(argb));
 }
 
-/// لألوان غير موجودة في الخريطة: تحويل تلقائي
-/// (الداكنة جداً -> أفتح قليلاً فوق الأبيض، الفاتحة جداً -> كحلي داكن).
+/// لألوان غير موجودة في الخريطة: تحويل تلقائي يحافظ على التباين.
+/// القاعدة العامة: في الوضع الداكن الفاتح = نص والداكن = سطح،
+/// ففي النهاري نعكس الإضاءة مع الإبقاء على التشبّع والألفا منطقياً.
 Color _autoLight(Color c) {
+  final a = (c.a * 255.0).round();
   final r = (c.r * 255.0).round();
   final g = (c.g * 255.0).round();
   final b = (c.b * 255.0).round();
+  final mx = r > g ? (r > b ? r : b) : (g > b ? g : b);
+  final mn = r < g ? (r < b ? r : b) : (g < b ? g : b);
   final lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  if (lum < 90) {
-    // داكن -> يصبح سطحاً فاتحاً يحافظ على الصبغة
-    final mix = 0.88;
+  const navy = Color(0xFF111B3A);
+
+  if (a < 255) {
+    // زجاجيات بيضاء شبه شفافة -> كحلي بنفس الشفافية
+    // (تعمل للأسطح والحدود والنصوص والأيقونات معاً على خلفية فاتحة)
+    if (lum > 200) return navy.withAlpha(a);
+    // أسطح داكنة شبه معتمة -> زجاج أبيض مصنفر
+    if (lum < 60 && a >= 0x70) return Color.fromARGB(a, 255, 255, 255);
+    // توهجات ملوّنة / سكرِيم داكن منخفض الشفافية -> يبقى كما هو
+    return c;
+  }
+
+  // معتم داكن جداً -> سطح فاتح يحفظ الصبغة
+  if (lum < 60) {
+    const mix = 0.88;
     return Color.fromARGB(
         255,
         (r * (1 - mix) + 255 * mix).round(),
         (g * (1 - mix) + 255 * mix).round(),
         (b * (1 - mix) + 255 * mix).round());
   }
+  // معتم فاتح جداً -> كحلي داكن (نصوص وأيقونات)
   if (lum > 200) {
-    // فاتح جداً (نص أبيض مثلاً) -> كحلي داكن
-    final mix = 0.82;
-    const navy = 0x3A;
-    return Color.fromARGB(
-        255,
-        (r * (1 - mix) + navy * mix).round(),
-        (g * (1 - mix) + navy * mix).round(),
-        (b * (1 - mix) + navy * mix).round());
+    return Color.lerp(c, navy, 0.82)!;
   }
+  // رماديات وسيطة (نصوص ثانوية) -> تعتيم نحو الكحلي حتى لا تبهت
+  if (mx - mn < 60) {
+    final k = (lum > 150) ? 0.72 : 0.55;
+    return Color.lerp(c, navy, k)!;
+  }
+  // ألوان مشبعة فاتحة نسبياً -> تعتيم خفيف للقراءة على الأبيض
+  if (lum > 140) return Color.lerp(c, const Color(0xFF000000), 0.18)!;
   return c;
 }

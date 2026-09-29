@@ -32,13 +32,13 @@ class _LegalScreenState extends State<LegalScreen> {
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
                     icon: Icon(Icons.arrow_back_ios_new_rounded,
-                        color: Colors.white, size: 20),
+                        color: L(0xFFFFFFFF), size: 20),
                   ),
                   SizedBox(width: 4),
                   Text(
                     _tab == 0 ? 'سياسة الخصوصية'.tr : 'شروط الاستخدام'.tr,
                     style: TextStyle(
-                        color: Colors.white,
+                        color: L(0xFFFFFFFF),
                         fontSize: 18,
                         fontWeight: FontWeight.w900),
                   ),
@@ -53,7 +53,7 @@ class _LegalScreenState extends State<LegalScreen> {
                 decoration: BoxDecoration(
                   color: L(0xFF141C34),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.white12),
+                  border: Border.all(color: L(0x1FFFFFFF)),
                 ),
                 child: Row(
                   children: [
@@ -94,11 +94,11 @@ class _LegalScreenState extends State<LegalScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(icon,
-                  size: 16, color: active ? Colors.white : L(0xFF94A3B8)),
+                  size: 16, color: active ? L(0xFFFFFFFF) : L(0xFF94A3B8)),
               SizedBox(width: 6),
               Text(label,
                   style: TextStyle(
-                      color: active ? Colors.white : L(0xFF94A3B8),
+                      color: active ? L(0xFFFFFFFF) : L(0xFF94A3B8),
                       fontSize: 12.5,
                       fontWeight: FontWeight.w800)),
             ],

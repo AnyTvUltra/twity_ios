@@ -19,32 +19,32 @@ class BottomNavBar extends StatelessWidget {
       icon: Icons.person_outline_rounded,
       activeIcon: Icons.person_rounded,
       label: 'الملف الشخصي'.tr,
-      accent: Color(0xFF34D399),
-      accentDeep: Color(0xFF0F766E),
+      accent: L(0xFF34D399),
+      accentDeep: L(0xFF0F766E),
     ),
     _NavEntry(
       index: 2,
       icon: Icons.forum_outlined,
       activeIcon: Icons.forum_rounded,
       label: 'الدردشة'.tr,
-      accent: Color(0xFF38BDF8),
-      accentDeep: Color(0xFF0C4A6E),
+      accent: L(0xFF38BDF8),
+      accentDeep: L(0xFF0C4A6E),
     ),
     _NavEntry(
       index: 1,
       icon: Icons.military_tech_outlined,
       activeIcon: Icons.military_tech_rounded,
       label: 'الإنجازات'.tr,
-      accent: Color(0xFFFBBF24),
-      accentDeep: Color(0xFF92400E),
+      accent: L(0xFFFBBF24),
+      accentDeep: L(0xFF92400E),
     ),
     _NavEntry(
       index: 0,
       icon: Icons.grid_view_rounded,
       activeIcon: Icons.grid_view_rounded,
       label: 'الرئيسية'.tr,
-      accent: Color(0xFFF472B6),
-      accentDeep: Color(0xFF831843),
+      accent: L(0xFFF472B6),
+      accentDeep: L(0xFF831843),
     ),
   ];
 
@@ -104,10 +104,10 @@ class BottomNavBar extends StatelessWidget {
       onTap: () => onIndexChanged(entry.index),
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
+        duration: Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
-        margin: const EdgeInsets.symmetric(horizontal: 3),
-        padding: const EdgeInsets.symmetric(vertical: 7),
+        margin: EdgeInsets.symmetric(horizontal: 3),
+        padding: EdgeInsets.symmetric(vertical: 7),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(22),
           gradient: isSelected
@@ -115,7 +115,7 @@ class BottomNavBar extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: light
-                      ? const [Color(0xFF3BD9B4), Color(0xFF14A98A)]
+                      ? [L(0xFF3BD9B4), L(0xFF14A98A)]
                       : [
                           entry.accent.withValues(alpha: 0.34),
                           entry.accentDeep.withValues(alpha: 0.30),
@@ -125,17 +125,17 @@ class BottomNavBar extends StatelessWidget {
           border: Border.all(
             color: isSelected
                 ? (light
-                    ? const Color(0xFF21C7A0).withValues(alpha: 0.5)
+                    ? L(0xFF21C7A0).withValues(alpha: 0.5)
                     : entry.accent.withValues(alpha: 0.55))
                 : Colors.transparent,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: (light ? const Color(0xFF21C7A0) : entry.accent)
+                    color: (light ? L(0xFF21C7A0) : entry.accent)
                         .withValues(alpha: 0.24),
                     blurRadius: 16,
-                    offset: const Offset(0, 4),
+                    offset: Offset(0, 4),
                   ),
                 ]
               : null,
@@ -144,60 +144,60 @@ class BottomNavBar extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
+              duration: Duration(milliseconds: 220),
               curve: Curves.easeOutCubic,
               width: 34,
               height: 34,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: isSelected
-                    ? Colors.white.withValues(alpha: light ? 0.22 : 0.14)
+                    ? L(0xFFFFFFFF).withValues(alpha: light ? 0.22 : 0.14)
                     : t.navIconCircle,
                 border: Border.all(
                   color: isSelected
                       ? (light
-                          ? Colors.white.withValues(alpha: 0.55)
+                          ? L(0xFFFFFFFF).withValues(alpha: 0.55)
                           : entry.accent.withValues(alpha: 0.75))
                       : (light
-                          ? const Color(0xFFE3E9F3)
-                          : Colors.white.withValues(alpha: 0.10)),
+                          ? L(0xFFE3E9F3)
+                          : L(0xFFFFFFFF).withValues(alpha: 0.10)),
                 ),
               ),
               child: Icon(
                 isSelected ? entry.activeIcon : entry.icon,
                 color: isSelected
-                    ? (light ? Colors.white : entry.accent)
+                    ? (light ? L(0xFFFFFFFF) : entry.accent)
                     : t.navInactive,
                 size: isSelected ? 19 : 18,
               ),
             ),
-            const SizedBox(height: 5),
+            SizedBox(height: 5),
             FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
                 entry.label,
                 maxLines: 1,
                 style: TextStyle(
-                  color: isSelected ? Colors.white : t.navInactive,
+                  color: isSelected ? L(0xFFFFFFFF) : t.navInactive,
                   fontSize: 10.5,
                   height: 1,
                   fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                 ),
               ),
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
             AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
+              duration: Duration(milliseconds: 220),
               curve: Curves.easeOutCubic,
               height: 3,
               width: isSelected ? 22 : 0,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(3),
-                color: light ? Colors.white : entry.accent,
+                color: light ? L(0xFFFFFFFF) : entry.accent,
                 boxShadow: [
                   if (isSelected)
                     BoxShadow(
-                      color: (light ? Colors.white : entry.accent)
+                      color: (light ? L(0xFFFFFFFF) : entry.accent)
                           .withValues(alpha: 0.6),
                       blurRadius: 8,
                     ),

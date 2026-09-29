@@ -44,10 +44,10 @@ class AnnouncementBanner extends StatelessWidget {
                               color: L(0xFFC4B5FD),
                               fontSize: 10,
                               fontWeight: FontWeight.w800)),
-                      const SizedBox(height: 2),
+                      SizedBox(height: 2),
                       Text(text,
-                          style: const TextStyle(
-                              color: Colors.white,
+                          style: TextStyle(
+                              color: L(0xFFFFFFFF),
                               fontSize: 12.5,
                               fontWeight: FontWeight.w700,
                               height: 1.4)),

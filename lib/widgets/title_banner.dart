@@ -31,13 +31,14 @@ class TitleBanner extends StatelessWidget {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          Colors.white.withOpacity(0.12),
+                          L(0xFFFFFFFF).withOpacity(0.12),
                           L(0xFF6D5DFF).withOpacity(0.08),
                           L(0xFF061126).withOpacity(0.20),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.white.withOpacity(0.14)),
+                      border:
+                          Border.all(color: L(0xFFFFFFFF).withOpacity(0.14)),
                     ),
                   ),
                 ),
@@ -103,7 +104,7 @@ class TitleBanner extends StatelessWidget {
                           foreground: Paint()
                             ..style = PaintingStyle.stroke
                             ..strokeWidth = 6
-                            ..color = L(0xFF5D2E05),
+                            ..color = Color(0xFF5D2E05),
                         ),
                       ),
                     ),
@@ -116,7 +117,7 @@ class TitleBanner extends StatelessWidget {
                         foreground: Paint()
                           ..style = PaintingStyle.stroke
                           ..strokeWidth = 4
-                          ..color = L(0xFF7A3E00),
+                          ..color = Color(0xFF7A3E00),
                       ),
                     ),
                     ShaderMask(
@@ -135,7 +136,7 @@ class TitleBanner extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 34,
                           fontWeight: FontWeight.w900,
-                          color: Colors.white,
+                          color: L(0xFFFFFFFF),
                           height: 1.1,
                           shadows: [
                             Shadow(
@@ -167,7 +168,7 @@ class TitleBanner extends StatelessWidget {
                           foreground: Paint()
                             ..style = PaintingStyle.stroke
                             ..strokeWidth = 6.5
-                            ..color = L(0xFF1B0B33),
+                            ..color = Color(0xFF1B0B33),
                         ),
                       ),
                     ),
@@ -180,7 +181,7 @@ class TitleBanner extends StatelessWidget {
                         foreground: Paint()
                           ..style = PaintingStyle.stroke
                           ..strokeWidth = 4
-                          ..color = L(0xFF38146B),
+                          ..color = Color(0xFF38146B),
                       ),
                     ),
                     ShaderMask(
@@ -188,7 +189,7 @@ class TitleBanner extends StatelessWidget {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.white,
+                          L(0xFFFFFFFF),
                           L(0xFFF3E8FF),
                           L(0xFFD8B4FE),
                         ],
@@ -198,7 +199,7 @@ class TitleBanner extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 27,
                           fontWeight: FontWeight.w900,
-                          color: Colors.white,
+                          color: L(0xFFFFFFFF),
                           height: 1.1,
                           shadows: [
                             Shadow(
@@ -224,13 +225,14 @@ class TitleBanner extends StatelessWidget {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          Colors.white.withOpacity(0.18),
+                          L(0xFFFFFFFF).withOpacity(0.18),
                           L(0xFF253A72).withOpacity(0.46),
                           L(0xFF111B3E).withOpacity(0.62),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(22),
-                      border: Border.all(color: Colors.white.withOpacity(0.28)),
+                      border:
+                          Border.all(color: L(0xFFFFFFFF).withOpacity(0.28)),
                       boxShadow: [
                         BoxShadow(
                           color: L(0xFF7C5CFF).withOpacity(0.16),
@@ -383,13 +385,13 @@ class _StickyNoteWidget extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Colors.white.withOpacity(0.72),
+                L(0xFFFFFFFF).withOpacity(0.72),
                 L(0xFFFFE8A3).withOpacity(0.54),
-                Colors.white.withOpacity(0.24),
+                L(0xFFFFFFFF).withOpacity(0.24),
               ],
             ),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.white.withOpacity(0.72)),
+            border: Border.all(color: L(0xFFFFFFFF).withOpacity(0.72)),
             boxShadow: [
               BoxShadow(
                 color: L(0xFFFFD76A).withOpacity(0.18),
@@ -413,7 +415,7 @@ class _StickyNoteWidget extends StatelessWidget {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.4),
+                        color: L(0xFF000000).withOpacity(0.4),
                         blurRadius: 3,
                         offset: Offset(1, 1),
                       ),

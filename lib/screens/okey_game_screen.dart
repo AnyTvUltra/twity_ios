@@ -27,6 +27,8 @@ import '../games/okey/widgets/game_notice.dart';
 import 'package:game_hub/utils/haptics.dart';
 import '../l10n/app_lang.dart';
 
+import '../theme_mode.dart';
+
 /// شاشة لعبة الأوكي التركية – تصميم بورتريت واقعي بدون تدوير
 class OkeyGameScreen extends StatefulWidget {
   final OkeyRules rules;
@@ -161,39 +163,39 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   Widget _buildSceneNotice() {
     final msg = _sceneNotice;
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 240),
+      duration: Duration(milliseconds: 240),
       transitionBuilder: (child, anim) => SlideTransition(
         position: Tween<Offset>(
-          begin: const Offset(0, -0.6),
+          begin: Offset(0, -0.6),
           end: Offset.zero,
         ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutBack)),
         child: FadeTransition(opacity: anim, child: child),
       ),
       child: msg == null
-          ? const SizedBox.shrink()
+          ? SizedBox.shrink()
           : Container(
               key: ValueKey(msg),
-              constraints: const BoxConstraints(maxWidth: 380),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              constraints: BoxConstraints(maxWidth: 380),
+              padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFF3B1E6D), Color(0xFF1E0E35)],
+                  colors: [L(0xFF3B1E6D), L(0xFF1E0E35)],
                 ),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: const Color(0xFFFFD54F).withOpacity(0.6),
+                  color: L(0xFFFFD54F).withOpacity(0.6),
                   width: 1.1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.55),
+                    color: L(0xFF000000).withOpacity(0.55),
                     blurRadius: 14,
-                    offset: const Offset(0, 5),
+                    offset: Offset(0, 5),
                   ),
                   BoxShadow(
-                    color: const Color(0xFFFFD54F).withOpacity(0.18),
+                    color: L(0xFFFFD54F).withOpacity(0.18),
                     blurRadius: 8,
                   ),
                 ],
@@ -202,14 +204,14 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(_sceneNoticeIcon ?? Icons.notifications_active_rounded,
-                      color: const Color(0xFFFFD54F), size: 16),
-                  const SizedBox(width: 8),
+                      color: L(0xFFFFD54F), size: 16),
+                  SizedBox(width: 8),
                   Flexible(
                     child: Text(
                       msg,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: L(0xFFFFFFFF),
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.2,
@@ -321,18 +323,18 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         backgroundColor: Colors.transparent,
         child: Container(
           width: 320,
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(20),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF241538), Color(0xFF160B24)],
+              colors: [L(0xFF241538), L(0xFF160B24)],
             ),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0x40FFD54F), width: 1.5),
+            border: Border.all(color: L(0x40FFD54F), width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.6),
+                color: L(0xFF000000).withOpacity(0.6),
                 blurRadius: 20,
               ),
             ],
@@ -346,71 +348,71 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                   Row(
                     children: [
                       Icon(Icons.more_horiz_rounded,
-                          color: Color(0xFFFFD54F), size: 24),
+                          color: L(0xFFFFD54F), size: 24),
                       SizedBox(width: 8),
                       Text(
                         'قائمة الخيارات'.tr,
                         style: TextStyle(
-                            color: Colors.white,
+                            color: L(0xFFFFFFFF),
                             fontSize: 17,
                             fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded,
-                        color: Colors.white70, size: 20),
+                    icon: Icon(Icons.close_rounded,
+                        color: L(0xB3FFFFFF), size: 20),
                     onPressed: () => Navigator.of(ctx).pop(),
                   ),
                 ],
               ),
-              const Divider(color: Colors.white24, height: 20),
+              Divider(color: L(0x3DFFFFFF), height: 20),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0x22FFD54F),
+                    color: L(0x22FFD54F),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.menu_book_rounded,
-                      color: Color(0xFFFFD54F), size: 20),
+                  child: Icon(Icons.menu_book_rounded,
+                      color: L(0xFFFFD54F), size: 20),
                 ),
                 title: Text('قواعد اللعبة'.tr,
-                    style: TextStyle(color: Colors.white, fontSize: 14)),
+                    style: TextStyle(color: L(0xFFFFFFFF), fontSize: 14)),
                 subtitle: Text('تشكيل المجموعات وحجر الأوكي'.tr,
-                    style: TextStyle(color: Colors.white54, fontSize: 11)),
+                    style: TextStyle(color: L(0x8AFFFFFF), fontSize: 11)),
                 onTap: () {
                   Navigator.of(ctx).pop();
                   _showRulesDialog();
                 },
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: 6),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0x224ADE80),
+                    color: L(0x224ADE80),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     OkeyAudio.soundEnabled
                         ? Icons.volume_up_rounded
                         : Icons.volume_off_rounded,
-                    color: const Color(0xFF4ADE80),
+                    color: L(0xFF4ADE80),
                     size: 20,
                   ),
                 ),
                 title: Text(
                   OkeyAudio.soundEnabled ? 'كتم الصوت'.tr : 'تشغيل الصوت'.tr,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  style: TextStyle(color: L(0xFFFFFFFF), fontSize: 14),
                 ),
                 subtitle: Text(
                   OkeyAudio.soundEnabled
                       ? 'المؤثرات الصوتية مفعلة'.tr
                       : 'المؤثرات الصوتية معطلة'.tr,
-                  style: const TextStyle(color: Colors.white54, fontSize: 11),
+                  style: TextStyle(color: L(0x8AFFFFFF), fontSize: 11),
                 ),
                 onTap: () {
                   setState(
@@ -426,11 +428,11 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                   );
                 },
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFDC2626),
-                  foregroundColor: Colors.white,
+                  backgroundColor: L(0xFFDC2626),
+                  foregroundColor: L(0xFFFFFFFF),
                   minimumSize: const Size(double.infinity, 44),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
@@ -456,20 +458,19 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E112E),
+        backgroundColor: L(0xFF1E112E),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+          side: BorderSide(color: L(0xFFEF4444), width: 1.5),
         ),
         title: Row(
           children: [
-            Icon(Icons.warning_amber_rounded,
-                color: Color(0xFFEF4444), size: 28),
+            Icon(Icons.warning_amber_rounded, color: L(0xFFEF4444), size: 28),
             SizedBox(width: 10),
             Text(
               'تأكيد الانسحاب'.tr,
               style: TextStyle(
-                  color: Colors.white,
+                  color: L(0xFFFFFFFF),
                   fontWeight: FontWeight.bold,
                   fontSize: 18),
             ),
@@ -482,13 +483,12 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             Text(
               '⚠️ تحذير: إذا قمت بالانسحاب الآن ستفقد رسوم الجولة (35 عملة ذهبية) وتُسجل لك خسارة رسمية في تقييمك السحابي!'
                   .tr,
-              style: TextStyle(
-                  color: Color(0xFFFCA5A5), fontSize: 13, height: 1.5),
+              style: TextStyle(color: L(0xFFFCA5A5), fontSize: 13, height: 1.5),
             ),
             SizedBox(height: 12),
             Text(
               'هل أنت متأكد من رغبتك في الاستسلام ومغادرة الطاولة؟'.tr,
-              style: TextStyle(color: Colors.white70, fontSize: 12),
+              style: TextStyle(color: L(0xB3FFFFFF), fontSize: 12),
             ),
           ],
         ),
@@ -497,12 +497,12 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             onPressed: () => Navigator.of(ctx).pop(),
             child: Text('متابعة اللعب'.tr,
                 style: TextStyle(
-                    color: Colors.white70, fontWeight: FontWeight.bold)),
+                    color: L(0xB3FFFFFF), fontWeight: FontWeight.bold)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFDC2626),
-              foregroundColor: Colors.white,
+              backgroundColor: L(0xFFDC2626),
+              foregroundColor: L(0xFFFFFFFF),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10)),
             ),
@@ -552,16 +552,16 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     showOkeyLandscapeDialog(
       context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E112E),
+        backgroundColor: L(0xFF1E112E),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: Row(
           children: [
-            Icon(Icons.menu_book_rounded, color: Color(0xFFFFD54F), size: 22),
+            Icon(Icons.menu_book_rounded, color: L(0xFFFFD54F), size: 22),
             SizedBox(width: 8),
             Flexible(
               child: Text('قواعد لعبة الأوكي (Okey)'.tr,
                   style: TextStyle(
-                      color: Colors.white,
+                      color: L(0xFFFFFFFF),
                       fontSize: 15,
                       fontWeight: FontWeight.bold)),
             ),
@@ -576,19 +576,19 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                 '• الهدف: تكوين مجموعات صالحة من 14 حجراً (متتالية من نفس اللون أو متماثلة بألوان مختلفة).'
                     .tr,
                 style:
-                    TextStyle(color: Colors.white70, fontSize: 12, height: 1.4),
+                    TextStyle(color: L(0xB3FFFFFF), fontSize: 12, height: 1.4),
               ),
               SizedBox(height: 6),
               Text(
                 '• حجر الأوكي الحقيقي (Joker): يعوض عن أي حجر ناقص.'.tr,
                 style:
-                    TextStyle(color: Colors.white70, fontSize: 12, height: 1.4),
+                    TextStyle(color: L(0xB3FFFFFF), fontSize: 12, height: 1.4),
               ),
               SizedBox(height: 6),
               Text(
                 '• الرمي: ارمِ الحجر الزائد في مربع الرمي الأحمر بالمنتصف.'.tr,
                 style:
-                    TextStyle(color: Colors.white70, fontSize: 12, height: 1.4),
+                    TextStyle(color: L(0xB3FFFFFF), fontSize: 12, height: 1.4),
               ),
             ],
           ),
@@ -596,8 +596,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: Text('حسناً فهمت'.tr,
-                style: TextStyle(color: Color(0xFFFFD54F))),
+            child:
+                Text('حسناً فهمت'.tr, style: TextStyle(color: L(0xFFFFD54F))),
           ),
         ],
       ),
@@ -812,7 +812,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           if (!didPop) _requestExit();
         },
         child: Scaffold(
-          backgroundColor: const Color(0xFF070B13),
+          backgroundColor: L(0xFF070B13),
           body: rotateToLandscape
               ? RotatedBox(quarterTurns: 1, child: game)
               : game,
@@ -875,15 +875,11 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                       return SkinTransformImage.fromItem(bgItem);
                     }
                     return Container(
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         gradient: RadialGradient(
                           center: Alignment(0, -0.1),
                           radius: 1.05,
-                          colors: [
-                            Color(0xFF17171B),
-                            Color(0xFF090C12),
-                            Color(0xFF030509)
-                          ],
+                          colors: [L(0xFF17171B), L(0xFF090C12), L(0xFF030509)],
                           stops: [0, 0.6, 1],
                         ),
                       ),
@@ -897,8 +893,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             colors: [
-                              Colors.black.withOpacity(0.08),
-                              Colors.black.withOpacity(0.52)
+                              L(0xFF000000).withOpacity(0.08),
+                              L(0xFF000000).withOpacity(0.52)
                             ],
                           ),
                         ),
@@ -953,17 +949,15 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                             bottom: 128,
                             child: IgnorePointer(
                               child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 150),
+                                duration: Duration(milliseconds: 150),
                                 decoration: BoxDecoration(
                                   color: hovering
-                                      ? const Color(0xFFEF4444)
-                                          .withOpacity(0.08)
+                                      ? L(0xFFEF4444).withOpacity(0.08)
                                       : Colors.transparent,
                                   borderRadius: BorderRadius.circular(14),
                                   border: hovering
                                       ? Border.all(
-                                          color: const Color(0x55EF4444),
-                                          width: 1.2)
+                                          color: L(0x55EF4444), width: 1.2)
                                       : null,
                                 ),
                               ),
@@ -1130,7 +1124,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           left: 14,
           child: _landscapeCircleButton(
             icon: Icons.logout_rounded,
-            color: const Color(0xFFFCA5A5),
+            color: L(0xFFFCA5A5),
             onTap: _requestExit,
           ),
         ),
@@ -1155,7 +1149,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                   ),
                   _engine.players[2],
                 ),
-                const SizedBox(width: 6),
+                SizedBox(width: 6),
                 _roleChip(widget.teamMode),
               ],
             ),
@@ -1168,9 +1162,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             icon: OkeyAudio.soundEnabled
                 ? Icons.volume_up_rounded
                 : Icons.volume_off_rounded,
-            color: OkeyAudio.soundEnabled
-                ? const Color(0xFF73E6A2)
-                : Colors.white54,
+            color: OkeyAudio.soundEnabled ? L(0xFF73E6A2) : L(0x8AFFFFFF),
             onTap: () => setState(
                 () => OkeyAudio.soundEnabled = !OkeyAudio.soundEnabled),
           ),
@@ -1234,8 +1226,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     );
   }
 
-  static const _konkanColor = Color(0xFFF59E0B);
-  static const _fullColor = Color(0xFFC084FC);
+  static final _konkanColor = L(0xFFF59E0B);
+  static final _fullColor = L(0xFFC084FC);
 
   Color _styleColor(OkeyPlayStyle s) =>
       s == OkeyPlayStyle.full ? _fullColor : _konkanColor;
@@ -1252,7 +1244,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           top: -9,
           right: -4,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
               color: c,
               borderRadius: BorderRadius.circular(8),
@@ -1262,8 +1254,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             ),
             child: Text(
               p.playStyle.label,
-              style: const TextStyle(
-                  color: Color(0xFF1B0B30),
+              style: TextStyle(
+                  color: L(0xFF1B0B30),
                   fontSize: 8.5,
                   fontWeight: FontWeight.w900),
             ),
@@ -1288,14 +1280,14 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           final ok = await showOkeyLandscapeDialog<bool>(
             context,
             builder: (ctx) => AlertDialog(
-              backgroundColor: const Color(0xFF141C34),
+              backgroundColor: L(0xFF141C34),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(18),
                   side: BorderSide(color: c.withOpacity(0.6))),
               title: Text('اللعب {}؟'.trp([style.label]),
                   textDirection: TextDirection.rtl,
-                  style: const TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.w900)),
+                  style: TextStyle(
+                      color: L(0xFFFFFFFF), fontWeight: FontWeight.w900)),
               content: Text(
                 style == OkeyPlayStyle.full
                     ? 'تفوز بجمع لون واحد كامل: 1 2 3 … 13 1.\nأحجارك المرمية تظهر مقلوبة للجميع ولا يستطيع أحد أخذها، وأنت تستطيع أخذ أحجار غيرك.\nلن تستطيع النزول على الطاولة.'
@@ -1303,19 +1295,18 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                     : 'تفوز بـ 10 أحجار متسلسلة بلون واحد + بير عادي (3 أحجار فأكثر).\nلن تستطيع النزول على الطاولة.'
                         .tr,
                 textDirection: TextDirection.rtl,
-                style: const TextStyle(
-                    color: Color(0xFFB8C4DC), fontSize: 12.5, height: 1.5),
+                style: TextStyle(
+                    color: L(0xFFB8C4DC), fontSize: 12.5, height: 1.5),
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(ctx).pop(false),
                   child:
-                      Text('إلغاء'.tr, style: TextStyle(color: Colors.white60)),
+                      Text('إلغاء'.tr, style: TextStyle(color: L(0x99FFFFFF))),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: c,
-                      foregroundColor: const Color(0xFF1B0B30)),
+                      backgroundColor: c, foregroundColor: L(0xFF1B0B30)),
                   onPressed: () => Navigator.of(ctx).pop(true),
                   child: Text('ابدأ {}'.trp([style.label]),
                       style: const TextStyle(fontWeight: FontWeight.w900)),
@@ -1326,9 +1317,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           if (ok == true) _engine.declarePlayStyle(style);
         },
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          margin: const EdgeInsets.only(right: 6),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          duration: Duration(milliseconds: 180),
+          margin: EdgeInsets.only(right: 6),
+          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
             color: chosen ? c : c.withOpacity(0.12),
             borderRadius: BorderRadius.circular(12),
@@ -1340,7 +1331,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           child: Text(
             chosen ? '✓ ${style.label}' : style.label,
             style: TextStyle(
-                color: chosen ? const Color(0xFF1B0B30) : c,
+                color: chosen ? L(0xFF1B0B30) : c,
                 fontSize: 11,
                 fontWeight: FontWeight.w900),
           ),
@@ -1356,7 +1347,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
 
   /// شارة دور اللاعب المقابل: شريك (زوجي) أو خصم (فردي)
   Widget _roleChip(bool partner) {
-    final c = partner ? const Color(0xFF4ADE80) : const Color(0xFFF87171);
+    final c = partner ? L(0xFF4ADE80) : L(0xFFF87171);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
@@ -1377,16 +1368,16 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         _engine.declareHumanWin();
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
+        padding: EdgeInsets.symmetric(horizontal: 18, vertical: 7),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFFFD54F), Color(0xFFFF8F00)],
+          gradient: LinearGradient(
+            colors: [L(0xFFFFD54F), L(0xFFFF8F00)],
           ),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white, width: 1.6),
+          border: Border.all(color: L(0xFFFFFFFF), width: 1.6),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFFFD54F).withOpacity(0.8),
+              color: L(0xFFFFD54F).withOpacity(0.8),
               blurRadius: 14,
               spreadRadius: 1,
             ),
@@ -1400,7 +1391,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             Text(
               'إعلان الفوز بالأوكي (Okey Out!)'.tr,
               style: TextStyle(
-                color: Color(0xFF1B0B30),
+                color: L(0xFF1B0B30),
                 fontWeight: FontWeight.w900,
                 fontSize: 11.5,
               ),
@@ -1421,42 +1412,40 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
                     height: 1)),
-            const SizedBox(height: 3),
+            SizedBox(height: 3),
             Text(label,
-                style: const TextStyle(
-                    color: Colors.white70,
+                style: TextStyle(
+                    color: L(0xB3FFFFFF),
                     fontSize: 7.5,
                     fontWeight: FontWeight.w700)),
           ],
         );
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+      padding: EdgeInsets.symmetric(horizontal: 9, vertical: 7),
       decoration: BoxDecoration(
-        color: const Color(0xCC241107),
+        color: L(0xCC241107),
         borderRadius: BorderRadius.circular(9),
-        border: Border.all(color: const Color(0x665F3A24)),
+        border: Border.all(color: L(0x665F3A24)),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(.45),
+              color: L(0xFF000000).withOpacity(.45),
               blurRadius: 8,
-              offset: const Offset(0, 4))
+              offset: Offset(0, 4))
         ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          stat('${_engine.livePoints}', 'نقاطي'.tr, const Color(0xFFFFD46B)),
-          const SizedBox(width: 10),
-          stat('${_engine.liveGroupCount}', 'Per', const Color(0xFF86EFAC)),
-          const SizedBox(width: 10),
+          stat('${_engine.livePoints}', 'نقاطي'.tr, L(0xFFFFD46B)),
+          SizedBox(width: 10),
+          stat('${_engine.liveGroupCount}', 'Per', L(0xFF86EFAC)),
+          SizedBox(width: 10),
           stat(
               _engine.players[0].hasOpened
                   ? 'مفتوح ✓'.tr
                   : '${_engine.remainingOpeningPoints}',
               'المطلوب'.tr,
-              _engine.players[0].hasOpened
-                  ? const Color(0xFF86EFAC)
-                  : const Color(0xFFFCA5A5)),
+              _engine.players[0].hasOpened ? L(0xFF86EFAC) : L(0xFFFCA5A5)),
         ],
       ),
     );
@@ -1553,12 +1542,12 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       builder: (context, candidateData, rejectedData) {
         final hovering = candidateData.isNotEmpty;
         return AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
+          duration: Duration(milliseconds: 160),
           decoration: BoxDecoration(
-            color: hovering ? const Color(0x3334D399) : Colors.transparent,
+            color: hovering ? L(0x3334D399) : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: hovering ? const Color(0xFF6EE7B7) : Colors.transparent,
+              color: hovering ? L(0xFF6EE7B7) : Colors.transparent,
               width: 1.4,
             ),
           ),
@@ -1571,19 +1560,19 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   Widget _myMeldHint() {
     return Center(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.22),
+          color: L(0xFF000000).withOpacity(0.22),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.white.withOpacity(0.10)),
+          border: Border.all(color: L(0xFFFFFFFF).withOpacity(0.10)),
         ),
         child: Text(
             _engine.humanCanLayMelds
                 ? 'اسحب الـ Per هنا لتنزله على الطاولة'.tr
                 : 'تلعب {} — أكمل يدك وأعلن الفوز'
                     .trp([_engine.players[0].playStyle.label]),
-            style: const TextStyle(
-                color: Colors.white54,
+            style: TextStyle(
+                color: L(0x8AFFFFFF),
                 fontSize: 8.5,
                 fontWeight: FontWeight.w700)),
       ),
@@ -1616,8 +1605,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   /// بير واحد: أحجار متلاصقة بسماكة وظل، وتقبل صرف حجر عليها
   Widget _meld3D(int meldIndex, OkeyGroup meld) {
     final isMine = meld.ownerIndex == 0;
-    final ownerColor =
-        isMine ? const Color(0xFF4ADE80) : const Color(0xFF38BDF8);
+    final ownerColor = isMine ? L(0xFF4ADE80) : L(0xFF38BDF8);
     return DragTarget<int>(
       onWillAcceptWithDetails: (details) => OkeyDrag.isRackTile(details.data),
       onAcceptWithDetails: (details) {
@@ -1637,15 +1625,15 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       builder: (context, candidateData, rejectedData) {
         final hovering = candidateData.isNotEmpty;
         final glow = hovering
-            ? const Color(0xFF6EE7B7)
+            ? L(0xFF6EE7B7)
             : meld.pending
-                ? const Color(0xFFFBBF24)
+                ? L(0xFFFBBF24)
                 : ownerColor;
         return AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.fromLTRB(2, 2, 2, 4),
+          duration: Duration(milliseconds: 150),
+          padding: EdgeInsets.fromLTRB(2, 2, 2, 4),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(hovering ? 0.10 : 0.22),
+            color: L(0xFF000000).withOpacity(hovering ? 0.10 : 0.22),
             borderRadius: BorderRadius.circular(4),
             border: Border.all(
                 color: glow.withOpacity(hovering || meld.pending ? 0.9 : 0.35),
@@ -1653,9 +1641,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             boxShadow: [
               // ظل الأحجار على سطح الطاولة
               BoxShadow(
-                color: Colors.black.withOpacity(0.55),
+                color: L(0xFF000000).withOpacity(0.55),
                 blurRadius: 6,
-                offset: const Offset(0, 4),
+                offset: Offset(0, 4),
               ),
               if (hovering || meld.pending)
                 BoxShadow(color: glow.withOpacity(0.35), blurRadius: 10),
@@ -1666,17 +1654,17 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             children: [
               for (final tile in meld.tiles)
                 Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 0.5),
+                  margin: EdgeInsets.symmetric(horizontal: 0.5),
                   // سماكة الحجر: حافة سفلية داكنة تحت الوجه
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(3),
-                    boxShadow: const [
+                    boxShadow: [
                       BoxShadow(
-                          color: Color(0xFF8C7A55),
+                          color: L(0xFF8C7A55),
                           offset: Offset(0, 2.2),
                           blurRadius: 0),
                       BoxShadow(
-                          color: Color(0x88000000),
+                          color: L(0x88000000),
                           offset: Offset(0, 3),
                           blurRadius: 2),
                     ],
@@ -1694,11 +1682,11 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   Widget _buildLandscapeDock() {
     return Container(
       width: 60,
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: 2, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xEE151922),
+        color: L(0xEE151922),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(color: L(0x1FFFFFFF)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1733,27 +1721,27 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     final player = _engine.players[0];
     return Container(
       width: 88,
-      margin: const EdgeInsets.only(right: 2),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+      margin: EdgeInsets.only(right: 2),
+      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xEB1A1E29),
+        color: L(0xEB1A1E29),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isTurn ? const Color(0xFF4ADE80) : const Color(0x334B5563),
+          color: isTurn ? L(0xFF4ADE80) : L(0x334B5563),
           width: isTurn ? 1.5 : 1.0,
         ),
         boxShadow: [
           if (isTurn)
             BoxShadow(
-              color: const Color(0xFF4ADE80).withOpacity(0.35),
+              color: L(0xFF4ADE80).withOpacity(0.35),
               blurRadius: 12,
               spreadRadius: 1,
             )
           else
             BoxShadow(
-              color: Colors.black.withOpacity(0.5),
+              color: L(0xFF000000).withOpacity(0.5),
               blurRadius: 8,
-              offset: const Offset(0, 3),
+              offset: Offset(0, 3),
             ),
         ],
       ),
@@ -1766,65 +1754,64 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color:
-                    isTurn ? const Color(0xFF4ADE80) : const Color(0xFF6B7280),
+                color: isTurn ? L(0xFF4ADE80) : L(0xFF6B7280),
                 width: isTurn ? 2.0 : 1.2,
               ),
             ),
             child: ClipOval(
               child: Container(
-                color: const Color(0xFF2E384D),
-                child: const Icon(Icons.person, color: Colors.white, size: 16),
+                color: L(0xFF2E384D),
+                child: Icon(Icons.person, color: L(0xFFFFFFFF), size: 16),
               ),
             ),
           ),
-          const SizedBox(height: 3),
+          SizedBox(height: 3),
           Text(
             player.name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-                color: Colors.white,
+            style: TextStyle(
+                color: L(0xFFFFFFFF),
                 fontSize: 9.5,
                 fontWeight: FontWeight.w700,
                 height: 1.1),
           ),
-          const SizedBox(height: 2),
+          SizedBox(height: 2),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 '${player.rating}',
-                style: const TextStyle(
-                    color: Color(0xFF9CA3AF),
+                style: TextStyle(
+                    color: L(0xFF9CA3AF),
                     fontSize: 8,
                     fontWeight: FontWeight.w500),
               ),
-              const SizedBox(width: 4),
+              SizedBox(width: 4),
               Container(
                 width: 4,
                 height: 4,
-                decoration: const BoxDecoration(
-                    color: Color(0xFF4ADE80), shape: BoxShape.circle),
+                decoration:
+                    BoxDecoration(color: L(0xFF4ADE80), shape: BoxShape.circle),
               ),
-              const SizedBox(width: 3),
+              SizedBox(width: 3),
               Text(
                 timerString,
                 style: TextStyle(
                     color: isTurn
                         ? (_engine.turnTimeRemaining <= 10
-                            ? const Color(0xFFEF4444)
-                            : const Color(0xFF4ADE80))
-                        : const Color(0xFFD1D5DB),
+                            ? L(0xFFEF4444)
+                            : L(0xFF4ADE80))
+                        : L(0xFFD1D5DB),
                     fontSize: 8.5,
                     fontWeight: isTurn ? FontWeight.w800 : FontWeight.w600),
               ),
             ],
           ),
           if (isTurn) ...[
-            const SizedBox(height: 3),
+            SizedBox(height: 3),
             SizedBox(
               width: 64,
               height: 3,
@@ -1833,11 +1820,11 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                 child: LinearProgressIndicator(
                   value: (_engine.turnTimeRemaining / _engine.turnDuration)
                       .clamp(0.0, 1.0),
-                  backgroundColor: Colors.white12,
+                  backgroundColor: L(0x1FFFFFFF),
                   valueColor: AlwaysStoppedAnimation<Color>(
                     _engine.turnTimeRemaining <= 10
-                        ? const Color(0xFFEF4444)
-                        : const Color(0xFF4ADE80),
+                        ? L(0xFFEF4444)
+                        : L(0xFF4ADE80),
                   ),
                 ),
               ),
@@ -1858,11 +1845,11 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         width: 34,
         height: 34,
         decoration: BoxDecoration(
-            color: const Color(0xDD151922),
+            color: L(0xDD151922),
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white12),
+            border: Border.all(color: L(0x1FFFFFFF)),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(.45), blurRadius: 6)
+              BoxShadow(color: L(0xFF000000).withOpacity(.45), blurRadius: 6)
             ]),
         child: Icon(icon, color: color, size: 18),
       ),
@@ -1892,11 +1879,11 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         // 1. خلفية الغرفة
         // ══════════════════════════════════════════════
         Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: RadialGradient(
               center: Alignment(0, 0),
               radius: 1.2,
-              colors: [Color(0xFF111827), Color(0xFF090D17), Color(0xFF04060B)],
+              colors: [L(0xFF111827), L(0xFF090D17), L(0xFF04060B)],
               stops: [0.0, 0.65, 1.0],
             ),
           ),
@@ -1916,43 +1903,40 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
               GestureDetector(
                 onTap: _showMoreMenu,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                   decoration: BoxDecoration(
-                    color: const Color(0xEB1A1E29),
+                    color: L(0xEB1A1E29),
                     borderRadius: BorderRadius.circular(16),
-                    border:
-                        Border.all(color: const Color(0x50FFD54F), width: 1.2),
+                    border: Border.all(color: L(0x50FFD54F), width: 1.2),
                     boxShadow: [
                       BoxShadow(
-                          color: Colors.black.withOpacity(0.4),
+                          color: L(0xFF000000).withOpacity(0.4),
                           blurRadius: 6,
-                          offset: const Offset(0, 2)),
+                          offset: Offset(0, 2)),
                     ],
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.menu_rounded,
-                          color: Color(0xFFFFD54F), size: 15),
+                      Icon(Icons.menu_rounded, color: L(0xFFFFD54F), size: 15),
                       SizedBox(width: 5),
                       Text('المزيد'.tr,
                           style: TextStyle(
-                              color: Colors.white,
+                              color: L(0xFFFFFFFF),
                               fontWeight: FontWeight.w800,
                               fontSize: 11.5)),
                     ],
                   ),
                 ),
               ),
-              const Spacer(),
+              Spacer(),
               // شارة اللاعب العلوي (الخصم المواجه)
               OkeyPlayerBadge(
                 player: _engine.players[2],
                 isTurn: _engine.currentTurnIndex == 2,
                 type: PlayerBadgeType.top,
               ),
-              const Spacer(),
+              Spacer(),
               // أزرار الراديو والمايك والصوت
               Row(
                 mainAxisSize: MainAxisSize.min,
@@ -1964,13 +1948,12 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                       width: 34,
                       height: 34,
                       decoration: BoxDecoration(
-                        color: const Color(0xEB1A1E29),
+                        color: L(0xEB1A1E29),
                         shape: BoxShape.circle,
-                        border: Border.all(
-                            color: const Color(0x40FFD54F), width: 1),
+                        border: Border.all(color: L(0x40FFD54F), width: 1),
                       ),
-                      child: const Icon(Icons.radio_rounded,
-                          color: Color(0xFFFFD54F), size: 16),
+                      child: Icon(Icons.radio_rounded,
+                          color: L(0xFFFFD54F), size: 16),
                     ),
                   ),
                   const SizedBox(width: 6),
@@ -1994,21 +1977,19 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                           width: 34,
                           height: 34,
                           decoration: BoxDecoration(
-                            color: voice.isMicOn
-                                ? const Color(0xFF10B981)
-                                : const Color(0xEB1A1E29),
+                            color:
+                                voice.isMicOn ? L(0xFF10B981) : L(0xEB1A1E29),
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: voice.isSpeaking
-                                  ? Colors.white
-                                  : const Color(0x334B5563),
+                                  ? L(0xFFFFFFFF)
+                                  : L(0x334B5563),
                               width: voice.isSpeaking ? 2 : 1,
                             ),
                             boxShadow: voice.isSpeaking
                                 ? [
                                     BoxShadow(
-                                        color: const Color(0xFF10B981)
-                                            .withOpacity(0.8),
+                                        color: L(0xFF10B981).withOpacity(0.8),
                                         blurRadius: 8,
                                         spreadRadius: 1)
                                   ]
@@ -2016,7 +1997,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                           ),
                           child: Icon(
                             voice.isMicOn ? Icons.mic : Icons.mic_off,
-                            color: Colors.white,
+                            color: L(0xFFFFFFFF),
                             size: 16,
                           ),
                         ),
@@ -2043,18 +2024,17 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                       width: 34,
                       height: 34,
                       decoration: BoxDecoration(
-                        color: const Color(0xEB1A1E29),
+                        color: L(0xEB1A1E29),
                         shape: BoxShape.circle,
-                        border: Border.all(
-                            color: const Color(0x334B5563), width: 1),
+                        border: Border.all(color: L(0x334B5563), width: 1),
                       ),
                       child: Icon(
                         OkeyAudio.soundEnabled
                             ? Icons.volume_up_rounded
                             : Icons.volume_off_rounded,
                         color: OkeyAudio.soundEnabled
-                            ? const Color(0xFF4ADE80)
-                            : Colors.white60,
+                            ? L(0xFF4ADE80)
+                            : L(0x99FFFFFF),
                         size: 16,
                       ),
                     ),
@@ -2176,17 +2156,16 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                   _engine.declareHumanWin();
                 },
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFFFD54F), Color(0xFFFF8F00)],
+                    gradient: LinearGradient(
+                      colors: [L(0xFFFFD54F), L(0xFFFF8F00)],
                     ),
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.white, width: 2),
+                    border: Border.all(color: L(0xFFFFFFFF), width: 2),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFFFD54F).withOpacity(0.85),
+                        color: L(0xFFFFD54F).withOpacity(0.85),
                         blurRadius: 18,
                         spreadRadius: 2,
                       ),
@@ -2200,7 +2179,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                       Text(
                         'إعلان الفوز بالأوكي (Okey Out!) 🎯'.tr,
                         style: TextStyle(
-                          color: Color(0xFF1B0B30),
+                          color: L(0xFF1B0B30),
                           fontWeight: FontWeight.w900,
                           fontSize: 14.5,
                         ),
@@ -2243,17 +2222,17 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             children: [
               // بطاقة اللاعب
               _buildBottomPlayerBadge(timerString, isHumanTurn),
-              const Spacer(),
+              Spacer(),
               // أزرار الترتيب والدردشة
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+                padding: EdgeInsets.symmetric(horizontal: 4, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xEB1A1E29),
+                  color: L(0xEB1A1E29),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0x334B5563), width: 1),
+                  border: Border.all(color: L(0x334B5563), width: 1),
                   boxShadow: [
                     BoxShadow(
-                        color: Colors.black.withOpacity(0.5),
+                        color: L(0xFF000000).withOpacity(0.5),
                         blurRadius: 8,
                         offset: const Offset(0, 3)),
                   ],
@@ -2468,19 +2447,19 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         width: w,
         height: h,
         decoration: BoxDecoration(
-          color: const Color(0x8C142040),
+          color: L(0x8C142040),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: canDiscard
-                ? const Color(0xFFEF4444).withOpacity(0.7)
-                : Colors.white.withOpacity(0.10),
+                ? L(0xFFEF4444).withOpacity(0.7)
+                : L(0xFFFFFFFF).withOpacity(0.10),
             width: canDiscard ? 1.4 : 0.8,
           ),
         ),
         child: total == 0
             ? Center(
                 child: Icon(Icons.layers_clear_rounded,
-                    color: Colors.white.withOpacity(0.18), size: 22))
+                    color: L(0xFFFFFFFF).withOpacity(0.18), size: 22))
             : Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -2490,7 +2469,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                     bottom: 2,
                     child: Text('$total',
                         style: TextStyle(
-                            color: Colors.white.withOpacity(0.35),
+                            color: L(0xFFFFFFFF).withOpacity(0.35),
                             fontSize: 8,
                             fontWeight: FontWeight.w900)),
                   ),
@@ -2529,11 +2508,11 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           constraints:
               BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.55),
           decoration: BoxDecoration(
-            color: const Color(0xFF141C34),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
-            border: Border.all(color: const Color(0xFFFFD54F).withOpacity(0.3)),
+            color: L(0xFF141C34),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+            border: Border.all(color: L(0xFFFFD54F).withOpacity(0.3)),
           ),
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+          padding: EdgeInsets.fromLTRB(16, 12, 16, 20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -2541,32 +2520,30 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                    color: Colors.white24,
+                    color: L(0x3DFFFFFF),
                     borderRadius: BorderRadius.circular(4)),
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               Row(children: [
-                const Icon(Icons.layers_rounded,
-                    color: Color(0xFFFFD54F), size: 18),
-                const SizedBox(width: 8),
+                Icon(Icons.layers_rounded, color: L(0xFFFFD54F), size: 18),
+                SizedBox(width: 8),
                 Text('الأحجار المرمية'.tr,
-                    style: const TextStyle(
-                        color: Colors.white,
+                    style: TextStyle(
+                        color: L(0xFFFFFFFF),
                         fontSize: 15,
                         fontWeight: FontWeight.w900)),
-                const Spacer(),
+                Spacer(),
                 Text('$total',
-                    style: const TextStyle(
-                        color: Colors.white54,
+                    style: TextStyle(
+                        color: L(0x8AFFFFFF),
                         fontSize: 12,
                         fontWeight: FontWeight.w800)),
               ]),
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               Align(
                 alignment: AlignmentDirectional.centerStart,
                 child: Text('للاطلاع فقط — لا يمكن أخذ الأحجار من هنا'.tr,
-                    style:
-                        const TextStyle(color: Colors.white38, fontSize: 10.5)),
+                    style: TextStyle(color: L(0x61FFFFFF), fontSize: 10.5)),
               ),
               const SizedBox(height: 10),
               Flexible(
@@ -2590,16 +2567,16 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     final pile = _engine.discardPiles[p];
     final isFull = p != 0 && _engine.players[p].playStyle == OkeyPlayStyle.full;
     final colors = [
-      const Color(0xFF4ADE80),
-      const Color(0xFF38BDF8),
-      const Color(0xFFF472B6),
-      const Color(0xFFFBBF24),
+      L(0xFF4ADE80),
+      L(0xFF38BDF8),
+      L(0xFFF472B6),
+      L(0xFFFBBF24),
     ];
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(10),
+      margin: EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: L(0xFFFFFFFF).withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: colors[p].withOpacity(0.35)),
       ),
@@ -2608,7 +2585,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         children: [
           Row(children: [
             Icon(Icons.person_rounded, color: colors[p], size: 14),
-            const SizedBox(width: 6),
+            SizedBox(width: 6),
             Expanded(
               child: Text(
                 p == 0 ? 'أنت'.tr : _engine.players[p].name,
@@ -2620,8 +2597,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
               ),
             ),
             Text('${pile.length}',
-                style: const TextStyle(
-                    color: Colors.white38,
+                style: TextStyle(
+                    color: L(0x61FFFFFF),
                     fontSize: 10,
                     fontWeight: FontWeight.w700)),
           ]),
@@ -2674,7 +2651,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         maxSimultaneousDrags: 1,
         onDragStarted: () => AppHaptics.selection(),
         dragAnchorStrategy: (d, c, p) =>
-            const Offset(_rackTileW / 2, _rackTileH / 2 + _rackTileH * 0.28),
+            Offset(_rackTileW / 2, _rackTileH / 2 + _rackTileH * 0.28),
         feedback: Material(
           color: Colors.transparent,
           elevation: 10,
@@ -2692,7 +2669,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
               borderRadius: BorderRadius.circular(5),
               boxShadow: [
                 BoxShadow(
-                    color: const Color(0xFF4ADE80).withOpacity(0.75),
+                    color: L(0xFF4ADE80).withOpacity(0.75),
                     blurRadius: 9,
                     spreadRadius: 1.5),
               ],
@@ -2729,11 +2706,11 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
               borderRadius: BorderRadius.circular(4),
               boxShadow: [
                 BoxShadow(
-                    color: Colors.black.withOpacity(0.5),
+                    color: L(0xFF000000).withOpacity(0.5),
                     blurRadius: 8,
-                    offset: const Offset(0, 4)),
+                    offset: Offset(0, 4)),
                 BoxShadow(
-                    color: const Color(0xFFFFB300).withOpacity(0.25),
+                    color: L(0xFFFFB300).withOpacity(0.25),
                     blurRadius: 10,
                     spreadRadius: 1),
               ],
@@ -2741,10 +2718,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             child: OkeyTileWidget(
                 tile: _engine.indicatorTile, width: 24, height: 33),
           ),
-          const SizedBox(height: 3),
+          SizedBox(height: 3),
           Text('مؤشر'.tr,
               style: TextStyle(
-                  color: Color(0xFFFFD54F),
+                  color: L(0xFFFFD54F),
                   fontSize: 7.5,
                   fontWeight: FontWeight.w800)),
         ],
@@ -2758,22 +2735,20 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       width: w,
       height: h,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFFFFFDF5), Color(0xFFEDE0C4), Color(0xFFD6C29E)],
+          colors: [L(0xFFFFFDF5), L(0xFFEDE0C4), L(0xFFD6C29E)],
         ),
         borderRadius: BorderRadius.circular(w * 0.12),
-        border: Border.all(color: const Color(0xFFC4B28F), width: 0.7),
+        border: Border.all(color: L(0xFFC4B28F), width: 0.7),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.4),
+              color: L(0xFF000000).withOpacity(0.4),
               blurRadius: 3,
-              offset: const Offset(0, 2)),
+              offset: Offset(0, 2)),
           if (glow)
-            BoxShadow(
-                color: const Color(0xFF4ADE80).withOpacity(0.55),
-                blurRadius: 10),
+            BoxShadow(color: L(0xFF4ADE80).withOpacity(0.55), blurRadius: 10),
         ],
       ),
       child: Center(
@@ -2782,8 +2757,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           height: w * 0.42,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(
-                color: const Color(0xFFB89A62).withOpacity(0.7), width: 1),
+            border: Border.all(color: L(0xFFB89A62).withOpacity(0.7), width: 1),
           ),
         ),
       ),
@@ -2817,7 +2791,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         maxSimultaneousDrags: canDraw && remaining > 0 ? 1 : 0,
         onDragStarted: () => AppHaptics.selection(),
         dragAnchorStrategy: (d, c, p) =>
-            const Offset(_rackTileW / 2, _rackTileH / 2 + _rackTileH * 0.28),
+            Offset(_rackTileW / 2, _rackTileH / 2 + _rackTileH * 0.28),
         feedback: Material(
           color: Colors.transparent,
           elevation: 10,
@@ -2827,10 +2801,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             tower,
-            const SizedBox(height: 3),
+            SizedBox(height: 3),
             Text('$remaining',
                 style: TextStyle(
-                    color: canDraw ? const Color(0xFF86EFAC) : Colors.white60,
+                    color: canDraw ? L(0xFF86EFAC) : L(0x99FFFFFF),
                     fontSize: 8.5,
                     fontWeight: FontWeight.w900)),
           ],
@@ -2842,27 +2816,27 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   Widget _buildBottomPlayerBadge(String timerString, bool isTurn) {
     final player = _engine.players[0];
     return Container(
-      margin: const EdgeInsets.only(left: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      margin: EdgeInsets.only(left: 8),
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: const Color(0xEB1A1E29),
+        color: L(0xEB1A1E29),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isTurn ? const Color(0xFF4ADE80) : const Color(0x334B5563),
+          color: isTurn ? L(0xFF4ADE80) : L(0x334B5563),
           width: isTurn ? 1.5 : 1.0,
         ),
         boxShadow: [
           if (isTurn)
             BoxShadow(
-              color: const Color(0xFF4ADE80).withOpacity(0.35),
+              color: L(0xFF4ADE80).withOpacity(0.35),
               blurRadius: 14,
               spreadRadius: 1,
             )
           else
             BoxShadow(
-              color: Colors.black.withOpacity(0.5),
+              color: L(0xFF000000).withOpacity(0.5),
               blurRadius: 8,
-              offset: const Offset(0, 3),
+              offset: Offset(0, 3),
             ),
         ],
       ),
@@ -2875,14 +2849,13 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color:
-                    isTurn ? const Color(0xFF4ADE80) : const Color(0xFF6B7280),
+                color: isTurn ? L(0xFF4ADE80) : L(0xFF6B7280),
                 width: isTurn ? 2.2 : 1.2,
               ),
               boxShadow: [
                 if (isTurn)
                   BoxShadow(
-                    color: const Color(0xFF4ADE80).withOpacity(0.6),
+                    color: L(0xFF4ADE80).withOpacity(0.6),
                     blurRadius: 8,
                     spreadRadius: 1,
                   ),
@@ -2890,58 +2863,58 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             ),
             child: ClipOval(
               child: Container(
-                color: const Color(0xFF2E384D),
-                child: const Icon(Icons.person, color: Colors.white, size: 18),
+                color: L(0xFF2E384D),
+                child: Icon(Icons.person, color: L(0xFFFFFFFF), size: 18),
               ),
             ),
           ),
-          const SizedBox(width: 7),
+          SizedBox(width: 7),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 player.name,
-                style: const TextStyle(
-                    color: Colors.white,
+                style: TextStyle(
+                    color: L(0xFFFFFFFF),
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     height: 1.15),
               ),
-              const SizedBox(height: 1.5),
+              SizedBox(height: 1.5),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     'Rating ${player.rating}',
-                    style: const TextStyle(
-                        color: Color(0xFF9CA3AF),
+                    style: TextStyle(
+                        color: L(0xFF9CA3AF),
                         fontSize: 9,
                         fontWeight: FontWeight.w500),
                   ),
-                  const SizedBox(width: 4),
+                  SizedBox(width: 4),
                   Container(
                     width: 4,
                     height: 4,
-                    decoration: const BoxDecoration(
-                        color: Color(0xFF4ADE80), shape: BoxShape.circle),
+                    decoration: BoxDecoration(
+                        color: L(0xFF4ADE80), shape: BoxShape.circle),
                   ),
-                  const SizedBox(width: 3),
+                  SizedBox(width: 3),
                   Text(
                     timerString,
                     style: TextStyle(
                         color: isTurn
                             ? (_engine.turnTimeRemaining <= 10
-                                ? const Color(0xFFEF4444)
-                                : const Color(0xFF4ADE80))
-                            : const Color(0xFFD1D5DB),
+                                ? L(0xFFEF4444)
+                                : L(0xFF4ADE80))
+                            : L(0xFFD1D5DB),
                         fontSize: 9,
                         fontWeight: isTurn ? FontWeight.w800 : FontWeight.w600),
                   ),
                 ],
               ),
               if (isTurn) ...[
-                const SizedBox(height: 3.5),
+                SizedBox(height: 3.5),
                 SizedBox(
                   width: 95,
                   height: 3.5,
@@ -2950,11 +2923,11 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                     child: LinearProgressIndicator(
                       value: (_engine.turnTimeRemaining / _engine.turnDuration)
                           .clamp(0.0, 1.0),
-                      backgroundColor: Colors.white12,
+                      backgroundColor: L(0x1FFFFFFF),
                       valueColor: AlwaysStoppedAnimation<Color>(
                         _engine.turnTimeRemaining <= 10
-                            ? const Color(0xFFEF4444)
-                            : const Color(0xFF4ADE80),
+                            ? L(0xFFEF4444)
+                            : L(0xFF4ADE80),
                       ),
                     ),
                   ),
@@ -2970,7 +2943,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   Widget _buildDockDivider({bool vertical = false}) => Container(
         width: vertical ? 40 : 1,
         height: vertical ? 1 : 18,
-        color: const Color(0x22FFFFFF),
+        color: L(0x22FFFFFF),
         margin: EdgeInsets.symmetric(
             horizontal: vertical ? 0 : 2, vertical: vertical ? 1 : 0),
       );
@@ -2983,16 +2956,16 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: Colors.white, size: 15),
-            const SizedBox(height: 2),
+            Icon(icon, color: L(0xFFFFFFFF), size: 15),
+            SizedBox(height: 2),
             Text(
               label,
-              style: const TextStyle(
-                  color: Color(0xFFD1D5DB),
+              style: TextStyle(
+                  color: L(0xFFD1D5DB),
                   fontSize: 8,
                   fontWeight: FontWeight.w600),
             ),

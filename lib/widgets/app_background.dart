@@ -68,8 +68,8 @@ class _AmbiancePainter extends CustomPainter {
     final lampGlowPaint = Paint()
       ..shader = RadialGradient(
         colors: [
-          const Color(0xFF7C5CFF).withOpacity(0.30),
-          const Color(0xFF4F46E5).withOpacity(0.12),
+          L(0xFF7C5CFF).withOpacity(0.30),
+          L(0xFF4F46E5).withOpacity(0.12),
           Colors.transparent,
         ],
         stops: const [0.0, 0.45, 1.0],
@@ -90,7 +90,7 @@ class _AmbiancePainter extends CustomPainter {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          const Color(0xFF8B5CF6).withOpacity(0.10),
+          L(0xFF8B5CF6).withOpacity(0.10),
           Colors.transparent,
         ],
       ).createShader(Rect.fromLTWH(
@@ -103,11 +103,11 @@ class _AmbiancePainter extends CustomPainter {
         Rect.fromLTWH(0, size.height * 0.28, size.width, size.height * 0.72);
     final tableGlowPaint = Paint()
       ..shader = RadialGradient(
-        center: const Alignment(0, 0.2),
+        center: Alignment(0, 0.2),
         radius: 0.85,
         colors: [
-          const Color(0xFF2563EB).withOpacity(0.18),
-          const Color(0xFF06B6D4).withOpacity(0.08),
+          L(0xFF2563EB).withOpacity(0.18),
+          L(0xFF06B6D4).withOpacity(0.08),
           Colors.transparent,
         ],
         stops: const [0.0, 0.6, 1.0],
@@ -117,7 +117,7 @@ class _AmbiancePainter extends CustomPainter {
 
     // 4. Subtle wood plank horizontal grain lines
     final plankPaint = Paint()
-      ..color = const Color(0xFF9DB7FF).withOpacity(0.025)
+      ..color = L(0xFF9DB7FF).withOpacity(0.025)
       ..strokeWidth = 1.0;
 
     for (double y = size.height * 0.35;
@@ -127,8 +127,7 @@ class _AmbiancePainter extends CustomPainter {
     }
 
     // 5. Floating atmospheric dust motes / glowing specks
-    final speckPaint = Paint()
-      ..color = const Color(0xFFFFE082).withOpacity(0.3);
+    final speckPaint = Paint()..color = L(0xFFFFE082).withOpacity(0.3);
     final randomSpecks = [
       Offset(size.width * 0.12, size.height * 0.2),
       Offset(size.width * 0.25, size.height * 0.16),
@@ -150,8 +149,8 @@ class _AmbiancePainter extends CustomPainter {
     final glowPaint = Paint()
       ..shader = RadialGradient(
         colors: [
-          const Color(0xFF38BDF8).withOpacity(0.14),
-          const Color(0xFF4F46E5).withOpacity(0.07),
+          L(0xFF38BDF8).withOpacity(0.14),
+          L(0xFF4F46E5).withOpacity(0.07),
           Colors.transparent,
         ],
         stops: const [0.0, 0.45, 1.0],
@@ -165,8 +164,8 @@ class _AmbiancePainter extends CustomPainter {
     final skyPaint = Paint()
       ..shader = RadialGradient(
         colors: [
-          const Color(0xFF7C5CFF).withOpacity(0.12),
-          const Color(0xFF38BDF8).withOpacity(0.05),
+          L(0xFF7C5CFF).withOpacity(0.12),
+          L(0xFF38BDF8).withOpacity(0.05),
           Colors.transparent,
         ],
         stops: const [0.0, 0.55, 1.0],
@@ -178,7 +177,7 @@ class _AmbiancePainter extends CustomPainter {
 
     // 3. خطوط زجاجية خافتة
     final streakPaint = Paint()
-      ..color = Colors.white.withOpacity(0.03)
+      ..color = L(0xFFFFFFFF).withOpacity(0.03)
       ..strokeWidth = 1.0;
     for (double y = size.height * 0.25;
         y < size.height;
@@ -200,11 +199,11 @@ class _AmbiancePainter extends CustomPainter {
     }
 
     glow(Offset(size.width * 0.9, size.height * 0.05), size.width * 0.6,
-        const Color(0xFFBBD3F7), 0.20);
+        L(0xFFBBD3F7), 0.20);
     glow(Offset(size.width * 0.05, size.height * 0.35), size.width * 0.5,
-        const Color(0xFFF3E3C0), 0.18);
+        L(0xFFF3E3C0), 0.18);
     glow(Offset(size.width * 0.5, size.height * 1.0), size.width * 0.7,
-        const Color(0xFFD9CBF5), 0.13);
+        L(0xFFD9CBF5), 0.13);
   }
 
   @override

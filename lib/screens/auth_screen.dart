@@ -91,13 +91,13 @@ class _AuthScreenState extends State<AuthScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xF5FFFFFF), Color(0xEAF0F5FC)],
+                colors: [L(0xF5FFFFFF), L(0xEAF0F5FC)],
               ),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(color: L(0xFFFFD54F), width: 1.5),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.6),
+                  color: L(0xFF000000).withOpacity(0.6),
                   blurRadius: 20,
                   offset: Offset(0, 8),
                 ),
@@ -290,10 +290,10 @@ class _AuthScreenState extends State<AuthScreen> {
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [Color(0xF5FFFFFF), Color(0xEAF0F5FC)],
+                        colors: [L(0xF5FFFFFF), L(0xEAF0F5FC)],
                       ),
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Color(0x50FFD54F), width: 1.2),
+                      border: Border.all(color: L(0x50FFD54F), width: 1.2),
                       boxShadow: [
                         BoxShadow(
                           color: L(0xFF64748B).withOpacity(0.18),
@@ -328,7 +328,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         // Google Sign-In Button
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
+                            backgroundColor: L(0xFFFFFFFF),
                             foregroundColor: L(0xFF1F2937),
                             elevation: 4,
                             padding: EdgeInsets.symmetric(

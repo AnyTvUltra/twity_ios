@@ -145,7 +145,7 @@ class _StoreScreenState extends State<StoreScreen>
                                   width: 1,
                                   height: 12,
                                   margin: EdgeInsets.symmetric(horizontal: 6),
-                                  color: Colors.white.withOpacity(0.18),
+                                  color: L(0xFFFFFFFF).withOpacity(0.18),
                                 ),
                                 GemIcon(size: 15),
                                 SizedBox(width: 4),
@@ -238,7 +238,7 @@ class _StoreScreenState extends State<StoreScreen>
               border: Border.all(
                 color: selected
                     ? accent.withOpacity(0.9)
-                    : Colors.white.withOpacity(0.10),
+                    : L(0xFFFFFFFF).withOpacity(0.10),
                 width: selected ? 1.3 : 1,
               ),
               boxShadow: selected
@@ -254,12 +254,12 @@ class _StoreScreenState extends State<StoreScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(icon,
-                    size: 17, color: selected ? Colors.white : L(0xFF94A3B8)),
+                    size: 17, color: selected ? L(0xFFFFFFFF) : L(0xFF94A3B8)),
                 SizedBox(width: 6),
                 Text(
                   label,
                   style: TextStyle(
-                    color: selected ? Colors.white : L(0xFF94A3B8),
+                    color: selected ? L(0xFFFFFFFF) : L(0xFF94A3B8),
                     fontSize: 11.5,
                     fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
                   ),
@@ -391,7 +391,7 @@ class _StoreScreenState extends State<StoreScreen>
                               child: Text(
                                 'محدود ⏳'.tr,
                                 style: TextStyle(
-                                    color: Colors.white,
+                                    color: L(0xFFFFFFFF),
                                     fontSize: 8.5,
                                     fontWeight: FontWeight.w900),
                               ),
@@ -487,7 +487,7 @@ class _StoreScreenState extends State<StoreScreen>
                                     : L(0xFFFFD54F),
                         disabledBackgroundColor: locked ? L(0xFF1E293B) : null,
                         foregroundColor:
-                            equipped || owned ? Colors.white : L(0xFF1B0B30),
+                            equipped || owned ? L(0xFFFFFFFF) : L(0xFF1B0B30),
                         disabledForegroundColor: L(0xFF64748B),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10)),
@@ -547,7 +547,7 @@ class _StoreScreenState extends State<StoreScreen>
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                    color: Colors.white24,
+                    color: L(0x3DFFFFFF),
                     borderRadius: BorderRadius.circular(4)),
               ),
               SizedBox(height: 14),
@@ -555,7 +555,7 @@ class _StoreScreenState extends State<StoreScreen>
                 Expanded(
                   child: Text(item.name,
                       style: TextStyle(
-                          color: Colors.white,
+                          color: L(0xFFFFFFFF),
                           fontSize: 16,
                           fontWeight: FontWeight.w900),
                       overflow: TextOverflow.ellipsis),
@@ -570,7 +570,7 @@ class _StoreScreenState extends State<StoreScreen>
                     ),
                     child: Text('محدود ⏳'.tr,
                         style: TextStyle(
-                            color: Colors.white,
+                            color: L(0xFFFFFFFF),
                             fontSize: 10,
                             fontWeight: FontWeight.w900)),
                   ),
@@ -580,7 +580,7 @@ class _StoreScreenState extends State<StoreScreen>
                 alignment: AlignmentDirectional.centerStart,
                 child: Text(
                   'هكذا ستبدو على أدواتك داخل اللعبة'.tr,
-                  style: TextStyle(color: Colors.white54, fontSize: 11),
+                  style: TextStyle(color: L(0x8AFFFFFF), fontSize: 11),
                 ),
               ),
               SizedBox(height: 14),
@@ -611,27 +611,26 @@ class _StoreScreenState extends State<StoreScreen>
                   ),
                 ),
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14),
               Row(children: [
                 // السعر
                 if (!owned)
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                    padding: EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.06),
+                      color: L(0xFFFFFFFF).withOpacity(0.06),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white12),
+                      border: Border.all(color: L(0x1FFFFFFF)),
                     ),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       if (item.currency == StoreCurrency.gems)
-                        const GemIcon(size: 16)
+                        GemIcon(size: 16)
                       else
-                        const Text('🪙', style: TextStyle(fontSize: 14)),
-                      const SizedBox(width: 5),
+                        Text('🪙', style: TextStyle(fontSize: 14)),
+                      SizedBox(width: 5),
                       Text(formatBalance(item.price),
-                          style: const TextStyle(
-                              color: Colors.white,
+                          style: TextStyle(
+                              color: L(0xFFFFFFFF),
                               fontSize: 13,
                               fontWeight: FontWeight.w900)),
                     ]),
@@ -672,8 +671,8 @@ class _StoreScreenState extends State<StoreScreen>
                                       : item.price == 0
                                           ? 'مجانية — تجهيز'.tr
                                           : 'شراء وتجهيز'.tr,
-                          style: const TextStyle(
-                              color: Colors.white,
+                          style: TextStyle(
+                              color: L(0xFFFFFFFF),
                               fontWeight: FontWeight.w900,
                               fontSize: 13.5),
                         ),

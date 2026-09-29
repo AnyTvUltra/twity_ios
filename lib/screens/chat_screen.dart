@@ -88,7 +88,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         padding:
                             EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Color(0x3310B981),
+                          color: L(0x3310B981),
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(color: L(0xFF10B981), width: 1),
                         ),
@@ -166,7 +166,7 @@ class _ChatScreenState extends State<ChatScreen> {
             boxShadow: sel
                 ? [
                     BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
+                        color: L(0xFF000000).withOpacity(0.08),
                         blurRadius: 8,
                         offset: Offset(0, 2))
                   ]
@@ -234,7 +234,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: LightGlass.accent,
-                        foregroundColor: Colors.white,
+                        foregroundColor: L(0xFFFFFFFF),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
                       ),
@@ -304,7 +304,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
                 child: Text('${c.unreadCount}',
                     style: TextStyle(
-                        color: Colors.white,
+                        color: L(0xFFFFFFFF),
                         fontSize: 10,
                         fontWeight: FontWeight.w900)),
               )
@@ -357,7 +357,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       ),
                       child: Text('${requests.length}',
                           style: TextStyle(
-                              color: Colors.white,
+                              color: L(0xFFFFFFFF),
                               fontSize: 10,
                               fontWeight: FontWeight.w900)),
                     ),
@@ -765,7 +765,7 @@ class _ChatScreenState extends State<ChatScreen> {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: LinearGradient(colors: [L(0xFF60A5FA), L(0xFF3B82F6)]),
-        border: Border.all(color: Colors.white, width: 1.5),
+        border: Border.all(color: L(0xFFFFFFFF), width: 1.5),
         boxShadow: [
           BoxShadow(color: L(0xFF3B82F6).withOpacity(0.25), blurRadius: 6)
         ],
@@ -777,7 +777,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget _initial(String name, double radius) => Text(
         name.isNotEmpty ? name[0].toUpperCase() : 'P',
         style: TextStyle(
-            color: Colors.white,
+            color: L(0xFFFFFFFF),
             fontWeight: FontWeight.w900,
             fontSize: radius * 0.8),
       );
@@ -880,7 +880,7 @@ class _ChatScreenState extends State<ChatScreen> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: L(0xFFDC2626),
-                foregroundColor: Colors.white,
+                foregroundColor: L(0xFFFFFFFF),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10)),
               ),
@@ -939,7 +939,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: L(0xFFDC2626),
-              foregroundColor: Colors.white,
+              foregroundColor: L(0xFFFFFFFF),
             ),
             onPressed: () async {
               final myUid = AuthService().currentUser?.uid;
@@ -1016,8 +1016,8 @@ class _NotificationBell extends StatelessWidget {
                               child: Center(
                                 child: Text(
                                   total > 9 ? '9+' : '$total',
-                                  style: const TextStyle(
-                                      color: Colors.white,
+                                  style: TextStyle(
+                                      color: L(0xFFFFFFFF),
                                       fontSize: 8,
                                       fontWeight: FontWeight.w900),
                                 ),
@@ -1266,8 +1266,8 @@ class NotificationsSheet extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text('${c.unreadCount}',
-                                    style: const TextStyle(
-                                        color: Colors.white,
+                                    style: TextStyle(
+                                        color: L(0xFFFFFFFF),
                                         fontSize: 10,
                                         fontWeight: FontWeight.w900)),
                               ),
@@ -1468,12 +1468,12 @@ class _DirectChatModalState extends State<DirectChatModal> {
                               ),
                               border: Border.all(
                                   color: isMe
-                                      ? Color(0x40FFD54F)
+                                      ? L(0x40FFD54F)
                                       : LightGlass.borderDim,
                                   width: 0.8),
                               boxShadow: [
                                 BoxShadow(
-                                    color: Colors.black.withOpacity(0.06),
+                                    color: L(0xFF000000).withOpacity(0.06),
                                     blurRadius: 6,
                                     offset: Offset(0, 2)),
                               ],
@@ -1486,7 +1486,7 @@ class _DirectChatModalState extends State<DirectChatModal> {
                                 Text(msg.text,
                                     style: TextStyle(
                                         color: isMe
-                                            ? Colors.white
+                                            ? L(0xFFFFFFFF)
                                             : LightGlass.text,
                                         fontSize: 13.5)),
                                 SizedBox(height: 2),
@@ -1494,7 +1494,7 @@ class _DirectChatModalState extends State<DirectChatModal> {
                                   '${msg.timestamp.hour.toString().padLeft(2, '0')}:${msg.timestamp.minute.toString().padLeft(2, '0')}',
                                   style: TextStyle(
                                       color: isMe
-                                          ? Colors.white54
+                                          ? L(0x8AFFFFFF)
                                           : LightGlass.textFaint,
                                       fontSize: 9.5),
                                 ),
@@ -1545,8 +1545,8 @@ class _DirectChatModalState extends State<DirectChatModal> {
                             colors: [L(0xFF60A5FA), L(0xFF3B82F6)]),
                       ),
                       child: IconButton(
-                        icon: const Icon(Icons.send_rounded,
-                            color: Colors.white, size: 20),
+                        icon: Icon(Icons.send_rounded,
+                            color: L(0xFFFFFFFF), size: 20),
                         onPressed: _sendMessage,
                       ),
                     ),

@@ -109,9 +109,9 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
             width: 34,
             height: 34,
             decoration: BoxDecoration(
-              color: const Color(0x2E16204A),
+              color: L(0x2E16204A),
               borderRadius: BorderRadius.circular(13),
-              border: Border.all(color: const Color(0x26FFFFFF), width: 1),
+              border: Border.all(color: L(0x26FFFFFF), width: 1),
             ),
             child: Icon(icon, color: _textDim, size: 16),
           ),
@@ -150,13 +150,13 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                           L(0xFF14286B).withOpacity(0.85),
                         ]
                       : [
-                          Color(0x2E141C3C),
-                          Color(0x1E0C1230),
+                          L(0x2E141C3C),
+                          L(0x1E0C1230),
                         ],
                 ),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: isSelected ? accent : Color(0x2EFFFFFF),
+                  color: isSelected ? accent : L(0x2EFFFFFF),
                   width: isSelected ? 1.8 : 1.0,
                 ),
                 boxShadow: [
@@ -262,16 +262,15 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
+                        duration: Duration(milliseconds: 200),
                         width: 20,
                         height: 20,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color:
-                                isSelected ? accent : const Color(0x55FFFFFF),
+                            color: isSelected ? accent : L(0x55FFFFFF),
                             width: 2,
                           ),
                           color: isSelected ? accent : Colors.transparent,
@@ -284,8 +283,7 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                               : null,
                         ),
                         child: isSelected
-                            ? const Icon(Icons.check,
-                                color: Colors.white, size: 12)
+                            ? Icon(Icons.check, color: L(0xFFFFFFFF), size: 12)
                             : null,
                       ),
                     ],
@@ -348,7 +346,7 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                     blurRadius: 22,
                     spreadRadius: -2),
                 BoxShadow(
-                    color: Colors.black.withOpacity(0.4),
+                    color: L(0xFF000000).withOpacity(0.4),
                     blurRadius: 12,
                     offset: Offset(0, 6)),
               ],
@@ -366,7 +364,7 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                       borderRadius: BorderRadius.circular(20),
                       gradient: LinearGradient(
                         colors: [
-                          Colors.white.withOpacity(0.5),
+                          L(0xFFFFFFFF).withOpacity(0.5),
                           Colors.transparent,
                         ],
                       ),
@@ -405,21 +403,21 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
       context: context,
       builder: (ctx) => Dialog(
         backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
+        insetPadding: EdgeInsets.symmetric(horizontal: 18, vertical: 24),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(24),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
             child: Container(
-              constraints: const BoxConstraints(maxWidth: 420, maxHeight: 560),
+              constraints: BoxConstraints(maxWidth: 420, maxHeight: 560),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0xF2152150), Color(0xF20A0F24)],
+                  colors: [L(0xF2152150), L(0xF20A0F24)],
                 ),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: const Color(0x44FFFFFF), width: 1.1),
+                border: Border.all(color: L(0x44FFFFFF), width: 1.1),
                 boxShadow: [
                   BoxShadow(color: _neonBlue.withOpacity(0.2), blurRadius: 30),
                 ],
@@ -429,11 +427,11 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                 children: [
                   // رأس النافذة
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 16, 12, 10),
+                    padding: EdgeInsets.fromLTRB(18, 16, 12, 10),
                     child: Row(
                       children: [
-                        Text(rules.icon, style: const TextStyle(fontSize: 24)),
-                        const SizedBox(width: 10),
+                        Text(rules.icon, style: TextStyle(fontSize: 24)),
+                        SizedBox(width: 10),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -459,7 +457,7 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                   Container(
                       height: 1,
                       margin: EdgeInsets.symmetric(horizontal: 16),
-                      color: Color(0x22FFFFFF)),
+                      color: L(0x22FFFFFF)),
                   // الشرح
                   Flexible(
                     child: SingleChildScrollView(

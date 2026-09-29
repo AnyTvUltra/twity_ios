@@ -159,10 +159,10 @@ class _UpdateDialogState extends State<UpdateDialog>
                     child: Container(
                       height: 12,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.08),
+                        color: L(0xFFFFFFFF).withOpacity(0.08),
                         borderRadius: BorderRadius.circular(10),
                         border:
-                            Border.all(color: Colors.white.withOpacity(0.12)),
+                            Border.all(color: L(0xFFFFFFFF).withOpacity(0.12)),
                       ),
                       child: AnimatedBuilder(
                         animation: _c,

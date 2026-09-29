@@ -97,7 +97,7 @@ class _MaintenanceScreen extends StatelessWidget {
               SizedBox(height: 24),
               Text('صيانة مؤقتة 🛠️'.tr,
                   style: TextStyle(
-                      color: Colors.white,
+                      color: L(0xFFFFFFFF),
                       fontSize: 22,
                       fontWeight: FontWeight.w900)),
               SizedBox(height: 12),

@@ -51,24 +51,24 @@ class MoreGamesBanner extends StatelessWidget {
                     ),
                     borderRadius: BorderRadius.circular(21),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.24),
+                      color: L(0xFFFFFFFF).withOpacity(0.24),
                       width: 1,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.45),
+                        color: L(0xFF000000).withOpacity(0.45),
                         blurRadius: 8,
-                        offset: const Offset(0, 3),
+                        offset: Offset(0, 3),
                       ),
                     ],
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  padding: EdgeInsets.symmetric(horizontal: 12),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
                         Icons.sports_esports_rounded,
-                        color: Colors.white,
+                        color: L(0xFFFFFFFF),
                         size: 20,
                       ),
                       SizedBox(width: 6),
@@ -79,13 +79,13 @@ class MoreGamesBanner extends StatelessWidget {
                             'المزيد من الألعاب بانتظارك!'.tr,
                             maxLines: 1,
                             style: TextStyle(
-                              color: Colors.white,
+                              color: L(0xFFFFFFFF),
                               fontSize: 13,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0.2,
                               shadows: [
                                 Shadow(
-                                  color: Colors.black45,
+                                  color: L(0x73000000),
                                   blurRadius: 4,
                                   offset: Offset(0, 1),
                                 ),
@@ -178,13 +178,13 @@ class _CoinStackWithCrownPainter extends CustomPainter {
       ).createShader(Rect.fromLTWH(w * 0.35, h * 0.22, w * 0.5, h * 0.36));
 
     canvas.drawPath(
-      crownPath.shift(const Offset(0, 2)),
-      Paint()..color = Colors.black.withOpacity(0.35),
+      crownPath.shift(Offset(0, 2)),
+      Paint()..color = L(0xFF000000).withOpacity(0.35),
     );
     canvas.drawPath(crownPath, crownPaint);
 
-    canvas.drawCircle(
-        Offset(w * 0.60, h * 0.32), 2, Paint()..color = L(0xFFD32F2F));
+    canvas.drawCircle(Offset(w * 0.60, h * 0.32), 2,
+        Paint()..color = const Color(0xFFD32F2F));
   }
 
   void _drawCoin(Canvas canvas, Offset center, double width, double thickness) {
@@ -193,7 +193,7 @@ class _CoinStackWithCrownPainter extends CustomPainter {
           center: center.translate(0, thickness),
           width: width,
           height: thickness * 1.4),
-      Paint()..color = Colors.black.withOpacity(0.3),
+      Paint()..color = L(0xFF000000).withOpacity(0.3),
     );
 
     final edgePaint = Paint()
@@ -227,7 +227,7 @@ class _CoinStackWithCrownPainter extends CustomPainter {
     );
 
     canvas.drawCircle(center.translate(0, -thickness * 0.5), 2.5,
-        Paint()..color = L(0xFFBF360C));
+        Paint()..color = const Color(0xFFBF360C));
   }
 
   @override

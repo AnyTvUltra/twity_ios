@@ -17,6 +17,8 @@ import '../utils/format.dart';
 import '../widgets/user_avatar.dart';
 import '../l10n/app_lang.dart';
 
+import '../theme_mode.dart';
+
 /// حجر في حالة طيران (حركة/ضرب/إخراج/عودة بعد إفلات خاطئ)
 class _Flight {
   final int side;
@@ -124,11 +126,11 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
   late final AnimationController _intro = AnimationController(
       vsync: this, duration: const Duration(milliseconds: 1800));
 
-  static const _mint = Color(0xFF3FF5A8);
-  static const _gold = Color(0xFFFFD54F);
-  static const _red = Color(0xFFEF4444);
-  static const _textWhite = Color(0xFFF1F5FF);
-  static const _textDim = Color(0xFF8EA3C8);
+  static final _mint = L(0xFF3FF5A8);
+  static final _gold = L(0xFFFFD54F);
+  static final _red = L(0xFFEF4444);
+  static final _textWhite = L(0xFFF1F5FF);
+  static final _textDim = L(0xFF8EA3C8);
 
   BgBoardTheme get _theme => BgThemes.boardFromItemId(
       StoreService().equippedFor(StoreCategory.bgBoard)?.id);
@@ -337,7 +339,9 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
 
   Future<void> _afterRoll() async {
     if (_e.legalMoves().isEmpty) {
-      _toast(_isHumanTurn ? 'لا توجد حركات متاحة 😕'.tr : 'الخصم لا يملك حركات'.tr);
+      _toast(_isHumanTurn
+          ? 'لا توجد حركات متاحة 😕'.tr
+          : 'الخصم لا يملك حركات'.tr);
       setState(() => _busy = true);
       await Future.delayed(const Duration(milliseconds: 1400));
       if (!mounted) return;
@@ -363,7 +367,8 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
     final (a, b) = _e.roll();
     await _animateDice(a, b);
     if (!mounted) return;
-    if (a == b && _rnd.nextDouble() < 0.35) _botSay(BgChatMsg('🔥', emoji: true));
+    if (a == b && _rnd.nextDouble() < 0.35)
+      _botSay(BgChatMsg('🔥', emoji: true));
     setState(() => _busy = false);
     _afterRoll();
   }
@@ -719,8 +724,8 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
     final data = rotate
         ? media.copyWith(
             size: Size(media.size.height, media.size.width),
-            padding: EdgeInsets.fromLTRB(media.padding.top,
-                media.padding.right, media.padding.bottom, media.padding.left),
+            padding: EdgeInsets.fromLTRB(media.padding.top, media.padding.right,
+                media.padding.bottom, media.padding.left),
           )
         : media;
     final game = MediaQuery(data: data, child: _landscape());
@@ -732,7 +737,7 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
           if (!didPop) _requestExit();
         },
         child: Scaffold(
-          backgroundColor: const Color(0xFF03050D),
+          backgroundColor: L(0xFF03050D),
           body: rotate ? RotatedBox(quarterTurns: 1, child: game) : game,
         ),
       ),
@@ -742,11 +747,11 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
   Widget _landscape() {
     final user = AuthService().currentUser;
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: RadialGradient(
           center: Alignment(0, -0.1),
           radius: 1.3,
-          colors: [Color(0xFF1A2752), Color(0xFF0B1226), Color(0xFF03050D)],
+          colors: [L(0xFF1A2752), L(0xFF0B1226), L(0xFF03050D)],
           stops: [0.0, 0.55, 1.0],
         ),
       ),
@@ -799,14 +804,14 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
                           padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
                           child: Row(
                             children: [
-                              const Spacer(),
+                              Spacer(),
                               _glassBtn(Icons.flag_rounded, _requestExit),
                             ],
                           ),
                         ),
-                        const Spacer(),
+                        Spacer(),
                         if (widget.vsAI || _e.turn == 0) _actionButtons(),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
                         _playerCard(
                           side: 0,
                           name: user?.displayName ?? 'أنت'.tr,
@@ -815,7 +820,7 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
                               name: user?.displayName ?? '',
                               size: 42),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
                       ],
                     ),
                   ),
@@ -850,7 +855,7 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
                 Positioned.fill(
                   child: GestureDetector(
                     onTap: () => setState(() => _chatOpen = false),
-                    child: Container(color: Colors.black26),
+                    child: Container(color: L(0x42000000)),
                   ),
                 ),
                 Positioned(
@@ -877,7 +882,9 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
                     chips: _resultChips,
                     title: widget.vsAI
                         ? (_e.winner == 0 ? 'فزت! 🎉'.tr : 'خسرت الجولة'.tr)
-                        : (_e.winner == 0 ? 'فاز اللاعب 1'.tr : 'فاز اللاعب 2'.tr),
+                        : (_e.winner == 0
+                            ? 'فاز اللاعب 1'.tr
+                            : 'فاز اللاعب 2'.tr),
                     onRematch: _rematch,
                     onExit: () => Navigator.of(context).pop(),
                   ),
@@ -892,22 +899,22 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
   Widget _exitDialog() {
     return Positioned.fill(
       child: Container(
-        color: Colors.black54,
+        color: L(0x8A000000),
         alignment: Alignment.center,
         child: Directionality(
           textDirection: TextDirection.rtl,
           child: Container(
             width: 380,
-            padding: const EdgeInsets.all(18),
+            padding: EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: const Color(0xF2141C34),
+              color: L(0xF2141C34),
               borderRadius: BorderRadius.circular(22),
               border: Border.all(color: _red.withValues(alpha: 0.4)),
             ),
             child: Row(
               children: [
-                const Text('🏳️', style: TextStyle(fontSize: 44)),
-                const SizedBox(width: 14),
+                Text('🏳️', style: TextStyle(fontSize: 44)),
+                SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -918,21 +925,19 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
                               color: _textWhite,
                               fontSize: 17,
                               fontWeight: FontWeight.w900)),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text('ستخسر رهانك {} 🪙'.trp([widget.bet]),
-                          style:
-                              const TextStyle(color: _textDim, fontSize: 12)),
-                      const SizedBox(height: 12),
+                          style: TextStyle(color: _textDim, fontSize: 12)),
+                      SizedBox(height: 12),
                       Row(
                         children: [
                           Expanded(
-                            child: _pill('متابعة'.tr, _mint,
-                                const Color(0xFF052E1C),
+                            child: _pill('متابعة'.tr, _mint, L(0xFF052E1C),
                                 () => setState(() => _confirmExit = false)),
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           Expanded(
-                            child: _pill('انسحاب'.tr, _red, Colors.white,
+                            child: _pill('انسحاب'.tr, _red, L(0xFFFFFFFF),
                                 _resignConfirmed),
                           ),
                         ],
@@ -950,14 +955,14 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
 
   Widget _betChip() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
-        color: const Color(0x3316204A),
+        color: L(0x3316204A),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: _gold.withValues(alpha: 0.45)),
       ),
       child: Text('🪙 ${formatBalance(widget.bet)}',
-          style: const TextStyle(
+          style: TextStyle(
               color: _gold, fontWeight: FontWeight.w900, fontSize: 11)),
     );
   }
@@ -973,9 +978,9 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: const Color(0x2E16204A),
+              color: L(0x2E16204A),
               borderRadius: BorderRadius.circular(13),
-              border: Border.all(color: const Color(0x26FFFFFF)),
+              border: Border.all(color: L(0x26FFFFFF)),
             ),
             child: Icon(icon, color: _textDim, size: 17),
           ),
@@ -991,12 +996,10 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
         height: 42,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          gradient: const LinearGradient(
-              colors: [Color(0xFF2563EB), Color(0xFF7C3AED)]),
+          gradient: LinearGradient(colors: [L(0xFF2563EB), L(0xFF7C3AED)]),
           boxShadow: [
             BoxShadow(
-                color: const Color(0xFF7C3AED).withValues(alpha: 0.4),
-                blurRadius: 14),
+                color: L(0xFF7C3AED).withValues(alpha: 0.4), blurRadius: 14),
           ],
         ),
         child: Row(
@@ -1006,7 +1009,7 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
             SizedBox(width: 6),
             Text('دردشة'.tr,
                 style: TextStyle(
-                    color: Colors.white,
+                    color: L(0xFFFFFFFF),
                     fontWeight: FontWeight.w900,
                     fontSize: 13)),
           ],
@@ -1019,10 +1022,9 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
     return Container(
       width: 42,
       height: 42,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient:
-            LinearGradient(colors: [Color(0xFF374151), Color(0xFF0B0C10)]),
+        gradient: LinearGradient(colors: [L(0xFF374151), L(0xFF0B0C10)]),
       ),
       child: const Center(child: Text('🤖', style: TextStyle(fontSize: 21))),
     );
@@ -1039,20 +1041,21 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
     return AnimatedBuilder(
       animation: _pulse,
       builder: (_, __) => Container(
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-        padding: const EdgeInsets.fromLTRB(8, 10, 8, 10),
+        margin: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        padding: EdgeInsets.fromLTRB(8, 10, 8, 10),
         decoration: BoxDecoration(
-          color: const Color(0x331A2550),
+          color: L(0x331A2550),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
               color: active
                   ? _mint.withValues(alpha: 0.5 + 0.4 * _pulse.value)
-                  : const Color(0x22FFFFFF),
+                  : L(0x22FFFFFF),
               width: active ? 1.6 : 1),
           boxShadow: active
               ? [
                   BoxShadow(
-                      color: _mint.withValues(alpha: 0.12 + 0.12 * _pulse.value),
+                      color:
+                          _mint.withValues(alpha: 0.12 + 0.12 * _pulse.value),
                       blurRadius: 18,
                       spreadRadius: -2)
                 ]
@@ -1066,7 +1069,7 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
               Row(
                 children: [
                   avatar,
-                  const SizedBox(width: 6),
+                  SizedBox(width: 6),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1074,11 +1077,11 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
                         Text(name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 color: _textWhite,
                                 fontWeight: FontWeight.w900,
                                 fontSize: 12)),
-                        const SizedBox(height: 2),
+                        SizedBox(height: 2),
                         Row(
                           children: [
                             SizedBox(
@@ -1088,9 +1091,9 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
                                   painter:
                                       CheckerPainter(style: _set.of(side))),
                             ),
-                            const SizedBox(width: 4),
+                            SizedBox(width: 4),
                             Text('${s.pip(side)}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                     color: _gold,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w900)),
@@ -1101,20 +1104,20 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               // تقدّم الإخراج
               ClipRRect(
                 borderRadius: BorderRadius.circular(6),
                 child: Stack(
                   children: [
-                    Container(height: 6, color: const Color(0x22FFFFFF)),
+                    Container(height: 6, color: L(0x22FFFFFF)),
                     FractionallySizedBox(
                       widthFactor: s.off[side] / 15,
                       child: Container(
                         height: 6,
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                              colors: [Color(0xFFFFE082), _gold]),
+                        decoration: BoxDecoration(
+                          gradient:
+                              LinearGradient(colors: [L(0xFFFFE082), _gold]),
                         ),
                       ),
                     ),
@@ -1141,13 +1144,13 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
   Widget _actionButtons() {
     final ready = _awaitingRoll;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: EdgeInsets.symmetric(horizontal: 8),
       child: Column(
         children: [
           AnimatedBuilder(
             animation: _pulse,
             builder: (_, __) => AnimatedOpacity(
-              duration: const Duration(milliseconds: 200),
+              duration: Duration(milliseconds: 200),
               opacity: ready ? 1 : 0.35,
               child: GestureDetector(
                 onTap: ready ? _humanRoll : null,
@@ -1155,12 +1158,12 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
                   height: 56,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(18),
-                    gradient: const LinearGradient(
+                    gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [Color(0xFFFFE082), _gold, Color(0xFFE8A820)],
+                      colors: [L(0xFFFFE082), _gold, L(0xFFE8A820)],
                     ),
-                    border: Border.all(color: const Color(0xFFFFF1C4)),
+                    border: Border.all(color: L(0xFFFFF1C4)),
                     boxShadow: ready
                         ? [
                             BoxShadow(
@@ -1177,10 +1180,10 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
                           width: 24,
                           height: 24,
                           child: CustomPaint(painter: DicePainter(5))),
-                      const SizedBox(width: 6),
+                      SizedBox(width: 6),
                       Text('ارمِ'.tr,
                           style: TextStyle(
-                              color: Color(0xFF1B0B30),
+                              color: L(0xFF1B0B30),
                               fontWeight: FontWeight.w900,
                               fontSize: 16)),
                     ],
@@ -1190,8 +1193,8 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
             ),
           ),
           if (_canAct && _e.canUndo) ...[
-            const SizedBox(height: 6),
-            _pill('↶ تراجع'.tr, const Color(0x22FFFFFF), _textWhite, _undo),
+            SizedBox(height: 6),
+            _pill('↶ تراجع'.tr, L(0x22FFFFFF), _textWhite, _undo),
           ],
         ],
       ),
@@ -1232,21 +1235,20 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
                   size: size, child: _lidPhase ? _lidView() : _board())),
           IgnorePointer(
             child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
+              duration: Duration(milliseconds: 250),
               transitionBuilder: (child, a) => ScaleTransition(
                   scale: CurvedAnimation(parent: a, curve: Curves.easeOutBack),
                   child: FadeTransition(opacity: a, child: child)),
               child: _notice == null
-                  ? const SizedBox.shrink()
+                  ? SizedBox.shrink()
                   : Container(
                       key: ValueKey(_notice),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 10),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                       decoration: BoxDecoration(
-                        color: const Color(0xE60B1226),
+                        color: L(0xE60B1226),
                         borderRadius: BorderRadius.circular(18),
-                        border:
-                            Border.all(color: _mint.withValues(alpha: 0.5)),
+                        border: Border.all(color: _mint.withValues(alpha: 0.5)),
                         boxShadow: [
                           BoxShadow(
                               color: _mint.withValues(alpha: 0.2),
@@ -1255,7 +1257,7 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
                       ),
                       child: Text(_notice!,
                           textDirection: TextDirection.rtl,
-                          style: const TextStyle(
+                          style: TextStyle(
                               color: _textWhite,
                               fontWeight: FontWeight.w900,
                               fontSize: 14)),
@@ -1282,7 +1284,8 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
       builder: (_, __) {
         final t = _lid.value;
         final appear = Curves.easeOutBack.transform((t / 0.15).clamp(0.0, 1.0));
-        final p = Curves.easeInCubic.transform(((t - 0.15) / 0.7).clamp(0.0, 1.0));
+        final p =
+            Curves.easeInCubic.transform(((t - 0.15) / 0.7).clamp(0.0, 1.0));
         final angle = -math.pi * (1 - p);
         final exterior = angle.abs() > math.pi / 2;
         final lidShadow = (1 - p) * 0.6;
@@ -1294,8 +1297,8 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
               clipBehavior: Clip.none,
               children: [
                 ClipRect(
-                  clipper:
-                      _RectClipper(Rect.fromLTRB(cx, -20, g.size.width, g.size.height + 30)),
+                  clipper: _RectClipper(
+                      Rect.fromLTRB(cx, -20, g.size.width, g.size.height + 30)),
                   child: _boardPaint(g),
                 ),
                 Positioned(
@@ -1305,7 +1308,8 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
                   height: g.size.height,
                   child: IgnorePointer(
                     child: Container(
-                        color: Colors.black.withValues(alpha: lidShadow * 0.5)),
+                        color:
+                            L(0xFF000000).withValues(alpha: lidShadow * 0.5)),
                   ),
                 ),
                 Positioned(
@@ -1401,8 +1405,7 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
                   AnimatedBuilder(
                     animation: _fx,
                     builder: (_, __) => Stack(
-                        clipBehavior: Clip.none,
-                        children: _checkers(g, set)),
+                        clipBehavior: Clip.none, children: _checkers(g, set)),
                   )
                 else
                   ..._checkers(g, set),
@@ -1542,8 +1545,7 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
         final half = _e.turn == 0 ? g.rightHalf : g.leftHalf;
         rest = half.center + Offset((i == 0 ? -1 : 1) * size * 0.75, 0);
         final tray = _e.turn == 0 ? g.rightTray : g.leftTray;
-        start =
-            Offset(tray.center.dx, g.size.height * (i == 0 ? 0.75 : 0.25));
+        start = Offset(tray.center.dx, g.size.height * (i == 0 ? 0.75 : 0.25));
       }
       final e = Curves.easeOutCubic.transform(t);
       final bounce = (math.sin(t * math.pi * 3.2)).abs() * (1 - t) * size * 1.6;
@@ -1571,9 +1573,7 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
               child: CustomPaint(
                 painter: DicePainter(_faces[i],
                     used: used,
-                    pip: _opening && i == 1
-                        ? const Color(0xFF111827)
-                        : const Color(0xFF0E7490)),
+                    pip: _opening && i == 1 ? L(0xFF111827) : L(0xFF0E7490)),
               ),
             ),
           ),
@@ -1592,15 +1592,15 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
         width: 52,
         child: IgnorePointer(
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 2),
+            padding: EdgeInsets.symmetric(vertical: 2),
             decoration: BoxDecoration(
-              color: const Color(0xCC0B1226),
+              color: L(0xCC0B1226),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: _gold.withValues(alpha: 0.6)),
             ),
             child: Text('دبل ×{}'.trp([_e.dice.length]),
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                     color: _gold, fontSize: 10, fontWeight: FontWeight.w900)),
           ),
         ),
@@ -1744,13 +1744,13 @@ class _BurstPainter extends CustomPainter {
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 4 * (1 - t) + 0.5
-          ..color = const Color(0xFFFFD54F).withValues(alpha: 1 - t));
+          ..color = L(0xFFFFD54F).withValues(alpha: 1 - t));
     if (!gold) {
       canvas.drawCircle(
           c,
           r * 0.35 * (1 - t),
           Paint()
-            ..color = const Color(0xFFFF6B3D).withValues(alpha: 0.6 * (1 - t))
+            ..color = L(0xFFFF6B3D).withValues(alpha: 0.6 * (1 - t))
             ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8));
     }
     final rnd = math.Random(9);
@@ -1774,9 +1774,7 @@ class _BurstPainter extends CustomPainter {
           ..lineTo(p.dx - s * 0.5, p.dy - s * 0.5)
           ..close();
         canvas.drawPath(
-            star,
-            Paint()
-              ..color = const Color(0xFFFFF1B8).withValues(alpha: 1 - t));
+            star, Paint()..color = L(0xFFFFF1B8).withValues(alpha: 1 - t));
         continue;
       }
       canvas.drawLine(
@@ -1785,9 +1783,7 @@ class _BurstPainter extends CustomPainter {
           Paint()
             ..strokeWidth = 2.2
             ..strokeCap = StrokeCap.round
-            ..color = (i.isEven
-                    ? const Color(0xFFFFE08A)
-                    : const Color(0xFFFF7A45))
+            ..color = (i.isEven ? L(0xFFFFE08A) : L(0xFFFF7A45))
                 .withValues(alpha: 1 - t));
     }
   }

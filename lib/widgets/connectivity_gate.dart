@@ -97,7 +97,7 @@ class _OfflineScreen extends StatelessWidget {
               SizedBox(height: 24),
               Text('لا يوجد اتصال بالإنترنت'.tr,
                   style: TextStyle(
-                      color: Colors.white,
+                      color: L(0xFFFFFFFF),
                       fontSize: 20,
                       fontWeight: FontWeight.w900)),
               SizedBox(height: 12),

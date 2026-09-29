@@ -26,9 +26,9 @@ class AppHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 900),
+        constraints: BoxConstraints(maxWidth: 900),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -41,7 +41,7 @@ class AppHeader extends StatelessWidget {
                     onTap: onProfileTap,
                     child: _AvatarWidget(),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
 
                   // Coin Balance Pill
                   GestureDetector(
@@ -58,19 +58,19 @@ class AppHeader extends StatelessWidget {
                   // Store Button
                   GestureDetector(
                     onTap: onStoreTap,
-                    child: const _HeaderGlassButton(
+                    child: _HeaderGlassButton(
                       child: Icon(Icons.storefront_rounded,
-                          color: Color(0xFFA78BFA), size: 20),
+                          color: L(0xFFA78BFA), size: 20),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
 
                   // Radio Button
                   GestureDetector(
                     onTap: () => RadioPlayerSheet.show(context),
-                    child: const _HeaderGlassButton(
+                    child: _HeaderGlassButton(
                       child: Icon(Icons.radio_rounded,
-                          color: Color(0xFFFFD76A), size: 20),
+                          color: L(0xFFFFD76A), size: 20),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -114,28 +114,28 @@ class _HeaderGlassButton extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Colors.white.withOpacity(0.20),
-                      const Color(0xFF6C63FF).withOpacity(0.10),
-                      const Color(0xFF07142F).withOpacity(0.34),
+                      L(0xFFFFFFFF).withOpacity(0.20),
+                      L(0xFF6C63FF).withOpacity(0.10),
+                      L(0xFF07142F).withOpacity(0.34),
                     ],
                   ),
-            color: UiTheme.instance.isLight ? Colors.white : null,
+            color: UiTheme.instance.isLight ? L(0xFFFFFFFF) : null,
             borderRadius: BorderRadius.circular(13),
             border: Border.all(
                 color: UiTheme.instance.isLight
-                    ? const Color(0xFFE4E9F2)
-                    : Colors.white.withOpacity(0.26)),
+                    ? L(0xFFE4E9F2)
+                    : L(0xFFFFFFFF).withOpacity(0.26)),
             boxShadow: UiTheme.instance.isLight
                 ? [
                     BoxShadow(
-                      color: const Color(0xFF111B3A).withOpacity(0.08),
+                      color: L(0xFF111B3A).withOpacity(0.08),
                       blurRadius: 10,
-                      offset: const Offset(0, 3),
+                      offset: Offset(0, 3),
                     ),
                   ]
                 : [
                     BoxShadow(
-                      color: const Color(0xFF719BFF).withOpacity(0.12),
+                      color: L(0xFF719BFF).withOpacity(0.12),
                       blurRadius: 12,
                     ),
                   ],
@@ -157,12 +157,12 @@ class _AvatarWidget extends StatelessWidget {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.4),
+            color: L(0xFF000000).withOpacity(0.4),
             blurRadius: 6,
-            offset: const Offset(0, 2),
+            offset: Offset(0, 2),
           ),
           BoxShadow(
-            color: const Color(0xFFFFD54F).withOpacity(0.35),
+            color: L(0xFFFFD54F).withOpacity(0.35),
             blurRadius: 8,
           ),
         ],
@@ -185,15 +185,15 @@ class _BoyAvatarPainter extends CustomPainter {
 
     // Background circle gradient
     final bgPaint = Paint()
-      ..shader = const LinearGradient(
+      ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [Color(0xFF6B4896), Color(0xFF43266B)],
+        colors: [L(0xFF6B4896), L(0xFF43266B)],
       ).createShader(Rect.fromLTWH(0, 0, w, h));
     canvas.drawCircle(Offset(w / 2, h / 2), w / 2, bgPaint);
 
     // Blue shirt
-    final shirtPaint = Paint()..color = const Color(0xFF3B82F6);
+    final shirtPaint = Paint()..color = L(0xFF3B82F6);
     final shirtPath = Path()
       ..moveTo(w * 0.15, h)
       ..quadraticBezierTo(w * 0.5, h * 0.68, w * 0.85, h)
@@ -201,7 +201,7 @@ class _BoyAvatarPainter extends CustomPainter {
     canvas.drawPath(shirtPath, shirtPaint);
 
     // Neck
-    final skinPaint = Paint()..color = const Color(0xFFFFDCB5);
+    final skinPaint = Paint()..color = L(0xFFFFDCB5);
     canvas.drawRect(
         Rect.fromLTWH(w * 0.4, h * 0.52, w * 0.2, h * 0.2), skinPaint);
 
@@ -214,13 +214,13 @@ class _BoyAvatarPainter extends CustomPainter {
     canvas.drawRRect(faceRect, skinPaint);
 
     // Eyes
-    final eyePaint = Paint()..color = const Color(0xFF2C1810);
+    final eyePaint = Paint()..color = L(0xFF2C1810);
     canvas.drawCircle(Offset(w * 0.4, h * 0.45), 2.2, eyePaint);
     canvas.drawCircle(Offset(w * 0.6, h * 0.45), 2.2, eyePaint);
 
     // Smile
     final smilePaint = Paint()
-      ..color = const Color(0xFF9E4733)
+      ..color = L(0xFF9E4733)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.6
       ..strokeCap = StrokeCap.round;
@@ -230,7 +230,7 @@ class _BoyAvatarPainter extends CustomPainter {
     canvas.drawPath(smilePath, smilePaint);
 
     // Hair (Dark Brown, trendy anime-like cut)
-    final hairPaint = Paint()..color = const Color(0xFF3E2723);
+    final hairPaint = Paint()..color = L(0xFF3E2723);
     final hairPath = Path()
       ..moveTo(w * 0.18, h * 0.45)
       ..quadraticBezierTo(w * 0.16, h * 0.18, w * 0.5, h * 0.16)
@@ -259,29 +259,29 @@ class _CoinBadgeWidget extends StatelessWidget {
         child: AnimatedContainer(
           duration: UiTheme.transition,
           height: 36,
-          padding: const EdgeInsets.only(left: 4, right: 6),
+          padding: EdgeInsets.only(left: 4, right: 6),
           decoration: BoxDecoration(
             gradient: day
                 ? null
                 : LinearGradient(
                     colors: [
-                      Colors.white.withOpacity(0.16),
-                      const Color(0xFF182B59).withOpacity(0.46),
+                      L(0xFFFFFFFF).withOpacity(0.16),
+                      L(0xFF182B59).withOpacity(0.46),
                     ],
                   ),
-            color: day ? Colors.white : null,
+            color: day ? L(0xFFFFFFFF) : null,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: const Color(0xFFFFD76A).withOpacity(day ? 0.7 : 0.52),
+              color: L(0xFFFFD76A).withOpacity(day ? 0.7 : 0.52),
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
                 color: day
-                    ? const Color(0xFF111B3A).withOpacity(0.08)
-                    : Colors.black.withOpacity(0.35),
+                    ? L(0xFF111B3A).withOpacity(0.08)
+                    : L(0xFF000000).withOpacity(0.35),
                 blurRadius: 6,
-                offset: const Offset(0, 2),
+                offset: Offset(0, 2),
               ),
             ],
           ),
@@ -294,28 +294,28 @@ class _CoinBadgeWidget extends StatelessWidget {
                 height: 26,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: const LinearGradient(
+                  gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Color(0xFFFFF9C4),
-                      Color(0xFFFFD54F),
-                      Color(0xFFFF8F00),
+                      L(0xFFFFF9C4),
+                      L(0xFFFFD54F),
+                      L(0xFFFF8F00),
                     ],
                   ),
-                  border: Border.all(color: const Color(0xFFFFF59D), width: 1),
+                  border: Border.all(color: L(0xFFFFF59D), width: 1),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFFF8F00).withOpacity(0.6),
+                      color: L(0xFFFF8F00).withOpacity(0.6),
                       blurRadius: 4,
-                      offset: const Offset(0, 1),
+                      offset: Offset(0, 1),
                     ),
                   ],
                 ),
-                child: const Center(
+                child: Center(
                   child: Icon(
                     Icons.star_rounded,
-                    color: Color(0xFFBF360C),
+                    color: L(0xFFBF360C),
                     size: 16,
                   ),
                 ),
@@ -330,15 +330,15 @@ class _CoinBadgeWidget extends StatelessWidget {
                   return Text(
                     formatBalance(chips),
                     style: TextStyle(
-                      color: day ? const Color(0xFF111B3A) : Colors.white,
+                      color: day ? L(0xFF111B3A) : L(0xFFFFFFFF),
                       fontWeight: FontWeight.w800,
                       fontSize: 14,
                       letterSpacing: 0.5,
                       shadows: day
                           ? null
-                          : const [
+                          : [
                               Shadow(
-                                color: Colors.black45,
+                                color: L(0x73000000),
                                 blurRadius: 3,
                                 offset: Offset(0, 1),
                               ),
@@ -348,7 +348,7 @@ class _CoinBadgeWidget extends StatelessWidget {
                 },
               ),
 
-              const SizedBox(width: 6),
+              SizedBox(width: 6),
 
               // Purple "+" button
               Container(
@@ -356,20 +356,20 @@ class _CoinBadgeWidget extends StatelessWidget {
                 height: 20,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
+                  gradient: LinearGradient(
+                    colors: [L(0xFF8B5CF6), L(0xFF6D28D9)],
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF8B5CF6).withOpacity(0.5),
+                      color: L(0xFF8B5CF6).withOpacity(0.5),
                       blurRadius: 4,
                     ),
                   ],
                 ),
-                child: const Center(
+                child: Center(
                   child: Icon(
                     Icons.add,
-                    color: Colors.white,
+                    color: L(0xFFFFFFFF),
                     size: 14,
                   ),
                 ),
@@ -379,10 +379,8 @@ class _CoinBadgeWidget extends StatelessWidget {
               Container(
                 width: 1,
                 height: 18,
-                margin: const EdgeInsets.symmetric(horizontal: 6),
-                color: day
-                    ? const Color(0x1F111B3A)
-                    : Colors.white.withOpacity(0.18),
+                margin: EdgeInsets.symmetric(horizontal: 6),
+                color: day ? L(0x1F111B3A) : L(0xFFFFFFFF).withOpacity(0.18),
               ),
               const GemIcon(size: 20),
               const SizedBox(width: 4),
@@ -393,17 +391,15 @@ class _CoinBadgeWidget extends StatelessWidget {
                   return Text(
                     formatBalance(gems),
                     style: TextStyle(
-                      color: day
-                          ? const Color(0xFF2F8EF5)
-                          : const Color(0xFF7DD3FC),
+                      color: day ? L(0xFF2F8EF5) : L(0xFF7DD3FC),
                       fontWeight: FontWeight.w800,
                       fontSize: 13,
                       letterSpacing: 0.5,
                       shadows: day
                           ? null
-                          : const [
+                          : [
                               Shadow(
-                                color: Colors.black45,
+                                color: L(0x73000000),
                                 blurRadius: 3,
                                 offset: Offset(0, 1),
                               ),
@@ -445,31 +441,31 @@ class _NotificationBellWidget extends StatelessWidget {
                   children: [
                     Icon(Icons.notifications_rounded,
                         color: UiTheme.instance.isLight
-                            ? const Color(0xFF111B3A)
-                            : Colors.white,
+                            ? L(0xFF111B3A)
+                            : L(0xFFFFFFFF),
                         size: 20),
                     if (total > 0)
                       Positioned(
                         top: -4,
                         right: -5,
                         child: Container(
-                          padding: const EdgeInsets.all(3),
+                          padding: EdgeInsets.all(3),
                           constraints:
-                              const BoxConstraints(minWidth: 16, minHeight: 16),
+                              BoxConstraints(minWidth: 16, minHeight: 16),
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: const Color(0xFFFF1744),
-                            border: Border.all(color: Colors.white, width: 1.2),
-                            boxShadow: const [
-                              BoxShadow(
-                                  color: Color(0xFFFF1744), blurRadius: 4),
+                            color: L(0xFFFF1744),
+                            border:
+                                Border.all(color: L(0xFFFFFFFF), width: 1.2),
+                            boxShadow: [
+                              BoxShadow(color: L(0xFFFF1744), blurRadius: 4),
                             ],
                           ),
                           child: Center(
                             child: Text(
                               total > 9 ? '9+' : '$total',
-                              style: const TextStyle(
-                                  color: Colors.white,
+                              style: TextStyle(
+                                  color: L(0xFFFFFFFF),
                                   fontSize: 8,
                                   fontWeight: FontWeight.w900),
                             ),
