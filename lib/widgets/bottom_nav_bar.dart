@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import '../l10n/app_lang.dart';
 
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -11,12 +12,12 @@ class BottomNavBar extends StatelessWidget {
     required this.onIndexChanged,
   });
 
-  static const List<_NavEntry> _entries = [
+  static List<_NavEntry> _entries = [
     _NavEntry(
       index: 3,
       icon: Icons.person_outline_rounded,
       activeIcon: Icons.person_rounded,
-      label: 'الملف الشخصي',
+      label: 'الملف الشخصي'.tr,
       accent: Color(0xFF34D399),
       accentDeep: Color(0xFF0F766E),
     ),
@@ -24,7 +25,7 @@ class BottomNavBar extends StatelessWidget {
       index: 2,
       icon: Icons.forum_outlined,
       activeIcon: Icons.forum_rounded,
-      label: 'الدردشة',
+      label: 'الدردشة'.tr,
       accent: Color(0xFF38BDF8),
       accentDeep: Color(0xFF0C4A6E),
     ),
@@ -32,7 +33,7 @@ class BottomNavBar extends StatelessWidget {
       index: 1,
       icon: Icons.military_tech_outlined,
       activeIcon: Icons.military_tech_rounded,
-      label: 'الإنجازات',
+      label: 'الإنجازات'.tr,
       accent: Color(0xFFFBBF24),
       accentDeep: Color(0xFF92400E),
     ),
@@ -40,7 +41,7 @@ class BottomNavBar extends StatelessWidget {
       index: 0,
       icon: Icons.grid_view_rounded,
       activeIcon: Icons.grid_view_rounded,
-      label: 'الرئيسية',
+      label: 'الرئيسية'.tr,
       accent: Color(0xFFF472B6),
       accentDeep: Color(0xFF831843),
     ),

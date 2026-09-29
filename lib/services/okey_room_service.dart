@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'auth_service.dart';
+import '../l10n/app_lang.dart';
 
 class OkeyRoomPlayer {
   final String uid;
@@ -28,7 +29,7 @@ class OkeyRoomPlayer {
   factory OkeyRoomPlayer.fromMap(Map<String, dynamic> data) {
     return OkeyRoomPlayer(
       uid: data['uid'] ?? '',
-      name: data['name'] ?? 'لاعب',
+      name: data['name'] ?? 'لاعب'.tr,
       username: data['username'] ?? '',
       photoUrl: data['photoUrl'] ?? '',
       seatIndex: data['seatIndex'] ?? 0,
@@ -247,10 +248,10 @@ class OkeyRoomService {
       final currentPlayers = List<OkeyRoomPlayer>.from(room.players);
 
       final botNames = [
-        'سارة (Bot)',
-        'أحمد (Bot)',
-        'كابتن طارق (Bot)',
-        'أمير النرد (Bot)'
+        'سارة (Bot)'.tr,
+        'أحمد (Bot)'.tr,
+        'كابتن طارق (Bot)'.tr,
+        'أمير النرد (Bot)'.tr
       ];
       int botIndex = 0;
 

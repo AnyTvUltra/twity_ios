@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'theme.dart';
+import 'l10n/app_lang.dart';
 
 class GameModel {
   final String id;
@@ -30,12 +31,12 @@ class GameModel {
 }
 
 class GamesData {
-  static const List<GameModel> games = [
+  static List<GameModel> games = [
     GameModel(
       id: 'chess',
-      title: 'شطرنج',
+      title: 'شطرنج'.tr,
       subtitle: 'Chess',
-      description: 'فكر • خطط • اربح',
+      description: 'فكر • خطط • اربح'.tr,
       route: '/games/chess',
       gradient: AppGradients.chessCard,
       primaryColor: AppColors.chessBg,
@@ -46,9 +47,9 @@ class GamesData {
     ),
     GameModel(
       id: 'solitaire',
-      title: 'سوليتر',
+      title: 'سوليتر'.tr,
       subtitle: 'Solitaire',
-      description: 'رتّب أوراقك • وحقق الفوز',
+      description: 'رتّب أوراقك • وحقق الفوز'.tr,
       route: '/games/solitaire',
       gradient: AppGradients.solitaireCard,
       primaryColor: AppColors.solitaireBg,
@@ -59,9 +60,9 @@ class GamesData {
     ),
     GameModel(
       id: 'ludo',
-      title: 'لودو',
+      title: 'لودو'.tr,
       subtitle: 'Ludo',
-      description: 'تحدّى أصدقاءك',
+      description: 'تحدّى أصدقاءك'.tr,
       route: '/games/ludo',
       gradient: AppGradients.ludoCard,
       primaryColor: AppColors.ludoBg,
@@ -72,9 +73,9 @@ class GamesData {
     ),
     GameModel(
       id: 'okey',
-      title: 'كونكان',
+      title: 'كونكان'.tr,
       subtitle: 'Okey',
-      description: 'رتّب أحجارك • وكن الأسرع',
+      description: 'رتّب أحجارك • وكن الأسرع'.tr,
       route: '/games/okey',
       gradient: AppGradients.okeyCard,
       primaryColor: AppColors.okeyBg,
@@ -85,9 +86,9 @@ class GamesData {
     ),
     GameModel(
       id: 'backgammon',
-      title: 'طاولي',
+      title: 'طاولي'.tr,
       subtitle: 'Backgammon',
-      description: 'ذكاء • حظ • منافسة',
+      description: 'ذكاء • حظ • منافسة'.tr,
       route: '/games/backgammon',
       gradient: AppGradients.backgammonCard,
       primaryColor: AppColors.backgammonBg,

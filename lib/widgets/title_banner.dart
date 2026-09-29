@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import '../l10n/app_lang.dart';
 
 class TitleBanner extends StatelessWidget {
   const TitleBanner({super.key});
@@ -93,7 +94,7 @@ class TitleBanner extends StatelessWidget {
                     Transform.translate(
                       offset: const Offset(0, 3),
                       child: Text(
-                        'یەڵا یاری',
+                        'یەڵا یاری'.tr,
                         style: TextStyle(
                           fontSize: 34,
                           fontWeight: FontWeight.w900,
@@ -106,7 +107,7 @@ class TitleBanner extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'یەڵا یاری',
+                      'یەڵا یاری'.tr,
                       style: TextStyle(
                         fontSize: 34,
                         fontWeight: FontWeight.w900,
@@ -128,8 +129,8 @@ class TitleBanner extends StatelessWidget {
                           Color(0xFFE67E00),
                         ],
                       ).createShader(bounds),
-                      child: const Text(
-                        'یەڵا یاری',
+                      child: Text(
+                        'یەڵا یاری'.tr,
                         style: TextStyle(
                           fontSize: 34,
                           fontWeight: FontWeight.w900,
@@ -237,8 +238,8 @@ class TitleBanner extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: const Text(
-                      'اختر لعبتك المفضلة واستمتع بالوقت!',
+                    child: Text(
+                      'اختر لعبتك المفضلة واستمتع بالوقت!'.tr,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Color(0xFFF4F5FF),
@@ -420,12 +421,12 @@ class _StickyNoteWidget extends StatelessWidget {
                   ),
                 ),
               ),
-              const Column(
+              Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   SizedBox(height: 3),
                   Text(
-                    'الـلـعـب\nمـتـعـة\nلا تنتهي',
+                    'الـلـعـب\nمـتـعـة\nلا تنتهي'.tr,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Color(0xFF42210B),

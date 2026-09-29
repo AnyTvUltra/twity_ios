@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import '../l10n/app_lang.dart';
 
 /// نوع الجائزة: عملات 🪙 أو جواهر (شذر) 💎 أو سكن 🎨
 enum RewardType { chips, gems, skin }
@@ -122,7 +123,7 @@ class RewardsService {
   // عجلة الحظ اليومية — الحظ مركّز على الأموال 🪙
   // جواهر قليلة 💎 وسكن نادر جداً 🎨 (~3%)
   // ══════════════════════════════════════════════════════
-  static const List<WheelSegment> wheel = [
+  static List<WheelSegment> wheel = [
     WheelSegment(
         label: '150',
         emoji: '🪙',
@@ -159,7 +160,7 @@ class RewardsService {
         weight: 26,
         color: 0xFFFFD54F),
     WheelSegment(
-        label: 'سكن!',
+        label: 'سكن!'.tr,
         emoji: '🎨',
         type: RewardType.skin,
         amount: 0,
@@ -206,7 +207,7 @@ class RewardsService {
   // صندوق الغنائم اليومي المجاني — نفس منطق العجلة
   // (أموال غالباً، جواهر قليلاً، سكن نادراً)
   // ══════════════════════════════════════════════════════
-  static const List<WheelSegment> lootBox = [
+  static List<WheelSegment> lootBox = [
     WheelSegment(
         label: '100',
         emoji: '🪙',
@@ -243,7 +244,7 @@ class RewardsService {
         weight: 30,
         color: 0xFFFFD54F),
     WheelSegment(
-        label: 'سكن!',
+        label: 'سكن!'.tr,
         emoji: '🎨',
         type: RewardType.skin,
         amount: 0,
@@ -286,13 +287,13 @@ class PlayerRank {
 class Ranks {
   Ranks._();
 
-  static const List<PlayerRank> tiers = [
-    PlayerRank('برونزي', '🥉', 0xFFB45309, 0),
-    PlayerRank('فضي', '🥈', 0xFF94A3B8, 1000),
-    PlayerRank('ذهبي', '🥇', 0xFFFFD54F, 1200),
-    PlayerRank('بلاتينيوم', '💠', 0xFF38BDF8, 1400),
-    PlayerRank('ماسي', '💎', 0xFF818CF8, 1600),
-    PlayerRank('أسطوري', '👑', 0xFFC084FC, 1800),
+  static List<PlayerRank> tiers = [
+    PlayerRank('برونزي'.tr, '🥉', 0xFFB45309, 0),
+    PlayerRank('فضي'.tr, '🥈', 0xFF94A3B8, 1000),
+    PlayerRank('ذهبي'.tr, '🥇', 0xFFFFD54F, 1200),
+    PlayerRank('بلاتينيوم'.tr, '💠', 0xFF38BDF8, 1400),
+    PlayerRank('ماسي'.tr, '💎', 0xFF818CF8, 1600),
+    PlayerRank('أسطوري'.tr, '👑', 0xFFC084FC, 1800),
   ];
 
   /// رتبة اللاعب الحالية حسب تقييمه

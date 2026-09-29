@@ -1,3 +1,4 @@
+import '../../l10n/app_lang.dart';
 /// قوانين الكونكان (الأوكي) المتاحة للاعب قبل دخول الطاولة
 enum OkeyRulesVariant { sulaymaniyah, erbil, turkish }
 
@@ -13,6 +14,10 @@ class OkeyRules {
   /// هل يُسمح بالفوز عبر الأزواج السبعة (Çift)؟
   final bool allowSevenPairs;
 
+  /// الجوكر = الرقم الأصغر من المؤشر (سليمانية: مؤشر 8 أحمر ← جوكر 7 أحمر)
+  /// وإلا فالجوكر = الرقم الأكبر (التركي/أربيل: مؤشر 8 ← جوكر 9)
+  final bool jokerBelowIndicator;
+
   const OkeyRules({
     required this.variant,
     required this.name,
@@ -20,30 +25,32 @@ class OkeyRules {
     required this.icon,
     required this.openingPoints,
     required this.allowSevenPairs,
+    this.jokerBelowIndicator = false,
   });
 
-  static const sulaymaniyah = OkeyRules(
+  static final sulaymaniyah = OkeyRules(
     variant: OkeyRulesVariant.sulaymaniyah,
-    name: 'قانون سليمانية',
-    subtitle: 'افتتاح سريع 51 نقطة',
+    name: 'قانون سليمانية'.tr,
+    subtitle: 'افتتاح سريع 51 نقطة'.tr,
     icon: '🏔️',
     openingPoints: 51,
     allowSevenPairs: true,
+    jokerBelowIndicator: true,
   );
 
-  static const erbil = OkeyRules(
+  static final erbil = OkeyRules(
     variant: OkeyRulesVariant.erbil,
-    name: 'قانون أربيل',
-    subtitle: 'احترافي — بدون أزواج',
+    name: 'قانون أربيل'.tr,
+    subtitle: 'احترافي — بدون أزواج'.tr,
     icon: '🏰',
     openingPoints: 101,
     allowSevenPairs: false,
   );
 
-  static const turkish = OkeyRules(
+  static final turkish = OkeyRules(
     variant: OkeyRulesVariant.turkish,
-    name: 'القانون التركي',
-    subtitle: 'الكلاسيكي — 101 + أزواج',
+    name: 'القانون التركي'.tr,
+    subtitle: 'الكلاسيكي — 101 + أزواج'.tr,
     icon: '🀄',
     openingPoints: 101,
     allowSevenPairs: true,
@@ -84,7 +91,7 @@ class OkeyRules {
 
 • المجموعات الصالحة: تسلسل (Per) من نفس اللون مثل 3-4-5، أو مجموعة (Küt) بنفس الرقم بألوان مختلفة، بحد أدنى 3 أحجار.
 
-• حجر الأوكي (الجوكر): يحل محل أي حجر ناقص في المجموعة، وحجره الملوّن يُحدد بحجر المؤشر الظاهر على الطاولة.
+• حجر الأوكي (الجوكر): يحل محل أي حجر ناقص في المجموعة، وهو الرقم الأصغر من حجر المؤشر بنفس اللون — مثلاً إن ظهر 8 أحمر فالجوكر 7 أحمر (وإن ظهر 1 فالجوكر 13).
 
 • الأزواج السبعة: مسموحة — إذا جمعت 7 أزواج متطابقة تفوز فوراً.
 

@@ -10,6 +10,7 @@ import '../services/store_service.dart';
 import '../utils/haptics.dart';
 import '../utils/top_notification.dart';
 import '../widgets/user_avatar.dart';
+import '../l10n/app_lang.dart';
 
 class ChessGameScreen extends StatefulWidget {
   /// true = ضد الذكاء الاصطناعي، false = لاعبان على نفس الجهاز
@@ -124,7 +125,7 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
 
   void _flagFall(ChessColor loser) {
     _timeoutResult =
-        'انتهى الوقت! فاز ${loser == ChessColor.white ? "الأسود" : "الأبيض"} ⏱️';
+        'انتهى الوقت! فاز {} ⏱️'.trp([loser == ChessColor.white ? "الأسود" : "الأبيض"]);
     _endWinnerWhite = loser == ChessColor.black;
     _gameOverShown = true;
     _playEndFx();
@@ -286,12 +287,12 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
     switch (_engine.status) {
       case GameStatus.checkmate:
         final winner =
-            _engine.turn == ChessColor.white ? 'الأسود' : 'الأبيض';
-        return 'كش مات! فاز $winner';
+            _engine.turn == ChessColor.white ? 'الأسود'.tr : 'الأبيض'.tr;
+        return 'كش مات! فاز {}'.trp([winner]);
       case GameStatus.stalemate:
-        return 'طريق مسدود — تعادل';
+        return 'طريق مسدود — تعادل'.tr;
       case GameStatus.draw:
-        return 'تعادل — لا مواد كافية';
+        return 'تعادل — لا مواد كافية'.tr;
       default:
         return '';
     }
@@ -311,7 +312,7 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('ترقية البيدق إلى:',
+              Text('ترقية البيدق إلى:'.tr,
                   style: TextStyle(
                       color: _textWhite,
                       fontSize: 16,
@@ -391,14 +392,14 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: _goldButton('لعبة جديدة', () {
+                    child: _goldButton('لعبة جديدة'.tr, () {
                       Navigator.of(ctx).pop();
                       _newGame();
                     }, icon: Icons.replay_rounded),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: _ghostButton('خروج', () {
+                    child: _ghostButton('خروج'.tr, () {
                       Navigator.of(ctx).pop();
                       Navigator.of(context).pop();
                     }),
@@ -425,29 +426,29 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
               const Icon(Icons.flag_rounded,
                   color: _red, size: 40),
               const SizedBox(height: 10),
-              const Text('الاستسلام؟',
+              Text('الاستسلام؟'.tr,
                   style: TextStyle(
                       color: _textWhite,
                       fontSize: 16,
                       fontWeight: FontWeight.w900)),
               const SizedBox(height: 6),
-              const Text('ستخسر هذه المباراة فوراً',
+              Text('ستخسر هذه المباراة فوراً'.tr,
                   style:
                       TextStyle(color: _textDim, fontSize: 12)),
               const SizedBox(height: 18),
               Row(
                 children: [
                   Expanded(
-                    child: _ghostButton('إلغاء',
+                    child: _ghostButton('إلغاء'.tr,
                         () => Navigator.of(ctx).pop()),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: _goldButton('استسلام', () {
+                    child: _goldButton('استسلام'.tr, () {
                       Navigator.of(ctx).pop();
                       _timeoutResult = widget.vsAI
-                          ? 'استسلمت — فاز الذكاء الاصطناعي'
-                          : 'استسلم ${_engine.turn == ChessColor.white ? "الأبيض" : "الأسود"}';
+                          ? 'استسلمت — فاز الذكاء الاصطناعي'.tr
+                          : 'استسلم {}'.trp([_engine.turn == ChessColor.white ? "الأبيض" : "الأسود"]);
                       _endWinnerWhite =
                           _engine.turn == ChessColor.black;
                       _gameOverShown = true;
@@ -468,7 +469,7 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
     AppHaptics.medium();
     if (!widget.vsAI) {
       // وضع لاعبين — قبول فوري بالاتفاق
-      _timeoutResult = 'تعادل بالاتفاق 🤝';
+      _timeoutResult = 'تعادل بالاتفاق 🤝'.tr;
       _endIsDraw = true;
       _gameOverShown = true;
       _playEndFx();
@@ -478,7 +479,7 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
     // الذكاء يقبل فقط إن كان خاسراً
     final eval = ChessAI.evaluate(_engine);
     if (eval > 250) {
-      _timeoutResult = 'قبل الذكاء الاصطناعي التعادل 🤝';
+      _timeoutResult = 'قبل الذكاء الاصطناعي التعادل 🤝'.tr;
       _endIsDraw = true;
       _gameOverShown = true;
       _playEndFx();
@@ -487,7 +488,7 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
       ChessAudio.illegal();
       TopNotification.show(
         context,
-        'رفض الذكاء الاصطناعي عرض التعادل',
+        'رفض الذكاء الاصطناعي عرض التعادل'.tr,
         icon: Icons.close_rounded,
       );
     }
@@ -542,7 +543,7 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
                 _sheetRow(
                   icon: Icons.undo_rounded,
                   color: _cyan,
-                  title: 'تراجع عن الحركة',
+                  title: 'تراجع عن الحركة'.tr,
                   enabled: _engine.history.isNotEmpty,
                   onTap: () {
                     Navigator.of(ctx).pop();
@@ -555,8 +556,8 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
                       : Icons.volume_off_rounded,
                   color: _gold,
                   title: ChessAudio.soundEnabled
-                      ? 'كتم الأصوات'
-                      : 'تشغيل الأصوات',
+                      ? 'كتم الأصوات'.tr
+                      : 'تشغيل الأصوات'.tr,
                   enabled: true,
                   onTap: () {
                     ChessAudio.soundEnabled =
@@ -570,7 +571,7 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
                 _sheetRow(
                   icon: Icons.logout_rounded,
                   color: _red,
-                  title: 'الخروج من المباراة',
+                  title: 'الخروج من المباراة'.tr,
                   enabled: true,
                   onTap: () {
                     Navigator.of(ctx).pop();
@@ -701,14 +702,14 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
                                     ),
                                   ),
                                 ),
-                                const Column(
+                                Column(
                                   children: [
                                     Icon(
                                         Icons
                                             .workspace_premium_rounded,
                                         color: _gold, size: 12),
                                     SizedBox(height: 1),
-                                    Text('يلا ياري',
+                                    Text('يلا ياري'.tr,
                                         style: TextStyle(
                                             color: _textWhite,
                                             fontSize: 14.5,
@@ -740,7 +741,7 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
                         children: [
                           Expanded(
                             child: _playerCard(
-                              name: user?.displayName ?? 'أنت',
+                              name: user?.displayName ?? 'أنت'.tr,
                               subtitle:
                                   '${user?.rating ?? 1200}',
                               avatar: UserAvatar(
@@ -755,11 +756,11 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
                               flip: true,
                               badge: _engine.inCheck(
                                       ChessColor.white)
-                                  ? 'كش!'
+                                  ? 'كش!'.tr
                                   : (_engine.turn ==
                                               ChessColor.white &&
                                           !_isOver
-                                      ? 'دورك'
+                                      ? 'دورك'.tr
                                       : null),
                               badgeColor: _engine.inCheck(
                                       ChessColor.white)
@@ -772,7 +773,7 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
                             child: _playerCard(
                               name: widget.vsAI
                                   ? 'AI'
-                                  : 'اللاعب الأسود',
+                                  : 'اللاعب الأسود'.tr,
                               subtitle: widget.vsAI
                                   ? 'Expert'
                                   : '${user?.rating ?? 1200}',
@@ -784,13 +785,13 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
                               accent: _cyan,
                               badge: _engine.inCheck(
                                       ChessColor.black)
-                                  ? 'كش!'
+                                  ? 'كش!'.tr
                                   : (_engine.turn ==
                                               ChessColor.black &&
                                           !_isOver
                                       ? (widget.vsAI
                                           ? 'Thinking...'
-                                          : 'دوره')
+                                          : 'دوره'.tr)
                                       : null),
                               badgeColor: _engine.inCheck(
                                       ChessColor.black)
@@ -839,7 +840,7 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
                           Expanded(
                             flex: 2,
                             child: _controlButton(
-                                'إعدادات',
+                                'إعدادات'.tr,
                                 Icons.settings_rounded,
                                 _showSettingsSheet),
                           ),
@@ -847,7 +848,7 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
                           Expanded(
                             flex: 2,
                             child: _controlButton(
-                                'تعادل',
+                                'تعادل'.tr,
                                 Icons.handshake_rounded,
                                 _offerDraw),
                           ),
@@ -855,7 +856,7 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
                           Expanded(
                             flex: 2,
                             child: _controlButton(
-                                'استسلام',
+                                'استسلام'.tr,
                                 Icons.flag_rounded,
                                 _showResignDialog),
                           ),
@@ -863,7 +864,7 @@ class _ChessGameScreenState extends State<ChessGameScreen> {
                           Expanded(
                             flex: 3,
                             child: _primaryButton(
-                              'لعبة جديدة',
+                              'لعبة جديدة'.tr,
                               Icons.play_arrow_rounded,
                               _newGame,
                             ),

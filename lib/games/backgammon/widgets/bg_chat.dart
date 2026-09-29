@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../../../l10n/app_lang.dart';
 
 /// رسالة دردشة فورية — إيموجي أو نص جاهز
 class BgChatMsg {
@@ -17,17 +18,17 @@ class BgChat {
     '😂', '😎', '🔥', '👏', '😡', '😭', '🤯', '😏', '🎲', '👍', '❤️', '😴',
   ];
 
-  static const phrases = [
-    'العب بسرعة! ⏱️',
-    'حظ سعيد 🍀',
-    'ضربة معلم! 👌',
-    'يا لها من رمية 🎲',
-    'ما هذا الحظ؟! 😤',
-    'أحسنت 👏',
-    'لا تستعجل 😏',
-    'مرة ثانية؟ 🔁',
-    'شكراً 🙏',
-    'هههههه 😂',
+  static final phrases = [
+    'العب بسرعة! ⏱️'.tr,
+    'حظ سعيد 🍀'.tr,
+    'ضربة معلم! 👌'.tr,
+    'يا لها من رمية 🎲'.tr,
+    'ما هذا الحظ؟! 😤'.tr,
+    'أحسنت 👏'.tr,
+    'لا تستعجل 😏'.tr,
+    'مرة ثانية؟ 🔁'.tr,
+    'شكراً 🙏'.tr,
+    'هههههه 😂'.tr,
   ];
 
   /// رد البوت على رسالتك
@@ -41,13 +42,13 @@ class BgChat {
       };
       return BgChatMsg(map[m.text] ?? '😎', emoji: true);
     }
-    if (m.text.startsWith('العب بسرعة')) return BgChatMsg('لا تستعجل 😏');
-    if (m.text.startsWith('حظ سعيد')) return BgChatMsg('حظ سعيد 🍀');
-    if (m.text.startsWith('ضربة معلم') || m.text.startsWith('أحسنت')) {
-      return BgChatMsg('شكراً 🙏');
+    if (m.text.startsWith('العب بسرعة'.tr)) return BgChatMsg('لا تستعجل 😏'.tr);
+    if (m.text.startsWith('حظ سعيد'.tr)) return BgChatMsg('حظ سعيد 🍀'.tr);
+    if (m.text.startsWith('ضربة معلم'.tr) || m.text.startsWith('أحسنت'.tr)) {
+      return BgChatMsg('شكراً 🙏'.tr);
     }
-    if (m.text.startsWith('ما هذا الحظ')) return BgChatMsg('😎', emoji: true);
-    if (m.text.startsWith('هه')) return BgChatMsg('😂', emoji: true);
+    if (m.text.startsWith('ما هذا الحظ'.tr)) return BgChatMsg('😎', emoji: true);
+    if (m.text.startsWith('هه'.tr)) return BgChatMsg('😂', emoji: true);
     return BgChatMsg(emojis[rnd.nextInt(emojis.length)], emoji: true);
   }
 }
@@ -87,7 +88,7 @@ class BgChatPanel extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Text('💬 دردشة سريعة',
+              Text('💬 دردشة سريعة'.tr,
                   style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w900,

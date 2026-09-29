@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:game_hub/utils/haptics.dart';
 import '../utils/okey_audio.dart';
 import 'game_notice.dart';
+import '../../../l10n/app_lang.dart';
 
 class OkeyChatDialog extends StatefulWidget {
   const OkeyChatDialog({super.key});
@@ -21,20 +22,20 @@ class OkeyChatDialog extends StatefulWidget {
 class _OkeyChatDialogState extends State<OkeyChatDialog> {
   final TextEditingController _textController = TextEditingController();
 
-  final List<Map<String, String>> _quickMessages = const [
-    {'en': 'Good luck!', 'ar': 'حظاً موفقاً! 🍀'},
-    {'en': 'Nice!', 'ar': 'حركة رائعة! 🔥'},
-    {'en': 'Well played!', 'ar': 'لعبة ممتازة! 👏'},
-    {'en': 'Thank you!', 'ar': 'شكراً لك! 😊'},
-    {'en': 'Good game!', 'ar': 'لعبة ممتعة! 🏆'},
-    {'en': 'Hurry up!', 'ar': 'أسرع دورك! ⏳'},
+  final List<Map<String, String>> _quickMessages = [
+    {'en': 'Good luck!', 'ar': 'حظاً موفقاً! 🍀'.tr},
+    {'en': 'Nice!', 'ar': 'حركة رائعة! 🔥'.tr},
+    {'en': 'Well played!', 'ar': 'لعبة ممتازة! 👏'.tr},
+    {'en': 'Thank you!', 'ar': 'شكراً لك! 😊'.tr},
+    {'en': 'Good game!', 'ar': 'لعبة ممتعة! 🏆'.tr},
+    {'en': 'Hurry up!', 'ar': 'أسرع دورك! ⏳'.tr},
   ];
 
   void _send(String msg) {
     AppHaptics.selection();
     OkeyAudio.playButtonClick();
     Navigator.of(context).pop();
-    GameNotice.show(context, '💬 أرسلت: $msg');
+    GameNotice.show(context, '💬 أرسلت: {}'.trp([msg]));
   }
 
   @override
@@ -71,12 +72,12 @@ class _OkeyChatDialogState extends State<OkeyChatDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Row(
+                Row(
                   children: [
                     Icon(Icons.chat_bubble_rounded, color: Color(0xFF4ADE80), size: 18),
                     SizedBox(width: 8),
                     Text(
-                      'المحادثة السريعة (Chat)',
+                      'المحادثة السريعة (Chat)'.tr,
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 14,
@@ -143,8 +144,8 @@ class _OkeyChatDialogState extends State<OkeyChatDialog> {
                     child: TextField(
                       controller: _textController,
                       style: const TextStyle(color: Colors.white, fontSize: 12),
-                      decoration: const InputDecoration(
-                        hintText: 'اكتب رسالة...',
+                      decoration: InputDecoration(
+                        hintText: 'اكتب رسالة...'.tr,
                         hintStyle: TextStyle(color: Colors.white38, fontSize: 12),
                         border: InputBorder.none,
                         isDense: true,

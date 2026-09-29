@@ -4,7 +4,10 @@ import '../services/auth_service.dart';
 import '../utils/haptics.dart';
 
 import '../utils/top_notification.dart';
+import '../utils/legal_links.dart';
 import '../widgets/app_background.dart';
+import 'package:flutter/gestures.dart';
+import '../l10n/app_lang.dart';
 
 class AuthScreen extends StatefulWidget {
   final VoidCallback onAuthenticated;
@@ -33,7 +36,7 @@ class _AuthScreenState extends State<AuthScreen> {
       _checkUsernameAndProceed();
     } else {
       if (mounted) {
-        TopNotification.show(context, 'تعذر تسجيل الدخول، يرجى المحاولة مرة أخرى', icon: Icons.error_outline_rounded);
+        TopNotification.show(context, 'تعذر تسجيل الدخول، يرجى المحاولة مرة أخرى'.tr, icon: Icons.error_outline_rounded);
       }
     }
   }
@@ -50,7 +53,7 @@ class _AuthScreenState extends State<AuthScreen> {
       _checkUsernameAndProceed();
     } else {
       if (mounted) {
-        TopNotification.show(context, 'تعذر الدخول كضيف، يرجى المحاولة لاحقاً', icon: Icons.error_outline_rounded);
+        TopNotification.show(context, 'تعذر الدخول كضيف، يرجى المحاولة لاحقاً'.tr, icon: Icons.error_outline_rounded);
       }
     }
   }
@@ -98,19 +101,19 @@ class _AuthScreenState extends State<AuthScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Row(
+                Row(
                   children: [
                     Icon(Icons.badge_rounded, color: Color(0xFFD97706), size: 26),
                     SizedBox(width: 10),
                     Text(
-                      'اختر اسم المستخدم الفريد',
+                      'اختر اسم المستخدم الفريد'.tr,
                       style: TextStyle(color: LightGlass.text, fontSize: 17, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
                 const SizedBox(height: 10),
-                const Text(
-                  'اسم المستخدم هو هويتك الخاصة التي يستطيع أصدقاؤك البحث عنك وإضافتك من خلالها.',
+                Text(
+                  'اسم المستخدم هو هويتك الخاصة التي يستطيع أصدقاؤك البحث عنك وإضافتك من خلالها.'.tr,
                   style: TextStyle(color: LightGlass.textMuted, fontSize: 12.5, height: 1.4),
                 ),
                 const SizedBox(height: 18),
@@ -119,7 +122,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   style: const TextStyle(color: LightGlass.text, fontSize: 15, fontWeight: FontWeight.bold),
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.alternate_email_rounded, color: Color(0xFFD97706)),
-                    hintText: 'مثال: okey_king',
+                    hintText: 'مثال: okey_king'.tr,
                     hintStyle: const TextStyle(color: LightGlass.textFaint),
                     errorText: _usernameError,
                     filled: true,
@@ -148,7 +151,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       : () async {
                           final input = _usernameController.text.trim();
                           if (input.length < 3) {
-                            setDialogState(() => _usernameError = 'يجب أن يكون الاسم 3 أحرف على الأقل');
+                            setDialogState(() => _usernameError = 'يجب أن يكون الاسم 3 أحرف على الأقل'.tr);
                             return;
                           }
                           setDialogState(() {
@@ -160,7 +163,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           if (!available) {
                             setDialogState(() {
                               _isCheckingUsername = false;
-                              _usernameError = 'اسم المستخدم مأخوذ بالفعل، اختر اسماً آخر';
+                              _usernameError = 'اسم المستخدم مأخوذ بالفعل، اختر اسماً آخر'.tr;
                             });
                             return;
                           }
@@ -169,7 +172,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           if (!updated) {
                             setDialogState(() {
                               _isCheckingUsername = false;
-                              _usernameError = 'تعذر حفظ اسم المستخدم، حاول مرة أخرى';
+                              _usernameError = 'تعذر حفظ اسم المستخدم، حاول مرة أخرى'.tr;
                             });
                             return;
                           }
@@ -183,7 +186,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF1B0B30)),
                         )
-                      : const Text('تأكيد وبدء اللعب 🚀', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
+                      : Text('تأكيد وبدء اللعب 🚀'.tr, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
                 ),
               ],
             ),
@@ -232,8 +235,8 @@ class _AuthScreenState extends State<AuthScreen> {
                   const SizedBox(height: 20),
 
                   // Game Title
-                  const Text(
-                    'یەڵا یاری — Yalla Yari',
+                  Text(
+                    'یەڵا یاری — Yalla Yari'.tr,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: LightGlass.text,
@@ -242,8 +245,8 @@ class _AuthScreenState extends State<AuthScreen> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
-                    'تركيش أوكي • شطرنج • لودو • طاولي • سوليتر',
+                  Text(
+                    'تركيش أوكي • شطرنج • لودو • طاولي • سوليتر'.tr,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: LightGlass.textMuted,
@@ -275,14 +278,14 @@ class _AuthScreenState extends State<AuthScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Text(
-                          'تسجيل الدخول للمتابعة',
+                        Text(
+                          'تسجيل الدخول للمتابعة'.tr,
                           textAlign: TextAlign.center,
                           style: TextStyle(color: LightGlass.text, fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
-                        const Text(
-                          'سجّل لحفظ رصيدك، أصدقائك، مستواك، والتنافس أونلاين ضد لاعبين حقيقيين!',
+                        Text(
+                          'سجّل لحفظ رصيدك، أصدقائك، مستواك، والتنافس أونلاين ضد لاعبين حقيقيين!'.tr,
                           textAlign: TextAlign.center,
                           style: TextStyle(color: LightGlass.textMuted, fontSize: 12, height: 1.4),
                         ),
@@ -310,9 +313,12 @@ class _AuthScreenState extends State<AuthScreen> {
                                 ),
                               ),
                               const SizedBox(width: 10),
-                              const Text(
-                                'تسجيل الدخول عبر Google',
-                                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5),
+                              Flexible(
+                                child: Text(
+                                  'تسجيل الدخول عبر Google'.tr,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5),
+                                ),
                               ),
                             ],
                           ),
@@ -329,8 +335,8 @@ class _AuthScreenState extends State<AuthScreen> {
                           ),
                           onPressed: _isLoading ? null : _handleGuestSignIn,
                           icon: const Icon(Icons.person_outline_rounded, size: 20),
-                          label: const Text(
-                            'الدخول كضيف وتجربة اللعب',
+                          label: Text(
+                            'الدخول كضيف وتجربة اللعب'.tr,
                             style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
                           ),
                         ),
@@ -347,11 +353,44 @@ class _AuthScreenState extends State<AuthScreen> {
                       children: [
                         const Icon(Icons.lock_outline_rounded, color: LightGlass.textFaint, size: 14),
                         const SizedBox(width: 5),
-                        Text(
-                          'اتصال سحابي آمن ومشفر عبر Firebase',
-                          style: TextStyle(color: LightGlass.textMuted, fontSize: 11),
+                        Flexible(
+                          child: Text(
+                            'اتصال سحابي آمن ومشفر عبر Firebase'.tr,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: LightGlass.textMuted, fontSize: 11),
+                          ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text.rich(
+                      TextSpan(
+                        style: const TextStyle(
+                            color: LightGlass.textMuted,
+                            fontSize: 11,
+                            height: 1.5),
+                        children: [
+                          TextSpan(text: 'بالمتابعة أنت توافق على '.tr),
+                          TextSpan(
+                            text: 'شروط الاستخدام'.tr,
+                            style: const TextStyle(
+                                color: Color(0xFF7DD3FC),
+                                fontWeight: FontWeight.w700),
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = LegalLinks.openTerms,
+                          ),
+                          TextSpan(text: ' و'.tr),
+                          TextSpan(
+                            text: 'سياسة الخصوصية'.tr,
+                            style: const TextStyle(
+                                color: Color(0xFF7DD3FC),
+                                fontWeight: FontWeight.w700),
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = LegalLinks.openPrivacy,
+                          ),
+                        ],
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                 ],
               ),

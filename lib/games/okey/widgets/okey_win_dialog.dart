@@ -3,6 +3,7 @@ import '../okey_models.dart';
 import 'okey_tile_widget.dart';
 import 'game_notice.dart';
 import 'package:game_hub/utils/haptics.dart';
+import '../../../l10n/app_lang.dart';
 
 class OkeyWinDialog extends StatelessWidget {
   final OkeyPlayer winner;
@@ -41,12 +42,12 @@ class OkeyWinDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isHuman = winner.isHuman;
-    final winTitle = isHuman ? '🎉 مبروك! لقد فزت بالجولة!' : 'انتهت الجولة بفوز ${winner.name}';
+    final winTitle = isHuman ? '🎉 مبروك! لقد فزت بالجولة!'.tr : 'انتهت الجولة بفوز {}'.trp([winner.name]);
     final winSub = winType == WinType.discardOkey
-        ? 'فوز استثنائي برمي حجر الأوكي! (Okey ile Bitti)'
+        ? 'فوز استثنائي برمي حجر الأوكي! (Okey ile Bitti)'.tr
         : (winType == WinType.sevenPairs
-            ? 'فوز بالأزواج السبعة! (7 Çift ile Bitti)'
-            : 'فوز نظامي بإكمال المجموعات! (Normal Bitiş)');
+            ? 'فوز بالأزواج السبعة! (7 Çift ile Bitti)'.tr
+            : 'فوز نظامي بإكمال المجموعات! (Normal Bitiş)'.tr);
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -169,14 +170,14 @@ class OkeyWinDialog extends StatelessWidget {
                         border: Border.all(
                             color: Colors.white.withOpacity(0.25), width: 1.2),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.exit_to_app_rounded,
                               color: Colors.white70, size: 19),
                           SizedBox(width: 7),
                           Text(
-                            'خروج',
+                            'خروج'.tr,
                             style: TextStyle(
                               color: Colors.white70,
                               fontSize: 13.5,
@@ -212,14 +213,14 @@ class OkeyWinDialog extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.replay_rounded,
                             color: Colors.white, size: 20),
                         SizedBox(width: 8),
                         Text(
-                          'جولة جديدة (Play Again)',
+                          'جولة جديدة (Play Again)'.tr,
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 14,

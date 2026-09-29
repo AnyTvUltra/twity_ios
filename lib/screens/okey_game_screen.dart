@@ -24,6 +24,7 @@ import '../widgets/animated_skin_effect.dart';
 import '../widgets/skin_image.dart';
 import '../games/okey/widgets/game_notice.dart';
 import 'package:game_hub/utils/haptics.dart';
+import '../l10n/app_lang.dart';
 
 /// شاشة لعبة الأوكي التركية – تصميم بورتريت واقعي بدون تدوير
 class OkeyGameScreen extends StatefulWidget {
@@ -31,8 +32,9 @@ class OkeyGameScreen extends StatefulWidget {
 
   /// زوجي: اللاعب المقابل (الأمامي) شريكك — فوزه فوزك
   final bool teamMode;
-  const OkeyGameScreen(
-      {super.key, this.rules = OkeyRules.turkish, this.teamMode = false});
+  OkeyGameScreen(
+      {super.key, OkeyRules? rules, this.teamMode = false})
+      : rules = rules ?? OkeyRules.turkish;
 
   @override
   State<OkeyGameScreen> createState() => _OkeyGameScreenState();
@@ -340,13 +342,13 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Row(
+                  Row(
                     children: [
                       Icon(Icons.more_horiz_rounded,
                           color: Color(0xFFFFD54F), size: 24),
                       SizedBox(width: 8),
                       Text(
-                        'قائمة الخيارات',
+                        'قائمة الخيارات'.tr,
                         style: TextStyle(
                             color: Colors.white,
                             fontSize: 17,
@@ -373,9 +375,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                   child: const Icon(Icons.menu_book_rounded,
                       color: Color(0xFFFFD54F), size: 20),
                 ),
-                title: const Text('قواعد اللعبة',
+                title: Text('قواعد اللعبة'.tr,
                     style: TextStyle(color: Colors.white, fontSize: 14)),
-                subtitle: const Text('تشكيل المجموعات وحجر الأوكي',
+                subtitle: Text('تشكيل المجموعات وحجر الأوكي'.tr,
                     style: TextStyle(color: Colors.white54, fontSize: 11)),
                 onTap: () {
                   Navigator.of(ctx).pop();
@@ -400,13 +402,13 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                   ),
                 ),
                 title: Text(
-                  OkeyAudio.soundEnabled ? 'كتم الصوت' : 'تشغيل الصوت',
+                  OkeyAudio.soundEnabled ? 'كتم الصوت'.tr : 'تشغيل الصوت'.tr,
                   style: const TextStyle(color: Colors.white, fontSize: 14),
                 ),
                 subtitle: Text(
                   OkeyAudio.soundEnabled
-                      ? 'المؤثرات الصوتية مفعلة'
-                      : 'المؤثرات الصوتية معطلة',
+                      ? 'المؤثرات الصوتية مفعلة'.tr
+                      : 'المؤثرات الصوتية معطلة'.tr,
                   style: const TextStyle(color: Colors.white54, fontSize: 11),
                 ),
                 onTap: () {
@@ -414,8 +416,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                       () => OkeyAudio.soundEnabled = !OkeyAudio.soundEnabled);
                   Navigator.of(ctx).pop();
                   _showGameNotice(OkeyAudio.soundEnabled
-                        ? 'تم تشغيل الصوت 🔊'
-                        : 'تم كتم الصوت 🔇',
+                        ? 'تم تشغيل الصوت 🔊'.tr
+                        : 'تم كتم الصوت 🔇'.tr,
                     icon: OkeyAudio.soundEnabled
                         ? Icons.volume_up
                         : Icons.volume_off,
@@ -432,7 +434,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                       borderRadius: BorderRadius.circular(12)),
                 ),
                 icon: const Icon(Icons.flag_outlined, size: 18),
-                label: const Text('انسحاب من الجولة (خسارة)',
+                label: Text('انسحاب من الجولة (خسارة)'.tr,
                     style:
                         TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                 onPressed: () {
@@ -457,13 +459,13 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           borderRadius: BorderRadius.circular(20),
           side: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
         ),
-        title: const Row(
+        title: Row(
           children: [
             Icon(Icons.warning_amber_rounded,
                 color: Color(0xFFEF4444), size: 28),
             SizedBox(width: 10),
             Text(
-              'تأكيد الانسحاب',
+              'تأكيد الانسحاب'.tr,
               style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -471,18 +473,18 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             ),
           ],
         ),
-        content: const Column(
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '⚠️ تحذير: إذا قمت بالانسحاب الآن ستفقد رسوم الجولة (35 عملة ذهبية) وتُسجل لك خسارة رسمية في تقييمك السحابي!',
+              '⚠️ تحذير: إذا قمت بالانسحاب الآن ستفقد رسوم الجولة (35 عملة ذهبية) وتُسجل لك خسارة رسمية في تقييمك السحابي!'.tr,
               style: TextStyle(
                   color: Color(0xFFFCA5A5), fontSize: 13, height: 1.5),
             ),
             SizedBox(height: 12),
             Text(
-              'هل أنت متأكد من رغبتك في الاستسلام ومغادرة الطاولة؟',
+              'هل أنت متأكد من رغبتك في الاستسلام ومغادرة الطاولة؟'.tr,
               style: TextStyle(color: Colors.white70, fontSize: 12),
             ),
           ],
@@ -490,7 +492,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('متابعة اللعب',
+            child: Text('متابعة اللعب'.tr,
                 style: TextStyle(
                     color: Colors.white70, fontWeight: FontWeight.bold)),
           ),
@@ -505,7 +507,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
               Navigator.of(ctx).pop();
               _executeSurrender();
             },
-            child: const Text('نعم، تأكيد الانسحاب'),
+            child: Text('نعم، تأكيد الانسحاب'.tr),
           ),
         ],
       ),
@@ -524,11 +526,11 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     if (!mounted) return;
     if (!success) {
       _isLeaving = false;
-      _showGameNotice('تعذر تحديث الرصيد، حاول مرة أخرى');
+      _showGameNotice('تعذر تحديث الرصيد، حاول مرة أخرى'.tr);
       return;
     }
     FirebaseService().logGameResult(
-      winnerName: 'الانسحاب (Surrender)',
+      winnerName: 'الانسحاب (Surrender)'.tr,
       winType: 'surrender',
       roundDurationSeconds:
           OkeyEngine.defaultTurnDuration - _engine.turnTimeRemaining,
@@ -550,12 +552,12 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1E112E),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: const Row(
+        title: Row(
           children: [
             Icon(Icons.menu_book_rounded, color: Color(0xFFFFD54F), size: 22),
             SizedBox(width: 8),
             Flexible(
-              child: Text('قواعد لعبة الأوكي (Okey)',
+              child: Text('قواعد لعبة الأوكي (Okey)'.tr,
                   style: TextStyle(
                       color: Colors.white,
                       fontSize: 15,
@@ -563,25 +565,25 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             ),
           ],
         ),
-        content: const SingleChildScrollView(
+        content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                '• الهدف: تكوين مجموعات صالحة من 14 حجراً (متتالية من نفس اللون أو متماثلة بألوان مختلفة).',
+                '• الهدف: تكوين مجموعات صالحة من 14 حجراً (متتالية من نفس اللون أو متماثلة بألوان مختلفة).'.tr,
                 style:
                     TextStyle(color: Colors.white70, fontSize: 12, height: 1.4),
               ),
               SizedBox(height: 6),
               Text(
-                '• حجر الأوكي الحقيقي (Joker): يعوض عن أي حجر ناقص.',
+                '• حجر الأوكي الحقيقي (Joker): يعوض عن أي حجر ناقص.'.tr,
                 style:
                     TextStyle(color: Colors.white70, fontSize: 12, height: 1.4),
               ),
               SizedBox(height: 6),
               Text(
-                '• الرمي: ارمِ الحجر الزائد في مربع الرمي الأحمر بالمنتصف.',
+                '• الرمي: ارمِ الحجر الزائد في مربع الرمي الأحمر بالمنتصف.'.tr,
                 style:
                     TextStyle(color: Colors.white70, fontSize: 12, height: 1.4),
               ),
@@ -591,7 +593,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('حسناً فهمت',
+            child: Text('حسناً فهمت'.tr,
                 style: TextStyle(color: Color(0xFFFFD54F))),
           ),
         ],
@@ -627,7 +629,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   void _executeDiscard(int slotIndex, {Offset? dropGlobal}) {
     if (_engine.currentTurnIndex != 0) return;
     if (_engine.turnPhase != OkeyTurnPhase.awaitingDiscard) {
-      _showGameNotice('يجب سحب حجر أولاً قبل الرمي!');
+      _showGameNotice('يجب سحب حجر أولاً قبل الرمي!'.tr);
       return;
     }
     final tile = _engine.players[0].rackTiles[slotIndex];
@@ -660,7 +662,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   void _executeDraw() {
     if (_engine.currentTurnIndex != 0) return;
     if (_engine.turnPhase != OkeyTurnPhase.awaitingDraw) {
-      _showGameNotice('لقد سحبت بالفعل! ارمِ حجراً لإنهاء دورك');
+      _showGameNotice('لقد سحبت بالفعل! ارمِ حجراً لإنهاء دورك'.tr);
       return;
     }
     if (_engine.drawDeck.isNotEmpty) {
@@ -685,11 +687,16 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   /// سحب بالإفلات: من الرزمة أو كومة اليسار مباشرة إلى خانة في الرف
   void _drawToSlot(int source, int toSlot) {
     if (_engine.currentTurnIndex != 0) {
-      _showGameNotice('ليس دورك الآن!');
+      _showGameNotice('ليس دورك الآن!'.tr);
       return;
     }
     if (_engine.turnPhase != OkeyTurnPhase.awaitingDraw) {
-      _showGameNotice('لقد سحبت بالفعل! ارمِ حجراً لإنهاء دورك');
+      _showGameNotice('لقد سحبت بالفعل! ارمِ حجراً لإنهاء دورك'.tr);
+      return;
+    }
+    if (source == OkeyDrag.leftPile &&
+        _engine.players[3].playStyle == OkeyPlayStyle.full) {
+      _showGameNotice('اللاعب الأيسر يلعب فول — لا يمكن أخذ أحجاره'.tr);
       return;
     }
     final ok = source == OkeyDrag.deck
@@ -705,12 +712,16 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   void _executeDrawFromLeft() {
     if (_engine.currentTurnIndex != 0) return;
     if (_engine.turnPhase != OkeyTurnPhase.awaitingDraw) {
-      _showGameNotice('لقد سحبت بالفعل! ارمِ حجراً لإنهاء دورك');
+      _showGameNotice('لقد سحبت بالفعل! ارمِ حجراً لإنهاء دورك'.tr);
       return;
     }
     final pile = _engine.discardPiles[3];
     if (pile.isEmpty) {
-      _showGameNotice('اللاعب الأيسر لم يرمِ أي حجر بعد');
+      _showGameNotice('اللاعب الأيسر لم يرمِ أي حجر بعد'.tr);
+      return;
+    }
+    if (_engine.players[3].playStyle == OkeyPlayStyle.full) {
+      _showGameNotice('اللاعب الأيسر يلعب فول — لا يمكن أخذ أحجاره'.tr);
       return;
     }
 
@@ -739,7 +750,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       if (_engine.getHighlightedSlotIndices().contains(slotIndex) &&
           _engine.layMeldContainingSlot(slotIndex)) {
         AppHaptics.medium();
-        _showGameNotice('تم إنزال الـ Per على الطاولة');
+        _showGameNotice('تم إنزال الـ Per على الطاولة'.tr);
         _lastTappedSlot = null;
         _lastTapTime = null;
         return;
@@ -1121,6 +1132,11 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                 ),
               ),
               Positioned(
+                top: 10,
+                left: 60,
+                child: _buildStyleButtons(),
+              ),
+              Positioned(
                 top: 4,
                 left: 0,
                 right: 0,
@@ -1128,10 +1144,13 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      OkeyPlayerBadge(
-                        player: _engine.players[2],
-                        isTurn: _engine.currentTurnIndex == 2,
-                        type: PlayerBadgeType.top,
+                      _withStyleChip(
+                        OkeyPlayerBadge(
+                          player: _engine.players[2],
+                          isTurn: _engine.currentTurnIndex == 2,
+                          type: PlayerBadgeType.top,
+                        ),
+                        _engine.players[2],
                       ),
                       const SizedBox(width: 6),
                       _roleChip(widget.teamMode),
@@ -1157,19 +1176,25 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
               Positioned(
                 left: 10,
                 top: 138,
-                child: OkeyPlayerBadge(
-                  player: _engine.players[3],
-                  isTurn: _engine.currentTurnIndex == 3,
-                  type: PlayerBadgeType.left,
+                child: _withStyleChip(
+                  OkeyPlayerBadge(
+                    player: _engine.players[3],
+                    isTurn: _engine.currentTurnIndex == 3,
+                    type: PlayerBadgeType.left,
+                  ),
+                  _engine.players[3],
                 ),
               ),
               Positioned(
                 right: 10,
                 top: 138,
-                child: OkeyPlayerBadge(
-                  player: _engine.players[1],
-                  isTurn: _engine.currentTurnIndex == 1,
-                  type: PlayerBadgeType.right,
+                child: _withStyleChip(
+                  OkeyPlayerBadge(
+                    player: _engine.players[1],
+                    isTurn: _engine.currentTurnIndex == 1,
+                    type: PlayerBadgeType.right,
+                  ),
+                  _engine.players[1],
                 ),
               ),
               Positioned(
@@ -1206,6 +1231,124 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     );
   }
 
+  static const _konkanColor = Color(0xFFF59E0B);
+  static const _fullColor = Color(0xFFC084FC);
+
+  Color _styleColor(OkeyPlayStyle s) =>
+      s == OkeyPlayStyle.full ? _fullColor : _konkanColor;
+
+  /// شارة صغيرة فوق بطاقة اللاعب تبيّن أنه بدأ كونكان أو فول — يراها الجميع
+  Widget _withStyleChip(Widget badge, OkeyPlayer p) {
+    if (p.playStyle == OkeyPlayStyle.normal) return badge;
+    final c = _styleColor(p.playStyle);
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        badge,
+        Positioned(
+          top: -9,
+          right: -4,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: c,
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(color: c.withOpacity(0.55), blurRadius: 8),
+              ],
+            ),
+            child: Text(
+              p.playStyle.label,
+              style: const TextStyle(
+                  color: Color(0xFF1B0B30),
+                  fontSize: 8.5,
+                  fontWeight: FontWeight.w900),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// زرّا كونكان / فول — يختار اللاعب أسلوبه قبل أي نزول، ثم يُقفل
+  Widget _buildStyleButtons() {
+    final me = _engine.players[0];
+    Widget btn(OkeyPlayStyle style) {
+      final c = _styleColor(style);
+      final chosen = me.playStyle == style;
+      final enabled = _engine.canDeclarePlayStyle;
+      if (!chosen && !enabled) return const SizedBox.shrink();
+      return GestureDetector(
+        onTap: () async {
+          if (!enabled) return;
+          AppHaptics.medium();
+          final ok = await showOkeyLandscapeDialog<bool>(
+            context,
+            builder: (ctx) => AlertDialog(
+              backgroundColor: const Color(0xFF141C34),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  side: BorderSide(color: c.withOpacity(0.6))),
+              title: Text('اللعب {}؟'.trp([style.label]),
+                  textDirection: TextDirection.rtl,
+                  style: const TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.w900)),
+              content: Text(
+                style == OkeyPlayStyle.full
+                    ? 'تفوز بجمع لون واحد كامل: 1 2 3 … 13 1.\nأحجارك المرمية تظهر مقلوبة للجميع ولا يستطيع أحد أخذها، وأنت تستطيع أخذ أحجار غيرك.\nلن تستطيع النزول على الطاولة.'.tr
+                    : 'تفوز بـ 10 أحجار متسلسلة بلون واحد + بير عادي (3 أحجار فأكثر).\nلن تستطيع النزول على الطاولة.'.tr,
+                textDirection: TextDirection.rtl,
+                style: const TextStyle(
+                    color: Color(0xFFB8C4DC), fontSize: 12.5, height: 1.5),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(false),
+                  child: Text('إلغاء'.tr,
+                      style: TextStyle(color: Colors.white60)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: c,
+                      foregroundColor: const Color(0xFF1B0B30)),
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  child: Text('ابدأ {}'.trp([style.label]),
+                      style: const TextStyle(fontWeight: FontWeight.w900)),
+                ),
+              ],
+            ),
+          );
+          if (ok == true) _engine.declarePlayStyle(style);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          margin: const EdgeInsets.only(right: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: chosen ? c : c.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: c.withOpacity(chosen ? 1 : 0.6)),
+            boxShadow: chosen
+                ? [BoxShadow(color: c.withOpacity(0.5), blurRadius: 10)]
+                : null,
+          ),
+          child: Text(
+            chosen ? '✓ ${style.label}' : style.label,
+            style: TextStyle(
+                color: chosen ? const Color(0xFF1B0B30) : c,
+                fontSize: 11,
+                fontWeight: FontWeight.w900),
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [btn(OkeyPlayStyle.konkan), btn(OkeyPlayStyle.full)],
+    );
+  }
+
   /// شارة دور اللاعب المقابل: شريك (زوجي) أو خصم (فردي)
   Widget _roleChip(bool partner) {
     final c = partner ? const Color(0xFF4ADE80) : const Color(0xFFF87171);
@@ -1216,7 +1359,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         borderRadius: BorderRadius.circular(9),
         border: Border.all(color: c.withOpacity(0.6)),
       ),
-      child: Text(partner ? '🤝 شريك' : '⚔️ خصم',
+      child: Text(partner ? '🤝 شريك'.tr : '⚔️ خصم'.tr,
           style: TextStyle(
               color: c, fontSize: 9, fontWeight: FontWeight.w900)),
     );
@@ -1245,13 +1388,13 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             ),
           ],
         ),
-        child: const Row(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text('🏆', style: TextStyle(fontSize: 15)),
             SizedBox(width: 7),
             Text(
-              'إعلان الفوز بالأوكي (Okey Out!)',
+              'إعلان الفوز بالأوكي (Okey Out!)'.tr,
               style: TextStyle(
                 color: Color(0xFF1B0B30),
                 fontWeight: FontWeight.w900,
@@ -1298,7 +1441,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          stat('${_engine.livePoints}', 'نقاطي',
+          stat('${_engine.livePoints}', 'نقاطي'.tr,
               const Color(0xFFFFD46B)),
           const SizedBox(width: 10),
           stat('${_engine.liveGroupCount}', 'Per',
@@ -1306,9 +1449,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           const SizedBox(width: 10),
           stat(
               _engine.players[0].hasOpened
-                  ? 'مفتوح ✓'
+                  ? 'مفتوح ✓'.tr
                   : '${_engine.remainingOpeningPoints}',
-              'المطلوب',
+              'المطلوب'.tr,
               _engine.players[0].hasOpened
                   ? const Color(0xFF86EFAC)
                   : const Color(0xFFFCA5A5)),
@@ -1326,19 +1469,19 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           _engine.layMeldContainingSlot(s)) {
         AppHaptics.medium();
       } else {
-        _showGameNotice('لا يمكن رمي مجموعة — ارمِ حجراً واحداً');
+        _showGameNotice('لا يمكن رمي مجموعة — ارمِ حجراً واحداً'.tr);
       }
       return;
     }
     if (!OkeyDrag.isRackTile(slot)) return;
     if (_engine.currentTurnIndex != 0) {
-      _showGameNotice('ليس دورك الآن!');
+      _showGameNotice('ليس دورك الآن!'.tr);
       return;
     }
     if (_engine.turnPhase == OkeyTurnPhase.awaitingDiscard) {
       _executeDiscard(slot, dropGlobal: dropGlobal);
     } else {
-      _showGameNotice('يجب سحب حجر أولاً قبل الرمي!');
+      _showGameNotice('يجب سحب حجر أولاً قبل الرمي!'.tr);
     }
   }
 
@@ -1388,10 +1531,15 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           .getHighlightedSlotIndices()
           .contains(_rackSlotOf(details.data)),
       onAcceptWithDetails: (details) {
+        if (!_engine.humanCanLayMelds) {
+          _showGameNotice(
+              'أنت تلعب {} — لا نزول على الطاولة'.trp([_engine.players[0].playStyle.label]));
+          return;
+        }
         if (_engine.layMeldContainingSlot(_rackSlotOf(details.data))) {
           AppHaptics.medium();
         } else {
-          _showGameNotice('هذه الأحجار لا تكوّن Per صحيحاً');
+          _showGameNotice('هذه الأحجار لا تكوّن Per صحيحاً'.tr);
         }
       },
       builder: (context, candidateData, rejectedData) {
@@ -1423,8 +1571,11 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: Colors.white.withOpacity(0.10)),
         ),
-        child: const Text('اسحب الـ Per هنا لتنزله على الطاولة',
-            style: TextStyle(
+        child: Text(
+            _engine.humanCanLayMelds
+                ? 'اسحب الـ Per هنا لتنزله على الطاولة'.tr
+                : 'تلعب {} — أكمل يدك وأعلن الفوز'.trp([_engine.players[0].playStyle.label]),
+            style: const TextStyle(
                 color: Colors.white54,
                 fontSize: 8.5,
                 fontWeight: FontWeight.w700)),
@@ -1471,7 +1622,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         if (_engine.layTileOnMeld(details.data, meldIndex)) {
           AppHaptics.light();
         } else {
-          _showGameNotice('هذا الحجر لا يصرف على هذا البير');
+          _showGameNotice('هذا الحجر لا يصرف على هذا البير'.tr);
         }
       },
       builder: (context, candidateData, rejectedData) {
@@ -1771,13 +1922,13 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                           offset: const Offset(0, 2)),
                     ],
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.menu_rounded,
                           color: Color(0xFFFFD54F), size: 15),
                       SizedBox(width: 5),
-                      Text('المزيد',
+                      Text('المزيد'.tr,
                           style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w800,
@@ -1825,8 +1976,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                           final on = await voice.toggleMic();
                           if (!context.mounted) return;
                           _showGameNotice(on
-                                ? 'تم تشغيل المايك 🎙️ تحدث الآن'
-                                : 'تم كتم المايك 🔇',
+                                ? 'تم تشغيل المايك 🎙️ تحدث الآن'.tr
+                                : 'تم كتم المايك 🔇'.tr,
                             icon: on ? Icons.mic : Icons.mic_off,
                           );
                         },
@@ -1871,8 +2022,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                       setState(() =>
                           OkeyAudio.soundEnabled = !OkeyAudio.soundEnabled);
                       _showGameNotice(OkeyAudio.soundEnabled
-                            ? 'تم تشغيل الصوت 🔊'
-                            : 'تم كتم الصوت 🔇',
+                            ? 'تم تشغيل الصوت 🔊'.tr
+                            : 'تم كتم الصوت 🔇'.tr,
                         icon: OkeyAudio.soundEnabled
                             ? Icons.volume_up
                             : Icons.volume_off,
@@ -2031,13 +2182,13 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                       ),
                     ],
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text('🏆', style: TextStyle(fontSize: 20)),
                       SizedBox(width: 8),
                       Text(
-                        'إعلان الفوز بالأوكي (Okey Out!) 🎯',
+                        'إعلان الفوز بالأوكي (Okey Out!) 🎯'.tr,
                         style: TextStyle(
                           color: Color(0xFF1B0B30),
                           fontWeight: FontWeight.w900,
@@ -2107,7 +2258,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                         AppHaptics.selection();
                         OkeyAudio.playSort();
                         _engine.sortHumanTiles();
-                        _showGameNotice('تم ترتيب المجموعات المتتالية! ✨');
+                        _showGameNotice('تم ترتيب المجموعات المتتالية! ✨'.tr);
                       },
                     ),
                     _buildDockDivider(),
@@ -2118,7 +2269,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                         AppHaptics.selection();
                         OkeyAudio.playSort();
                         _engine.sortHumanTilesBySets();
-                        _showGameNotice('تم ترتيب المجموعات المتشابهة! 🎯');
+                        _showGameNotice('تم ترتيب المجموعات المتشابهة! 🎯'.tr);
                       },
                     ),
                     _buildDockDivider(),
@@ -2134,7 +2285,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                     _buildDockDivider(),
                     _buildDockButton(
                       icon: Icons.settings_rounded,
-                      label: 'إعدادات',
+                      label: 'إعدادات'.tr,
                       onTap: () {
                         AppHaptics.selection();
                         OkeyAudio.playButtonClick();
@@ -2246,7 +2397,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     final canDiscard =
         isHumanTurn && _engine.turnPhase == OkeyTurnPhase.awaitingDiscard;
     final leftPile = _engine.discardPiles[3];
-    final canTakeLeft = canDraw && leftPile.isNotEmpty;
+    bool hidden(int i) =>
+        i != 0 && _engine.players[i].playStyle == OkeyPlayStyle.full;
+    final canTakeLeft = canDraw && leftPile.isNotEmpty && !hidden(3);
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -2260,31 +2413,34 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         _discardStack(
           key: _leftDiscardKey,
           pile: leftPile,
-          label: 'يسار',
+          label: 'يسار'.tr,
           accent: const Color(0xFF38BDF8),
           active: canTakeLeft,
-          takeable: true,
+          takeable: !hidden(3),
+          faceDown: hidden(3),
           onTap: _executeDrawFromLeft,
         ),
         const SizedBox(width: 4),
         _discardStack(
           pile: _engine.discardPiles[2],
-          label: widget.teamMode ? 'شريك' : 'مقابل',
+          label: widget.teamMode ? 'شريك'.tr : 'مقابل'.tr,
           accent: widget.teamMode
               ? const Color(0xFF4ADE80)
               : const Color(0xFF94A3B8),
+          faceDown: hidden(2),
         ),
         const SizedBox(width: 4),
         _discardStack(
           pile: _engine.discardPiles[1],
-          label: 'يمين',
+          label: 'يمين'.tr,
           accent: const Color(0xFF94A3B8),
+          faceDown: hidden(1),
         ),
         const SizedBox(width: 4),
         _discardStack(
           key: _discardKey,
           pile: _engine.discardPiles[0],
-          label: 'أنت',
+          label: 'أنت'.tr,
           accent: const Color(0xFFEF4444),
           active: canDiscard,
           onTap: () {
@@ -2292,7 +2448,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             if (canDiscard && sel != null) {
               _executeDiscard(sel);
             } else if (canDiscard) {
-              _showGameNotice('اختر حجراً أو اسحبه إلى الطاولة لرميه',
+              _showGameNotice('اختر حجراً أو اسحبه إلى الطاولة لرميه'.tr,
                   icon: Icons.pan_tool_alt_rounded);
             }
           },
@@ -2308,7 +2464,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         final indColor = _engine.indicatorTile.color.displayName;
         final okeyColor = _engine.realOkeySample.color.displayName;
         _showGameNotice(
-          'المؤشر: $indColor ${_engine.indicatorTile.value} | الأوكي: $okeyColor ${_engine.realOkeySample.value}',
+          'المؤشر: {} {} | الأوكي: {} {}'.trp([indColor, _engine.indicatorTile.value, okeyColor, _engine.realOkeySample.value]),
           icon: Icons.star_rounded,
         );
       },
@@ -2333,7 +2489,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                 tile: _engine.indicatorTile, width: 24, height: 33),
           ),
           const SizedBox(height: 3),
-          const Text('مؤشر',
+          Text('مؤشر'.tr,
               style: TextStyle(
                   color: Color(0xFFFFD54F),
                   fontSize: 7.5,
@@ -2438,9 +2594,14 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     required Color accent,
     bool active = false,
     bool takeable = false,
+    bool faceDown = false,
     VoidCallback? onTap,
   }) {
     const w = 22.0, h = 30.0;
+    // مرميات الفول تظهر ظهراً أبيض للجميع
+    Widget tileView(OkeyTile t) => faceDown
+        ? _tileBack(w, h)
+        : OkeyTileWidget(tile: t, width: w, height: h);
     final top = pile.isNotEmpty ? pile.last : null;
     final under = pile.length > 1 ? pile[pile.length - 2] : null;
     Widget face = SizedBox(
@@ -2452,15 +2613,13 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             Positioned(
               left: 3,
               top: 0,
-              child: Opacity(
-                  opacity: 0.55,
-                  child: OkeyTileWidget(tile: under, width: w, height: h)),
+              child: Opacity(opacity: 0.55, child: tileView(under)),
             ),
           Positioned(
             left: 0,
             top: 3,
             child: top != null
-                ? OkeyTileWidget(tile: top, width: w, height: h)
+                ? tileView(top)
                 : Container(
                     width: w,
                     height: h,
@@ -2521,7 +2680,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             face,
             const SizedBox(height: 2),
             Text(
-              takeable && active ? 'خذ ⬇' : label,
+              takeable && active ? 'خذ ⬇'.tr : label,
               style: TextStyle(
                 color: active ? accent : Colors.white54,
                 fontSize: 7.5,

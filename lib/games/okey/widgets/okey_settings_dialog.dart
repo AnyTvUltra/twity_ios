@@ -3,6 +3,7 @@ import 'package:game_hub/utils/haptics.dart';
 import 'game_notice.dart';
 import '../utils/okey_audio.dart';
 import '../okey_skins.dart';
+import '../../../l10n/app_lang.dart';
 
 class OkeySettingsDialog extends StatefulWidget {
   final VoidCallback onStateChanged;
@@ -26,11 +27,10 @@ class _OkeySettingsDialogState extends State<OkeySettingsDialog> {
   bool _sound = OkeyAudio.soundEnabled;
   bool _music = OkeyAudio.musicEnabled;
   double _volume = OkeyAudio.sfxVolume;
-  String _selectedLang = 'العربية';
   int _selectedTimer = 72;
   final OkeySkinController _skins = OkeySkinController();
 
-  final List<String> _languages = ['English', 'Türkçe', 'العربية', 'کوردی'];
+  AppLanguage get _lang => AppLangController.instance.lang;
   final List<int> _timerOptions = [30, 60, 72, 90];
 
   @override
@@ -61,13 +61,13 @@ class _OkeySettingsDialogState extends State<OkeySettingsDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Row(
+                Row(
                   children: [
                     Icon(Icons.settings_rounded,
                         color: Color(0xFF4ADE80), size: 20),
                     SizedBox(width: 8),
                     Text(
-                      'إعدادات اللعبة (Settings)',
+                      'إعدادات اللعبة (Settings)'.tr,
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 15,
@@ -95,7 +95,7 @@ class _OkeySettingsDialogState extends State<OkeySettingsDialog> {
             // المؤثرات الصوتية
             _buildSwitchRow(
               icon: Icons.volume_up_rounded,
-              title: 'المؤثرات الصوتية (SFX)',
+              title: 'المؤثرات الصوتية (SFX)'.tr,
               value: _sound,
               onChanged: (val) {
                 setState(() => _sound = val);
@@ -108,7 +108,7 @@ class _OkeySettingsDialogState extends State<OkeySettingsDialog> {
             // الموسيقى
             _buildSwitchRow(
               icon: Icons.music_note_rounded,
-              title: 'الموسيقى الخلفية (Music)',
+              title: 'الموسيقى الخلفية (Music)'.tr,
               value: _music,
               onChanged: (val) {
                 setState(() => _music = val);
@@ -123,8 +123,8 @@ class _OkeySettingsDialogState extends State<OkeySettingsDialog> {
               children: [
                 const Icon(Icons.tune_rounded, color: Colors.white70, size: 18),
                 const SizedBox(width: 10),
-                const Text(
-                  'مستوى الصوت',
+                Text(
+                  'مستوى الصوت'.tr,
                   style: TextStyle(
                       color: Colors.white,
                       fontSize: 13,
@@ -156,12 +156,12 @@ class _OkeySettingsDialogState extends State<OkeySettingsDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Row(
+                Row(
                   children: [
                     Icon(Icons.timer_outlined, color: Colors.white70, size: 18),
                     SizedBox(width: 10),
                     Text(
-                      'مدة الدور (Turn Timer)',
+                      'مدة الدور (Turn Timer)'.tr,
                       style: TextStyle(
                           color: Colors.white,
                           fontSize: 13,
@@ -209,13 +209,13 @@ class _OkeySettingsDialogState extends State<OkeySettingsDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Row(
+                Row(
                   children: [
                     Icon(Icons.language_rounded,
                         color: Colors.white70, size: 18),
                     SizedBox(width: 10),
                     Text(
-                      'اللغة (Language)',
+                      'اللغة (Language)'.tr,
                       style: TextStyle(
                           color: Colors.white,
                           fontSize: 13,
@@ -225,13 +225,16 @@ class _OkeySettingsDialogState extends State<OkeySettingsDialog> {
                 ),
                 Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: _languages.map((lang) {
-                    final isSel = _selectedLang == lang;
+                  children:
+                      [AppLanguage.ar, AppLanguage.ku].map((lang) {
+                    final isSel = _lang == lang;
                     return GestureDetector(
                       onTap: () {
                         AppHaptics.selection();
-                        setState(() => _selectedLang = lang);
-                        GameNotice.show(context, 'تم اختيار اللغة: $lang');
+                        AppLangController.instance.setLang(lang);
+                        GameNotice.show(
+                            context,
+                            'تم اختيار اللغة: {}'.trp([lang.nativeName]));
                       },
                       child: Container(
                         margin: const EdgeInsets.only(left: 4),
@@ -244,7 +247,7 @@ class _OkeySettingsDialogState extends State<OkeySettingsDialog> {
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          lang,
+                          lang.nativeName,
                           style: TextStyle(
                             color: isSel ? Colors.white : Colors.white70,
                             fontSize: 10.5,

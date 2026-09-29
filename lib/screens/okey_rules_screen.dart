@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../games/okey/okey_rules.dart';
 import '../utils/haptics.dart';
 import 'okey_lobby_screen.dart';
+import '../l10n/app_lang.dart';
 
 /// شاشة اختيار قانون الكونكان — تظهر عند الضغط على بطاقة اللعبة
 class OkeyRulesScreen extends StatefulWidget {
@@ -24,7 +25,7 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
   static const _textWhite = Color(0xFFF1F5FF);
   static const _textDim = Color(0xFF8EA3C8);
 
-  static const _variants = [
+  static final _variants = [
     OkeyRules.sulaymaniyah,
     OkeyRules.erbil,
     OkeyRules.turkish,
@@ -48,9 +49,9 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                     children: [
                       _glassIcon(Icons.arrow_back_ios_new_rounded,
                           () => Navigator.of(context).pop()),
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'كونكان — اختر القانون 🀄',
+                          'كونكان — اختر القانون 🀄'.tr,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                               color: _textWhite,
@@ -70,8 +71,8 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                     child: Column(
                       children: [
                         // وصف
-                        const Text(
-                          'لكل مدينة قانونها الخاص في الكونكان — اختر القانون الذي تريد اللعب به، أو اضغط "؟" لقراءة شرحه الكامل',
+                        Text(
+                          'لكل مدينة قانونها الخاص في الكونكان — اختر القانون الذي تريد اللعب به، أو اضغط "؟" لقراءة شرحه الكامل'.tr,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                               color: _textDim, fontSize: 11.5, height: 1.5),
@@ -218,12 +219,12 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            _miniTag('افتتاح ${rules.openingPoints}', _gold),
+                            _miniTag('افتتاح {}'.trp([rules.openingPoints]), _gold),
                             const SizedBox(width: 6),
                             _miniTag(
                                 rules.allowSevenPairs
-                                    ? 'أزواج ✓'
-                                    : 'بدون أزواج',
+                                    ? 'أزواج ✓'.tr
+                                    : 'بدون أزواج'.tr,
                                 rules.allowSevenPairs ? _cyan : _textDim),
                           ],
                         ),
@@ -250,8 +251,8 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                                   blurRadius: 8),
                             ],
                           ),
-                          child: const Center(
-                            child: Text('؟',
+                          child: Center(
+                            child: Text('؟'.tr,
                                 style: TextStyle(
                                     color: _gold,
                                     fontSize: 15,
@@ -379,7 +380,7 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                     Text(rules.icon, style: const TextStyle(fontSize: 19)),
                     const SizedBox(width: 9),
                     Text(
-                      'العب بـ${rules.name}',
+                      'العب بـ{}'.trp([rules.name]),
                       style: const TextStyle(
                           color: Color(0xFF1B0B30),
                           fontWeight: FontWeight.w900,

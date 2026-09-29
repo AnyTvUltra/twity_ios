@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n/app_lang.dart';
 
 /// إشعارات الإدارة — يستمع لأحدث رسالة في مجموعة broadcasts
 /// ويعرضها للمستخدم مرة واحدة (تُخزَّن آخر رسالة مُشاهدة محلياً)
@@ -35,7 +36,7 @@ class BroadcastService {
       // رسالة قديمة؟ سجّلها كمُشاهدة بدون إزعاج المستخدم
       if (DateTime.now().difference(createdAt).inHours > 48) return;
 
-      final title = (data['title'] ?? '📢 إشعار').toString();
+      final title = (data['title'] ?? '📢 إشعار'.tr).toString();
       final body = (data['body'] ?? '').toString();
       if (body.isEmpty) return;
       onMessage(title, body);
@@ -54,7 +55,7 @@ class BroadcastService {
               final ts = data['createdAt'];
               return BroadcastMessage(
                 id: d.id,
-                title: (data['title'] ?? '📢 إشعار').toString(),
+                title: (data['title'] ?? '📢 إشعار'.tr).toString(),
                 body: (data['body'] ?? '').toString(),
                 createdAt: ts is Timestamp ? ts.toDate() : DateTime.now(),
               );

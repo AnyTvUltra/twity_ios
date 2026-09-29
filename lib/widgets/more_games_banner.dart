@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utils/haptics.dart';
+import '../l10n/app_lang.dart';
 
 class MoreGamesBanner extends StatelessWidget {
   final VoidCallback? onTap;
@@ -61,7 +62,7 @@ class MoreGamesBanner extends StatelessWidget {
                     ],
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
@@ -74,7 +75,7 @@ class MoreGamesBanner extends StatelessWidget {
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(
-                            'المزيد من الألعاب بانتظارك!',
+                            'المزيد من الألعاب بانتظارك!'.tr,
                             maxLines: 1,
                             style: TextStyle(
                               color: Colors.white,

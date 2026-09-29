@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../services/store_service.dart';
+import '../l10n/app_lang.dart';
 
 /// تأثيرات الكسنات المتحركة — نار و جليد مرسومة إجرائياً (Procedural)
 /// بدون ملفات خارجية: ألسنة لهب، جمرات صاعدة، بريق جليدي، وميض متلألئ
@@ -50,28 +51,28 @@ SkinEffect skinEffectOf(StoreItem? item) {
   final e = item.effect.toLowerCase();
   if (_kEffectMap.containsKey(e)) return _kEffectMap[e]!;
   final n = item.name.toLowerCase();
-  if (n.contains('fire') || n.contains('نار') || n.contains('flame')) {
+  if (n.contains('fire') || n.contains('نار'.tr) || n.contains('flame')) {
     return SkinEffect.fire;
   }
-  if (n.contains('ice') || n.contains('جليد') || n.contains('frost')) {
+  if (n.contains('ice') || n.contains('جليد'.tr) || n.contains('frost')) {
     return SkinEffect.ice;
   }
-  if (n.contains('لافا') || n.contains('lava')) return SkinEffect.lava;
-  if (n.contains('برق') || n.contains('storm') || n.contains('lightning')) {
+  if (n.contains('لافا'.tr) || n.contains('lava')) return SkinEffect.lava;
+  if (n.contains('برق'.tr) || n.contains('storm') || n.contains('lightning')) {
     return SkinEffect.storm;
   }
-  if (n.contains('ذهب') || n.contains('gold')) return SkinEffect.gold;
-  if (n.contains('نيون') || n.contains('neon')) return SkinEffect.neon;
-  if (n.contains('سديم') || n.contains('galaxy') || n.contains('مجر')) {
+  if (n.contains('ذهب'.tr) || n.contains('gold')) return SkinEffect.gold;
+  if (n.contains('نيون'.tr) || n.contains('neon')) return SkinEffect.neon;
+  if (n.contains('سديم'.tr) || n.contains('galaxy') || n.contains('مجر'.tr)) {
     return SkinEffect.galaxy;
   }
-  if (n.contains('محيط') || n.contains('ocean') || n.contains('موج')) {
+  if (n.contains('محيط'.tr) || n.contains('ocean') || n.contains('موج'.tr)) {
     return SkinEffect.ocean;
   }
-  if (n.contains('شفق') || n.contains('aurora')) return SkinEffect.aurora;
-  if (n.contains('تنين') || n.contains('dragon')) return SkinEffect.dragon;
-  if (n.contains('جمر') || n.contains('ember')) return SkinEffect.ember;
-  if (n.contains('صقيع') || n.contains('كريستال') || n.contains('crystal')) {
+  if (n.contains('شفق'.tr) || n.contains('aurora')) return SkinEffect.aurora;
+  if (n.contains('تنين'.tr) || n.contains('dragon')) return SkinEffect.dragon;
+  if (n.contains('جمر'.tr) || n.contains('ember')) return SkinEffect.ember;
+  if (n.contains('صقيع'.tr) || n.contains('كريستال'.tr) || n.contains('crystal')) {
     return SkinEffect.crystal;
   }
   return SkinEffect.none;

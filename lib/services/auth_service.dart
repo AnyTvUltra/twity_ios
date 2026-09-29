@@ -8,6 +8,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'rewards_service.dart';
 import 'store_service.dart';
+import '../l10n/app_lang.dart';
 
 class AppUser {
   final String uid;
@@ -87,7 +88,7 @@ class AppUser {
     return AppUser(
       uid: uid,
       email: data['email'] ?? '',
-      displayName: data['displayName'] ?? 'لاعب',
+      displayName: data['displayName'] ?? 'لاعب'.tr,
       username: data['username'] ?? 'user_${uid.substring(0, 6)}',
       photoUrl: data['photoUrl'] ?? '',
       chips: (data['chips'] as num?)?.toInt() ?? 1500,
@@ -274,7 +275,7 @@ class AuthService extends ChangeNotifier {
   AppUser _userFromJson(Map<String, dynamic> d) => AppUser(
         uid: d['uid'] ?? '',
         email: d['email'] ?? '',
-        displayName: d['displayName'] ?? 'لاعب',
+        displayName: d['displayName'] ?? 'لاعب'.tr,
         username: d['username'] ?? '',
         photoUrl: d['photoUrl'] ?? '',
         chips: (d['chips'] as num?)?.toInt() ?? 0,
@@ -365,7 +366,7 @@ class AuthService extends ChangeNotifier {
         final newUser = AppUser(
           uid: user.uid,
           email: user.email ?? '',
-          displayName: user.displayName ?? 'لاعب جديد',
+          displayName: user.displayName ?? 'لاعب جديد'.tr,
           username: initialUsername,
           photoUrl: user.photoURL ?? '',
           chips: 1500,
@@ -535,7 +536,7 @@ class AuthService extends ChangeNotifier {
     _currentUser = AppUser(
       uid: guestUid,
       email: '',
-      displayName: 'ضيف $randomSuffix',
+      displayName: 'ضيف {}'.trp([randomSuffix]),
       username: 'player_$randomSuffix',
       photoUrl: '',
       chips: 1500,
@@ -774,7 +775,7 @@ class AuthService extends ChangeNotifier {
   /// استلام الهدية اليومية (هدية واحدة كل 24 ساعة بالضبط)
   Future<Map<String, dynamic>> claimDailyGift() async {
     if (_currentUser == null) {
-      return {'success': false, 'message': 'يرجى تسجيل الدخول أولاً!'};
+      return {'success': false, 'message': 'يرجى تسجيل الدخول أولاً!'.tr};
     }
 
     final now = DateTime.now();
@@ -788,7 +789,7 @@ class AuthService extends ChangeNotifier {
         return {
           'success': false,
           'message':
-              'لقد استلمت هديتك اليومية بالفعل! متبقي $remainingHours ساعة و $remainingMinutes دقيقة',
+              'لقد استلمت هديتك اليومية بالفعل! متبقي {} ساعة و {} دقيقة'.trp([remainingHours, remainingMinutes]),
           'remainingHours': remainingHours,
           'remainingMinutes': remainingMinutes,
         };
@@ -819,19 +820,19 @@ class AuthService extends ChangeNotifier {
     switch (def.type) {
       case RewardType.chips:
         chipsDelta = boost(def.amount);
-        rewardLabel = '+$chipsDelta 🪙 عملة ذهبية';
+        rewardLabel = '+{} 🪙 عملة ذهبية'.trp([chipsDelta]);
       case RewardType.gems:
         gemsDelta = boost(def.amount);
-        rewardLabel = '+$gemsDelta 💎 جوهرة (شذر)';
+        rewardLabel = '+{} 💎 جوهرة (شذر)'.trp([gemsDelta]);
       case RewardType.skin:
         if (_currentUser!.ownedSkins.contains(def.skinId)) {
           // يمتلك السكن مسبقاً → تعويض بالجواهر
           gemsDelta = RewardsService.skinFallbackGems;
-          rewardLabel = '+$gemsDelta 💎 (السكن مملوك مسبقاً)';
+          rewardLabel = '+{} 💎 (السكن مملوك مسبقاً)'.trp([gemsDelta]);
         } else {
           grantedSkinId = def.skinId;
-          skinName = StoreService().itemName(def.skinId) ?? 'سكن حصري';
-          rewardLabel = '🎨 سكن: $skinName';
+          skinName = StoreService().itemName(def.skinId) ?? 'سكن حصري'.tr;
+          rewardLabel = '🎨 سكن: {}'.trp([skinName]);
         }
     }
 
@@ -853,7 +854,7 @@ class AuthService extends ChangeNotifier {
       'skinName': skinName,
       'streakDay': nextStreak,
       'message':
-          'مبروك! استلمت هدية اليوم $nextStreak: $rewardLabel$vipNote 🎉',
+          'مبروك! استلمت هدية اليوم {}: {}{} 🎉'.trp([nextStreak, rewardLabel, vipNote]),
     };
 
     if (_currentUser!.uid.startsWith('guest_')) {
@@ -889,7 +890,7 @@ class AuthService extends ChangeNotifier {
       return result;
     } catch (e) {
       debugPrint('Error claiming daily gift: $e');
-      return {'success': false, 'message': 'حدث خطأ أثناء استلام الهدية'};
+      return {'success': false, 'message': 'حدث خطأ أثناء استلام الهدية'.tr};
     }
   }
 
@@ -914,12 +915,12 @@ class AuthService extends ChangeNotifier {
   Future<Map<String, dynamic>> spinDailyWheel() async {
     final user = _currentUser;
     if (user == null) {
-      return {'success': false, 'message': 'يرجى تسجيل الدخول أولاً!'};
+      return {'success': false, 'message': 'يرجى تسجيل الدخول أولاً!'.tr};
     }
     if (wheelSpinsRemaining <= 0) {
       return {
         'success': false,
-        'message': 'استخدمت لفات اليوم! عُد غداً أو اشترك بـVIP للفة إضافية 👑',
+        'message': 'استخدمت لفات اليوم! عُد غداً أو اشترك بـVIP للفة إضافية 👑'.tr,
       };
     }
 
@@ -941,19 +942,19 @@ class AuthService extends ChangeNotifier {
     switch (seg.type) {
       case RewardType.chips:
         chipsDelta = seg.amount;
-        rewardLabel = '+${seg.amount} 🪙 عملة ذهبية';
+        rewardLabel = '+{} 🪙 عملة ذهبية'.trp([seg.amount]);
       case RewardType.gems:
         gemsDelta = seg.amount;
-        rewardLabel = '+${seg.amount} 💎 جوهرة (شذر)';
+        rewardLabel = '+{} 💎 جوهرة (شذر)'.trp([seg.amount]);
       case RewardType.skin:
         final skinId = RewardsService.wheelSkinThisWeek;
         if (user.ownedSkins.contains(skinId)) {
           gemsDelta = RewardsService.skinFallbackGems;
-          rewardLabel = '+$gemsDelta 💎 (السكن مملوك مسبقاً)';
+          rewardLabel = '+{} 💎 (السكن مملوك مسبقاً)'.trp([gemsDelta]);
         } else {
           grantedSkinId = skinId;
-          skinName = StoreService().itemName(skinId) ?? 'سكن حصري';
-          rewardLabel = '🎨 سكن مجاني: $skinName';
+          skinName = StoreService().itemName(skinId) ?? 'سكن حصري'.tr;
+          rewardLabel = '🎨 سكن مجاني: {}'.trp([skinName]);
         }
     }
 
@@ -972,7 +973,7 @@ class AuthService extends ChangeNotifier {
       'skinName': skinName,
       'rewardLabel': rewardLabel,
       'spinsLeft': limit - newCount,
-      'message': 'العجلة اختارت لك: $rewardLabel 🎉',
+      'message': 'العجلة اختارت لك: {} 🎉'.trp([rewardLabel]),
     };
 
     if (user.uid.startsWith('guest_')) {
@@ -1006,7 +1007,7 @@ class AuthService extends ChangeNotifier {
       return result;
     } catch (e) {
       debugPrint('Error spinning wheel: $e');
-      return {'success': false, 'message': 'حدث خطأ أثناء تدوير العجلة'};
+      return {'success': false, 'message': 'حدث خطأ أثناء تدوير العجلة'.tr};
     }
   }
 
@@ -1017,17 +1018,17 @@ class AuthService extends ChangeNotifier {
       {String plan = 'vip'}) async {
     final user = _currentUser;
     if (user == null) {
-      return {'success': false, 'message': 'يرجى تسجيل الدخول أولاً!'};
+      return {'success': false, 'message': 'يرجى تسجيل الدخول أولاً!'.tr};
     }
     if (user.uid.startsWith('guest_')) {
       return {
         'success': false,
-        'message': 'اشتراك VIP يتطلب حساباً مسجلاً عبر Google',
+        'message': 'اشتراك VIP يتطلب حساباً مسجلاً عبر Google'.tr,
       };
     }
     final isPlus = plan == 'vipPlus';
     if (user.isVipPlus || (user.isVip && !isPlus)) {
-      return {'success': false, 'message': 'أنت مشترك بالفعل! 👑'};
+      return {'success': false, 'message': 'أنت مشترك بالفعل! 👑'.tr};
     }
     final price = isPlus ? 20 : 10;
 
@@ -1044,11 +1045,11 @@ class AuthService extends ChangeNotifier {
       return {
         'success': true,
         'message':
-            'تم إرسال طلب ${isPlus ? 'VIP+' : 'VIP'} ✅ سيُفعَّل خلال 24 ساعة بعد تأكيد الدفع',
+            'تم إرسال طلب {} ✅ سيُفعَّل خلال 24 ساعة بعد تأكيد الدفع'.trp([isPlus ? 'VIP+' : 'VIP']),
       };
     } catch (e) {
       debugPrint('Error submitting VIP request: $e');
-      return {'success': false, 'message': 'تعذر إرسال الطلب، حاول لاحقاً'};
+      return {'success': false, 'message': 'تعذر إرسال الطلب، حاول لاحقاً'.tr};
     }
   }
 
@@ -1068,12 +1069,12 @@ class AuthService extends ChangeNotifier {
   Future<Map<String, dynamic>> claimLootBox() async {
     final user = _currentUser;
     if (user == null) {
-      return {'success': false, 'message': 'يرجى تسجيل الدخول أولاً!'};
+      return {'success': false, 'message': 'يرجى تسجيل الدخول أولاً!'.tr};
     }
     if (!canClaimLootBox) {
       final diff = DateTime.now().difference(user.lastLootBox!);
       final h = 23 - diff.inHours;
-      return {'success': false, 'message': 'الصندوق يتجدد بعد ${h}س ⏳'};
+      return {'success': false, 'message': 'الصندوق يتجدد بعد {}س ⏳'.trp([h])};
     }
 
     final now = DateTime.now();
@@ -1087,19 +1088,19 @@ class AuthService extends ChangeNotifier {
     switch (seg.type) {
       case RewardType.chips:
         chipsDelta = seg.amount;
-        rewardLabel = '+${seg.amount} 🪙 عملة ذهبية';
+        rewardLabel = '+{} 🪙 عملة ذهبية'.trp([seg.amount]);
       case RewardType.gems:
         gemsDelta = seg.amount;
-        rewardLabel = '+${seg.amount} 💎 جوهرة (شذر)';
+        rewardLabel = '+{} 💎 جوهرة (شذر)'.trp([seg.amount]);
       case RewardType.skin:
         final skinId = RewardsService.lootBoxSkinThisWeek;
         if (user.ownedSkins.contains(skinId)) {
           gemsDelta = RewardsService.skinFallbackGems;
-          rewardLabel = '+$gemsDelta 💎 (السكن مملوك مسبقاً)';
+          rewardLabel = '+{} 💎 (السكن مملوك مسبقاً)'.trp([gemsDelta]);
         } else {
           grantedSkinId = skinId;
-          skinName = StoreService().itemName(skinId) ?? 'سكن حصري';
-          rewardLabel = '🎨 سكن مجاني: $skinName';
+          skinName = StoreService().itemName(skinId) ?? 'سكن حصري'.tr;
+          rewardLabel = '🎨 سكن مجاني: {}'.trp([skinName]);
         }
     }
 
@@ -1112,7 +1113,7 @@ class AuthService extends ChangeNotifier {
       'amount': chipsDelta + gemsDelta,
       'skinName': skinName,
       'rewardLabel': rewardLabel,
-      'message': 'الصندوق أعطاك: $rewardLabel 🎉',
+      'message': 'الصندوق أعطاك: {} 🎉'.trp([rewardLabel]),
     };
 
     if (user.uid.startsWith('guest_')) {
@@ -1143,7 +1144,7 @@ class AuthService extends ChangeNotifier {
       return result;
     } catch (e) {
       debugPrint('Error claiming loot box: $e');
-      return {'success': false, 'message': 'حدث خطأ أثناء فتح الصندوق'};
+      return {'success': false, 'message': 'حدث خطأ أثناء فتح الصندوق'.tr};
     }
   }
 
@@ -1164,19 +1165,19 @@ class AuthService extends ChangeNotifier {
   Future<Map<String, dynamic>> buyStreakProtection() async {
     final user = _currentUser;
     if (user == null) {
-      return {'success': false, 'message': 'يرجى تسجيل الدخول أولاً!'};
+      return {'success': false, 'message': 'يرجى تسجيل الدخول أولاً!'.tr};
     }
     const cost = 10;
     if (user.gems < cost) {
       return {
         'success': false,
-        'message': 'تحتاج $cost 💎 لحماية السلسلة — رصيدك ${user.gems} 💎',
+        'message': 'تحتاج {} 💎 لحماية السلسلة — رصيدك {} 💎'.trp([cost, user.gems]),
       };
     }
     if (!canRestoreStreak) {
       return {
         'success': false,
-        'message': 'السلسلة لم تنقطع أو مضى عليها أكثر من 4 أيام',
+        'message': 'السلسلة لم تنقطع أو مضى عليها أكثر من 4 أيام'.tr,
       };
     }
 
@@ -1189,7 +1190,7 @@ class AuthService extends ChangeNotifier {
         lastDailyGiftClaim: restored,
       );
       notifyListeners();
-      return {'success': true, 'message': 'تم حماية سلسلتك! 🔥 استلم هديتك الآن'};
+      return {'success': true, 'message': 'تم حماية سلسلتك! 🔥 استلم هديتك الآن'.tr};
     }
 
     try {
@@ -1202,10 +1203,10 @@ class AuthService extends ChangeNotifier {
         lastDailyGiftClaim: restored,
       );
       notifyListeners();
-      return {'success': true, 'message': 'تم حماية سلسلتك! 🔥 استلم هديتك الآن'};
+      return {'success': true, 'message': 'تم حماية سلسلتك! 🔥 استلم هديتك الآن'.tr};
     } catch (e) {
       debugPrint('Error buying streak protection: $e');
-      return {'success': false, 'message': 'تعذر تنفيذ الحماية'};
+      return {'success': false, 'message': 'تعذر تنفيذ الحماية'.tr};
     }
   }
 
@@ -1220,20 +1221,20 @@ class AuthService extends ChangeNotifier {
   Future<Map<String, dynamic>> redeemReferral(String code) async {
     final user = _currentUser;
     if (user == null) {
-      return {'success': false, 'message': 'يرجى تسجيل الدخول أولاً!'};
+      return {'success': false, 'message': 'يرجى تسجيل الدخول أولاً!'.tr};
     }
     if (user.uid.startsWith('guest_')) {
       return {
         'success': false,
-        'message': 'الإحالة تتطلب حساباً مسجلاً عبر Google',
+        'message': 'الإحالة تتطلب حساباً مسجلاً عبر Google'.tr,
       };
     }
     if (user.referredBy != null) {
-      return {'success': false, 'message': 'استخدمت كود إحالة مسبقاً!'};
+      return {'success': false, 'message': 'استخدمت كود إحالة مسبقاً!'.tr};
     }
     final clean = code.trim().toLowerCase();
     if (clean.isEmpty || clean == user.username.toLowerCase()) {
-      return {'success': false, 'message': 'كود غير صالح!'};
+      return {'success': false, 'message': 'كود غير صالح!'.tr};
     }
 
     try {
@@ -1243,7 +1244,7 @@ class AuthService extends ChangeNotifier {
           .limit(1)
           .get();
       if (snap.docs.isEmpty) {
-        return {'success': false, 'message': 'لا يوجد لاعب بهذا الكود!'};
+        return {'success': false, 'message': 'لا يوجد لاعب بهذا الكود!'.tr};
       }
       final referrer = snap.docs.first;
 
@@ -1268,11 +1269,11 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
       return {
         'success': true,
-        'message': 'تم تفعيل الكود! +300 🪙 لك و +500 🪙 لصديقك 🎉',
+        'message': 'تم تفعيل الكود! +300 🪙 لك و +500 🪙 لصديقك 🎉'.tr,
       };
     } catch (e) {
       debugPrint('Error redeeming referral: $e');
-      return {'success': false, 'message': 'تعذر تفعيل الكود'};
+      return {'success': false, 'message': 'تعذر تفعيل الكود'.tr};
     }
   }
 
@@ -1283,26 +1284,26 @@ class AuthService extends ChangeNotifier {
       String username, int chips) async {
     final user = _currentUser;
     if (user == null) {
-      return {'success': false, 'message': 'يرجى تسجيل الدخول أولاً!'};
+      return {'success': false, 'message': 'يرجى تسجيل الدخول أولاً!'.tr};
     }
     if (user.uid.startsWith('guest_')) {
       return {
         'success': false,
-        'message': 'الإهداء يتطلب حساباً مسجلاً عبر Google',
+        'message': 'الإهداء يتطلب حساباً مسجلاً عبر Google'.tr,
       };
     }
     final clean = username.trim().toLowerCase();
     if (clean.isEmpty || clean == user.username.toLowerCase()) {
-      return {'success': false, 'message': 'اسم مستخدم غير صالح!'};
+      return {'success': false, 'message': 'اسم مستخدم غير صالح!'.tr};
     }
     if (chips < 50) {
-      return {'success': false, 'message': 'أقل هدية 50 🪙'};
+      return {'success': false, 'message': 'أقل هدية 50 🪙'.tr};
     }
     if (chips > 10000) {
-      return {'success': false, 'message': 'أكبر هدية 10000 🪙'};
+      return {'success': false, 'message': 'أكبر هدية 10000 🪙'.tr};
     }
     if (user.chips < chips) {
-      return {'success': false, 'message': 'رصيدك غير كافٍ!'};
+      return {'success': false, 'message': 'رصيدك غير كافٍ!'.tr};
     }
 
     try {
@@ -1312,7 +1313,7 @@ class AuthService extends ChangeNotifier {
           .limit(1)
           .get();
       if (snap.docs.isEmpty) {
-        return {'success': false, 'message': 'لا يوجد لاعب بهذا الاسم!'};
+        return {'success': false, 'message': 'لا يوجد لاعب بهذا الاسم!'.tr};
       }
 
       // خصم من المرسل فوراً + إنشاء مطالبة للمستلم
@@ -1334,11 +1335,11 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
       return {
         'success': true,
-        'message': 'أُرسلت $chips 🪙 هدية إلى @$clean 🎁 تصله عند دخوله',
+        'message': 'أُرسلت {} 🪙 هدية إلى @{} 🎁 تصله عند دخوله'.trp([chips, clean]),
       };
     } catch (e) {
       debugPrint('Error sending gift: $e');
-      return {'success': false, 'message': 'تعذر إرسال الهدية'};
+      return {'success': false, 'message': 'تعذر إرسال الهدية'.tr};
     }
   }
 
@@ -1365,7 +1366,7 @@ class AuthService extends ChangeNotifier {
   Future<Map<String, dynamic>> deleteAccount() async {
     final user = _currentUser;
     if (user == null) {
-      return {'success': false, 'message': 'لا يوجد حساب مسجّل'};
+      return {'success': false, 'message': 'لا يوجد حساب مسجّل'.tr};
     }
     try {
       if (!user.uid.startsWith('guest_')) {
@@ -1382,7 +1383,7 @@ class AuthService extends ChangeNotifier {
             if (ga == null) {
               return {
                 'success': false,
-                'message': 'أعد تسجيل الدخول لتأكيد حذف الحساب',
+                'message': 'أعد تسجيل الدخول لتأكيد حذف الحساب'.tr,
               };
             }
             await fbUser?.reauthenticateWithCredential(
@@ -1399,10 +1400,10 @@ class AuthService extends ChangeNotifier {
       _pendingUsernameSetup = false;
       _currentUser = null;
       notifyListeners();
-      return {'success': true, 'message': 'تم حذف حسابك وجميع بياناتك'};
+      return {'success': true, 'message': 'تم حذف حسابك وجميع بياناتك'.tr};
     } catch (e) {
       debugPrint('Error deleting account: $e');
-      return {'success': false, 'message': 'تعذّر حذف الحساب، حاول لاحقاً'};
+      return {'success': false, 'message': 'تعذّر حذف الحساب، حاول لاحقاً'.tr};
     }
   }
 

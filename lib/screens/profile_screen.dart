@@ -9,9 +9,11 @@ import '../services/rewards_service.dart';
 import '../services/social_service.dart';
 import '../utils/haptics.dart';
 import '../utils/format.dart';
+import '../utils/legal_links.dart';
 import '../widgets/gem_icon.dart';
 import '../utils/top_notification.dart';
 import '../widgets/user_avatar.dart';
+import '../l10n/app_lang.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -65,7 +67,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 14),
-                const Text('اختر صورتك الرمزية',
+                Text('اختر صورتك الرمزية'.tr,
                     style: TextStyle(
                         color: _textWhite,
                         fontSize: 16,
@@ -91,12 +93,12 @@ class ProfileScreen extends StatelessWidget {
                         if (ctx.mounted) Navigator.of(ctx).pop();
                         if (context.mounted) {
                           TopNotification.show(
-                              context, 'تم رفع صورتك الشخصية بنجاح! 📷');
+                              context, 'تم رفع صورتك الشخصية بنجاح! 📷'.tr);
                         }
                       } catch (e) {
                         if (context.mounted) {
                           TopNotification.show(
-                              context, 'تعذر رفع الصورة: $e');
+                              context, 'تعذر رفع الصورة: {}'.trp([e]));
                         }
                       }
                     },
@@ -117,13 +119,13 @@ class ProfileScreen extends StatelessWidget {
                               blurRadius: 14),
                         ],
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.photo_library_rounded,
                               color: Color(0xFF1B0B30), size: 19),
                           SizedBox(width: 8),
-                          Text('رفع صورة من الاستوديو',
+                          Text('رفع صورة من الاستوديو'.tr,
                               style: TextStyle(
                                   color: Color(0xFF1B0B30),
                                   fontWeight: FontWeight.w900,
@@ -149,7 +151,7 @@ class ProfileScreen extends StatelessWidget {
                         if (ctx.mounted) Navigator.of(ctx).pop();
                         if (context.mounted) {
                           TopNotification.show(context,
-                              'تم تحديث الصورة الشخصية بنجاح! $emoji');
+                              'تم تحديث الصورة الشخصية بنجاح! {}'.trp([emoji]));
                         }
                       },
                       child: Container(
@@ -198,19 +200,19 @@ class ProfileScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
               side: BorderSide(
                   color: const Color(0xFFF87171).withOpacity(0.5))),
-          title: const Text('حذف الحساب نهائياً؟',
+          title: Text('حذف الحساب نهائياً؟'.tr,
               style: TextStyle(
                   color: Color(0xFFF1F5FF),
                   fontWeight: FontWeight.w900,
                   fontSize: 16)),
-          content: const Text(
-              'سيتم حذف حسابك وكل بياناتك: الرصيد، الجواهر، السكنات، الإحصائيات والأصدقاء. لا يمكن التراجع عن هذا.',
+          content: Text(
+              'سيتم حذف حسابك وكل بياناتك: الرصيد، الجواهر، السكنات، الإحصائيات والأصدقاء. لا يمكن التراجع عن هذا.'.tr,
               style: TextStyle(
                   color: Color(0xFFB8C4DC), fontSize: 13, height: 1.5)),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('إلغاء',
+              child: Text('إلغاء'.tr,
                   style: TextStyle(color: Color(0xFF8EA3C8))),
             ),
             ElevatedButton(
@@ -218,7 +220,7 @@ class ProfileScreen extends StatelessWidget {
                   backgroundColor: const Color(0xFFDC2626),
                   foregroundColor: Colors.white),
               onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('احذف حسابي',
+              child: Text('احذف حسابي'.tr,
                   style: TextStyle(fontWeight: FontWeight.w900)),
             ),
           ],
@@ -235,9 +237,80 @@ class ProfileScreen extends StatelessWidget {
     }
   }
 
+  /// اختيار لغة التطبيق — العربية / کوردی سورانی
+  void _showLanguageDialog(BuildContext context) {
+    AppHaptics.selection();
+    final controller = AppLangController.instance;
+    showDialog(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: controller.direction,
+        child: AlertDialog(
+          backgroundColor: const Color(0xFF141C34),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(
+                  color: const Color(0xFFA78BFA).withOpacity(0.5))),
+          title: Text('اللغة — زمان'.tr,
+              style: const TextStyle(
+                  color: Color(0xFFF1F5FF),
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final lang in [AppLanguage.ar, AppLanguage.ku])
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(14),
+                    onTap: () {
+                      AppHaptics.selection();
+                      controller.setLang(lang);
+                      Navigator.of(ctx).pop();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: controller.lang == lang
+                            ? const Color(0x33A78BFA)
+                            : const Color(0x14FFFFFF),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: controller.lang == lang
+                              ? const Color(0xFFA78BFA)
+                              : const Color(0x22FFFFFF),
+                          width: 1.2,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(lang.nativeName,
+                                style: const TextStyle(
+                                    color: Color(0xFFF1F5FF),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w800)),
+                          ),
+                          if (controller.lang == lang)
+                            const Icon(Icons.check_circle_rounded,
+                                color: Color(0xFFA78BFA), size: 18),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showSupportTicketDialog(BuildContext context) {
     AppHaptics.medium();
-    String category = 'اقتراح تحسين';
+    String category = 'اقتراح تحسين'.tr;
     final subjectController = TextEditingController();
     final messageController = TextEditingController();
 
@@ -250,12 +323,12 @@ class ProfileScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(22),
             side: const BorderSide(color: Color(0xFFFFD54F), width: 1.2),
           ),
-          title: const Row(
+          title: Row(
             children: [
               Icon(Icons.support_agent_rounded,
                   color: _gold, size: 24),
               SizedBox(width: 8),
-              Text('المساعدة والاقتراحات 🎫',
+              Text('المساعدة والاقتراحات 🎫'.tr,
                   style: TextStyle(
                       color: LightGlass.text,
                       fontSize: 16,
@@ -267,7 +340,7 @@ class ProfileScreen extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('نوع التذكرة:',
+                Text('نوع التذكرة:'.tr,
                     style:
                         TextStyle(color: LightGlass.textMuted, fontSize: 12)),
                 const SizedBox(height: 6),
@@ -284,10 +357,10 @@ class ProfileScreen extends StatelessWidget {
                         borderSide: BorderSide.none),
                   ),
                   items: [
-                    'اقتراح تحسين',
-                    'مشكلة تقنية في اللعبة',
-                    'استفسار عن العملات',
-                    'أخرى'
+                    'اقتراح تحسين'.tr,
+                    'مشكلة تقنية في اللعبة'.tr,
+                    'استفسار عن العملات'.tr,
+                    'أخرى'.tr
                   ]
                       .map((s) =>
                           DropdownMenuItem(value: s, child: Text(s)))
@@ -297,7 +370,7 @@ class ProfileScreen extends StatelessWidget {
                   },
                 ),
                 const SizedBox(height: 12),
-                const Text('عنوان الموضوع:',
+                Text('عنوان الموضوع:'.tr,
                     style:
                         TextStyle(color: LightGlass.textMuted, fontSize: 12)),
                 const SizedBox(height: 6),
@@ -306,7 +379,7 @@ class ProfileScreen extends StatelessWidget {
                   style: const TextStyle(
                       color: LightGlass.text, fontSize: 13),
                   decoration: InputDecoration(
-                    hintText: 'مثال: اقتراح إضافة وضع لعب جديد...',
+                    hintText: 'مثال: اقتراح إضافة وضع لعب جديد...'.tr,
                     hintStyle: const TextStyle(
                         color: LightGlass.textFaint, fontSize: 12),
                     filled: true,
@@ -317,7 +390,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text('التفاصيل:',
+                Text('التفاصيل:'.tr,
                     style:
                         TextStyle(color: LightGlass.textMuted, fontSize: 12)),
                 const SizedBox(height: 6),
@@ -328,7 +401,7 @@ class ProfileScreen extends StatelessWidget {
                       color: LightGlass.text, fontSize: 12.5),
                   decoration: InputDecoration(
                     hintText:
-                        'اشرح تفاصيل اقتراحك أو المشكلة التي واجهتك بالتفصيل...',
+                        'اشرح تفاصيل اقتراحك أو المشكلة التي واجهتك بالتفصيل...'.tr,
                     hintStyle: const TextStyle(
                         color: LightGlass.textFaint, fontSize: 12),
                     filled: true,
@@ -344,7 +417,7 @@ class ProfileScreen extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('إلغاء',
+              child: Text('إلغاء'.tr,
                   style: TextStyle(color: LightGlass.textMuted)),
             ),
             ElevatedButton(
@@ -372,12 +445,12 @@ class ProfileScreen extends StatelessWidget {
                   Navigator.of(ctx).pop();
                   TopNotification.show(
                     context,
-                    'تم إرسال تذكرتك بنجاح! سيتم الرد عليك من قبل فريق الدعم.',
+                    'تم إرسال تذكرتك بنجاح! سيتم الرد عليك من قبل فريق الدعم.'.tr,
                     icon: Icons.check_circle_rounded,
                   );
                 }
               },
-              child: const Text('إرسال التذكرة 🚀',
+              child: Text('إرسال التذكرة 🚀'.tr,
                   style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
@@ -399,7 +472,7 @@ class ProfileScreen extends StatelessWidget {
           backgroundColor: LightGlass.cardStrong,
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20)),
-          title: const Text('تغيير اسم المستخدم الفريد',
+          title: Text('تغيير اسم المستخدم الفريد'.tr,
               style: TextStyle(
                   color: LightGlass.text,
                   fontWeight: FontWeight.bold,
@@ -413,7 +486,7 @@ class ProfileScreen extends StatelessWidget {
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.alternate_email_rounded,
                       color: _gold),
-                  hintText: 'اسم المستخدم الجديد',
+                  hintText: 'اسم المستخدم الجديد'.tr,
                   errorText: error,
                   filled: true,
                   fillColor: LightGlass.inputFill,
@@ -427,7 +500,7 @@ class ProfileScreen extends StatelessWidget {
           actions: [
             TextButton(
                 onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text('إلغاء',
+                child: Text('إلغاء'.tr,
                     style: TextStyle(color: LightGlass.textMuted))),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -440,14 +513,14 @@ class ProfileScreen extends StatelessWidget {
                   if (ctx.mounted) Navigator.of(ctx).pop();
                   if (context.mounted) {
                     TopNotification.show(
-                        context, 'تم تغيير اسم المستخدم إلى @$input!');
+                        context, 'تم تغيير اسم المستخدم إلى @{}!'.trp([input]));
                   }
                 } else {
                   setDialogState(
-                      () => error = 'الاسم غير متوفر أو قصير جداً');
+                      () => error = 'الاسم غير متوفر أو قصير جداً'.tr);
                 }
               },
-              child: const Text('حفظ',
+              child: Text('حفظ'.tr,
                   style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
@@ -494,9 +567,9 @@ class ProfileScreen extends StatelessWidget {
                             horizontal: 16, vertical: 12),
                         child: Row(
                           children: [
-                            const Expanded(
+                            Expanded(
                               child: Text(
-                                'الملف الشخصي',
+                                'الملف الشخصي'.tr,
                                 style: TextStyle(
                                   color: _textWhite,
                                   fontSize: 21,
@@ -691,7 +764,7 @@ class ProfileScreen extends StatelessWidget {
                                               children: [
                                                 Text(
                                                   user?.displayName ??
-                                                      'لاعب',
+                                                      'لاعب'.tr,
                                                   style: const TextStyle(
                                                       color: _textWhite,
                                                       fontSize: 18,
@@ -789,8 +862,8 @@ class ProfileScreen extends StatelessWidget {
                                                           width: 4),
                                                       Text(
                                                         isGuest
-                                                            ? 'حساب ضيف'
-                                                            : 'حساب Google موثق ✓',
+                                                            ? 'حساب ضيف'.tr
+                                                            : 'حساب Google موثق ✓'.tr,
                                                         style: const TextStyle(
                                                             color:
                                                                 _emerald,
@@ -820,7 +893,7 @@ class ProfileScreen extends StatelessWidget {
                                       Row(
                                         children: [
                                           _miniStat(
-                                              'العملات',
+                                              'العملات'.tr,
                                               formatBalance(
                                                   user?.chips ?? 0),
                                               _gold,
@@ -830,14 +903,14 @@ class ProfileScreen extends StatelessWidget {
                                                   color: _gold,
                                                   size: 17)),
                                           _miniStat(
-                                              'الجواهر',
+                                              'الجواهر'.tr,
                                               formatBalance(
                                                   user?.gems ?? 0),
                                               _cyan,
                                               icon: const GemIcon(
                                                   size: 15)),
                                           _miniStat(
-                                              'التقييم',
+                                              'التقييم'.tr,
                                               '${user?.rating ?? 1200}',
                                               const Color(
                                                   0xFF60A5FA),
@@ -848,7 +921,7 @@ class ProfileScreen extends StatelessWidget {
                                                       0xFF60A5FA),
                                                   size: 17)),
                                           _miniStat(
-                                              'المستوى',
+                                              'المستوى'.tr,
                                               '${user?.level ?? 1}',
                                               _gold,
                                               icon: const Icon(
@@ -857,7 +930,7 @@ class ProfileScreen extends StatelessWidget {
                                                   color: _gold,
                                                   size: 17)),
                                           _miniStat(
-                                              'نسبة الفوز',
+                                              'نسبة الفوز'.tr,
                                               '$winRate%',
                                               _pink,
                                               icon: const Icon(
@@ -866,7 +939,7 @@ class ProfileScreen extends StatelessWidget {
                                                   color: _pink,
                                                   size: 17)),
                                           _miniStat(
-                                              'الرتبة',
+                                              'الرتبة'.tr,
                                               '${Ranks.of(user?.rating ?? 1200).emoji} ${Ranks.of(user?.rating ?? 1200).name}',
                                               Color(Ranks.of(
                                                       user?.rating ??
@@ -921,9 +994,9 @@ class ProfileScreen extends StatelessWidget {
                                         Icons.headset_mic_rounded,
                                     iconColor: _gold,
                                     title:
-                                        'المساعدة والاقتراحات (فتح تذكرة دعم)',
+                                        'المساعدة والاقتراحات (فتح تذكرة دعم)'.tr,
                                     subtitle:
-                                        'تواصل مباشرة مع إدارة التطبيق للاقتراحات والمشاكل',
+                                        'تواصل مباشرة مع إدارة التطبيق للاقتراحات والمشاكل'.tr,
                                     onTap: () =>
                                         _showSupportTicketDialog(
                                             context),
@@ -933,9 +1006,9 @@ class ProfileScreen extends StatelessWidget {
                                     icon: Icons.badge_rounded,
                                     iconColor: _neonBlue,
                                     title:
-                                        'تغيير اسم المستخدم الفريد',
+                                        'تغيير اسم المستخدم الفريد'.tr,
                                     subtitle:
-                                        'اختر اسماً فريداً ليجدك أصدقاؤك بسهولة',
+                                        'اختر اسماً فريداً ليجدك أصدقاؤك بسهولة'.tr,
                                     onTap: () =>
                                         _showEditUsernameDialog(
                                             context),
@@ -945,11 +1018,60 @@ class ProfileScreen extends StatelessWidget {
                                     icon: Icons
                                         .photo_library_rounded,
                                     iconColor: _pink,
-                                    title: 'اختيار صورة شخصية',
+                                    title: 'اختيار صورة شخصية'.tr,
                                     subtitle:
-                                        'رمز تعبيري مميز يظهر للجميع على طاولات اللعب',
+                                        'رمز تعبيري مميز يظهر للجميع على طاولات اللعب'.tr,
                                     onTap: () =>
                                         _showAvatarPicker(context),
+                                  ),
+                                  _glassDivider(),
+                                  _SettingsTile(
+                                    icon: Icons
+                                        .language_rounded,
+                                    iconColor: const Color(
+                                        0xFFA78BFA),
+                                    title:
+                                        'اللغة — زمان',
+                                    subtitle:
+                                        'العربية / کوردی سورانی',
+                                    onTap: () =>
+                                        _showLanguageDialog(
+                                            context),
+                                  ),
+                                  _glassDivider(),
+                                  _SettingsTile(
+                                    icon: Icons
+                                        .privacy_tip_rounded,
+                                    iconColor: _emerald,
+                                    title: 'سياسة الخصوصية'.tr,
+                                    subtitle:
+                                        'البيانات التي نجمعها وكيف نحميها'.tr,
+                                    onTap:
+                                        LegalLinks.openPrivacy,
+                                  ),
+                                  _glassDivider(),
+                                  _SettingsTile(
+                                    icon: Icons
+                                        .description_rounded,
+                                    iconColor: _cyan,
+                                    title: 'شروط الاستخدام'.tr,
+                                    subtitle:
+                                        'قواعد اللعب والعملات الافتراضية'.tr,
+                                    onTap:
+                                        LegalLinks.openTerms,
+                                  ),
+                                  _glassDivider(),
+                                  _SettingsTile(
+                                    icon: Icons
+                                        .person_remove_rounded,
+                                    iconColor: const Color(
+                                        0xFFF87171),
+                                    title: 'حذف الحساب'.tr,
+                                    subtitle:
+                                        'حذف حسابك وجميع بياناتك نهائياً'.tr,
+                                    onTap: () =>
+                                        _confirmDeleteAccount(
+                                            context),
                                   ),
                                 ],
                               ),
@@ -1231,7 +1353,7 @@ class _SocialRewardsCard extends StatelessWidget {
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(18),
               side: BorderSide(color: _cyan.withOpacity(0.4))),
-          title: const Text('استبدال كود الإحالة',
+          title: Text('استبدال كود الإحالة'.tr,
               style: TextStyle(
                   color: _textWhite,
                   fontWeight: FontWeight.w900,
@@ -1240,7 +1362,7 @@ class _SocialRewardsCard extends StatelessWidget {
             controller: ctrl,
             style: const TextStyle(color: _textWhite),
             decoration: InputDecoration(
-              hintText: 'اسم المستخدم لصديقك',
+              hintText: 'اسم المستخدم لصديقك'.tr,
               hintStyle: const TextStyle(color: _textDim, fontSize: 12),
               filled: true,
               fillColor: const Color(0x2E141C3C),
@@ -1252,14 +1374,14 @@ class _SocialRewardsCard extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('إلغاء', style: TextStyle(color: _textDim)),
+              child: Text('إلغاء'.tr, style: TextStyle(color: _textDim)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                   backgroundColor: _cyan,
                   foregroundColor: const Color(0xFF082F49)),
               onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('استبدال',
+              child: Text('استبدال'.tr,
                   style: TextStyle(fontWeight: FontWeight.w900)),
             ),
           ],
@@ -1288,7 +1410,7 @@ class _SocialRewardsCard extends StatelessWidget {
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(18),
               side: BorderSide(color: _gold.withOpacity(0.4))),
-          title: const Text('🎁 إرسال هدية لصديق',
+          title: Text('🎁 إرسال هدية لصديق'.tr,
               style: TextStyle(
                   color: _textWhite,
                   fontWeight: FontWeight.w900,
@@ -1300,7 +1422,7 @@ class _SocialRewardsCard extends StatelessWidget {
                 controller: userCtrl,
                 style: const TextStyle(color: _textWhite),
                 decoration: InputDecoration(
-                  labelText: 'اسم المستخدم (@username)',
+                  labelText: 'اسم المستخدم (@username)'.tr,
                   labelStyle: const TextStyle(color: _textDim, fontSize: 12),
                   filled: true,
                   fillColor: const Color(0x2E141C3C),
@@ -1315,7 +1437,7 @@ class _SocialRewardsCard extends StatelessWidget {
                 keyboardType: TextInputType.number,
                 style: const TextStyle(color: _textWhite),
                 decoration: InputDecoration(
-                  labelText: 'العملات 🪙 (50 — 10000)',
+                  labelText: 'العملات 🪙 (50 — 10000)'.tr,
                   labelStyle: const TextStyle(color: _textDim, fontSize: 12),
                   filled: true,
                   fillColor: const Color(0x2E141C3C),
@@ -1329,14 +1451,14 @@ class _SocialRewardsCard extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('إلغاء', style: TextStyle(color: _textDim)),
+              child: Text('إلغاء'.tr, style: TextStyle(color: _textDim)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                   backgroundColor: _gold,
                   foregroundColor: const Color(0xFF1B0B30)),
               onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('أرسل 🎁',
+              child: Text('أرسل 🎁'.tr,
                   style: TextStyle(fontWeight: FontWeight.w900)),
             ),
           ],
@@ -1375,11 +1497,11 @@ class _SocialRewardsCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
                     Text('🤝', style: TextStyle(fontSize: 18)),
                     SizedBox(width: 8),
-                    Text('ادعُ أصدقاءك واكسبوا معاً',
+                    Text('ادعُ أصدقاءك واكسبوا معاً'.tr,
                         style: TextStyle(
                             color: _textWhite,
                             fontWeight: FontWeight.w900,
@@ -1387,8 +1509,8 @@ class _SocialRewardsCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'صديقك يُدخل كودك ← هو +300🪙 وأنت +500🪙 تصلك عند دخوله',
+                Text(
+                  'صديقك يُدخل كودك ← هو +300🪙 وأنت +500🪙 تصلك عند دخوله'.tr,
                   style: TextStyle(color: _textDim, fontSize: 10.5),
                 ),
                 const SizedBox(height: 12),
@@ -1401,7 +1523,7 @@ class _SocialRewardsCard extends StatelessWidget {
                           await Clipboard.setData(ClipboardData(text: code));
                           if (context.mounted) {
                             TopNotification.show(
-                                context, 'نُسخ كودك: $code 📋');
+                                context, 'نُسخ كودك: {} 📋'.trp([code]));
                           }
                         },
                         child: Container(
@@ -1421,7 +1543,7 @@ class _SocialRewardsCard extends StatelessWidget {
                               const SizedBox(width: 6),
                               Flexible(
                                 child: Text(
-                                  'كودك: @$code',
+                                  'كودك: @{}'.trp([code]),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
@@ -1440,7 +1562,7 @@ class _SocialRewardsCard extends StatelessWidget {
                       onTap: alreadyReferred
                           ? () {
                               TopNotification.show(context,
-                                  'استخدمت كود إحالة مسبقاً ✅');
+                                  'استخدمت كود إحالة مسبقاً ✅'.tr);
                             }
                           : () => _redeemReferral(context),
                       child: Container(
@@ -1457,7 +1579,7 @@ class _SocialRewardsCard extends StatelessWidget {
                                   : _gold.withOpacity(0.5)),
                         ),
                         child: Text(
-                          alreadyReferred ? 'مفعّل ✓' : 'عندي كود صديق',
+                          alreadyReferred ? 'مفعّل ✓'.tr : 'عندي كود صديق'.tr,
                           style: TextStyle(
                               color:
                                   alreadyReferred ? _textDim : _gold,
@@ -1486,9 +1608,9 @@ class _SocialRewardsCard extends StatelessWidget {
                             blurRadius: 10),
                       ],
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Text(
-                        '🎁 أرسل عملات هدية لصديق',
+                        '🎁 أرسل عملات هدية لصديق'.tr,
                         style: TextStyle(
                             color: Color(0xFF1B0B30),
                             fontSize: 12,

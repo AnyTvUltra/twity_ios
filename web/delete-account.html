@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>حذف الحساب — Yalla Yari | یەڵا یاری</title>
+<style>
+  :root { --card:#141C34; --gold:#FFD54F; --text:#E6ECF8; --dim:#9FB0CF; --red:#F87171; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:linear-gradient(180deg,#0B1226,#03050D); color:var(--text);
+         font-family:-apple-system,"Segoe UI",Tahoma,"Noto Naskh Arabic",sans-serif; line-height:1.8; }
+  .wrap { max-width:640px; margin:0 auto; padding:28px 18px 60px; }
+  h1 { color:var(--red); font-size:24px; margin:0 0 6px; }
+  h2 { color:var(--gold); font-size:17px; margin:22px 0 6px; }
+  .card { background:var(--card); border:1px solid rgba(248,113,113,.3); border-radius:18px; padding:18px 20px; margin:18px 0; }
+  label { display:block; font-size:13px; color:var(--dim); margin:12px 0 4px; }
+  input, textarea { width:100%; background:#0B1226; color:var(--text); border:1px solid rgba(255,255,255,.15);
+                    border-radius:12px; padding:10px 12px; font-size:14px; font-family:inherit; }
+  button { margin-top:16px; width:100%; background:#DC2626; color:#fff; border:0; border-radius:12px;
+           padding:12px; font-size:15px; font-weight:800; cursor:pointer; }
+  button:disabled { opacity:.5; }
+  #msg { margin-top:12px; font-weight:700; }
+  .muted { color:var(--dim); font-size:13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>حذف الحساب — سڕینەوەی هەژمار — Delete account</h1>
+  <p class="muted">تطبيق Yalla Yari (یەڵا یاری)</p>
+
+  <div class="card">
+    <h2>الطريقة الأسرع: من داخل التطبيق</h2>
+    <p>افتح التطبيق ← الملف الشخصي ← زر <b>حذف الحساب</b> (الأيقونة الحمراء) ← تأكيد. يُحذف حسابك وكل بياناتك فوراً.</p>
+    <h2>ما الذي يُحذف؟</h2>
+    <p>الحساب، الاسم، البريد، الصورة، الرصيد الافتراضي، السكنات، الإحصائيات، الأصدقاء والرسائل. قد نحتفظ بالبلاغات المتعلقة بالإساءة لمدة أقصاها 90 يوماً لحماية المجتمع، ثم تُحذف.</p>
+    <p class="muted">هەژمارەکەت و هەموو زانیارییەکانت دەسڕدرێنەوە. — Your account and all associated data will be deleted.</p>
+  </div>
+
+  <div class="card">
+    <h2>أو أرسل طلب حذف (بدون التطبيق)</h2>
+    <p class="muted">ننفّذ الطلب خلال 30 يوماً كحد أقصى بعد التحقق من ملكية الحساب.</p>
+    <form id="f">
+      <label>اسم المستخدم في اللعبة / ناوی بەکارهێنەر / Username</label>
+      <input id="username" required maxlength="40" placeholder="@username">
+      <label>البريد المرتبط بالحساب / ئیمەیڵ / Email</label>
+      <input id="email" type="email" required maxlength="120" placeholder="name@example.com">
+      <label>السبب (اختياري) / هۆکار / Reason</label>
+      <textarea id="reason" rows="3" maxlength="500"></textarea>
+      <button id="btn" type="submit">إرسال طلب الحذف — ناردن — Submit</button>
+      <div id="msg"></div>
+    </form>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  const app = initializeApp({
+    apiKey: "AIzaSyBZ1GzN3LUvWxmSf1ZRVC9wDstNNzgJpmw",
+    authDomain: "game-651a3.firebaseapp.com",
+    projectId: "game-651a3",
+    storageBucket: "game-651a3.firebasestorage.app",
+    messagingSenderId: "882641594444",
+    appId: "1:882641594444:web:177374244ae0d874886ce9",
+  });
+  const db = getFirestore(app);
+  const f = document.getElementById('f'), btn = document.getElementById('btn'), msg = document.getElementById('msg');
+  f.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    btn.disabled = true; msg.textContent = '';
+    try {
+      await addDoc(collection(db, 'deletion_requests'), {
+        username: document.getElementById('username').value.trim().slice(0, 40),
+        email: document.getElementById('email').value.trim().slice(0, 120),
+        reason: document.getElementById('reason').value.trim().slice(0, 500),
+        status: 'pending',
+        createdAt: serverTimestamp(),
+      });
+      msg.style.color = '#4ADE80';
+      msg.textContent = '✅ تم استلام طلبك — داواکارییەکەت وەرگیرا — Request received';
+      f.reset();
+    } catch (err) {
+      msg.style.color = '#F87171';
+      msg.textContent = 'تعذّر الإرسال، حاول لاحقاً — Could not submit, try again later';
+    } finally { btn.disabled = false; }
+  });
+</script>
+</body>
+</html>

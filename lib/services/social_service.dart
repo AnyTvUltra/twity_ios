@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'auth_service.dart';
+import '../l10n/app_lang.dart';
 
 class ChatMessage {
   final String id;
@@ -81,7 +82,7 @@ class FriendRequest {
     return FriendRequest(
       id: doc.id,
       fromUid: d['fromUid'] ?? '',
-      fromName: d['fromName'] ?? 'لاعب',
+      fromName: d['fromName'] ?? 'لاعب'.tr,
       fromUsername: d['fromUsername'] ?? '',
       fromPhoto: d['fromPhoto'] ?? '',
       toUid: d['toUid'] ?? '',
@@ -177,7 +178,7 @@ class SocialService {
 
   /// إرسال طلب صداقة — يعيد رسالة خطأ أو null عند النجاح
   Future<String?> sendFriendRequest(AppUser me, AppUser target) async {
-    if (me.uid == target.uid) return 'لا يمكنك إضافة نفسك';
+    if (me.uid == target.uid) return 'لا يمكنك إضافة نفسك'.tr;
     final reqId = '${me.uid}_${target.uid}';
     final reverseId = '${target.uid}_${me.uid}';
     try {
@@ -188,7 +189,7 @@ class SocialService {
           .collection('friends')
           .doc(target.uid)
           .get();
-      if (existing.exists) return 'هذا اللاعب صديقك بالفعل';
+      if (existing.exists) return 'هذا اللاعب صديقك بالفعل'.tr;
 
       // هل يوجد طلب معلّق سابق؟
       final pending = await _firestore
@@ -197,7 +198,7 @@ class SocialService {
           .get();
       if (pending.exists &&
           (pending.data()?['status'] == 'pending')) {
-        return 'أرسلت طلباً لهذا اللاعب بالفعل — بانتظار موافقته';
+        return 'أرسلت طلباً لهذا اللاعب بالفعل — بانتظار موافقته'.tr;
       }
 
       // إذا كان الطرف الآخر أرسل لي طلباً → قبول متبادل فوري
@@ -222,7 +223,7 @@ class SocialService {
       return null;
     } catch (e) {
       debugPrint('Error sending friend request: $e');
-      return 'تعذر إرسال الطلب، حاول مرة أخرى';
+      return 'تعذر إرسال الطلب، حاول مرة أخرى'.tr;
     }
   }
 
@@ -241,7 +242,7 @@ class SocialService {
       // بيانات الطرف المُرسِل محفوظة في الطلب
       final fromData = {
         'username': d['fromUsername'] ?? '',
-        'displayName': d['fromName'] ?? 'لاعب',
+        'displayName': d['fromName'] ?? 'لاعب'.tr,
         'photoUrl': d['fromPhoto'] ?? '',
         'addedAt': FieldValue.serverTimestamp(),
       };
@@ -252,13 +253,13 @@ class SocialService {
       final toData = toDoc.exists
           ? {
               'username': toDoc.data()?['username'] ?? '',
-              'displayName': toDoc.data()?['displayName'] ?? 'لاعب',
+              'displayName': toDoc.data()?['displayName'] ?? 'لاعب'.tr,
               'photoUrl': toDoc.data()?['photoUrl'] ?? '',
               'addedAt': FieldValue.serverTimestamp(),
             }
           : {
               'username': '',
-              'displayName': 'لاعب',
+              'displayName': 'لاعب'.tr,
               'photoUrl': '',
               'addedAt': FieldValue.serverTimestamp(),
             };
@@ -381,7 +382,7 @@ class SocialService {
         return ConversationSummary(
           id: doc.id,
           otherUid: otherUid,
-          otherName: other['name'] ?? 'لاعب',
+          otherName: other['name'] ?? 'لاعب'.tr,
           otherUsername: other['username'] ?? '',
           otherPhoto: other['photo'] ?? '',
           lastMessage: d['lastMessage'] ?? '',

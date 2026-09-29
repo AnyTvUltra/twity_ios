@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../okey_models.dart';
 import 'okey_tile_widget.dart';
+import '../../../l10n/app_lang.dart';
 
 /// طبقة احتفال الفوز — تظهر لكل اللاعبين فوق الطاولة قبل نافذة النتيجة
 /// آخر حجر مرمي يطير بقوس درامي إلى المنتصف، ثم كونفيتي + لافتة كأس
@@ -89,11 +90,11 @@ class _OkeyWinOverlayState extends State<OkeyWinOverlay>
     final isHuman = widget.winner.isHuman;
     final accent =
         isHuman ? const Color(0xFFFFD54F) : const Color(0xFF60A5FA);
-    final title = isHuman ? 'مبروك! فزت!' : 'فاز ${widget.winner.name}!';
+    final title = isHuman ? 'مبروك! فزت!'.tr : 'فاز {}!'.trp([widget.winner.name]);
     final sub = switch (widget.winType) {
-      WinType.discardOkey => 'برمي حجر الأوكي — Okey ile Bitti',
-      WinType.sevenPairs => 'بالأزواج السبعة — 7 Çift',
-      WinType.normal => 'بإكمال المجموعات',
+      WinType.discardOkey => 'برمي حجر الأوكي — Okey ile Bitti'.tr,
+      WinType.sevenPairs => 'بالأزواج السبعة — 7 Çift'.tr,
+      WinType.normal => 'بإكمال المجموعات'.tr,
     };
 
     return IgnorePointer(

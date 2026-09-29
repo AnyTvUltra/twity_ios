@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'firebase_service.dart';
 import 'auth_service.dart';
+import '../l10n/app_lang.dart';
 
 /// فئات الكسنات المتاحة في المتجر
 class StoreCategory {
@@ -35,23 +36,23 @@ class StoreCategory {
   static String label(String category) {
     switch (category) {
       case tile:
-        return 'الأحجار';
+        return 'الأحجار'.tr;
       case table:
-        return 'الطاولة';
+        return 'الطاولة'.tr;
       case rack:
-        return 'الاستكانة';
+        return 'الاستكانة'.tr;
       case background:
-        return 'الخلفية';
+        return 'الخلفية'.tr;
       case frame:
-        return 'إطار الصورة';
+        return 'إطار الصورة'.tr;
       case chessBoard:
-        return 'لوحة الشطرنج';
+        return 'لوحة الشطرنج'.tr;
       case chessPieces:
-        return 'أحجار الشطرنج';
+        return 'أحجار الشطرنج'.tr;
       case bgBoard:
-        return 'لوح الطاولي';
+        return 'لوح الطاولي'.tr;
       case bgCheckers:
-        return 'أحجار الطاولي';
+        return 'أحجار الطاولي'.tr;
       default:
         return category;
     }
@@ -90,7 +91,7 @@ class StoreCurrency {
   static const String gems = 'gems';
 
   static String icon(String c) => c == gems ? '💎' : '🪙';
-  static String label(String c) => c == gems ? 'مجوهرات' : 'عملات';
+  static String label(String c) => c == gems ? 'مجوهرات'.tr : 'عملات'.tr;
 }
 
 class StoreItem {
@@ -151,7 +152,7 @@ class StoreItem {
     final data = doc.data() as Map<String, dynamic>;
     return StoreItem(
       id: doc.id,
-      name: data['name'] ?? 'كسنة',
+      name: data['name'] ?? 'كسنة'.tr,
       category: data['category'] ?? StoreCategory.tile,
       price: (data['price'] as num?)?.toInt() ?? 0,
       currency: data['currency'] == StoreCurrency.gems
@@ -215,7 +216,7 @@ class StoreService extends ChangeNotifier {
         // ── إطارات متحركة ──
         StoreItem(
           id: 'builtin_frame_fire',
-          name: 'إطار النار المتحرك',
+          name: 'إطار النار المتحرك'.tr,
           category: StoreCategory.frame,
           price: 60,
           currency: StoreCurrency.gems,
@@ -224,7 +225,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_frame_ice',
-          name: 'إطار الجليد المتحرك',
+          name: 'إطار الجليد المتحرك'.tr,
           category: StoreCategory.frame,
           price: 60,
           currency: StoreCurrency.gems,
@@ -234,7 +235,7 @@ class StoreService extends ChangeNotifier {
         // ── إطار VIP الذهبي — يُجهَّز تلقائياً للمشتركين (مخفي عن المتجر) ──
         StoreItem(
           id: 'builtin_frame_vip_gold',
-          name: 'إطار VIP الذهبي',
+          name: 'إطار VIP الذهبي'.tr,
           category: StoreCategory.frame,
           price: 0,
           currency: StoreCurrency.gems,
@@ -245,7 +246,7 @@ class StoreService extends ChangeNotifier {
         // ── استكانات متحركة ──
         StoreItem(
           id: 'builtin_rack_fire',
-          name: 'استكانة النار الحية',
+          name: 'استكانة النار الحية'.tr,
           category: StoreCategory.rack,
           price: 45,
           currency: StoreCurrency.gems,
@@ -254,7 +255,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_rack_ice',
-          name: 'استكانة الجليد الحية',
+          name: 'استكانة الجليد الحية'.tr,
           category: StoreCategory.rack,
           price: 45,
           currency: StoreCurrency.gems,
@@ -264,7 +265,7 @@ class StoreService extends ChangeNotifier {
         // ── استكانات متحركة جديدة — عنصرية ──
         StoreItem(
           id: 'builtin_rack_lava',
-          name: 'استكانة اللافا الحية',
+          name: 'استكانة اللافا الحية'.tr,
           category: StoreCategory.rack,
           price: 55,
           currency: StoreCurrency.gems,
@@ -273,7 +274,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_rack_blaze',
-          name: 'استكانة النار الملكية',
+          name: 'استكانة النار الملكية'.tr,
           category: StoreCategory.rack,
           price: 50,
           currency: StoreCurrency.gems,
@@ -282,7 +283,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_rack_frost',
-          name: 'استكانة الصقيع المتجمد',
+          name: 'استكانة الصقيع المتجمد'.tr,
           category: StoreCategory.rack,
           price: 50,
           currency: StoreCurrency.gems,
@@ -291,7 +292,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_rack_storm',
-          name: 'استكانة البرق العاصف',
+          name: 'استكانة البرق العاصف'.tr,
           category: StoreCategory.rack,
           price: 55,
           currency: StoreCurrency.gems,
@@ -301,7 +302,7 @@ class StoreService extends ChangeNotifier {
         // ── استكانات متحركة جديدة — فاخرة ──
         StoreItem(
           id: 'builtin_rack_gold',
-          name: 'استكانة الذهب السائل',
+          name: 'استكانة الذهب السائل'.tr,
           category: StoreCategory.rack,
           price: 60,
           currency: StoreCurrency.gems,
@@ -310,7 +311,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_rack_crystal',
-          name: 'استكانة الكريستال البنفسجي',
+          name: 'استكانة الكريستال البنفسجي'.tr,
           category: StoreCategory.rack,
           price: 55,
           currency: StoreCurrency.gems,
@@ -319,7 +320,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_rack_neon',
-          name: 'استكانة النيون النعناعي',
+          name: 'استكانة النيون النعناعي'.tr,
           category: StoreCategory.rack,
           price: 45,
           currency: StoreCurrency.gems,
@@ -329,7 +330,7 @@ class StoreService extends ChangeNotifier {
         // ── استكانات متحركة جديدة — طبيعية ──
         StoreItem(
           id: 'builtin_rack_galaxy',
-          name: 'استكانة السديم الكوني',
+          name: 'استكانة السديم الكوني'.tr,
           category: StoreCategory.rack,
           price: 60,
           currency: StoreCurrency.gems,
@@ -338,7 +339,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_rack_ocean',
-          name: 'استكانة المحيط الليلي',
+          name: 'استكانة المحيط الليلي'.tr,
           category: StoreCategory.rack,
           price: 50,
           currency: StoreCurrency.gems,
@@ -347,7 +348,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_rack_aurora',
-          name: 'استكانة شفق أورورا',
+          name: 'استكانة شفق أورورا'.tr,
           category: StoreCategory.rack,
           price: 55,
           currency: StoreCurrency.gems,
@@ -357,7 +358,7 @@ class StoreService extends ChangeNotifier {
         // ── استكانات متحركة جديدة — أسطورية ──
         StoreItem(
           id: 'builtin_rack_dragon',
-          name: 'استكانة عرش التنين',
+          name: 'استكانة عرش التنين'.tr,
           category: StoreCategory.rack,
           price: 65,
           currency: StoreCurrency.gems,
@@ -366,7 +367,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_rack_ember',
-          name: 'استكانة الجمر الخالد',
+          name: 'استكانة الجمر الخالد'.tr,
           category: StoreCategory.rack,
           price: 50,
           currency: StoreCurrency.gems,
@@ -376,7 +377,7 @@ class StoreService extends ChangeNotifier {
         // ── إصدارات موسمية محدودة ⏳ ──
         StoreItem(
           id: 'builtin_rack_winter_royal',
-          name: 'استكانة الشتاء الملكي ⏳',
+          name: 'استكانة الشتاء الملكي ⏳'.tr,
           category: StoreCategory.rack,
           price: 65,
           currency: StoreCurrency.gems,
@@ -386,7 +387,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_tile_eid_flames',
-          name: 'أحجار ألسنة العيد ⏳',
+          name: 'أحجار ألسنة العيد ⏳'.tr,
           category: StoreCategory.tile,
           price: 55,
           currency: StoreCurrency.gems,
@@ -397,7 +398,7 @@ class StoreService extends ChangeNotifier {
         // ── أسطورية مقفولة بالإنجازات 🏆 ──
         StoreItem(
           id: 'builtin_rack_legend_100',
-          name: 'استكانة الأسطورة — 100 فوز 🏆',
+          name: 'استكانة الأسطورة — 100 فوز 🏆'.tr,
           category: StoreCategory.rack,
           price: 0,
           currency: StoreCurrency.gems,
@@ -407,7 +408,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_table_legend_50',
-          name: 'طاولة البطلة — 50 فوزاً 🏆',
+          name: 'طاولة البطلة — 50 فوزاً 🏆'.tr,
           category: StoreCategory.table,
           price: 0,
           currency: StoreCurrency.gems,
@@ -418,7 +419,7 @@ class StoreService extends ChangeNotifier {
         // ── استكانة أوبسيديان منصهر (تصميم ثري دي مجاني للتجربة) ──
         StoreItem(
           id: 'builtin_rack_obsidian',
-          name: 'استكانة الأوبسيديان المنصهر',
+          name: 'استكانة الأوبسيديان المنصهر'.tr,
           category: StoreCategory.rack,
           price: 0,
           currency: StoreCurrency.chips,
@@ -429,7 +430,7 @@ class StoreService extends ChangeNotifier {
         // ── استكانات خشبية ──
         StoreItem(
           id: 'builtin_rack_walnut',
-          name: 'استكانة الجوز الملكي',
+          name: 'استكانة الجوز الملكي'.tr,
           category: StoreCategory.rack,
           price: 800,
           currency: StoreCurrency.chips,
@@ -437,7 +438,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_rack_oak',
-          name: 'استكانة البلوط الفاتح',
+          name: 'استكانة البلوط الفاتح'.tr,
           category: StoreCategory.rack,
           price: 800,
           currency: StoreCurrency.chips,
@@ -445,7 +446,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_rack_ebony',
-          name: 'استكانة الأبنوس الداكن',
+          name: 'استكانة الأبنوس الداكن'.tr,
           category: StoreCategory.rack,
           price: 1000,
           currency: StoreCurrency.chips,
@@ -454,7 +455,7 @@ class StoreService extends ChangeNotifier {
         // ── استكانات صاجية ──
         StoreItem(
           id: 'builtin_rack_steel',
-          name: 'استكانة الصاج الفضي',
+          name: 'استكانة الصاج الفضي'.tr,
           category: StoreCategory.rack,
           price: 1200,
           currency: StoreCurrency.chips,
@@ -462,7 +463,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_rack_copper',
-          name: 'استكانة النحاس الدافئ',
+          name: 'استكانة النحاس الدافئ'.tr,
           category: StoreCategory.rack,
           price: 1200,
           currency: StoreCurrency.chips,
@@ -471,7 +472,7 @@ class StoreService extends ChangeNotifier {
         // ── استكانات مفروشات مزخرفة ──
         StoreItem(
           id: 'builtin_rack_carpet_red',
-          name: 'استكانة السجاد الملكي',
+          name: 'استكانة السجاد الملكي'.tr,
           category: StoreCategory.rack,
           price: 1500,
           currency: StoreCurrency.chips,
@@ -479,7 +480,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_rack_carpet_navy',
-          name: 'استكانة السجاد الكحلي',
+          name: 'استكانة السجاد الكحلي'.tr,
           category: StoreCategory.rack,
           price: 1500,
           currency: StoreCurrency.chips,
@@ -488,7 +489,7 @@ class StoreService extends ChangeNotifier {
         // ── أحجار متحركة ──
         StoreItem(
           id: 'builtin_tile_fire',
-          name: 'أحجار اللهب الحية',
+          name: 'أحجار اللهب الحية'.tr,
           category: StoreCategory.tile,
           price: 40,
           currency: StoreCurrency.gems,
@@ -497,7 +498,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_tile_ice',
-          name: 'أحجار الصقيع الحية',
+          name: 'أحجار الصقيع الحية'.tr,
           category: StoreCategory.tile,
           price: 40,
           currency: StoreCurrency.gems,
@@ -507,7 +508,7 @@ class StoreService extends ChangeNotifier {
         // ── أحجار متحركة جديدة ──
         StoreItem(
           id: 'builtin_tile_lava',
-          name: 'أحجار اللافا الحية',
+          name: 'أحجار اللافا الحية'.tr,
           category: StoreCategory.tile,
           price: 50,
           currency: StoreCurrency.gems,
@@ -516,7 +517,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_tile_blaze',
-          name: 'أحجار النار الملكية',
+          name: 'أحجار النار الملكية'.tr,
           category: StoreCategory.tile,
           price: 45,
           currency: StoreCurrency.gems,
@@ -525,7 +526,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_tile_frost',
-          name: 'أحجار الصقيع المتجمد',
+          name: 'أحجار الصقيع المتجمد'.tr,
           category: StoreCategory.tile,
           price: 45,
           currency: StoreCurrency.gems,
@@ -534,7 +535,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_tile_storm',
-          name: 'أحجار البرق العاصف',
+          name: 'أحجار البرق العاصف'.tr,
           category: StoreCategory.tile,
           price: 50,
           currency: StoreCurrency.gems,
@@ -543,7 +544,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_tile_gold',
-          name: 'أحجار الذهب السائل',
+          name: 'أحجار الذهب السائل'.tr,
           category: StoreCategory.tile,
           price: 55,
           currency: StoreCurrency.gems,
@@ -552,7 +553,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_tile_crystal',
-          name: 'أحجار الكريستال البنفسجي',
+          name: 'أحجار الكريستال البنفسجي'.tr,
           category: StoreCategory.tile,
           price: 50,
           currency: StoreCurrency.gems,
@@ -561,7 +562,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_tile_neon',
-          name: 'أحجار النيون النعناعي',
+          name: 'أحجار النيون النعناعي'.tr,
           category: StoreCategory.tile,
           price: 40,
           currency: StoreCurrency.gems,
@@ -570,7 +571,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_tile_galaxy',
-          name: 'أحجار السديم الكوني',
+          name: 'أحجار السديم الكوني'.tr,
           category: StoreCategory.tile,
           price: 55,
           currency: StoreCurrency.gems,
@@ -579,7 +580,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_tile_ocean',
-          name: 'أحجار المحيط الليلي',
+          name: 'أحجار المحيط الليلي'.tr,
           category: StoreCategory.tile,
           price: 45,
           currency: StoreCurrency.gems,
@@ -588,7 +589,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_tile_aurora',
-          name: 'أحجار شفق أورورا',
+          name: 'أحجار شفق أورورا'.tr,
           category: StoreCategory.tile,
           price: 50,
           currency: StoreCurrency.gems,
@@ -597,7 +598,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_tile_dragon',
-          name: 'أحجار عرش التنين',
+          name: 'أحجار عرش التنين'.tr,
           category: StoreCategory.tile,
           price: 60,
           currency: StoreCurrency.gems,
@@ -606,7 +607,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_tile_ember',
-          name: 'أحجار الجمر الخالد',
+          name: 'أحجار الجمر الخالد'.tr,
           category: StoreCategory.tile,
           price: 45,
           currency: StoreCurrency.gems,
@@ -616,7 +617,7 @@ class StoreService extends ChangeNotifier {
         // ── طاولات متحركة ──
         StoreItem(
           id: 'builtin_table_fire',
-          name: 'طاولة اللهب الحية',
+          name: 'طاولة اللهب الحية'.tr,
           category: StoreCategory.table,
           price: 70,
           currency: StoreCurrency.gems,
@@ -625,7 +626,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_table_ice',
-          name: 'طاولة الجليد الحية',
+          name: 'طاولة الجليد الحية'.tr,
           category: StoreCategory.table,
           price: 70,
           currency: StoreCurrency.gems,
@@ -634,7 +635,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_table_lava',
-          name: 'طاولة اللافا الحية',
+          name: 'طاولة اللافا الحية'.tr,
           category: StoreCategory.table,
           price: 75,
           currency: StoreCurrency.gems,
@@ -643,7 +644,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_table_blaze',
-          name: 'طاولة النار الملكية',
+          name: 'طاولة النار الملكية'.tr,
           category: StoreCategory.table,
           price: 70,
           currency: StoreCurrency.gems,
@@ -652,7 +653,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_table_frost',
-          name: 'طاولة الصقيع المتجمد',
+          name: 'طاولة الصقيع المتجمد'.tr,
           category: StoreCategory.table,
           price: 70,
           currency: StoreCurrency.gems,
@@ -661,7 +662,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_table_storm',
-          name: 'طاولة البرق العاصف',
+          name: 'طاولة البرق العاصف'.tr,
           category: StoreCategory.table,
           price: 75,
           currency: StoreCurrency.gems,
@@ -670,7 +671,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_table_gold',
-          name: 'طاولة الذهب السائل',
+          name: 'طاولة الذهب السائل'.tr,
           category: StoreCategory.table,
           price: 80,
           currency: StoreCurrency.gems,
@@ -679,7 +680,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_table_crystal',
-          name: 'طاولة الكريستال البنفسجي',
+          name: 'طاولة الكريستال البنفسجي'.tr,
           category: StoreCategory.table,
           price: 75,
           currency: StoreCurrency.gems,
@@ -688,7 +689,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_table_neon',
-          name: 'طاولة النيون النعناعي',
+          name: 'طاولة النيون النعناعي'.tr,
           category: StoreCategory.table,
           price: 65,
           currency: StoreCurrency.gems,
@@ -697,7 +698,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_table_galaxy',
-          name: 'طاولة السديم الكوني',
+          name: 'طاولة السديم الكوني'.tr,
           category: StoreCategory.table,
           price: 80,
           currency: StoreCurrency.gems,
@@ -706,7 +707,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_table_ocean',
-          name: 'طاولة المحيط الليلي',
+          name: 'طاولة المحيط الليلي'.tr,
           category: StoreCategory.table,
           price: 70,
           currency: StoreCurrency.gems,
@@ -715,7 +716,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_table_aurora',
-          name: 'طاولة شفق أورورا',
+          name: 'طاولة شفق أورورا'.tr,
           category: StoreCategory.table,
           price: 75,
           currency: StoreCurrency.gems,
@@ -724,7 +725,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_table_dragon',
-          name: 'طاولة عرش التنين',
+          name: 'طاولة عرش التنين'.tr,
           category: StoreCategory.table,
           price: 85,
           currency: StoreCurrency.gems,
@@ -733,7 +734,7 @@ class StoreService extends ChangeNotifier {
         ),
         StoreItem(
           id: 'builtin_table_ember',
-          name: 'طاولة الجمر الخالد',
+          name: 'طاولة الجمر الخالد'.tr,
           category: StoreCategory.table,
           price: 70,
           currency: StoreCurrency.gems,
@@ -741,15 +742,15 @@ class StoreService extends ChangeNotifier {
           effect: 'ember',
         ),
         // ── سكنات الطاولي: ألواح + مجموعات أحجار ──
-        for (final b in const [
-          ('ebony', 'لوح الأبنوس الذهبي', 3500, StoreCurrency.chips),
-          ('teak', 'لوح الصاج الطبيعي', 2500, StoreCurrency.chips),
-          ('felt', 'لوح الكازينو الأخضر', 3000, StoreCurrency.chips),
-          ('pearl', 'لوح الصدف الملكي', 45, StoreCurrency.gems),
-          ('fire', 'لوح الحمم النارية', 70, StoreCurrency.gems),
-          ('ice', 'لوح الجليد القطبي', 70, StoreCurrency.gems),
-          ('neon', 'لوح النيون الليلي', 60, StoreCurrency.gems),
-          ('galaxy', 'لوح المجرة الكونية', 90, StoreCurrency.gems),
+        for (final b in [
+          ('ebony', 'لوح الأبنوس الذهبي'.tr, 3500, StoreCurrency.chips),
+          ('teak', 'لوح الصاج الطبيعي'.tr, 2500, StoreCurrency.chips),
+          ('felt', 'لوح الكازينو الأخضر'.tr, 3000, StoreCurrency.chips),
+          ('pearl', 'لوح الصدف الملكي'.tr, 45, StoreCurrency.gems),
+          ('fire', 'لوح الحمم النارية'.tr, 70, StoreCurrency.gems),
+          ('ice', 'لوح الجليد القطبي'.tr, 70, StoreCurrency.gems),
+          ('neon', 'لوح النيون الليلي'.tr, 60, StoreCurrency.gems),
+          ('galaxy', 'لوح المجرة الكونية'.tr, 90, StoreCurrency.gems),
         ])
           StoreItem(
             id: 'builtin_bgboard_${b.$1}',
@@ -759,15 +760,15 @@ class StoreService extends ChangeNotifier {
             currency: b.$4,
             imageBase64: '',
           ),
-        for (final c in const [
-          ('wood', 'أحجار القيقب والجوز', 2000, StoreCurrency.chips),
-          ('teak', 'أحجار الصاج والأبنوس', 2500, StoreCurrency.chips),
-          ('marble', 'أحجار الرخام الفاخر', 3500, StoreCurrency.chips),
-          ('gold', 'أحجار الذهب والفضة', 50, StoreCurrency.gems),
-          ('fire', 'أحجار الجمر الناري', 65, StoreCurrency.gems),
-          ('ice', 'أحجار الكريستال الجليدي', 65, StoreCurrency.gems),
-          ('neon', 'أحجار النيون المتوهج', 55, StoreCurrency.gems),
-          ('gem', 'أحجار الياقوت والزمرد', 80, StoreCurrency.gems),
+        for (final c in [
+          ('wood', 'أحجار القيقب والجوز'.tr, 2000, StoreCurrency.chips),
+          ('teak', 'أحجار الصاج والأبنوس'.tr, 2500, StoreCurrency.chips),
+          ('marble', 'أحجار الرخام الفاخر'.tr, 3500, StoreCurrency.chips),
+          ('gold', 'أحجار الذهب والفضة'.tr, 50, StoreCurrency.gems),
+          ('fire', 'أحجار الجمر الناري'.tr, 65, StoreCurrency.gems),
+          ('ice', 'أحجار الكريستال الجليدي'.tr, 65, StoreCurrency.gems),
+          ('neon', 'أحجار النيون المتوهج'.tr, 55, StoreCurrency.gems),
+          ('gem', 'أحجار الياقوت والزمرد'.tr, 80, StoreCurrency.gems),
         ])
           StoreItem(
             id: 'builtin_bgcheckers_${c.$1}',
@@ -793,7 +794,7 @@ class StoreService extends ChangeNotifier {
   /// وطبقة الحبيبات تحت السكنات المتحركة
   static final StoreItem defaultWoodItem = StoreItem(
     id: 'sys_wood_base',
-    name: 'خشب افتراضي',
+    name: 'خشب افتراضي'.tr,
     category: StoreCategory.rack,
     price: 0,
     imageBase64: 'asset:assets/skins/wood_premium.jpg',
@@ -884,22 +885,22 @@ class StoreService extends ChangeNotifier {
   /// شراء كسنة من المتجر (بالعملات 🪙 أو الجواهر 💎 حسب العنصر)
   Future<String?> purchase(StoreItem item) async {
     final user = AuthService().currentUser;
-    if (user == null) return 'يرجى تسجيل الدخول أولاً';
-    if (isOwned(item.id)) return 'تمتلك هذه الكسنة بالفعل';
+    if (user == null) return 'يرجى تسجيل الدخول أولاً'.tr;
+    if (isOwned(item.id)) return 'تمتلك هذه الكسنة بالفعل'.tr;
     if (item.requiredWins > 0 && user.wins < item.requiredWins) {
-      return 'كسنة أسطورية مقفلة! تحتاج ${item.requiredWins} فوزاً 🏆 (عندك ${user.wins})';
+      return 'كسنة أسطورية مقفلة! تحتاج {} فوزاً 🏆 (عندك {})'.trp([item.requiredWins, user.wins]);
     }
 
     final isGems = item.currency == StoreCurrency.gems;
     final balance = isGems ? user.gems : user.chips;
     if (balance < item.price) {
-      return 'رصيدك غير كافٍ! تحتاج ${item.price} ${isGems ? '💎' : '🪙'}';
+      return 'رصيدك غير كافٍ! تحتاج {} {}'.trp([item.price, isGems ? '💎' : '🪙']);
     }
 
     final paid = isGems
         ? await AuthService().adjustGems(-item.price)
         : await AuthService().adjustChips(-item.price);
-    if (!paid) return 'فشل خصم الرصيد، حاول مرة أخرى';
+    if (!paid) return 'فشل خصم الرصيد، حاول مرة أخرى'.tr;
 
     final owned = {...user.ownedSkins, item.id}.toList();
     await AuthService().updateSkinData(ownedSkins: owned);

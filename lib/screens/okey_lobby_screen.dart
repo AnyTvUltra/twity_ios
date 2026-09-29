@@ -12,10 +12,12 @@ import '../widgets/gem_icon.dart';
 import '../widgets/radio_player_widget.dart';
 import 'okey_game_screen.dart';
 import 'store_screen.dart';
+import '../l10n/app_lang.dart';
 
 class OkeyLobbyScreen extends StatefulWidget {
   final OkeyRules rules;
-  const OkeyLobbyScreen({super.key, this.rules = OkeyRules.turkish});
+  OkeyLobbyScreen({super.key, OkeyRules? rules})
+      : rules = rules ?? OkeyRules.turkish;
 
   @override
   State<OkeyLobbyScreen> createState() => _OkeyLobbyScreenState();
@@ -48,7 +50,7 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
     {
       'stakes': 50,
       'pot': 200,
-      'title': 'طاولة المبتدئين',
+      'title': 'طاولة المبتدئين'.tr,
       'medal': '🥉',
       'color': const Color(0xFFCD8B5A),
       'glow': const Color(0xFF10B981),
@@ -56,7 +58,7 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
     {
       'stakes': 200,
       'pot': 800,
-      'title': 'طاولة المحترفين',
+      'title': 'طاولة المحترفين'.tr,
       'medal': '🥈',
       'color': const Color(0xFF9FB8D8),
       'glow': const Color(0xFF3B82F6),
@@ -64,7 +66,7 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
     {
       'stakes': 1000,
       'pot': 4000,
-      'title': 'طاولة كبار الشخصيات VIP',
+      'title': 'طاولة كبار الشخصيات VIP'.tr,
       'medal': '👑',
       'color': const Color(0xFFFFD54F),
       'glow': const Color(0xFFFFB300),
@@ -85,14 +87,14 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
   Future<void> _handleQuickMatch() async {
     final user = AuthService().currentUser;
     if (user == null) {
-      TopNotification.show(context, 'يرجى تسجيل الدخول أولاً!',
+      TopNotification.show(context, 'يرجى تسجيل الدخول أولاً!'.tr,
           icon: Icons.lock_rounded);
       return;
     }
 
     if (user.chips < _selectedStakes) {
       TopNotification.show(
-          context, 'رصيدك غير كافٍ لدخول هذه الطاولة! تحتاج $_selectedStakes عملة',
+          context, 'رصيدك غير كافٍ لدخول هذه الطاولة! تحتاج {} عملة'.trp([_selectedStakes]),
           icon: Icons.warning_rounded);
       return;
     }
@@ -109,7 +111,7 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
       _listenToRoom(room.id);
     } else {
       if (mounted) {
-        TopNotification.show(context, 'تعذر الدخول للطاولة، حاول مرة أخرى',
+        TopNotification.show(context, 'تعذر الدخول للطاولة، حاول مرة أخرى'.tr,
             icon: Icons.error_outline_rounded);
       }
     }
@@ -229,9 +231,9 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
           _glassIcon(Icons.radio_rounded, _gold,
               () => RadioPlayerSheet.show(context)),
           const SizedBox(width: 8),
-          const Expanded(
+          Expanded(
             child: Text(
-              'صالات تركيش أوكي أونلاين 🀄',
+              'صالات تركيش أوكي أونلاين 🀄'.tr,
               textAlign: TextAlign.end,
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
@@ -308,10 +310,10 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
           Row(
             children: [
               Expanded(child: _sideGlowLine(reverse: true)),
-              const Padding(
+              Padding(
                 padding: EdgeInsets.symmetric(horizontal: 14),
                 child: Text(
-                  'اختر الطاولة:',
+                  'اختر الطاولة:'.tr,
                   style: TextStyle(
                       color: _textWhite,
                       fontSize: 17,
@@ -382,9 +384,9 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
 
     return Row(
       children: [
-        option(false, '👤', 'فردي', 'كل لاعب لنفسه'),
+        option(false, '👤', 'فردي'.tr, 'كل لاعب لنفسه'.tr),
         const SizedBox(width: 10),
-        option(true, '🤝', 'زوجي', 'اللاعب المقابل شريكك'),
+        option(true, '🤝', 'زوجي'.tr, 'اللاعب المقابل شريكك'.tr),
       ],
     );
   }
@@ -460,8 +462,8 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'تنافس حقيقي مع 4 لاعبين',
+                    Text(
+                      'تنافس حقيقي مع 4 لاعبين'.tr,
                       textAlign: TextAlign.start,
                       style: TextStyle(
                           color: _textWhite,
@@ -469,8 +471,8 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                           fontWeight: FontWeight.w900),
                     ),
                     const SizedBox(height: 5),
-                    const Text(
-                      'اختر قيمة الرهان، وانضم لطاولة نشطة مع دردشة صوتية وراديو مباشر!',
+                    Text(
+                      'اختر قيمة الرهان، وانضم لطاولة نشطة مع دردشة صوتية وراديو مباشر!'.tr,
                       textAlign: TextAlign.start,
                       style:
                           TextStyle(color: _textDim, fontSize: 11, height: 1.4),
@@ -486,7 +488,7 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                             color: _cyan.withOpacity(0.4), width: 0.9),
                       ),
                       child: Text(
-                        '${widget.rules.icon} ${widget.rules.name} — افتتاح ${widget.rules.openingPoints}',
+                        '{} {} — افتتاح {}'.trp([widget.rules.icon, widget.rules.name, widget.rules.openingPoints]),
                         style: const TextStyle(
                             color: _cyan,
                             fontSize: 10.5,
@@ -645,7 +647,7 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                             const SizedBox(width: 4),
                             Flexible(
                               child: Text(
-                                'الجائزة الإجمالية للفائز: ${formatBalance(pot)} عملة ذهبية',
+                                'الجائزة الإجمالية للفائز: {} عملة ذهبية'.trp([formatBalance(pot)]),
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                     color: _gold,
@@ -772,7 +774,7 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                         ),
                       ),
                       _isSearching
-                          ? const Row(
+                          ? Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 SizedBox(
@@ -782,20 +784,20 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                                         strokeWidth: 2.4,
                                         color: Color(0xFF1B0B30))),
                                 SizedBox(width: 10),
-                                Text('جاري البحث عن طاولة...',
+                                Text('جاري البحث عن طاولة...'.tr,
                                     style: TextStyle(
                                         color: Color(0xFF1B0B30),
                                         fontWeight: FontWeight.w900,
                                         fontSize: 15)),
                               ],
                             )
-                          : const Row(
+                          : Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text('🀄', style: TextStyle(fontSize: 20)),
                                 SizedBox(width: 10),
                                 Text(
-                                  'دخول الطاولة وبدء التحدي',
+                                  'دخول الطاولة وبدء التحدي'.tr,
                                   style: TextStyle(
                                       color: Color(0xFF1B0B30),
                                       fontWeight: FontWeight.w900,
@@ -846,14 +848,14 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                 ),
                 child: Column(
                   children: [
-                    const Text('غرفة الانتظار 🪑',
+                    Text('غرفة الانتظار 🪑'.tr,
                         style: TextStyle(
                             color: _textWhite,
                             fontSize: 17,
                             fontWeight: FontWeight.w900)),
                     const SizedBox(height: 6),
                     Text(
-                        'قيمة الرهان: ${room.stakes} 🪙 • الجائزة: ${room.stakes * 4} 💰',
+                        'قيمة الرهان: {} 🪙 • الجائزة: {} 💰'.trp([room.stakes, room.stakes * 4]),
                         style: const TextStyle(color: _gold, fontSize: 13)),
                   ],
                 ),
@@ -934,7 +936,7 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            player != null ? player.name : 'مقعد فارغ',
+                            player != null ? player.name : 'مقعد فارغ'.tr,
                             style: TextStyle(
                               color: player != null
                                   ? _textWhite
@@ -946,8 +948,8 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                           if (player != null)
                             Text(
                               player.isBot
-                                  ? 'روبوت ذكي 🤖'
-                                  : 'لاعب حقيقي 🟢',
+                                  ? 'روبوت ذكي 🤖'.tr
+                                  : 'لاعب حقيقي 🟢'.tr,
                               style: TextStyle(
                                   color: player.isBot
                                       ? _textDim
@@ -984,12 +986,12 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                       spreadRadius: -4),
                 ],
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.bolt_rounded, color: Colors.white),
                   SizedBox(width: 8),
-                  Text('بدء اللعبة فوراً (ملء المقاعد بروبوتات)',
+                  Text('بدء اللعبة فوراً (ملء المقاعد بروبوتات)'.tr,
                       style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w900,

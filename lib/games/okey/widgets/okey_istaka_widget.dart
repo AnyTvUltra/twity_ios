@@ -5,6 +5,7 @@ import '../../../services/store_service.dart';
 import '../../../widgets/animated_skin_effect.dart';
 import '../../../widgets/skin_image.dart';
 import 'okey_tile_widget.dart';
+import 'okey_joker_tile.dart';
 import 'okey_rack_model_3d.dart';
 
 /// ترميز ما يُسحب في مشهد الأوكي (قيمة الـ Draggable)
@@ -583,14 +584,26 @@ class OkeyIstakaWidget extends StatelessWidget {
                         ),
                       ),
                     ),
-                    child: OkeyTileWidget(
-                      tile: tile,
-                      isSelected: isSelected,
-                      isHighlighted: highlightedIndices.contains(slotIndex),
-                      width: tileW,
-                      height: tileH,
-                      onTap: () => onTileTap(slotIndex),
-                    ),
+                    // الجوكر يظهر مقلوباً (أبيض) — لمسة تكشفه ثانيتين
+                    child: tile.isRealOkey
+                        ? OkeyJokerTile(
+                            tile: tile,
+                            isSelected: isSelected,
+                            isHighlighted:
+                                highlightedIndices.contains(slotIndex),
+                            width: tileW,
+                            height: tileH,
+                            onTap: () => onTileTap(slotIndex),
+                          )
+                        : OkeyTileWidget(
+                            tile: tile,
+                            isSelected: isSelected,
+                            isHighlighted:
+                                highlightedIndices.contains(slotIndex),
+                            width: tileW,
+                            height: tileH,
+                            onTap: () => onTileTap(slotIndex),
+                          ),
                   ),
                   ),
                 ),

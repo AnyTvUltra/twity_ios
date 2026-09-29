@@ -1,3 +1,10 @@
+// مفتاح توقيع الإصدار لـ Google Play — يُقرأ من android/key.properties (غير مرفوع إلى Git)
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 plugins {
     id "com.android.application"
     id "kotlin-android"
@@ -7,7 +14,8 @@ plugins {
 
 android {
     namespace = "com.yallayari.game"
-    compileSdk = flutter.compileSdkVersion
+    // Google Play: التطبيقات الجديدة والتحديثات يجب أن تستهدف Android 16 (API 36)
+    compileSdk = Math.max(flutter.compileSdkVersion, 36)
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -25,16 +33,28 @@ android {
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = Math.max(flutter.targetSdkVersion, 36)
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        release {
+            if (keystorePropertiesFile.exists()) {
+                keyAlias = keystoreProperties["keyAlias"]
+                keyPassword = keystoreProperties["keyPassword"]
+                storeFile = file(keystoreProperties["storeFile"])
+                storePassword = keystoreProperties["storePassword"]
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.debug
+            // توقيع الإصدار بمفتاحك إن وُجد key.properties، وإلا مفتاح التطوير للتجربة فقط
+            signingConfig = keystorePropertiesFile.exists()
+                    ? signingConfigs.release
+                    : signingConfigs.debug
         }
     }
 }

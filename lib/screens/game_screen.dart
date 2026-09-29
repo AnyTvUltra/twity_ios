@@ -10,6 +10,7 @@ import '../services/auth_service.dart';
 import 'okey_game_screen.dart';
 import 'chess_game_screen.dart';
 import 'backgammon_game_screen.dart';
+import '../l10n/app_lang.dart';
 
 class GameScreen extends StatefulWidget {
   final String gameId;
@@ -24,7 +25,7 @@ class _GameScreenState extends State<GameScreen> {
   int _selectedMode = 0;
   int _selectedBet = 500;
 
-  final List<String> _modes = ['أونلاين', 'مع صديق', 'ضد الذكاء الاصطناعي'];
+  final List<String> _modes = ['أونلاين'.tr, 'مع صديق'.tr, 'ضد الذكاء الاصطناعي'.tr];
   final List<int> _bets = [100, 250, 500, 1000, 2500];
 
   static const _bgTop = Color(0xFF0A0F24);
@@ -208,7 +209,7 @@ class _GameScreenState extends State<GameScreen> {
                       const SizedBox(height: 22),
 
                       // اختيار نمط اللعب
-                      _sectionTitle('اختر نمط اللعب:'),
+                      _sectionTitle('اختر نمط اللعب:'.tr),
                       const SizedBox(height: 10),
                       Row(
                         children: List.generate(_modes.length, (index) {
@@ -282,7 +283,7 @@ class _GameScreenState extends State<GameScreen> {
                       const SizedBox(height: 20),
 
                       // اختيار الرهان
-                      _sectionTitle('قيمة الرهان (عملات):'),
+                      _sectionTitle('قيمة الرهان (عملات):'.tr),
                       const SizedBox(height: 10),
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
@@ -366,7 +367,7 @@ class _GameScreenState extends State<GameScreen> {
                             Navigator.of(context).push(
                               MaterialPageRoute(
                                   builder: (_) =>
-                                      const OkeyGameScreen()),
+                                      OkeyGameScreen()),
                             );
                           } else if (widget.gameId == 'chess') {
                             Navigator.of(context).push(
@@ -389,7 +390,7 @@ class _GameScreenState extends State<GameScreen> {
                           } else {
                             TopNotification.show(
                               context,
-                              'جاري بدء لعبة ${game.title}... بالتوفيق!',
+                              'جاري بدء لعبة {}... بالتوفيق!'.trp([game.title]),
                               icon: Icons.play_circle_filled_rounded,
                             );
                           }
@@ -446,7 +447,7 @@ class _GameScreenState extends State<GameScreen> {
                                   ),
                                 ),
                               ),
-                              const Row(
+                              Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.center,
                                 children: [
@@ -455,7 +456,7 @@ class _GameScreenState extends State<GameScreen> {
                                       size: 26),
                                   SizedBox(width: 8),
                                   Text(
-                                    'العب الآن',
+                                    'العب الآن'.tr,
                                     style: TextStyle(
                                       color: Color(0xFF1B0B30),
                                       fontSize: 17,

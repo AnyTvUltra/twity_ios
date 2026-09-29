@@ -6,6 +6,7 @@ import '../utils/top_notification.dart';
 import '../utils/format.dart';
 import '../services/auth_service.dart';
 import '../widgets/daily_rewards_panel.dart';
+import '../l10n/app_lang.dart';
 
 class AchievementsScreen extends StatefulWidget {
   const AchievementsScreen({super.key});
@@ -42,7 +43,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       if (mounted) {
         TopNotification.show(
           context,
-          'تم استلام مكافأة "$title" 💰 +$reward عملة ذهبية في رصيدك!',
+          'تم استلام مكافأة "{}" 💰 +{} عملة ذهبية في رصيدك!'.trp([title, reward]),
           icon: Icons.stars_rounded,
         );
       }
@@ -78,9 +79,9 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                         horizontal: 16, vertical: 12),
                     child: Row(
                       children: [
-                        const Expanded(
+                        Expanded(
                           child: Text(
-                            'الإنجازات والجوائز',
+                            'الإنجازات والجوائز'.tr,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -164,9 +165,9 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Expanded(
+                        Expanded(
                           child: Text(
-                            'المهام اليومية (تتجدد كل 24 ساعة)',
+                            'المهام اليومية (تتجدد كل 24 ساعة)'.tr,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -219,7 +220,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                         _buildQuestCard(
                           index: 0,
                           title:
-                              'العب 3 مباريات شطرنج اليوم',
+                              'العب 3 مباريات شطرنج اليوم'.tr,
                           progress: '2 / 3',
                           progressRatio: 2 / 3,
                           reward: 300,
@@ -228,7 +229,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                         ),
                         _buildQuestCard(
                           index: 1,
-                          title: 'حقق الفوز في مباراة لودو',
+                          title: 'حقق الفوز في مباراة لودو'.tr,
                           progress: '1 / 1',
                           progressRatio: 1.0,
                           reward: 500,
@@ -238,7 +239,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                         _buildQuestCard(
                           index: 2,
                           title:
-                              'رتب أوراقك وفز في سوليتر',
+                              'رتب أوراقك وفز في سوليتر'.tr,
                           progress: '0 / 1',
                           progressRatio: 0.0,
                           reward: 250,
@@ -248,7 +249,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                         _buildQuestCard(
                           index: 3,
                           title:
-                              'تحدى صديقاً في طاولي (Backgammon)',
+                              'تحدى صديقاً في طاولي (Backgammon)'.tr,
                           progress: '0 / 1',
                           progressRatio: 0.0,
                           reward: 400,
@@ -280,8 +281,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Text(
-                          'كؤوس التميز الملكية',
+                        Text(
+                          'كؤوس التميز الملكية'.tr,
                           style: TextStyle(
                             color: _textWhite,
                             fontSize: 15.5,
@@ -302,23 +303,23 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                           horizontal: 16),
                       children: [
                         _buildTrophyBadge(
-                            'تاج اللودو الذهبي',
-                            'فز بـ 50 مباراة لودو',
+                            'تاج اللودو الذهبي'.tr,
+                            'فز بـ 50 مباراة لودو'.tr,
                             '🏆',
                             _gold),
                         _buildTrophyBadge(
-                            'فارس الشطرنج',
-                            'اهزم 20 منافساً',
+                            'فارس الشطرنج'.tr,
+                            'اهزم 20 منافساً'.tr,
                             '♟️',
                             const Color(0xFF94A3B8)),
                         _buildTrophyBadge(
-                            'ساحر السوليتر',
-                            'أنهِ اللعبة بأقل من دقيقتين',
+                            'ساحر السوليتر'.tr,
+                            'أنهِ اللعبة بأقل من دقيقتين'.tr,
                             '🃏',
                             _emerald),
                         _buildTrophyBadge(
-                            'أسطورة الطاولي',
-                            'ارمِ الدوشيش 10 مرات',
+                            'أسطورة الطاولي'.tr,
+                            'ارمِ الدوشيش 10 مرات'.tr,
                             '🎲',
                             _cyan),
                       ],
@@ -480,16 +481,16 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                         : null,
                   ),
                   child: isClaimed
-                      ? const Text(
-                          'تم الاستلام ✔',
+                      ? Text(
+                          'تم الاستلام ✔'.tr,
                           style: TextStyle(
                               color: _emerald,
                               fontSize: 11,
                               fontWeight: FontWeight.w800),
                         )
                       : (isDone
-                          ? const Text(
-                              'استلام 💰',
+                          ? Text(
+                              'استلام 💰'.tr,
                               style: TextStyle(
                                   color: Color(0xFF1B0B30),
                                   fontSize: 11,

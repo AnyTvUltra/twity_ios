@@ -14,6 +14,7 @@ import 'chat_screen.dart';
 import 'profile_screen.dart';
 import 'okey_rules_screen.dart';
 import 'store_screen.dart';
+import '../l10n/app_lang.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -206,7 +207,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     setState(() => _currentNavIndex = 3);
                   },
                   onCoinTap: () =>
-                      _showNotice('رصيدك الحالي: 1250 عملة ذهبية!'),
+                      _showNotice('رصيدك الحالي: 1250 عملة ذهبية!'.tr),
                   onStoreTap: () {
                     AppHaptics.selection();
                     Navigator.of(context).push(
@@ -315,7 +316,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       child: RepaintBoundary(
                         child: MoreGamesBanner(
                           onTap: () =>
-                              _showNotice('ألعاب جديدة قادمة قريباً! 🎮'),
+                              _showNotice('ألعاب جديدة قادمة قريباً! 🎮'.tr),
                         ),
                       ),
                     ),

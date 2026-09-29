@@ -15,6 +15,7 @@ import '../services/auth_service.dart';
 import '../services/store_service.dart';
 import '../utils/format.dart';
 import '../widgets/user_avatar.dart';
+import '../l10n/app_lang.dart';
 
 /// حجر في حالة طيران (حركة/ضرب/إخراج/عودة بعد إفلات خاطئ)
 class _Flight {
@@ -284,9 +285,9 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
     await _animateDice(a, b);
     if (!mounted) return;
     final who = _e.turn == 0
-        ? 'أنت تبدأ! 🎲'
-        : (widget.vsAI ? 'الخصم يبدأ' : 'اللاعب 2 يبدأ');
-    _toast('$a ضد $b — $who', ms: 1500);
+        ? 'أنت تبدأ! 🎲'.tr
+        : (widget.vsAI ? 'الخصم يبدأ'.tr : 'اللاعب 2 يبدأ'.tr);
+    _toast('{} ضد {} — {}'.trp([a, b, who]), ms: 1500);
     await Future.delayed(const Duration(milliseconds: 1500));
     if (!mounted) return;
     setState(() {
@@ -332,7 +333,7 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
 
   Future<void> _afterRoll() async {
     if (_e.legalMoves().isEmpty) {
-      _toast(_isHumanTurn ? 'لا توجد حركات متاحة 😕' : 'الخصم لا يملك حركات');
+      _toast(_isHumanTurn ? 'لا توجد حركات متاحة 😕'.tr : 'الخصم لا يملك حركات'.tr);
       setState(() => _busy = true);
       await Future.delayed(const Duration(milliseconds: 1400));
       if (!mounted) return;
@@ -402,7 +403,7 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
     final win = _e.winner == 0;
     final mult = _e.winMultiplier;
     if (widget.vsAI) {
-      _botSay(win ? BgChatMsg('أحسنت 👏') : BgChatMsg('😎', emoji: true));
+      _botSay(win ? BgChatMsg('أحسنت 👏'.tr) : BgChatMsg('😎', emoji: true));
     }
     await Future.delayed(const Duration(milliseconds: 900));
     if (!mounted) return;
@@ -573,7 +574,7 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
             _botSay(side == 1
                 ? BgChatMsg(_rnd.nextBool() ? '😎' : '😏', emoji: true)
                 : (_rnd.nextBool()
-                    ? BgChatMsg('ما هذا الحظ؟! 😤')
+                    ? BgChatMsg('ما هذا الحظ؟! 😤'.tr)
                     : BgChatMsg('😡', emoji: true)));
           }
         });
@@ -611,7 +612,7 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
     if (!_e.movableSources().contains(src)) {
       BgAudio.illegal();
       if (_e.state.bar[_e.turn] > 0 && src != -1) {
-        _toast('أدخل الحجر من البار أولاً ⚠️');
+        _toast('أدخل الحجر من البار أولاً ⚠️'.tr);
       }
       return false;
     }
@@ -768,7 +769,7 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
                         ),
                         _playerCard(
                           side: 1,
-                          name: widget.vsAI ? 'الخصم الذكي' : 'اللاعب 2',
+                          name: widget.vsAI ? 'الخصم الذكي'.tr : 'اللاعب 2'.tr,
                           avatar: _botAvatar(),
                         ),
                         const Spacer(),
@@ -803,7 +804,7 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
                         const SizedBox(height: 8),
                         _playerCard(
                           side: 0,
-                          name: user?.displayName ?? 'أنت',
+                          name: user?.displayName ?? 'أنت'.tr,
                           avatar: UserAvatar(
                               photoUrl: user?.photoUrl ?? '',
                               name: user?.displayName ?? '',
@@ -870,8 +871,8 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
                     multiplier: _e.winMultiplier,
                     chips: _resultChips,
                     title: widget.vsAI
-                        ? (_e.winner == 0 ? 'فزت! 🎉' : 'خسرت الجولة')
-                        : (_e.winner == 0 ? 'فاز اللاعب 1' : 'فاز اللاعب 2'),
+                        ? (_e.winner == 0 ? 'فزت! 🎉'.tr : 'خسرت الجولة'.tr)
+                        : (_e.winner == 0 ? 'فاز اللاعب 1'.tr : 'فاز اللاعب 2'.tr),
                     onRematch: _rematch,
                     onExit: () => Navigator.of(context).pop(),
                   ),
@@ -907,26 +908,26 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('الانسحاب؟',
+                      Text('الانسحاب؟'.tr,
                           style: TextStyle(
                               color: _textWhite,
                               fontSize: 17,
                               fontWeight: FontWeight.w900)),
                       const SizedBox(height: 4),
-                      Text('ستخسر رهانك ${widget.bet} 🪙',
+                      Text('ستخسر رهانك {} 🪙'.trp([widget.bet]),
                           style:
                               const TextStyle(color: _textDim, fontSize: 12)),
                       const SizedBox(height: 12),
                       Row(
                         children: [
                           Expanded(
-                            child: _pill('متابعة', _mint,
+                            child: _pill('متابعة'.tr, _mint,
                                 const Color(0xFF052E1C),
                                 () => setState(() => _confirmExit = false)),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: _pill('انسحاب', _red, Colors.white,
+                            child: _pill('انسحاب'.tr, _red, Colors.white,
                                 _resignConfirmed),
                           ),
                         ],
@@ -993,12 +994,12 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
                 blurRadius: 14),
           ],
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text('😎', style: TextStyle(fontSize: 18)),
             SizedBox(width: 6),
-            Text('دردشة',
+            Text('دردشة'.tr,
                 style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w900,
@@ -1118,8 +1119,8 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
               const SizedBox(height: 4),
               Text(
                 active && !_isHumanTurn
-                    ? 'يفكر…'
-                    : (active ? 'دورك' : 'خرج ${s.off[side]}/15'),
+                    ? 'يفكر…'.tr
+                    : (active ? 'دورك'.tr : 'خرج {}/15'.trp([s.off[side]])),
                 style: TextStyle(
                     color: active ? _mint : _textDim,
                     fontSize: 10.5,
@@ -1172,7 +1173,7 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
                           height: 24,
                           child: CustomPaint(painter: DicePainter(5))),
                       const SizedBox(width: 6),
-                      const Text('ارمِ',
+                      Text('ارمِ'.tr,
                           style: TextStyle(
                               color: Color(0xFF1B0B30),
                               fontWeight: FontWeight.w900,
@@ -1185,7 +1186,7 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
           ),
           if (_canAct && _e.canUndo) ...[
             const SizedBox(height: 6),
-            _pill('↶ تراجع', const Color(0x22FFFFFF), _textWhite, _undo),
+            _pill('↶ تراجع'.tr, const Color(0x22FFFFFF), _textWhite, _undo),
           ],
         ],
       ),
@@ -1587,7 +1588,7 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: _gold.withValues(alpha: 0.6)),
             ),
-            child: Text('دبل ×${_e.dice.length}',
+            child: Text('دبل ×{}'.trp([_e.dice.length]),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                     color: _gold, fontSize: 10, fontWeight: FontWeight.w900)),

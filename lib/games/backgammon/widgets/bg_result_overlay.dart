@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../../../l10n/app_lang.dart';
 
 /// طبقة نهاية المباراة — فوز: أشعة ذهبية دوّارة + كأس + كونفيتي
 /// خسارة: تعتيم أحمر هادئ — مع المضاعف (مارس) والعملات وزرّي الإعادة/الخروج
@@ -46,9 +47,9 @@ class _BgResultOverlayState extends State<BgResultOverlay>
   }
 
   String get _multLabel => switch (widget.multiplier) {
-        3 => 'مارس مضاعف ×3 🔥',
-        2 => 'مارس ×2 ⚡',
-        _ => 'فوز عادي',
+        3 => 'مارس مضاعف ×3 🔥'.tr,
+        2 => 'مارس ×2 ⚡'.tr,
+        _ => 'فوز عادي'.tr,
       };
 
   @override
@@ -189,12 +190,12 @@ class _BgResultOverlayState extends State<BgResultOverlay>
                               Row(
                                 children: [
                                   Expanded(
-                                    child: _btn('خروج', Colors.white24,
+                                    child: _btn('خروج'.tr, Colors.white24,
                                         Colors.white, widget.onExit),
                                   ),
                                   const SizedBox(width: 10),
                                   Expanded(
-                                    child: _btn('جولة جديدة', _mint,
+                                    child: _btn('جولة جديدة'.tr, _mint,
                                         const Color(0xFF052E1C),
                                         widget.onRematch),
                                   ),

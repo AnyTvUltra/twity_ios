@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game_hub/games/okey/okey_engine.dart';
 import 'package:game_hub/games/okey/okey_models.dart';
+import 'package:game_hub/games/okey/okey_rules.dart';
 
 OkeyTile t(int id, OkeyTileColor c, int v,
         {bool fake = false, bool real = false}) =>
@@ -350,6 +351,74 @@ void main() {
       expect(e.drawFromDeck(toSlot: 20), isTrue);
       expect(rack[20], same(next));
       expect(e.turnPhase, OkeyTurnPhase.awaitingDiscard);
+      e.dispose();
+    });
+  });
+
+  group('OkeyEngine — قانون سليمانية وأساليب الكونكان/الفول', () {
+    test('سليمانية: الجوكر أصغر من المؤشر بواحد وبنفس اللون', () {
+      for (var i = 0; i < 20; i++) {
+        final e = OkeyEngine(rules: OkeyRules.sulaymaniyah);
+        final ind = e.indicatorTile.value;
+        expect(e.realOkeySample.value, ind == 1 ? 13 : ind - 1);
+        expect(e.realOkeySample.color, e.indicatorTile.color);
+        e.dispose();
+      }
+      final tr = OkeyEngine(rules: OkeyRules.turkish);
+      final ind = tr.indicatorTile.value;
+      expect(tr.realOkeySample.value, ind == 13 ? 1 : ind + 1);
+      tr.dispose();
+    });
+
+    test('فول: لون واحد 1..13 + 1 يفوز، ولون مختلط لا يفوز', () {
+      final e = OkeyEngine();
+      var id = 100;
+      final full = [
+        for (var v = 1; v <= 13; v++) t(id++, OkeyTileColor.red, v),
+        t(id++, OkeyTileColor.red, 1),
+      ];
+      expect(e.isFullHand(full), isTrue);
+      final mixed = List<OkeyTile>.from(full)
+        ..[5] = t(id++, OkeyTileColor.blue, 6);
+      expect(e.isFullHand(mixed), isFalse);
+      // الأوكي يعوّض حجراً ناقصاً
+      final withJoker = List<OkeyTile>.from(full)
+        ..[7] = t(id++, OkeyTileColor.black, 4, real: true);
+      expect(e.isFullHand(withJoker), isTrue);
+      e.dispose();
+    });
+
+    test('كونكان: 10 متسلسلة بلون واحد + بير من 4 يفوز', () {
+      final e = OkeyEngine();
+      var id = 200;
+      final hand = [
+        for (var v = 1; v <= 10; v++) t(id++, OkeyTileColor.blue, v),
+        t(id++, OkeyTileColor.red, 7),
+        t(id++, OkeyTileColor.yellow, 7),
+        t(id++, OkeyTileColor.black, 7),
+        t(id++, OkeyTileColor.blue, 7),
+      ];
+      expect(e.isKonkanHand(hand), isTrue);
+      // تسلسل 9 فقط لا يكفي
+      final short = List<OkeyTile>.from(hand)
+        ..[9] = t(id++, OkeyTileColor.red, 1);
+      expect(e.isKonkanHand(short), isFalse);
+      e.dispose();
+    });
+
+    test('أخذ حجر اليسار يحوّل العادي إلى كونكان، ومرميات الفول لا تؤخذ', () {
+      final e = OkeyEngine();
+      e.currentTurnIndex = 0;
+      e.turnPhase = OkeyTurnPhase.awaitingDraw;
+      e.players[0].rackTiles[27] = null;
+      e.players[0].rackTiles[26] = null;
+      e.discardPiles[3].add(t(300, OkeyTileColor.red, 3));
+      e.players[3].playStyle = OkeyPlayStyle.full;
+      expect(e.drawFromDiscard(), isFalse);
+      e.players[3].playStyle = OkeyPlayStyle.normal;
+      expect(e.drawFromDiscard(), isTrue);
+      expect(e.players[0].playStyle, OkeyPlayStyle.konkan);
+      expect(e.humanCanLayMelds, isFalse);
       e.dispose();
     });
   });

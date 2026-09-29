@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/app_update_service.dart';
 import '../utils/haptics.dart';
+import '../l10n/app_lang.dart';
 
 /// حوار التحديث — إجباري (لا يُغلق) أو اختياري حسب إعداد Firestore
 class UpdateDialog extends StatefulWidget {
@@ -10,14 +11,19 @@ class UpdateDialog extends StatefulWidget {
   const UpdateDialog({super.key, required this.info});
 
   static Future<void> showIfNeeded(BuildContext context) async {
-    final info = await AppUpdateService.instance.check();
+    AppUpdateInfo? info;
+    try {
+      info = await AppUpdateService.instance.check();
+    } catch (_) {
+      return; // لا تحديث إن تعذّر الوصول (إنترنت/Firebase غير متاح)
+    }
     if (info == null || !context.mounted) return;
     await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => PopScope(
         canPop: false,
-        child: UpdateDialog(info: info),
+        child: UpdateDialog(info: info!),
       ),
     );
   }
@@ -127,8 +133,8 @@ class _UpdateDialogState extends State<UpdateDialog>
                     widget.info.title.isNotEmpty
                         ? widget.info.title
                         : (widget.info.required
-                            ? 'تحديث إجباري!'
-                            : 'تحديث جديد متاح!'),
+                            ? 'تحديث إجباري!'.tr
+                            : 'تحديث جديد متاح!'.tr),
                     style: const TextStyle(
                       color: Color(0xFFF1F5FF),
                       fontSize: 18,
@@ -139,7 +145,7 @@ class _UpdateDialogState extends State<UpdateDialog>
                   Text(
                     widget.info.notes.isNotEmpty
                         ? widget.info.notes
-                        : 'إصدار جديد من یەڵا یاری بميزات وتحسينات جديدة',
+                        : 'إصدار جديد من یەڵا یاری بميزات وتحسينات جديدة'.tr,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: Color(0xFF8EA3C8),
@@ -192,7 +198,7 @@ class _UpdateDialogState extends State<UpdateDialog>
                             borderRadius: BorderRadius.circular(14)),
                       ),
                       child: Text(
-                        _downloading ? 'جارٍ التحديث...' : 'حدّث الآن 🚀',
+                        _downloading ? 'جارٍ التحديث...'.tr : 'حدّث الآن 🚀'.tr,
                         style: const TextStyle(
                             fontWeight: FontWeight.w900, fontSize: 14),
                       ),
@@ -202,7 +208,7 @@ class _UpdateDialogState extends State<UpdateDialog>
                     const SizedBox(height: 8),
                     TextButton(
                       onPressed: _downloading ? null : _later,
-                      child: const Text('لاحقاً',
+                      child: Text('لاحقاً'.tr,
                           style: TextStyle(color: Color(0xFF8EA3C8))),
                     ),
                   ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../l10n/app_lang.dart';
 
 enum OkeyTileColor {
   red,
@@ -39,13 +40,13 @@ extension OkeyTileColorExtension on OkeyTileColor {
   String get displayName {
     switch (this) {
       case OkeyTileColor.red:
-        return 'أحمر';
+        return 'أحمر'.tr;
       case OkeyTileColor.yellow:
-        return 'أصفر';
+        return 'أصفر'.tr;
       case OkeyTileColor.blue:
-        return 'أزرق';
+        return 'أزرق'.tr;
       case OkeyTileColor.black:
-        return 'أسود';
+        return 'أسود'.tr;
     }
   }
 }
@@ -65,6 +66,25 @@ enum BotDifficulty {
   easy,
   medium,
   hard,
+}
+
+/// أسلوب لعب اللاعب في الجولة
+/// - normal: عادي (نزول بيرات بنقاط الافتتاح)
+/// - konkan: كونكان — لا ينزل على الطاولة، يفوز بـ 10 متسلسلة بلون واحد + بير
+/// - full:   فول — يفوز بلون واحد كامل 1→13→1، ومرمياته مخفية ولا تُؤخذ
+enum OkeyPlayStyle { normal, konkan, full }
+
+extension OkeyPlayStyleLabel on OkeyPlayStyle {
+  String get label {
+    switch (this) {
+      case OkeyPlayStyle.normal:
+        return 'عادي'.tr;
+      case OkeyPlayStyle.konkan:
+        return 'كونكان'.tr;
+      case OkeyPlayStyle.full:
+        return 'فول'.tr;
+    }
+  }
 }
 
 enum WinType {
@@ -142,6 +162,9 @@ class OkeyPlayer {
     this.botDifficulty = BotDifficulty.medium,
     List<OkeyTile?>? rackTiles,
   }) : rackTiles = rackTiles ?? List.filled(28, null);
+
+  /// أسلوب اللعب المعلن (يُقفل بعد الاختيار أو التحويل التلقائي)
+  OkeyPlayStyle playStyle = OkeyPlayStyle.normal;
 
   List<OkeyTile> get activeTiles => rackTiles.whereType<OkeyTile>().toList();
 

@@ -11,11 +11,13 @@ import 'services/radio_service.dart';
 import 'services/store_service.dart';
 import 'services/broadcast_service.dart';
 import 'widgets/update_dialog.dart';
+import 'l10n/app_lang.dart';
 
 final _navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AppLangController.instance.load();
   await FirebaseService().initialize();
   AuthService().initialize();
   StoreService().initialize();
@@ -29,7 +31,7 @@ void main() async {
     showDialog(
       context: ctx,
       builder: (_) => Directionality(
-        textDirection: TextDirection.rtl,
+        textDirection: AppLangController.instance.direction,
         child: AlertDialog(
           backgroundColor: const Color(0xFF141C34),
           shape: RoundedRectangleBorder(
@@ -47,7 +49,7 @@ void main() async {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('حسناً',
+              child: Text('حسناً'.tr,
                   style: TextStyle(
                       color: Color(0xFFFFD54F),
                       fontWeight: FontWeight.w900)),
@@ -72,6 +74,7 @@ class _GameHubAppState extends State<GameHubApp> {
   @override
   void initState() {
     super.initState();
+    AppLangController.instance.addListener(_onLangChanged);
     // فحص التحديث بعد أول إطار — لا يظهر أي حوار إن كان التطبيق محدثاً
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final ctx = _navigatorKey.currentContext;
@@ -79,12 +82,22 @@ class _GameHubAppState extends State<GameHubApp> {
     });
   }
 
+  void _onLangChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    AppLangController.instance.removeListener(_onLangChanged);
+    super.dispose();
+  }
+
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: _navigatorKey,
-      title: 'Yalla Yari - یەڵا یاری',
+      title: 'Yalla Yari - یەڵا یاری'.tr,
       debugShowCheckedModeBanner: false,
       scrollBehavior: const MaterialScrollBehavior().copyWith(
         dragDevices: {
@@ -119,17 +132,17 @@ class _GameHubAppState extends State<GameHubApp> {
       ),
       builder: (context, child) {
         return Directionality(
-          textDirection: TextDirection.rtl,
+          textDirection: AppLangController.instance.direction,
           child: child ?? const SizedBox(),
         );
       },
-      home: const _AuthGate(),
+      home: _AuthGate(),
       routes: {
-        '/home': (context) => const HomeScreen(),
-        '/games/chess': (context) => const GameScreen(gameId: 'chess'),
-        '/games/solitaire': (context) => const GameScreen(gameId: 'solitaire'),
-        '/games/ludo': (context) => const GameScreen(gameId: 'ludo'),
-        '/games/okey': (context) => const OkeyLobbyScreen(),
+        '/home': (context) => HomeScreen(),
+        '/games/chess': (context) => GameScreen(gameId: 'chess'),
+        '/games/solitaire': (context) => GameScreen(gameId: 'solitaire'),
+        '/games/ludo': (context) => GameScreen(gameId: 'ludo'),
+        '/games/okey': (context) => OkeyLobbyScreen(),
         '/games/backgammon': (context) => const GameScreen(gameId: 'backgammon'),
         '/admin': (context) => const AdminPanelScreen(),
       },
@@ -145,10 +158,25 @@ class _AuthGate extends StatefulWidget {
 }
 
 class _AuthGateState extends State<_AuthGate> {
+  bool _authAvailable = true;
+
+  AuthService? get _authOrNull {
+    try {
+      return AuthService();
+    } catch (_) {
+      return null; // Firebase غير متاح (اختبارات أو فشل التهيئة)
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    AuthService().addListener(_onAuthChange);
+    final auth = _authOrNull;
+    if (auth == null) {
+      _authAvailable = false;
+      return;
+    }
+    auth.addListener(_onAuthChange);
   }
 
   void _onAuthChange() {
@@ -157,13 +185,13 @@ class _AuthGateState extends State<_AuthGate> {
 
   @override
   void dispose() {
-    AuthService().removeListener(_onAuthChange);
+    _authOrNull?.removeListener(_onAuthChange);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (AuthService().isAuthenticated) {
+    if (_authAvailable && (_authOrNull?.isAuthenticated ?? false)) {
       return const HomeScreen();
     }
     return AuthScreen(onAuthenticated: () {});

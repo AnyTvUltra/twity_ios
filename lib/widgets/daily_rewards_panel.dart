@@ -5,6 +5,7 @@ import '../services/auth_service.dart';
 import '../services/rewards_service.dart';
 import '../utils/haptics.dart';
 import '../utils/top_notification.dart';
+import '../l10n/app_lang.dart';
 
 /// لوحة المكافآت اليومية الكاملة:
 /// شريط الهدايا الأسبوعي (جوائز متنوعة تتبدل كل أسبوع)
@@ -71,7 +72,7 @@ class _WeeklyStrip extends StatelessWidget {
   String _rewardLabel(DailyReward r) {
     switch (r.type) {
       case RewardType.skin:
-        return 'سكن!';
+        return 'سكن!'.tr;
       default:
         return '+${r.amount}';
     }
@@ -98,10 +99,10 @@ class _WeeklyStrip extends StatelessWidget {
         claimable ? (streak % 7) : ((streak - 1).clamp(0, 6));
     final isVip = user?.isVip ?? false;
     final weekNames = [
-      'الأسبوع الذهبي ✨',
-      'أسبوع الجواهر 💎',
-      'أسبوع الثروة 🪙',
-      'الأسبوع الملكي 👑',
+      'الأسبوع الذهبي ✨'.tr,
+      'أسبوع الجواهر 💎'.tr,
+      'أسبوع الثروة 🪙'.tr,
+      'الأسبوع الملكي 👑'.tr,
     ];
 
     return Padding(
@@ -154,8 +155,8 @@ class _WeeklyStrip extends StatelessWidget {
                               crossAxisAlignment:
                                   CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  'الهدايا اليومية',
+                                Text(
+                                  'الهدايا اليومية'.tr,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
@@ -165,7 +166,7 @@ class _WeeklyStrip extends StatelessWidget {
                                   ),
                                 ),
                                 Text(
-                                  '${weekNames[RewardsService.weekIndex]} — جوائز جديدة كل أسبوع',
+                                  '{} — جوائز جديدة كل أسبوع'.trp([weekNames[RewardsService.weekIndex]]),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
@@ -199,8 +200,8 @@ class _WeeklyStrip extends StatelessWidget {
                       ),
                       child: Text(
                         claimable
-                            ? 'جاهزة للاستلام! 🎉'
-                            : 'متبقي: ${remH}س ${remM}د',
+                            ? 'جاهزة للاستلام! 🎉'.tr
+                            : 'متبقي: {}س {}د'.trp([remH, remM]),
                         style: TextStyle(
                           color: claimable
                               ? DailyRewardsPanel._emerald
@@ -231,12 +232,12 @@ class _WeeklyStrip extends StatelessWidget {
                               if (isPast) {
                                 TopNotification.show(
                                     context,
-                                    'تم استلام هدية اليوم ${index + 1} بالفعل!',
+                                    'تم استلام هدية اليوم {} بالفعل!'.trp([index + 1]),
                                     icon: Icons.check_circle_rounded);
                               } else {
                                 TopNotification.show(
                                     context,
-                                    'هذه الهدية مقفلة! تفتح بعد إتمام الأيام السابقة',
+                                    'هذه الهدية مقفلة! تفتح بعد إتمام الأيام السابقة'.tr,
                                     icon: Icons.lock_rounded);
                               }
                             },
@@ -285,7 +286,7 @@ class _WeeklyStrip extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              'يوم ${index + 1}',
+                              'يوم {}'.trp([index + 1]),
                               style: TextStyle(
                                 color: isCurrent
                                     ? const Color(0xFF1B0B30)
@@ -331,8 +332,8 @@ class _WeeklyStrip extends StatelessWidget {
                   Center(
                     child: Text(
                       user?.isVipPlus == true
-                          ? '👑 VIP+: مكافآتك معزّزة +50%'
-                          : '👑 VIP: مكافآتك معزّزة +25%',
+                          ? '👑 VIP+: مكافآتك معزّزة +50%'.tr
+                          : '👑 VIP: مكافآتك معزّزة +25%'.tr,
                       style: const TextStyle(
                         color: DailyRewardsPanel._gold,
                         fontSize: 9.5,
@@ -378,14 +379,14 @@ class _WeeklyStrip extends StatelessWidget {
                               blurRadius: 10),
                         ],
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment:
                             MainAxisAlignment.center,
                         children: [
                           Text('🔥', style: TextStyle(fontSize: 14)),
                           SizedBox(width: 6),
                           Text(
-                            'سلسلتك انقطعت! استرجعها الآن بـ10💎',
+                            'سلسلتك انقطعت! استرجعها الآن بـ10💎'.tr,
                             style: TextStyle(
                                 color: Color(0xFFFED7AA),
                                 fontSize: 11,
@@ -423,43 +424,43 @@ class _VipStrip extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
               side: BorderSide(
                   color: DailyRewardsPanel._gold.withOpacity(0.5))),
-          title: const Row(
+          title: Row(
             children: [
               Text('👑', style: TextStyle(fontSize: 24)),
               SizedBox(width: 8),
-              Text('اشتراك VIP',
+              Text('اشتراك VIP'.tr,
                   style: TextStyle(
                       color: DailyRewardsPanel._textWhite,
                       fontWeight: FontWeight.w900,
                       fontSize: 17)),
             ],
           ),
-          content: const Column(
+          content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('👑 VIP — 10\$ شهرياً:',
+              Text('👑 VIP — 10\$ شهرياً:'.tr,
                   style: TextStyle(
                       color: DailyRewardsPanel._gold,
                       fontSize: 12.5,
                       fontWeight: FontWeight.w900)),
               SizedBox(height: 6),
-              _VipPerk('🎡 لفتان يومياً على العجلة'),
-              _VipPerk('🪙 +25% على مكافآت الهدايا'),
-              _VipPerk('�️ إطار VIP الذهبي تلقائياً'),
+              _VipPerk('🎡 لفتان يومياً على العجلة'.tr),
+              _VipPerk('🪙 +25% على مكافآت الهدايا'.tr),
+              _VipPerk('�️ إطار VIP الذهبي تلقائياً'.tr),
               SizedBox(height: 12),
-              Text('💎 VIP+ — 20\$ شهرياً:',
+              Text('💎 VIP+ — 20\$ شهرياً:'.tr,
                   style: TextStyle(
                       color: Color(0xFFC084FC),
                       fontSize: 12.5,
                       fontWeight: FontWeight.w900)),
               SizedBox(height: 6),
-              _VipPerk('🎡 3 لفات يومياً على العجلة'),
-              _VipPerk('🪙 +50% على مكافآت الهدايا'),
-              _VipPerk('⚡ أولوية قصوى في الدعم'),
+              _VipPerk('🎡 3 لفات يومياً على العجلة'.tr),
+              _VipPerk('🪙 +50% على مكافآت الهدايا'.tr),
+              _VipPerk('⚡ أولوية قصوى في الدعم'.tr),
               SizedBox(height: 10),
               Text(
-                'سيتم التفعيل خلال 24 ساعة بعد تأكيد الدفع من الإدارة.',
+                'سيتم التفعيل خلال 24 ساعة بعد تأكيد الدفع من الإدارة.'.tr,
                 style: TextStyle(
                     color: DailyRewardsPanel._textDim, fontSize: 11),
               ),
@@ -469,7 +470,7 @@ class _VipStrip extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('إلغاء',
+              child: Text('إلغاء'.tr,
                   style: TextStyle(color: DailyRewardsPanel._textDim)),
             ),
             ElevatedButton(
@@ -593,8 +594,8 @@ class _VipStrip extends StatelessWidget {
                     children: [
                       Text(
                         isVipPlus
-                            ? 'اشتراك VIP+ الشهري'
-                            : 'اشتراك VIP الشهري',
+                            ? 'اشتراك VIP+ الشهري'.tr
+                            : 'اشتراك VIP الشهري'.tr,
                         style: TextStyle(
                           color: DailyRewardsPanel._textWhite,
                           fontWeight: FontWeight.w900,
@@ -604,8 +605,8 @@ class _VipStrip extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         isVip && vipUntil != null
-                            ? 'عضويتك فعّالة حتى ${vipUntil.day}/${vipUntil.month} — لفتان يومياً + مكافآت +25% 👑'
-                            : 'لفّتان يومياً + مكافآت +25% + شارة ملكية — 10\$ فقط',
+                            ? 'عضويتك فعّالة حتى {}/{} — لفتان يومياً + مكافآت +25% 👑'.trp([vipUntil.day, vipUntil.month])
+                            : 'لفّتان يومياً + مكافآت +25% + شارة ملكية — 10\$ فقط'.tr,
                         maxLines: 2,
                         style: TextStyle(
                           color: isVip
@@ -630,8 +631,8 @@ class _VipStrip extends StatelessWidget {
                           color: DailyRewardsPanel._emerald
                               .withOpacity(0.6)),
                     ),
-                    child: const Text(
-                      'مُفعّل ✓',
+                    child: Text(
+                      'مُفعّل ✓'.tr,
                       style: TextStyle(
                           color: DailyRewardsPanel._emerald,
                           fontSize: 11,
@@ -658,8 +659,8 @@ class _VipStrip extends StatelessWidget {
                               blurRadius: 10),
                         ],
                       ),
-                      child: const Text(
-                        'اشترك 10\$',
+                      child: Text(
+                        'اشترك 10\$'.tr,
                         style: TextStyle(
                             color: Color(0xFF1B0B30),
                             fontSize: 11.5,
@@ -762,8 +763,8 @@ class _WheelCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'عجلة الحظ اليومية',
+                      Text(
+                        'عجلة الحظ اليومية'.tr,
                         style: TextStyle(
                           color: DailyRewardsPanel._textWhite,
                           fontWeight: FontWeight.w900,
@@ -773,8 +774,8 @@ class _WheelCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         spinsLeft > 0
-                            ? 'عندك $spinsLeft ${spinsLeft == 1 ? 'لفة' : 'لفات'} — أموال 🪙 وجواهر 💎 وسكن نادر 🎨'
-                            : 'استخدمت لفات اليوم — عُد غداً!${isVip ? '' : ' VIP = لفتان إضافيتان'}',
+                            ? 'عندك {} {} — أموال 🪙 وجواهر 💎 وسكن نادر 🎨'.trp([spinsLeft, spinsLeft == 1 ? 'لفة' : 'لفات'])
+                            : 'استخدمت لفات اليوم — عُد غداً!{}'.trp([isVip ? '' : ' VIP = لفتان إضافيتان']),
                         maxLines: 2,
                         style: const TextStyle(
                           color: DailyRewardsPanel._textDim,
@@ -790,14 +791,14 @@ class _WheelCard extends StatelessWidget {
                   onTap: () async {
                     AppHaptics.medium();
                     if (AuthService().currentUser == null) {
-                      TopNotification.show(context, 'سجّل الدخول أولاً!',
+                      TopNotification.show(context, 'سجّل الدخول أولاً!'.tr,
                           icon: Icons.warning_rounded);
                       return;
                     }
                     if (spinsLeft <= 0) {
                       TopNotification.show(
                           context,
-                          'استخدمت لفات اليوم! عُد غداً 🎡',
+                          'استخدمت لفات اليوم! عُد غداً 🎡'.tr,
                           icon: Icons.lock_clock_rounded);
                       return;
                     }
@@ -830,7 +831,7 @@ class _WheelCard extends StatelessWidget {
                           : null,
                     ),
                     child: Text(
-                      spinsLeft > 0 ? 'أدر الآن' : 'انتهت',
+                      spinsLeft > 0 ? 'أدر الآن'.tr : 'انتهت'.tr,
                       style: TextStyle(
                           color: spinsLeft > 0
                               ? const Color(0xFF082F49)
@@ -858,12 +859,12 @@ class _LootBoxCard extends StatelessWidget {
   Future<void> _open(BuildContext context) async {
     AppHaptics.medium();
     if (AuthService().currentUser == null) {
-      TopNotification.show(context, 'سجّل الدخول أولاً!',
+      TopNotification.show(context, 'سجّل الدخول أولاً!'.tr,
           icon: Icons.warning_rounded);
       return;
     }
     if (!AuthService().canClaimLootBox) {
-      TopNotification.show(context, 'الصندوق يتجدد غداً ⏳',
+      TopNotification.show(context, 'الصندوق يتجدد غداً ⏳'.tr,
           icon: Icons.lock_clock_rounded);
       return;
     }
@@ -935,8 +936,8 @@ class _LootBoxCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'صندوق الغنائم اليومي',
+                      Text(
+                        'صندوق الغنائم اليومي'.tr,
                         style: TextStyle(
                           color: DailyRewardsPanel._textWhite,
                           fontWeight: FontWeight.w900,
@@ -946,8 +947,8 @@ class _LootBoxCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         canOpen
-                            ? 'مجاني! أموال 🪙 وجواهر 💎 وسكن نادر 🎨'
-                            : 'افتُتح — يتجدد كل 24 ساعة ⏳',
+                            ? 'مجاني! أموال 🪙 وجواهر 💎 وسكن نادر 🎨'.tr
+                            : 'افتُتح — يتجدد كل 24 ساعة ⏳'.tr,
                         maxLines: 2,
                         style: const TextStyle(
                           color: DailyRewardsPanel._textDim,
@@ -984,7 +985,7 @@ class _LootBoxCard extends StatelessWidget {
                           : null,
                     ),
                     child: Text(
-                      canOpen ? 'افتح مجاناً' : 'غداً',
+                      canOpen ? 'افتح مجاناً'.tr : 'غداً'.tr,
                       style: TextStyle(
                           color: canOpen
                               ? const Color(0xFF2E1065)
@@ -1093,8 +1094,8 @@ class _DailyWheelDialogState extends State<DailyWheelDialog>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    '🎡 عجلة الحظ اليومية',
+                  Text(
+                    '🎡 عجلة الحظ اليومية'.tr,
                     style: TextStyle(
                       color: DailyRewardsPanel._textWhite,
                       fontSize: 17,
@@ -1102,8 +1103,8 @@ class _DailyWheelDialogState extends State<DailyWheelDialog>
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    'الأموال الأكثر حظاً 🪙 — جواهر قليلة 💎 — سكن نادر 🎨',
+                  Text(
+                    'الأموال الأكثر حظاً 🪙 — جواهر قليلة 💎 — سكن نادر 🎨'.tr,
                     style: TextStyle(
                         color: DailyRewardsPanel._textDim, fontSize: 10.5),
                   ),
@@ -1202,7 +1203,7 @@ class _DailyWheelDialogState extends State<DailyWheelDialog>
                         : Text(
                             _error != null
                                 ? ''
-                                : 'العجلة تدور...',
+                                : 'العجلة تدور...'.tr,
                             key: const ValueKey('spin'),
                             style: const TextStyle(
                                 color: DailyRewardsPanel._textDim,
@@ -1224,7 +1225,7 @@ class _DailyWheelDialogState extends State<DailyWheelDialog>
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: const Text('إغلاق',
+                      child: Text('إغلاق'.tr,
                           style: TextStyle(fontWeight: FontWeight.w900)),
                     ),
                   ),
@@ -1469,7 +1470,7 @@ class _LootBoxDialogState extends State<LootBoxDialog>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('📦 صندوق الغنائم',
+                  Text('📦 صندوق الغنائم'.tr,
                       style: TextStyle(
                           color: Color(0xFFF1F5FF),
                           fontSize: 17,
@@ -1549,7 +1550,7 @@ class _LootBoxDialogState extends State<LootBoxDialog>
                                       fontSize: 14),
                                 ),
                               )
-                            : const Text('الصندوق يُفتح...',
+                            : Text('الصندوق يُفتح...'.tr,
                                 key: ValueKey('wait'),
                                 style: TextStyle(
                                     color: Color(0xFF8EA3C8),
@@ -1570,7 +1571,7 @@ class _LootBoxDialogState extends State<LootBoxDialog>
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: const Text('إغلاق',
+                      child: Text('إغلاق'.tr,
                           style: TextStyle(fontWeight: FontWeight.w900)),
                     ),
                   ),

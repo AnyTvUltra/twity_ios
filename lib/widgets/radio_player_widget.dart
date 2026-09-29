@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/radio_service.dart';
 import '../utils/haptics.dart';
+import '../l10n/app_lang.dart';
 
 class RadioPlayerSheet extends StatefulWidget {
   const RadioPlayerSheet({super.key});
@@ -74,15 +75,15 @@ class _RadioPlayerSheetState extends State<RadioPlayerSheet> {
                         child: const Icon(Icons.radio_rounded, color: Color(0xFFFFD54F), size: 22),
                       ),
                       const SizedBox(width: 10),
-                      const Column(
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'راديو اللعبة المباشر 📻',
+                            'راديو اللعبة المباشر 📻'.tr,
                             style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                           Text(
-                            'صوت شخصي خاص بك لا يؤثر على باقي اللاعبين',
+                            'صوت شخصي خاص بك لا يؤثر على باقي اللاعبين'.tr,
                             style: TextStyle(color: Colors.white54, fontSize: 11),
                           ),
                         ],
@@ -175,9 +176,9 @@ class _RadioPlayerSheetState extends State<RadioPlayerSheet> {
               const SizedBox(height: 12),
 
               // Stations List
-              const Align(
+              Align(
                 alignment: Alignment.centerRight,
-                child: Text('اختر مجموعة ثم محطة:', style: TextStyle(color: Colors.white70, fontSize: 12.5, fontWeight: FontWeight.bold)),
+                child: Text('اختر مجموعة ثم محطة:'.tr, style: TextStyle(color: Colors.white70, fontSize: 12.5, fontWeight: FontWeight.bold)),
               ),
               const SizedBox(height: 8),
 
@@ -188,7 +189,7 @@ class _RadioPlayerSheetState extends State<RadioPlayerSheet> {
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
                   children: [
-                    _groupChip('all', '📻', 'الكل'),
+                    _groupChip('all', '📻', 'الكل'.tr),
                     ...groups.map(
                       (g) => _groupChip(g.id, g.flag, g.name),
                     ),
@@ -200,8 +201,8 @@ class _RadioPlayerSheetState extends State<RadioPlayerSheet> {
               SizedBox(
                 height: 140,
                 child: stations.isEmpty
-                    ? const Center(
-                        child: Text('لا توجد أغاني في هذه المجموعة',
+                    ? Center(
+                        child: Text('لا توجد أغاني في هذه المجموعة'.tr,
                             style: TextStyle(
                                 color: Colors.white38, fontSize: 12)),
                       )

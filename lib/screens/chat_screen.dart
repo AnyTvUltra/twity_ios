@@ -9,6 +9,7 @@ import '../utils/haptics.dart';
 import '../utils/top_notification.dart';
 import '../widgets/app_background.dart';
 import '../widgets/user_avatar.dart';
+import '../l10n/app_lang.dart';
 
 /// شاشة الدردشة والأصدقاء — تصميم زجاجي أبيض
 /// تبويبان: الرسائل (محادثات حقيقية بعدّاد غير مقروء) / الأصدقاء (طلبات + بحث)
@@ -69,8 +70,8 @@ class _ChatScreenState extends State<ChatScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'الدردشة والأصدقاء 💬',
+                  Text(
+                    'الدردشة والأصدقاء 💬'.tr,
                     style: TextStyle(
                         color: LightGlass.text,
                         fontSize: 22,
@@ -90,12 +91,12 @@ class _ChatScreenState extends State<ChatScreen> {
                           border: Border.all(
                               color: const Color(0xFF10B981), width: 1),
                         ),
-                        child: const Row(
+                        child: Row(
                           children: [
                             Icon(Icons.circle,
                                 color: Color(0xFF10B981), size: 8),
                             SizedBox(width: 5),
-                            Text('أونلاين',
+                            Text('أونلاين'.tr,
                                 style: TextStyle(
                                     color: Color(0xFF047857),
                                     fontSize: 11,
@@ -125,8 +126,8 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                     child: Row(
                       children: [
-                        _tabButton(0, Icons.chat_bubble_rounded, 'الرسائل'),
-                        _tabButton(1, Icons.people_alt_rounded, 'الأصدقاء'),
+                        _tabButton(0, Icons.chat_bubble_rounded, 'الرسائل'.tr),
+                        _tabButton(1, Icons.people_alt_rounded, 'الأصدقاء'.tr),
                       ],
                     ),
                   ),
@@ -214,14 +215,14 @@ class _ChatScreenState extends State<ChatScreen> {
                     const Icon(Icons.chat_bubble_outline_rounded,
                         color: LightGlass.textFaint, size: 48),
                     const SizedBox(height: 12),
-                    const Text('لا توجد محادثات بعد',
+                    Text('لا توجد محادثات بعد'.tr,
                         style: TextStyle(
                             color: LightGlass.text,
                             fontWeight: FontWeight.bold,
                             fontSize: 15)),
                     const SizedBox(height: 6),
-                    const Text(
-                      'ابحث عن أصدقاء من تبويب "الأصدقاء" وابدأ محادثتك الأولى!',
+                    Text(
+                      'ابحث عن أصدقاء من تبويب "الأصدقاء" وابدأ محادثتك الأولى!'.tr,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                           color: LightGlass.textMuted,
@@ -237,7 +238,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             borderRadius: BorderRadius.circular(12)),
                       ),
                       icon: const Icon(Icons.person_search_rounded, size: 18),
-                      label: const Text('البحث عن أصدقاء',
+                      label: Text('البحث عن أصدقاء'.tr,
                           style: TextStyle(fontWeight: FontWeight.bold)),
                       onPressed: () => setState(() => _selectedTab = 1),
                     ),
@@ -345,7 +346,7 @@ class _ChatScreenState extends State<ChatScreen> {
               children: [
                 Row(
                   children: [
-                    const Text('طلبات الصداقة الواردة',
+                    Text('طلبات الصداقة الواردة'.tr,
                         style: TextStyle(
                             color: LightGlass.text,
                             fontSize: 13,
@@ -383,7 +384,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                         color: LightGlass.text,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 13)),
-                                Text('@${r.fromUsername} يريد إضافتك',
+                                Text('@{} يريد إضافتك'.trp([r.fromUsername]),
                                     style: const TextStyle(
                                         color: LightGlass.textMuted,
                                         fontSize: 11)),
@@ -394,14 +395,14 @@ class _ChatScreenState extends State<ChatScreen> {
                           IconButton(
                             icon: const Icon(Icons.check_circle_rounded,
                                 color: Color(0xFF10B981), size: 28),
-                            tooltip: 'قبول',
+                            tooltip: 'قبول'.tr,
                             onPressed: () async {
                               AppHaptics.medium();
                               await SocialService()
                                   .acceptFriendRequest(r.id);
                               if (mounted) {
                                 TopNotification.show(context,
-                                    'أصبح ${r.fromName} صديقك! 🤝',
+                                    'أصبح {} صديقك! 🤝'.trp([r.fromName]),
                                     icon: Icons.check_circle);
                               }
                             },
@@ -410,7 +411,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           IconButton(
                             icon: const Icon(Icons.cancel_rounded,
                                 color: Color(0xFFEF4444), size: 26),
-                            tooltip: 'رفض',
+                            tooltip: 'رفض'.tr,
                             onPressed: () async {
                               AppHaptics.light();
                               await SocialService()
@@ -433,7 +434,7 @@ class _ChatScreenState extends State<ChatScreen> {
           decoration: InputDecoration(
             prefixIcon: const Icon(Icons.search_rounded,
                 color: LightGlass.accentBlue),
-            hintText: 'ابحث باسم المستخدم الفريد (مثال: okey_king)...',
+            hintText: 'ابحث باسم المستخدم الفريد (مثال: okey_king)...'.tr,
             hintStyle:
                 const TextStyle(color: LightGlass.textFaint, fontSize: 12),
             filled: true,
@@ -466,7 +467,7 @@ class _ChatScreenState extends State<ChatScreen> {
               child:
                   CircularProgressIndicator(color: LightGlass.accentBlue))
         else if (_searchResults.isNotEmpty) ...[
-          const Text('نتائج البحث:',
+          Text('نتائج البحث:'.tr,
               style: TextStyle(
                   color: LightGlass.textSoft,
                   fontSize: 13,
@@ -499,7 +500,7 @@ class _ChatScreenState extends State<ChatScreen> {
         ],
 
         // ── قائمة أصدقائي ──
-        const Text('قائمة أصدقائي:',
+        Text('قائمة أصدقائي:'.tr,
             style: TextStyle(
                 color: LightGlass.textSoft,
                 fontSize: 13,
@@ -513,9 +514,9 @@ class _ChatScreenState extends State<ChatScreen> {
             if (friends.isEmpty) {
               return _glassCard(
                 padding: const EdgeInsets.all(20),
-                child: const Center(
+                child: Center(
                   child: Text(
-                    'لم تُضِف أصدقاء بعد. ابحث عنهم أعلاه وأرسل طلب صداقة!',
+                    'لم تُضِف أصدقاء بعد. ابحث عنهم أعلاه وأرسل طلب صداقة!'.tr,
                     textAlign: TextAlign.center,
                     style:
                         TextStyle(color: LightGlass.textMuted, fontSize: 12),
@@ -529,7 +530,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 final friendUser = AppUser(
                   uid: f['uid'],
                   email: '',
-                  displayName: f['displayName'] ?? 'صديق',
+                  displayName: f['displayName'] ?? 'صديق'.tr,
                   username: f['username'] ?? '',
                   photoUrl: f['photoUrl'] ?? '',
                 );
@@ -560,7 +561,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       IconButton(
                         icon: const Icon(Icons.chat_bubble_outline_rounded,
                             color: LightGlass.accentBlue, size: 20),
-                        tooltip: 'مراسلة',
+                        tooltip: 'مراسلة'.tr,
                         onPressed: () => _openChat(friendUser),
                       ),
                       PopupMenuButton<String>(
@@ -568,19 +569,19 @@ class _ChatScreenState extends State<ChatScreen> {
                             color: LightGlass.textMuted, size: 20),
                         color: LightGlass.cardStrong,
                         itemBuilder: (ctx) => [
-                          const PopupMenuItem(
+                          PopupMenuItem(
                               value: 'delete',
-                              child: Text('🗑️ حذف من الأصدقاء',
+                              child: Text('🗑️ حذف من الأصدقاء'.tr,
                                   style:
                                       TextStyle(color: LightGlass.text))),
-                          const PopupMenuItem(
+                          PopupMenuItem(
                               value: 'report',
-                              child: Text('🚨 إبلاغ للإدارة',
+                              child: Text('🚨 إبلاغ للإدارة'.tr,
                                   style:
                                       TextStyle(color: Color(0xFFDC2626)))),
-                          const PopupMenuItem(
+                          PopupMenuItem(
                               value: 'block',
-                              child: Text('🚫 حظر اللاعب',
+                              child: Text('🚫 حظر اللاعب'.tr,
                                   style:
                                       TextStyle(color: Color(0xFFDC2626)))),
                         ],
@@ -590,7 +591,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                 .removeFriend(myUid, friendUser.uid);
                             if (mounted) {
                               TopNotification.show(
-                                  context, 'تم حذف الصديق');
+                                  context, 'تم حذف الصديق'.tr);
                             }
                           }
                           if (val == 'report') {
@@ -631,7 +632,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 Text('@${user.username}',
                     style: const TextStyle(
                         color: LightGlass.accentBlue, fontSize: 11)),
-                Text('تقييم ${user.rating} • مستوى ${user.level}',
+                Text('تقييم {} • مستوى {}'.trp([user.rating, user.level]),
                     style: const TextStyle(
                         color: LightGlass.textFaint, fontSize: 10.5)),
               ],
@@ -640,9 +641,9 @@ class _ChatScreenState extends State<ChatScreen> {
           if (!isMe) ...[
             // زر الإضافة حسب الحالة
             if (isFriend)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.symmetric(horizontal: 8),
-                child: Text('صديقك ✓',
+                child: Text('صديقك ✓'.tr,
                     style: TextStyle(
                         color: Color(0xFF10B981),
                         fontSize: 11,
@@ -656,7 +657,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 },
                 icon: const Icon(Icons.hourglass_top_rounded,
                     color: LightGlass.textMuted, size: 15),
-                label: const Text('تم الإرسال — إلغاء',
+                label: Text('تم الإرسال — إلغاء'.tr,
                     style: TextStyle(
                         color: LightGlass.textMuted, fontSize: 10.5)),
               )
@@ -664,7 +665,7 @@ class _ChatScreenState extends State<ChatScreen> {
               IconButton(
                 icon: const Icon(Icons.person_add_rounded,
                     color: Color(0xFF10B981), size: 22),
-                tooltip: 'إرسال طلب صداقة',
+                tooltip: 'إرسال طلب صداقة'.tr,
                 onPressed: () async {
                   AppHaptics.selection();
                   final me = AuthService().currentUser;
@@ -677,7 +678,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         icon: Icons.info_outline_rounded);
                   } else {
                     TopNotification.show(context,
-                        'أُرسل طلب الصداقة إلى @${user.username} 📨',
+                        'أُرسل طلب الصداقة إلى @{} 📨'.trp([user.username]),
                         icon: Icons.send_rounded);
                   }
                 },
@@ -685,7 +686,7 @@ class _ChatScreenState extends State<ChatScreen> {
             IconButton(
               icon: const Icon(Icons.chat_bubble_outline_rounded,
                   color: LightGlass.accentBlue, size: 20),
-              tooltip: 'مراسلة',
+              tooltip: 'مراسلة'.tr,
               onPressed: () => _openChat(user),
             ),
             PopupMenuButton<String>(
@@ -693,13 +694,13 @@ class _ChatScreenState extends State<ChatScreen> {
                   color: LightGlass.textMuted, size: 20),
               color: LightGlass.cardStrong,
               itemBuilder: (ctx) => [
-                const PopupMenuItem(
+                PopupMenuItem(
                     value: 'report',
-                    child: Text('🚨 إبلاغ للإدارة',
+                    child: Text('🚨 إبلاغ للإدارة'.tr,
                         style: TextStyle(color: Color(0xFFDC2626)))),
-                const PopupMenuItem(
+                PopupMenuItem(
                     value: 'block',
-                    child: Text('🚫 حظر اللاعب',
+                    child: Text('🚫 حظر اللاعب'.tr,
                         style: TextStyle(color: LightGlass.text))),
               ],
               onSelected: (val) {
@@ -802,7 +803,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _showReportDialog(AppUser targetUser) {
     AppHaptics.medium();
-    String selectedReason = 'سلوك مسيء أو غير لائق';
+    String selectedReason = 'سلوك مسيء أو غير لائق'.tr;
     final detailsController = TextEditingController();
 
     showDialog(
@@ -821,7 +822,7 @@ class _ChatScreenState extends State<ChatScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'إبلاغ عن @${targetUser.username}',
+                  'إبلاغ عن @{}'.trp([targetUser.username]),
                   style: const TextStyle(
                       color: LightGlass.text,
                       fontSize: 16,
@@ -836,7 +837,7 @@ class _ChatScreenState extends State<ChatScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('اختر سبب البلاغ:',
+                Text('اختر سبب البلاغ:'.tr,
                     style:
                         TextStyle(color: LightGlass.textMuted, fontSize: 12)),
                 const SizedBox(height: 6),
@@ -853,11 +854,11 @@ class _ChatScreenState extends State<ChatScreen> {
                         borderSide: BorderSide.none),
                   ),
                   items: [
-                    'سلوك مسيء أو غير لائق',
-                    'غش وتلاعب في اللعبة',
-                    'اسم مستخدم أو صورة مسيئة',
-                    'رسائل مزعجة أو سبام',
-                    'أخرى',
+                    'سلوك مسيء أو غير لائق'.tr,
+                    'غش وتلاعب في اللعبة'.tr,
+                    'اسم مستخدم أو صورة مسيئة'.tr,
+                    'رسائل مزعجة أو سبام'.tr,
+                    'أخرى'.tr,
                   ]
                       .map((s) =>
                           DropdownMenuItem(value: s, child: Text(s)))
@@ -867,7 +868,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   },
                 ),
                 const SizedBox(height: 12),
-                const Text('تفاصيل إضافية (اختياري):',
+                Text('تفاصيل إضافية (اختياري):'.tr,
                     style:
                         TextStyle(color: LightGlass.textMuted, fontSize: 12)),
                 const SizedBox(height: 6),
@@ -877,7 +878,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   style: const TextStyle(
                       color: LightGlass.text, fontSize: 12.5),
                   decoration: InputDecoration(
-                    hintText: 'اكتب ما حدث للمساعدة في مراجعة البلاغ...',
+                    hintText: 'اكتب ما حدث للمساعدة في مراجعة البلاغ...'.tr,
                     hintStyle: const TextStyle(
                         color: LightGlass.textFaint, fontSize: 12),
                     filled: true,
@@ -893,7 +894,7 @@ class _ChatScreenState extends State<ChatScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('إلغاء',
+              child: Text('إلغاء'.tr,
                   style: TextStyle(color: LightGlass.textMuted)),
             ),
             ElevatedButton(
@@ -919,12 +920,12 @@ class _ChatScreenState extends State<ChatScreen> {
                   Navigator.of(ctx).pop();
                   TopNotification.show(
                     context,
-                    'تم إرسال البلاغ للإدارة بنجاح! سيتم التحقق واتخاذ الإجراء اللازم.',
+                    'تم إرسال البلاغ للإدارة بنجاح! سيتم التحقق واتخاذ الإجراء اللازم.'.tr,
                     icon: Icons.shield_rounded,
                   );
                 }
               },
-              child: const Text('إرسال البلاغ'),
+              child: Text('إرسال البلاغ'.tr),
             ),
           ],
         ),
@@ -940,18 +941,18 @@ class _ChatScreenState extends State<ChatScreen> {
         backgroundColor: LightGlass.cardStrong,
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('حظر اللاعب',
+        title: Text('حظر اللاعب'.tr,
             style: TextStyle(
                 color: LightGlass.text, fontWeight: FontWeight.bold)),
         content: Text(
-          'هل أنت متأكد من حظر @${targetUser.username}؟ لن يتمكن من مراسلتك أو اللعب معك مرة أخرى.',
+          'هل أنت متأكد من حظر @{}؟ لن يتمكن من مراسلتك أو اللعب معك مرة أخرى.'.trp([targetUser.username]),
           style: const TextStyle(
               color: LightGlass.textMuted, fontSize: 13, height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('إلغاء',
+            child: Text('إلغاء'.tr,
                 style: TextStyle(color: LightGlass.textMuted)),
           ),
           ElevatedButton(
@@ -963,15 +964,15 @@ class _ChatScreenState extends State<ChatScreen> {
               final myUid = AuthService().currentUser?.uid;
               if (myUid != null) {
                 await SocialService()
-                    .blockUser(myUid, targetUser.uid, 'حظر من المستخدم');
+                    .blockUser(myUid, targetUser.uid, 'حظر من المستخدم'.tr);
               }
               if (mounted) {
                 Navigator.of(ctx).pop();
-                TopNotification.show(context, 'تم حظر اللاعب بنجاح',
+                TopNotification.show(context, 'تم حظر اللاعب بنجاح'.tr,
                     icon: Icons.block_rounded);
               }
             },
-            child: const Text('نعم، حظر'),
+            child: Text('نعم، حظر'.tr),
           ),
         ],
       ),
@@ -1094,14 +1095,14 @@ class NotificationsSheet extends StatelessWidget {
               borderRadius: BorderRadius.circular(4),
             ),
           ),
-          const Padding(
+          Padding(
             padding: EdgeInsets.all(14),
             child: Row(
               children: [
                 Icon(Icons.notifications_rounded,
                     color: LightGlass.accent, size: 20),
                 SizedBox(width: 8),
-                Text('الإشعارات',
+                Text('الإشعارات'.tr,
                     style: TextStyle(
                         color: LightGlass.text,
                         fontSize: 16,
@@ -1124,7 +1125,7 @@ class NotificationsSheet extends StatelessWidget {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('من الإدارة 📢',
+                        Text('من الإدارة 📢'.tr,
                             style: TextStyle(
                                 color: LightGlass.textSoft,
                                 fontSize: 12,
@@ -1191,7 +1192,7 @@ class NotificationsSheet extends StatelessWidget {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('طلبات صداقة:',
+                        Text('طلبات صداقة:'.tr,
                             style: TextStyle(
                                 color: LightGlass.textSoft,
                                 fontSize: 12,
@@ -1214,7 +1215,7 @@ class NotificationsSheet extends StatelessWidget {
                                   const SizedBox(width: 10),
                                   Expanded(
                                     child: Text(
-                                      '${r.fromName} (@${r.fromUsername}) أرسل لك طلب صداقة',
+                                      '{} (@{}) أرسل لك طلب صداقة'.trp([r.fromName, r.fromUsername]),
                                       style: const TextStyle(
                                           color: LightGlass.text,
                                           fontSize: 12,
@@ -1255,10 +1256,10 @@ class NotificationsSheet extends StatelessWidget {
                         .toList();
                     if (unreadConvs.isEmpty) {
                       // لا شيء على الإطلاق؟
-                      return const Padding(
+                      return Padding(
                         padding: EdgeInsets.symmetric(vertical: 24),
                         child: Center(
-                          child: Text('لا توجد إشعارات جديدة 🎉',
+                          child: Text('لا توجد إشعارات جديدة 🎉'.tr,
                               style: TextStyle(
                                   color: LightGlass.textMuted,
                                   fontSize: 12.5)),
@@ -1268,7 +1269,7 @@ class NotificationsSheet extends StatelessWidget {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('رسائل غير مقروءة:',
+                        Text('رسائل غير مقروءة:'.tr,
                             style: TextStyle(
                                 color: LightGlass.textSoft,
                                 fontSize: 12,
@@ -1427,7 +1428,7 @@ class _DirectChatModalState extends State<DirectChatModal> {
                                   color: LightGlass.text,
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold)),
-                          Text('@${widget.otherUser.username} • متصل الآن 🟢',
+                          Text('@{} • متصل الآن 🟢'.trp([widget.otherUser.username]),
                               style: const TextStyle(
                                   color: Color(0xFF047857),
                                   fontSize: 11)),
@@ -1460,7 +1461,7 @@ class _DirectChatModalState extends State<DirectChatModal> {
                                 style: TextStyle(fontSize: 40)),
                             const SizedBox(height: 8),
                             Text(
-                                'ابدأ محادثتك مع ${widget.otherUser.displayName}!',
+                                'ابدأ محادثتك مع {}!'.trp([widget.otherUser.displayName]),
                                 style: const TextStyle(
                                     color: LightGlass.textMuted,
                                     fontSize: 13)),
@@ -1569,7 +1570,7 @@ class _DirectChatModalState extends State<DirectChatModal> {
                         style: const TextStyle(
                             color: LightGlass.text, fontSize: 13.5),
                         decoration: InputDecoration(
-                          hintText: 'اكتب رسالة...',
+                          hintText: 'اكتب رسالة...'.tr,
                           hintStyle: const TextStyle(
                               color: LightGlass.textFaint,
                               fontSize: 13),

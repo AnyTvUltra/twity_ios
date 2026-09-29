@@ -10,6 +10,7 @@ import '../utils/top_notification.dart';
 import '../utils/url_helper.dart';
 import '../widgets/skin_mockup.dart';
 import '../widgets/user_avatar.dart';
+import '../l10n/app_lang.dart';
 
 /// لوحة الإدارة والتحكم الكاملة للتطبيق - مرتبطة بسحابة Firebase
 class AdminPanelScreen extends StatefulWidget {
@@ -32,7 +33,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
   int _defaultTurnTimer = 72;
   String _botDifficulty = 'medium';
   bool _maintenanceMode = false;
-  String _announcement = 'مرحباً بكم في مجتمع الألعاب الممتعة!';
+  String _announcement = 'مرحباً بكم في مجتمع الألعاب الممتعة!'.tr;
 
   @override
   void initState() {
@@ -48,14 +49,14 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
     if (user == null || user.uid.startsWith('guest_')) {
       setState(() {
         _checking = false;
-        _denyReason = 'سجّل دخولك بحساب مدير حقيقي أولاً (ليس حساب ضيف)';
+        _denyReason = 'سجّل دخولك بحساب مدير حقيقي أولاً (ليس حساب ضيف)'.tr;
       });
       return;
     }
     if (!_firebase.isInitialized) {
       setState(() {
         _checking = false;
-        _denyReason = 'قاعدة البيانات غير متصلة';
+        _denyReason = 'قاعدة البيانات غير متصلة'.tr;
       });
       return;
     }
@@ -68,13 +69,13 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
         _isAuthenticated = doc.exists;
         _checking = false;
         if (!doc.exists) {
-          _denyReason = 'هذا الحساب لا يملك صلاحيات الإدارة';
+          _denyReason = 'هذا الحساب لا يملك صلاحيات الإدارة'.tr;
         }
       });
     } catch (e) {
       setState(() {
         _checking = false;
-        _denyReason = 'تعذّر التحقق من الصلاحيات';
+        _denyReason = 'تعذّر التحقق من الصلاحيات'.tr;
       });
     }
   }
@@ -98,7 +99,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
 
   Future<void> _saveRemoteConfig() async {
     if (!_firebase.isInitialized) {
-      TopNotification.show(context, '⚠️ قاعدة البيانات غير مهيأة بعد');
+      TopNotification.show(context, '⚠️ قاعدة البيانات غير مهيأة بعد'.tr);
       return;
     }
     try {
@@ -112,11 +113,11 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
       });
       AppHaptics.heavy();
       if (mounted) {
-        TopNotification.show(context, '✅ تم حفظ ونشر الإعدادات بنجاح في السحابة!');
+        TopNotification.show(context, '✅ تم حفظ ونشر الإعدادات بنجاح في السحابة!'.tr);
       }
     } catch (e) {
       if (mounted) {
-        TopNotification.show(context, 'حدث خطأ أثناء الحفظ: $e');
+        TopNotification.show(context, 'حدث خطأ أثناء الحفظ: {}'.trp([e]));
       }
     }
   }
@@ -140,12 +141,12 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
             icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
             onPressed: () => Navigator.of(context).pop(),
           ),
-          title: const Row(
+          title: Row(
             children: [
               Icon(Icons.admin_panel_settings_rounded, color: Color(0xFF4ADE80), size: 24),
               SizedBox(width: 10),
               Text(
-                'لوحة التحكم الإدارية (Admin Panel)',
+                'لوحة التحكم الإدارية (Admin Panel)'.tr,
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 17,
@@ -156,39 +157,39 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
           ),
           actions: [
             IconButton(
-              tooltip: 'فتح لوحة الويب للكمبيوتر (Desktop Dashboard)',
+              tooltip: 'فتح لوحة الويب للكمبيوتر (Desktop Dashboard)'.tr,
               icon: const Icon(Icons.open_in_new_rounded, color: Color(0xFF38BDF8)),
               onPressed: () => openAdminWeb(),
             ),
             if (_isAuthenticated)
               IconButton(
-                tooltip: 'تسجيل خروج',
+                tooltip: 'تسجيل خروج'.tr,
                 icon: const Icon(Icons.lock_outline_rounded, color: Colors.redAccent),
                 onPressed: () {
                   setState(() {
                     _isAuthenticated = false;
-                    _denyReason = 'تم قفل لوحة الإدارة';
+                    _denyReason = 'تم قفل لوحة الإدارة'.tr;
                   });
-                  TopNotification.show(context, 'تم قفل لوحة الإدارة 🔒');
+                  TopNotification.show(context, 'تم قفل لوحة الإدارة 🔒'.tr);
                 },
               ),
           ],
           bottom: _isAuthenticated
               ? TabBar(
                   controller: _tabController,
-                  indicatorColor: const Color(0xFF4ADE80),
-                  labelColor: const Color(0xFF4ADE80),
+                  indicatorColor: Color(0xFF4ADE80),
+                  labelColor: Color(0xFF4ADE80),
                   unselectedLabelColor: Colors.white60,
-                  labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                   isScrollable: true,
-                  tabs: const [
-                    Tab(icon: Icon(Icons.dashboard_rounded, size: 18), text: 'الإحصائيات'),
-                    Tab(icon: Icon(Icons.people_alt_rounded, size: 18), text: 'الحسابات'),
-                    Tab(icon: Icon(Icons.report_rounded, size: 18), text: 'البلاغات'),
-                    Tab(icon: Icon(Icons.tune_rounded, size: 18), text: 'إعدادات اللعبة'),
-                    Tab(icon: Icon(Icons.storefront_rounded, size: 18), text: 'المتجر والسكنات'),
-                    Tab(icon: Icon(Icons.workspace_premium_rounded, size: 18), text: 'طلبات VIP'),
-                    Tab(icon: Icon(Icons.history_rounded, size: 18), text: 'سجل المباريات'),
+                  tabs: [
+                    Tab(icon: Icon(Icons.dashboard_rounded, size: 18), text: 'الإحصائيات'.tr),
+                    Tab(icon: Icon(Icons.people_alt_rounded, size: 18), text: 'الحسابات'.tr),
+                    Tab(icon: Icon(Icons.report_rounded, size: 18), text: 'البلاغات'.tr),
+                    Tab(icon: Icon(Icons.tune_rounded, size: 18), text: 'إعدادات اللعبة'.tr),
+                    Tab(icon: Icon(Icons.storefront_rounded, size: 18), text: 'المتجر والسكنات'.tr),
+                    Tab(icon: Icon(Icons.workspace_premium_rounded, size: 18), text: 'طلبات VIP'.tr),
+                    Tab(icon: Icon(Icons.history_rounded, size: 18), text: 'سجل المباريات'.tr),
                   ],
                 )
               : null,
@@ -214,14 +215,14 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
   // ══════════════════════════════════════════════════════════
   Widget _buildAccessScreen() {
     if (_checking) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             CircularProgressIndicator(color: Color(0xFF4ADE80)),
             SizedBox(height: 16),
             Text(
-              'جارٍ التحقق من صلاحيات الإدارة...',
+              'جارٍ التحقق من صلاحيات الإدارة...'.tr,
               style: TextStyle(color: Colors.white60, fontSize: 13),
             ),
           ],
@@ -262,8 +263,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                 child: const Icon(Icons.lock_rounded, color: Colors.white, size: 34),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'منطقة الإدارة الآمنة',
+              Text(
+                'منطقة الإدارة الآمنة'.tr,
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
@@ -273,7 +274,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
               const SizedBox(height: 8),
               Text(
                 _denyReason.isEmpty
-                    ? 'الوصول مقيّد لحسابات المدير المسجلة في مجموعة admins'
+                    ? 'الوصول مقيّد لحسابات المدير المسجلة في مجموعة admins'.tr
                     : _denyReason,
                 style: const TextStyle(color: Colors.white60, fontSize: 12),
                 textAlign: TextAlign.center,
@@ -282,8 +283,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
               OutlinedButton.icon(
                 onPressed: () => openAdminWeb(),
                 icon: const Icon(Icons.desktop_windows_rounded, size: 16, color: Color(0xFF38BDF8)),
-                label: const Text(
-                  'فتح لوحة الويب للكمبيوتر (Desktop Dashboard) ↗',
+                label: Text(
+                  'فتح لوحة الويب للكمبيوتر (Desktop Dashboard) ↗'.tr,
                   style: TextStyle(color: Color(0xFF38BDF8), fontSize: 12, fontWeight: FontWeight.bold),
                 ),
                 style: OutlinedButton.styleFrom(
@@ -296,8 +297,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
               TextButton.icon(
                 onPressed: () => Navigator.of(context).pop(),
                 icon: const Icon(Icons.arrow_back_rounded, size: 16, color: Colors.white54),
-                label: const Text(
-                  'عودة',
+                label: Text(
+                  'عودة'.tr,
                   style: TextStyle(color: Colors.white54, fontSize: 12),
                 ),
               ),
@@ -337,7 +338,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                 Expanded(
                   child: _buildStatCard(
                     icon: Icons.people_alt_rounded,
-                    title: 'إجمالي الحسابات المسجلة',
+                    title: 'إجمالي الحسابات المسجلة'.tr,
                     value: '$totalPlayers',
                     color: const Color(0xFF3B82F6),
                   ),
@@ -346,7 +347,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                 Expanded(
                   child: _buildStatCard(
                     icon: Icons.monetization_on_rounded,
-                    title: 'إجمالي العملات المتداولة',
+                    title: 'إجمالي العملات المتداولة'.tr,
                     value: '$totalChips 🪙',
                     color: const Color(0xFFEAB308),
                   ),
@@ -359,8 +360,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                 Expanded(
                   child: _buildStatCard(
                     icon: Icons.cloud_done_rounded,
-                    title: 'حالة السحابة (Firebase)',
-                    value: _firebase.isInitialized ? 'متصل بنجاح ✅' : 'جاري التهيئة...',
+                    title: 'حالة السحابة (Firebase)'.tr,
+                    value: _firebase.isInitialized ? 'متصل بنجاح ✅'.tr : 'جاري التهيئة...'.tr,
                     color: const Color(0xFF22C55E),
                   ),
                 ),
@@ -368,8 +369,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                 Expanded(
                   child: _buildStatCard(
                     icon: Icons.language_rounded,
-                    title: 'استضافة Cloudflare',
-                    value: 'جاهز للنشر 🌐',
+                    title: 'استضافة Cloudflare'.tr,
+                    value: 'جاهز للنشر 🌐'.tr,
                     color: const Color(0xFFF97316),
                   ),
                 ),
@@ -388,12 +389,12 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
                       Icon(Icons.campaign_rounded, color: Color(0xFF4ADE80), size: 20),
                       SizedBox(width: 8),
                       Text(
-                        'شريط الإعلانات العام لجميع اللاعبين:',
+                        'شريط الإعلانات العام لجميع اللاعبين:'.tr,
                         style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
                       ),
                     ],
@@ -465,8 +466,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
 
   Widget _buildPlayersTab() {
     if (!_firebase.isInitialized) {
-      return const Center(
-        child: Text('قاعدة البيانات غير متصلة', style: TextStyle(color: Colors.white60)),
+      return Center(
+        child: Text('قاعدة البيانات غير متصلة'.tr, style: TextStyle(color: Colors.white60)),
       );
     }
 
@@ -478,7 +479,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
           child: TextField(
             style: const TextStyle(color: Colors.white, fontSize: 13),
             decoration: InputDecoration(
-              hintText: 'ابحث بالاسم أو اسم المستخدم...',
+              hintText: 'ابحث بالاسم أو اسم المستخدم...'.tr,
               hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
               prefixIcon: const Icon(Icons.search_rounded, color: Colors.white38, size: 20),
               filled: true,
@@ -511,8 +512,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
               }
 
               if (docs.isEmpty) {
-                return const Center(
-                  child: Text('لا توجد حسابات مطابقة',
+                return Center(
+                  child: Text('لا توجد حسابات مطابقة'.tr,
                       style: TextStyle(color: Colors.white60)),
                 );
               }
@@ -524,7 +525,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                 itemBuilder: (context, index) {
                   final doc = docs[index];
                   final data = doc.data() as Map<String, dynamic>;
-                  final name = data['displayName'] ?? 'لاعب';
+                  final name = data['displayName'] ?? 'لاعب'.tr;
                   final username = data['username'] ?? '';
                   final photo = data['photoUrl'] ?? '';
                   final chips = data['chips'] ?? 0;
@@ -584,7 +585,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                                             borderRadius:
                                                 BorderRadius.circular(5),
                                           ),
-                                          child: const Text('ضيف',
+                                          child: Text('ضيف'.tr,
                                               style: TextStyle(
                                                   color: Colors.orangeAccent,
                                                   fontSize: 9)),
@@ -602,7 +603,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                                                 color: Colors.redAccent,
                                                 width: 0.8),
                                           ),
-                                          child: const Text('محظور',
+                                          child: Text('محظور'.tr,
                                               style: TextStyle(
                                                   color: Colors.redAccent,
                                                   fontSize: 10)),
@@ -620,7 +621,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                             IconButton(
                               icon: const Icon(Icons.edit_rounded,
                                   color: Color(0xFF4ADE80), size: 20),
-                              tooltip: 'تعديل بيانات الحساب',
+                              tooltip: 'تعديل بيانات الحساب'.tr,
                               onPressed: () =>
                                   _showEditUserDialog(doc.id, data),
                             ),
@@ -635,8 +636,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                                 size: 20,
                               ),
                               tooltip: isVip
-                                  ? 'إلغاء اشتراك VIP'
-                                  : 'تفعيل VIP لمدة 30 يوماً',
+                                  ? 'إلغاء اشتراك VIP'.tr
+                                  : 'تفعيل VIP لمدة 30 يوماً'.tr,
                               onPressed: () async {
                                 await _firebase.firestore
                                     .collection('users')
@@ -653,8 +654,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                                   TopNotification.show(
                                     context,
                                     isVip
-                                        ? 'تم إلغاء اشتراك VIP'
-                                        : 'تم تفعيل VIP لمدة 30 يوماً 👑',
+                                        ? 'تم إلغاء اشتراك VIP'.tr
+                                        : 'تم تفعيل VIP لمدة 30 يوماً 👑'.tr,
                                   );
                                 }
                               },
@@ -669,7 +670,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                                     : Colors.redAccent,
                                 size: 20,
                               ),
-                              tooltip: isBanned ? 'فك الحظر' : 'حظر الحساب',
+                              tooltip: isBanned ? 'فك الحظر'.tr : 'حظر الحساب'.tr,
                               onPressed: () {
                                 _firebase.firestore
                                     .collection('users')
@@ -678,8 +679,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                                 TopNotification.show(
                                   context,
                                   isBanned
-                                      ? 'تم فك حظر الحساب'
-                                      : 'تم حظر الحساب',
+                                      ? 'تم فك حظر الحساب'.tr
+                                      : 'تم حظر الحساب'.tr,
                                 );
                               },
                             ),
@@ -690,11 +691,11 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
-                            _miniStat('🪙', '$chips', 'الرصيد'),
-                            _miniStat('⭐', '$rating', 'التقييم'),
-                            _miniStat('🏆', '$level', 'المستوى'),
-                            _miniStat('✅', '$wins', 'فوز'),
-                            _miniStat('❌', '$losses', 'خسارة'),
+                            _miniStat('🪙', '$chips', 'الرصيد'.tr),
+                            _miniStat('⭐', '$rating', 'التقييم'.tr),
+                            _miniStat('🏆', '$level', 'المستوى'.tr),
+                            _miniStat('✅', '$wins', 'فوز'.tr),
+                            _miniStat('❌', '$losses', 'خسارة'.tr),
                           ],
                         ),
                       ],
@@ -736,8 +737,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
   // ══════════════════════════════════════════════════════════
   Widget _buildReportsTab() {
     if (!_firebase.isInitialized) {
-      return const Center(
-          child: Text('قاعدة البيانات غير متصلة',
+      return Center(
+          child: Text('قاعدة البيانات غير متصلة'.tr,
               style: TextStyle(color: Colors.white60)));
     }
 
@@ -755,8 +756,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
         }
         final docs = snapshot.data!.docs;
         if (docs.isEmpty) {
-          return const Center(
-            child: Text('لا توجد بلاغات — كل شيء نظيف! ✅',
+          return Center(
+            child: Text('لا توجد بلاغات — كل شيء نظيف! ✅'.tr,
                 style: TextStyle(color: Colors.white60)),
           );
         }
@@ -796,7 +797,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          '${d['reason'] ?? 'بلاغ'}',
+                          '{}'.trp([d['reason'] ?? 'بلاغ']),
                           style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -813,7 +814,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          isPending ? 'معلّق' : 'تمت المعالجة',
+                          isPending ? 'معلّق'.tr : 'تمت المعالجة'.tr,
                           style: TextStyle(
                               color: isPending
                                   ? Colors.redAccent
@@ -826,13 +827,13 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'المُبلِغ: ${d['reporterName'] ?? ''}  ←  المُبلَغ عنه: @${d['reportedUsername'] ?? ''}',
+                    'المُبلِغ: {}  ←  المُبلَغ عنه: @{}'.trp([d['reporterName'] ?? '', d['reportedUsername'] ?? '']),
                     style: const TextStyle(
                         color: Colors.white70, fontSize: 11.5),
                   ),
                   if ((d['details'] ?? '').toString().isNotEmpty) ...[
                     const SizedBox(height: 4),
-                    Text('التفاصيل: ${d['details']}',
+                    Text('التفاصيل: {}'.trp([d['details']]),
                         style: const TextStyle(
                             color: Colors.white38, fontSize: 11)),
                   ],
@@ -844,7 +845,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                             .update({'status': 'resolved'}),
                         icon: const Icon(Icons.check_rounded,
                             size: 16, color: Color(0xFF4ADE80)),
-                        label: const Text('تمت المعالجة',
+                        label: Text('تمت المعالجة'.tr,
                             style: TextStyle(
                                 color: Color(0xFF4ADE80),
                                 fontSize: 11.5)),
@@ -875,7 +876,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
         textDirection: TextDirection.rtl,
         child: AlertDialog(
           backgroundColor: const Color(0xFF161C28),
-          title: Text('تعديل: ${data['displayName'] ?? data['name']}',
+          title: Text('تعديل: {}'.trp([data['displayName'] ?? data['name']]),
               style: const TextStyle(
                   color: Colors.white, fontWeight: FontWeight.bold)),
           content: SingleChildScrollView(
@@ -885,32 +886,32 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                 TextField(
                   controller: nameCtrl,
                   style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                      labelText: 'الاسم المعروض',
+                  decoration: InputDecoration(
+                      labelText: 'الاسم المعروض'.tr,
                       labelStyle: TextStyle(color: Colors.white60)),
                 ),
                 TextField(
                   controller: chipsCtrl,
                   keyboardType: TextInputType.number,
                   style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                      labelText: 'الرصيد (عملات)',
+                  decoration: InputDecoration(
+                      labelText: 'الرصيد (عملات)'.tr,
                       labelStyle: TextStyle(color: Colors.white60)),
                 ),
                 TextField(
                   controller: ratingCtrl,
                   keyboardType: TextInputType.number,
                   style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                      labelText: 'التقييم (Rating)',
+                  decoration: InputDecoration(
+                      labelText: 'التقييم (Rating)'.tr,
                       labelStyle: TextStyle(color: Colors.white60)),
                 ),
                 TextField(
                   controller: levelCtrl,
                   keyboardType: TextInputType.number,
                   style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                      labelText: 'المستوى (Level)',
+                  decoration: InputDecoration(
+                      labelText: 'المستوى (Level)'.tr,
                       labelStyle: TextStyle(color: Colors.white60)),
                 ),
               ],
@@ -919,7 +920,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('إلغاء',
+              child: Text('إلغاء'.tr,
                   style: TextStyle(color: Colors.white60)),
             ),
             ElevatedButton(
@@ -937,10 +938,10 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                 if (ctx.mounted) Navigator.of(ctx).pop();
                 if (mounted) {
                   TopNotification.show(
-                      context, 'تم تحديث بيانات الحساب بنجاح ✅');
+                      context, 'تم تحديث بيانات الحساب بنجاح ✅'.tr);
                 }
               },
-              child: const Text('حفظ التعديلات'),
+              child: Text('حفظ التعديلات'.tr),
             ),
           ],
         ),
@@ -969,16 +970,16 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Row(
+              Row(
                 children: [
                   Icon(Icons.build_circle_rounded, color: Colors.orangeAccent, size: 24),
                   SizedBox(width: 10),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('وضع الصيانة (Maintenance Mode)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                      Text('وضع الصيانة (Maintenance Mode)'.tr, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
                       SizedBox(height: 2),
-                      Text('قفل اللعبة مؤقتاً لتحديث النظام', style: TextStyle(color: Colors.white60, fontSize: 11)),
+                      Text('قفل اللعبة مؤقتاً لتحديث النظام'.tr, style: TextStyle(color: Colors.white60, fontSize: 11)),
                     ],
                   ),
                 ],
@@ -1003,7 +1004,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('الرصيد الابتدائي للاعبين الجدد (Starting Bakiye):', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+              Text('الرصيد الابتدائي للاعبين الجدد (Starting Bakiye):'.tr, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
               const SizedBox(height: 10),
               Row(
                 children: [100, 500, 1000, 1250, 2000].map((val) {
@@ -1043,7 +1044,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('مدة مؤقت الدور الافتراضية (Turn Timer):', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+              Text('مدة مؤقت الدور الافتراضية (Turn Timer):'.tr, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
               const SizedBox(height: 10),
               Row(
                 children: [30, 45, 60, 72, 90].map((val) {
@@ -1083,7 +1084,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('نص الإعلان وشريط التنبيهات العاجل:', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+              Text('نص الإعلان وشريط التنبيهات العاجل:'.tr, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
               const SizedBox(height: 10),
               TextFormField(
                 initialValue: _announcement,
@@ -1106,7 +1107,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
           child: ElevatedButton.icon(
             onPressed: _saveRemoteConfig,
             icon: const Icon(Icons.cloud_upload_rounded),
-            label: const Text('حفظ ونشر الإعدادات في السحابة', style: TextStyle(fontWeight: FontWeight.bold)),
+            label: Text('حفظ ونشر الإعدادات في السحابة'.tr, style: TextStyle(fontWeight: FontWeight.bold)),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF22C55E),
               foregroundColor: Colors.white,
@@ -1133,8 +1134,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
             child: ElevatedButton.icon(
               onPressed: _showAddSkinDialog,
               icon: const Icon(Icons.add_photo_alternate_rounded),
-              label: const Text(
-                'إضافة تصميم جديد للمتجر (موك اب)',
+              label: Text(
+                'إضافة تصميم جديد للمتجر (موك اب)'.tr,
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
               ),
               style: ElevatedButton.styleFrom(
@@ -1150,8 +1151,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
         // قائمة الكسنات الحالية
         Expanded(
           child: !_firebase.isInitialized
-              ? const Center(
-                  child: Text('قاعدة البيانات غير متصلة',
+              ? Center(
+                  child: Text('قاعدة البيانات غير متصلة'.tr,
                       style: TextStyle(color: Colors.white60)))
               : StreamBuilder<QuerySnapshot>(
                   stream: _firebase.firestore
@@ -1166,9 +1167,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                     }
                     final docs = snapshot.data!.docs;
                     if (docs.isEmpty) {
-                      return const Center(
+                      return Center(
                         child: Text(
-                          'لا توجد كسنات في المتجر بعد — أضف أول تصميم!',
+                          'لا توجد كسنات في المتجر بعد — أضف أول تصميم!'.tr,
                           style: TextStyle(color: Colors.white60),
                         ),
                       );
@@ -1232,7 +1233,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                                 ),
                               ),
                               IconButton(
-                                tooltip: item.active ? 'إخفاء' : 'إظهار',
+                                tooltip: item.active ? 'إخفاء'.tr : 'إظهار'.tr,
                                 icon: Icon(
                                   item.active
                                       ? Icons.visibility_rounded
@@ -1247,7 +1248,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                                 },
                               ),
                               IconButton(
-                                tooltip: 'حذف',
+                                tooltip: 'حذف'.tr,
                                 icon: const Icon(Icons.delete_rounded,
                                     color: Colors.redAccent),
                                 onPressed: () => doc.reference.delete(),
@@ -1294,18 +1295,18 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
               setDialogState(() => imageBase64 = base64Encode(bytes));
             } catch (e) {
               if (ctx.mounted) {
-                TopNotification.show(ctx, 'تعذر اختيار الصورة: $e');
+                TopNotification.show(ctx, 'تعذر اختيار الصورة: {}'.trp([e]));
               }
             }
           }
 
           Future<void> save() async {
             if (nameCtrl.text.trim().isEmpty) {
-              TopNotification.show(ctx, 'أدخل اسم التصميم أولاً');
+              TopNotification.show(ctx, 'أدخل اسم التصميم أولاً'.tr);
               return;
             }
             if (imageBase64 == null) {
-              TopNotification.show(ctx, 'اختر صورة التصميم أولاً');
+              TopNotification.show(ctx, 'اختر صورة التصميم أولاً'.tr);
               return;
             }
             setDialogState(() => saving = true);
@@ -1325,12 +1326,12 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
               if (ctx.mounted) Navigator.of(ctx).pop();
               if (mounted) {
                 TopNotification.show(
-                    context, 'تم نشر التصميم في المتجر بنجاح! 🎉');
+                    context, 'تم نشر التصميم في المتجر بنجاح! 🎉'.tr);
               }
             } catch (e) {
               setDialogState(() => saving = false);
               if (ctx.mounted) {
-                TopNotification.show(ctx, 'فشل النشر: $e');
+                TopNotification.show(ctx, 'فشل النشر: {}'.trp([e]));
               }
             }
           }
@@ -1339,8 +1340,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
             textDirection: TextDirection.rtl,
             child: AlertDialog(
               backgroundColor: const Color(0xFF161C28),
-              title: const Text(
-                'تصميم كسنة جديدة (موك اب)',
+              title: Text(
+                'تصميم كسنة جديدة (موك اب)'.tr,
                 style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -1418,8 +1419,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                         ),
                         label: Text(
                           imageBase64 == null
-                              ? 'اختيار صورة التصميم'
-                              : 'تم اختيار الصورة ✓ — تغييرها',
+                              ? 'اختيار صورة التصميم'.tr
+                              : 'تم اختيار الصورة ✓ — تغييرها'.tr,
                           style: const TextStyle(
                               color: Colors.white, fontSize: 12),
                         ),
@@ -1441,8 +1442,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                         ),
                         child: Column(
                           children: [
-                            const Text(
-                              'معاينة حية على القطعة:',
+                            Text(
+                              'معاينة حية على القطعة:'.tr,
                               style: TextStyle(
                                   color: Colors.white54, fontSize: 10.5),
                             ),
@@ -1472,7 +1473,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                                 item: imageBase64 != null
                                     ? StoreItem(
                                         id: 'admin_preview',
-                                        name: 'معاينة',
+                                        name: 'معاينة'.tr,
                                         category: selectedCategory,
                                         price: 0,
                                         imageBase64: imageBase64!,
@@ -1502,7 +1503,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                                     ),
                                   ),
                                   IconButton(
-                                    tooltip: 'إعادة الضبط',
+                                    tooltip: 'إعادة الضبط'.tr,
                                     icon: const Icon(
                                         Icons.restart_alt_rounded,
                                         color: Colors.white54,
@@ -1515,8 +1516,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                                   ),
                                 ],
                               ),
-                              const Text(
-                                'اسحب الصورة لتحريكها على القطعة • حرّك المنزلق للتكبير',
+                              Text(
+                                'اسحب الصورة لتحريكها على القطعة • حرّك المنزلق للتكبير'.tr,
                                 style: TextStyle(
                                     color: Colors.white38,
                                     fontSize: 9.5),
@@ -1532,10 +1533,10 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                         controller: nameCtrl,
                         style: const TextStyle(
                             color: Colors.white, fontSize: 13),
-                        decoration: const InputDecoration(
-                          labelText: 'اسم التصميم',
+                        decoration: InputDecoration(
+                          labelText: 'اسم التصميم'.tr,
                           labelStyle: TextStyle(color: Colors.white60),
-                          hintText: 'مثال: رخام ملكي',
+                          hintText: 'مثال: رخام ملكي'.tr,
                           hintStyle: TextStyle(color: Colors.white30),
                         ),
                       ),
@@ -1545,8 +1546,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                         keyboardType: TextInputType.number,
                         style: const TextStyle(
                             color: Colors.white, fontSize: 13),
-                        decoration: const InputDecoration(
-                          labelText: 'السعر',
+                        decoration: InputDecoration(
+                          labelText: 'السعر'.tr,
                           labelStyle: TextStyle(color: Colors.white60),
                         ),
                       ),
@@ -1555,8 +1556,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                       Row(
                         children: [
                           for (final c in [
-                            (StoreCurrency.chips, '🪙 عملات ذهبية'),
-                            (StoreCurrency.gems, '💎 مجوهرات زرقاء'),
+                            (StoreCurrency.chips, '🪙 عملات ذهبية'.tr),
+                            (StoreCurrency.gems, '💎 مجوهرات زرقاء'.tr),
                           ])
                             Expanded(
                               child: GestureDetector(
@@ -1607,7 +1608,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
               actions: [
                 TextButton(
                   onPressed: saving ? null : () => Navigator.of(ctx).pop(),
-                  child: const Text('إلغاء',
+                  child: Text('إلغاء'.tr,
                       style: TextStyle(color: Colors.white60)),
                 ),
                 ElevatedButton.icon(
@@ -1619,7 +1620,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white))
                       : const Icon(Icons.publish_rounded, size: 16),
-                  label: Text(saving ? 'جاري النشر...' : 'نشر في المتجر'),
+                  label: Text(saving ? 'جاري النشر...'.tr : 'نشر في المتجر'.tr),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF22C55E),
                     foregroundColor: Colors.white,
@@ -1641,8 +1642,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
   // ══════════════════════════════════════════════════════════
   Widget _buildVipRequestsTab() {
     if (!_firebase.isInitialized) {
-      return const Center(
-          child: Text('قاعدة البيانات غير متصلة',
+      return Center(
+          child: Text('قاعدة البيانات غير متصلة'.tr,
               style: TextStyle(color: Colors.white60)));
     }
 
@@ -1660,8 +1661,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
         }
         final docs = snapshot.data!.docs;
         if (docs.isEmpty) {
-          return const Center(
-            child: Text('لا توجد طلبات اشتراك VIP بعد',
+          return Center(
+            child: Text('لا توجد طلبات اشتراك VIP بعد'.tr,
                 style: TextStyle(color: Colors.white60)),
           );
         }
@@ -1679,14 +1680,14 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                 ts is Timestamp ? ts.toDate() : null;
 
             return Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF161C28),
+                color: Color(0xFF161C28),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: isPending
-                      ? const Color(0xFFFFD54F).withOpacity(0.5)
-                      : const Color(0x22FFFFFF),
+                      ? Color(0xFFFFD54F).withOpacity(0.5)
+                      : Color(0x22FFFFFF),
                 ),
               ),
               child: Row(
@@ -1696,25 +1697,27 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                         ? Icons.hourglass_top_rounded
                         : Icons.workspace_premium_rounded,
                     color: isPending
-                        ? const Color(0xFFFFD54F)
-                        : const Color(0xFF4ADE80),
+                        ? Color(0xFFFFD54F)
+                        : Color(0xFF4ADE80),
                     size: 26,
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${d['displayName'] ?? 'لاعب'}  @${d['username'] ?? ''}',
-                          style: const TextStyle(
+                          '{}  @{}'.trp([d['displayName'] ?? 'لاعب', d['username'] ?? '']),
+                          style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                               fontSize: 13),
                         ),
                         Text(
-                          'اشتراك شهري — ${d['priceUsd'] ?? 10}\$'
-                          '${created != null ? '  •  ${created.day}/${created.month}/${created.year}' : ''}',
+                          'اشتراك شهري — {}\$'.trp([d['priceUsd'] ?? 10]) +
+                              (created != null
+                                  ? '  •  ${created.day}/${created.month}/${created.year}'
+                                  : ''),
                           style: const TextStyle(
                               color: Colors.white54, fontSize: 11),
                         ),
@@ -1723,13 +1726,13 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                   ),
                   if (isPending) ...[
                     IconButton(
-                      tooltip: 'تفعيل VIP — 30 يوماً',
+                      tooltip: 'تفعيل VIP — 30 يوماً'.tr,
                       icon: const Icon(Icons.check_circle_rounded,
                           color: Color(0xFF4ADE80), size: 26),
                       onPressed: () => _approveVip(doc, d),
                     ),
                     IconButton(
-                      tooltip: 'رفض الطلب',
+                      tooltip: 'رفض الطلب'.tr,
                       icon: const Icon(Icons.cancel_rounded,
                           color: Colors.redAccent, size: 26),
                       onPressed: () =>
@@ -1737,7 +1740,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                     ),
                   ] else
                     Text(
-                      d['status'] == 'approved' ? 'مُفعّل ✓' : 'مرفوض',
+                      d['status'] == 'approved' ? 'مُفعّل ✓'.tr : 'مرفوض'.tr,
                       style: TextStyle(
                           color: d['status'] == 'approved'
                               ? const Color(0xFF4ADE80)
@@ -1781,11 +1784,11 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
       if (mounted) {
         TopNotification.show(
             context,
-            'تم تفعيل ${isPlus ? 'VIP+' : 'VIP'} لـ ${d['displayName'] ?? ''} — 30 يوماً 👑');
+            'تم تفعيل {} لـ {} — 30 يوماً 👑'.trp([isPlus ? 'VIP+' : 'VIP', d['displayName'] ?? '']));
       }
     } catch (e) {
       if (mounted) {
-        TopNotification.show(context, 'تعذر التفعيل: $e',
+        TopNotification.show(context, 'تعذر التفعيل: {}'.trp([e]),
             icon: Icons.warning_rounded);
       }
     }
@@ -1793,7 +1796,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
 
   Widget _buildHistoryTab() {
     if (!_firebase.isInitialized) {
-      return const Center(child: Text('قاعدة البيانات غير متصلة', style: TextStyle(color: Colors.white60)));
+      return Center(child: Text('قاعدة البيانات غير متصلة'.tr, style: TextStyle(color: Colors.white60)));
     }
 
     return StreamBuilder<QuerySnapshot>(
@@ -1809,8 +1812,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
 
         final docs = snapshot.data!.docs;
         if (docs.isEmpty) {
-          return const Center(
-            child: Text('لا توجد مباريات مسجلة بعد', style: TextStyle(color: Colors.white60)),
+          return Center(
+            child: Text('لا توجد مباريات مسجلة بعد'.tr, style: TextStyle(color: Colors.white60)),
           );
         }
 
@@ -1820,7 +1823,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
           separatorBuilder: (_, __) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
             final data = docs[index].data() as Map<String, dynamic>;
-            final winner = data['winner'] ?? 'غير معروف';
+            final winner = data['winner'] ?? 'غير معروف'.tr;
             final winType = data['winType'] ?? 'normal';
             final duration = data['durationSeconds'] ?? 0;
 
@@ -1838,9 +1841,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerPr
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('الفائز: $winner', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                        Text('الفائز: {}'.trp([winner]), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
                         const SizedBox(height: 2),
-                        Text('نوع الفوز: $winType | المدة: ${duration}s', style: const TextStyle(color: Colors.white60, fontSize: 11)),
+                        Text('نوع الفوز: {} | المدة: {}s'.trp([winType, duration]), style: const TextStyle(color: Colors.white60, fontSize: 11)),
                       ],
                     ),
                   ),

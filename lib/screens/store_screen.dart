@@ -11,6 +11,7 @@ import '../widgets/app_background.dart';
 import '../widgets/skin_mockup.dart';
 import '../widgets/gem_icon.dart';
 import '../utils/format.dart';
+import '../l10n/app_lang.dart';
 
 /// متجر الكسنات: أحجار، طاولة، استكانة، خلفية
 class StoreScreen extends StatefulWidget {
@@ -56,11 +57,11 @@ class _StoreScreenState extends State<StoreScreen>
     try {
       if (_store.isEquipped(item)) {
         await _store.equip(item.category, null);
-        if (mounted) TopNotification.show(context, 'تم إلغاء تجهيز الكسنة');
+        if (mounted) TopNotification.show(context, 'تم إلغاء تجهيز الكسنة'.tr);
       } else if (_store.isOwned(item.id)) {
         await _store.equip(item.category, item);
         if (mounted) {
-          TopNotification.show(context, 'تم تجهيز "${item.name}" ✅');
+          TopNotification.show(context, 'تم تجهيز "{}" ✅'.trp([item.name]));
         }
       } else {
         final error = await _store.purchase(item);
@@ -70,7 +71,7 @@ class _StoreScreenState extends State<StoreScreen>
         } else {
           await _store.equip(item.category, item);
           TopNotification.show(
-              context, 'تم شراء وتجهيز "${item.name}" بنجاح! 🎉');
+              context, 'تم شراء وتجهيز "{}" بنجاح! 🎉'.trp([item.name]));
         }
       }
     } finally {
@@ -102,9 +103,9 @@ class _StoreScreenState extends State<StoreScreen>
                             color: LightGlass.text, size: 20),
                         onPressed: () => Navigator.of(context).pop(),
                       ),
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'متجر الكسنات 🎨',
+                          'متجر الكسنات 🎨'.tr,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: LightGlass.text,
@@ -208,9 +209,9 @@ class _StoreScreenState extends State<StoreScreen>
                                   icon: Icon(StoreCategory.icon(c), size: 16),
                                   text: StoreCategory.label(c),
                                 )),
-                            const Tab(
+                            Tab(
                               icon: Icon(Icons.payments_rounded, size: 16),
-                              text: 'شحن الرصيد',
+                              text: 'شحن الرصيد'.tr,
                             ),
                           ],
                         ),
@@ -251,13 +252,13 @@ class _StoreScreenState extends State<StoreScreen>
             Icon(StoreCategory.icon(category),
                 color: LightGlass.textFaint, size: 48),
             const SizedBox(height: 12),
-            const Text(
-              'لا توجد كسنات متاحة في هذه الفئة بعد',
+            Text(
+              'لا توجد كسنات متاحة في هذه الفئة بعد'.tr,
               style: TextStyle(color: LightGlass.textMuted, fontSize: 13),
             ),
             const SizedBox(height: 4),
-            const Text(
-              'ترقّب التصاميم الجديدة قريباً!',
+            Text(
+              'ترقّب التصاميم الجديدة قريباً!'.tr,
               style: TextStyle(color: LightGlass.textFaint, fontSize: 11),
             ),
           ],
@@ -357,8 +358,8 @@ class _StoreScreenState extends State<StoreScreen>
                                     blurRadius: 8),
                               ],
                             ),
-                            child: const Text(
-                              'محدود ⏳',
+                            child: Text(
+                              'محدود ⏳'.tr,
                               style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 8.5,
@@ -382,7 +383,7 @@ class _StoreScreenState extends State<StoreScreen>
                                       .withOpacity(0.6)),
                             ),
                             child: Text(
-                              '🏆 ${item.requiredWins} فوزاً',
+                              '🏆 {} فوزاً'.trp([item.requiredWins]),
                               style: const TextStyle(
                                   color: Color(0xFFFFD54F),
                                   fontSize: 8.5,
@@ -468,14 +469,14 @@ class _StoreScreenState extends State<StoreScreen>
                     ),
                     child: Text(
                       locked
-                          ? '🔒 يتطلب ${item.requiredWins} فوزاً'
+                          ? '🔒 يتطلب {} فوزاً'.trp([item.requiredWins])
                           : equipped
-                              ? 'مُجهَّزة ✓ — إلغاء'
+                              ? 'مُجهَّزة ✓ — إلغاء'.tr
                               : owned
-                                  ? 'تجهيز الكسنة'
+                                  ? 'تجهيز الكسنة'.tr
                                   : item.price == 0
-                                      ? 'مجانية — تجهيز'
-                                      : 'شراء وتجهيز',
+                                      ? 'مجانية — تجهيز'.tr
+                                      : 'شراء وتجهيز'.tr,
                       style: const TextStyle(
                           fontWeight: FontWeight.w900, fontSize: 11.5),
                     ),
@@ -495,8 +496,8 @@ class _StoreScreenState extends State<StoreScreen>
 
   Widget _buildTopupTab() {
     if (!_firebase.isInitialized) {
-      return const Center(
-        child: Text('قاعدة البيانات غير متصلة حالياً',
+      return Center(
+        child: Text('قاعدة البيانات غير متصلة حالياً'.tr,
             style: TextStyle(color: LightGlass.textMuted)),
       );
     }
@@ -515,15 +516,15 @@ class _StoreScreenState extends State<StoreScreen>
           return Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: const [
+              children: [
                 Icon(Icons.payments_outlined,
                     color: LightGlass.textFaint, size: 48),
                 SizedBox(height: 12),
-                Text('لا توجد باقات شحن متاحة حالياً',
+                Text('لا توجد باقات شحن متاحة حالياً'.tr,
                     style:
                         TextStyle(color: LightGlass.textMuted, fontSize: 13)),
                 SizedBox(height: 4),
-                Text('ترقّب عروض الشحن قريباً!',
+                Text('ترقّب عروض الشحن قريباً!'.tr,
                     style:
                         TextStyle(color: LightGlass.textFaint, fontSize: 11)),
               ],
@@ -551,7 +552,7 @@ class _StoreScreenState extends State<StoreScreen>
     final isGems = data['type'] == 'gems';
     final amount = (data['amount'] as num?)?.toInt() ?? 0;
     final price = (data['priceUsd'] as num?)?.toDouble() ?? 0;
-    final title = data['title'] ?? 'باقة';
+    final title = data['title'] ?? 'باقة'.tr;
     final color = isGems ? const Color(0xFF38BDF8) : const Color(0xFFFFD54F);
 
     return ClipRRect(
@@ -669,7 +670,7 @@ class _StoreScreenState extends State<StoreScreen>
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10)),
                     ),
-                    child: const Text('شراء',
+                    child: Text('شراء'.tr,
                         style: TextStyle(
                             fontWeight: FontWeight.w900, fontSize: 12)),
                   ),
@@ -686,7 +687,7 @@ class _StoreScreenState extends State<StoreScreen>
   Future<void> _buyPack(String packId, Map<String, dynamic> data) async {
     final user = AuthService().currentUser;
     if (user == null) {
-      TopNotification.show(context, 'سجّل الدخول أولاً لشراء الباقات',
+      TopNotification.show(context, 'سجّل الدخول أولاً لشراء الباقات'.tr,
           icon: Icons.warning_rounded);
       return;
     }
@@ -699,7 +700,7 @@ class _StoreScreenState extends State<StoreScreen>
         'username': user.username,
         'displayName': user.displayName,
         'packId': packId,
-        'packTitle': data['title'] ?? 'باقة',
+        'packTitle': data['title'] ?? 'باقة'.tr,
         'type': data['type'] ?? 'chips',
         'amount': data['amount'] ?? 0,
         'priceUsd': data['priceUsd'] ?? 0,
@@ -709,12 +710,12 @@ class _StoreScreenState extends State<StoreScreen>
       if (mounted) {
         TopNotification.show(
           context,
-          'تم إرسال طلب الشراء ✅ سيُضاف رصيدك بعد تأكيد الدفع من الإدارة',
+          'تم إرسال طلب الشراء ✅ سيُضاف رصيدك بعد تأكيد الدفع من الإدارة'.tr,
         );
       }
     } catch (e) {
       if (mounted) {
-        TopNotification.show(context, 'تعذر إرسال الطلب: $e',
+        TopNotification.show(context, 'تعذر إرسال الطلب: {}'.trp([e]),
             icon: Icons.warning_rounded);
       }
     } finally {
