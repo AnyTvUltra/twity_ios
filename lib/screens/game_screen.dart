@@ -13,6 +13,7 @@ import 'backgammon_game_screen.dart';
 import '../games/snake/snake_screen.dart';
 import '../games/ludo/ludo_screen.dart';
 import '../games/domino/domino_screen.dart';
+import '../games/solitaire/solitaire_screen.dart';
 import '../l10n/app_lang.dart';
 
 class GameScreen extends StatefulWidget {
@@ -406,6 +407,15 @@ class _GameScreenState extends State<GameScreen> {
                               MaterialPageRoute(
                                   builder: (_) => DominoGameScreen(
                                         vsAI: _selectedMode != 1,
+                                        bet: _selectedMode == 1
+                                            ? 0
+                                            : _selectedBet,
+                                      )),
+                            );
+                          } else if (widget.gameId == 'solitaire') {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                  builder: (_) => SolitaireGameScreen(
                                         bet: _selectedMode == 1
                                             ? 0
                                             : _selectedBet,
