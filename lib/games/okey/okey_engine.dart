@@ -86,44 +86,71 @@ class OkeyEngine extends ChangeNotifier {
     final indicatorIndex = allTiles.indexWhere((t) => !t.isFalseJoker);
     indicatorTile = allTiles.removeAt(indicatorIndex);
 
-    // الأوكي الحقيقي بنفس لون المؤشر: التالي له (13←1) في التركي/أربيل،
-    // والسابق له (1←13) في قانون سليمانية
-    final okeyValue = rules.jokerBelowIndicator
-        ? (indicatorTile.value == 1 ? 13 : indicatorTile.value - 1)
-        : (indicatorTile.value == 13 ? 1 : indicatorTile.value + 1);
-    realOkeySample = OkeyTile(
-      id: 'sample_okey',
-      color: indicatorTile.color,
-      value: okeyValue,
-      isRealOkey: true,
-    );
+    if (rules.isRummy) {
+      // رامي: لا أوكي بالأرقام ولا مؤشر وظيفي — ورقتا الجوكر بريّتان
+      // (isRealOkey=true تجعلهما يمثلان أي ورقة في كل عمليات التحقق)
+      realOkeySample = OkeyTile(
+        id: 'sample_joker',
+        color: indicatorTile.color,
+        value: 0,
+        isFalseJoker: true,
+        isRealOkey: true,
+      );
+      fakeJokerAssigned = realOkeySample;
+      allTiles.add(OkeyTile(
+        id: 'fake_1',
+        color: indicatorTile.color,
+        value: 0,
+        isFalseJoker: true,
+        isRealOkey: true,
+      ));
+      allTiles.add(OkeyTile(
+        id: 'fake_2',
+        color: indicatorTile.color,
+        value: 0,
+        isFalseJoker: true,
+        isRealOkey: true,
+      ));
+    } else {
+      // الأوكي الحقيقي بنفس لون المؤشر: التالي له (13←1) في التركي/أربيل،
+      // والسابق له (1←13) في قانون سليمانية
+      final okeyValue = rules.jokerBelowIndicator
+          ? (indicatorTile.value == 1 ? 13 : indicatorTile.value - 1)
+          : (indicatorTile.value == 13 ? 1 : indicatorTile.value + 1);
+      realOkeySample = OkeyTile(
+        id: 'sample_okey',
+        color: indicatorTile.color,
+        value: okeyValue,
+        isRealOkey: true,
+      );
 
-    // 2 False Jokers (Sahte Okey) take the exact identity of the real Okey
-    fakeJokerAssigned = OkeyTile(
-      id: 'fake_1',
-      color: indicatorTile.color,
-      value: okeyValue,
-      isFalseJoker: true,
-    );
-    allTiles.add(OkeyTile(
-      id: 'fake_1',
-      color: indicatorTile.color,
-      value: okeyValue,
-      isFalseJoker: true,
-    ));
-    allTiles.add(OkeyTile(
-      id: 'fake_2',
-      color: indicatorTile.color,
-      value: okeyValue,
-      isFalseJoker: true,
-    ));
+      // 2 False Jokers (Sahte Okey) take the exact identity of the real Okey
+      fakeJokerAssigned = OkeyTile(
+        id: 'fake_1',
+        color: indicatorTile.color,
+        value: okeyValue,
+        isFalseJoker: true,
+      );
+      allTiles.add(OkeyTile(
+        id: 'fake_1',
+        color: indicatorTile.color,
+        value: okeyValue,
+        isFalseJoker: true,
+      ));
+      allTiles.add(OkeyTile(
+        id: 'fake_2',
+        color: indicatorTile.color,
+        value: okeyValue,
+        isFalseJoker: true,
+      ));
 
-    // Mark the real Okey tiles in the deck
-    for (int i = 0; i < allTiles.length; i++) {
-      if (!allTiles[i].isFalseJoker &&
-          allTiles[i].color == indicatorTile.color &&
-          allTiles[i].value == okeyValue) {
-        allTiles[i].isRealOkey = true;
+      // Mark the real Okey tiles in the deck
+      for (int i = 0; i < allTiles.length; i++) {
+        if (!allTiles[i].isFalseJoker &&
+            allTiles[i].color == indicatorTile.color &&
+            allTiles[i].value == okeyValue) {
+          allTiles[i].isRealOkey = true;
+        }
       }
     }
 
@@ -181,10 +208,15 @@ class OkeyEngine extends ChangeNotifier {
     // Discard piles
     discardPiles = List.generate(4, (_) => <OkeyTile>[]);
     tableMelds = <OkeyGroup>[];
+    if (rules.isRummy) {
+      // رامي: الورقة المكشوفة الأولى (الـ Upcard) في كومة رمي اليسار —
+      // يستطيع البشري أخذها في دوره الأول بدل السحب من الرزمة
+      discardPiles[3].add(indicatorTile);
+    }
 
-    // 4. Deal: Starter (Player 0) gets 15 tiles, others get 14 tiles
+    // 4. Deal: Okey starter gets 15, others 14 — Rummy deals 14 to everyone
     for (int i = 0; i < 4; i++) {
-      final count = (i == 0) ? 15 : 14;
+      final count = rules.isRummy ? 14 : ((i == 0) ? 15 : 14);
       final dealt = allTiles.sublist(0, count);
       allTiles.removeRange(0, count);
 
@@ -195,7 +227,10 @@ class OkeyEngine extends ChangeNotifier {
 
     drawDeck = allTiles;
     currentTurnIndex = 0; // Human starts
-    turnPhase = OkeyTurnPhase.awaitingDiscard; // Has 15 tiles, must discard 1
+    // رامي: يد متساوية (14) فيبدأ الدور بالسحب — أوكي: البادئ بـ15 فيرمي أولاً
+    turnPhase = rules.isRummy
+        ? OkeyTurnPhase.awaitingDraw
+        : OkeyTurnPhase.awaitingDiscard;
     gameState = OkeyGameState.yourTurn;
     selectedTileIndex = null;
 
@@ -514,6 +549,7 @@ class OkeyEngine extends ChangeNotifier {
 
   /// هل يستطيع اللاعب البشري إعلان أسلوب (قبل أي نزول على الطاولة)؟
   bool get canDeclarePlayStyle =>
+      !rules.isRummy &&
       players[0].playStyle == OkeyPlayStyle.normal &&
       !players[0].hasOpened &&
       !tableMelds.any((m) => m.ownerIndex == 0);
@@ -533,6 +569,7 @@ class OkeyEngine extends ChangeNotifier {
   bool get humanCanLayMelds => players[0].playStyle == OkeyPlayStyle.normal;
 
   void _convertToKonkanIfNormal(int idx) {
+    if (rules.isRummy) return; // في رامي أخذ المرميات طبيعي — لا تحويل أسلوب
     final p = players[idx];
     if (p.playStyle != OkeyPlayStyle.normal) return;
     p.playStyle = OkeyPlayStyle.konkan;
@@ -1202,7 +1239,9 @@ class OkeyEngine extends ChangeNotifier {
         for (final m in tableMelds.where((m) => m.ownerIndex == 0)) {
           m.pending = false;
         }
-        onNotice?.call('🎉 فتحت اللعب بـ {} نقطة!'.trp([total]));
+        onNotice?.call(rules.isRummy
+            ? '✨ أنزلت بيراتك على الطاولة!'.tr
+            : '🎉 فتحت اللعب بـ {} نقطة!'.trp([total]));
       }
     }
 
@@ -1443,7 +1482,9 @@ class OkeyEngine extends ChangeNotifier {
         for (final m in tableMelds.where((m) => m.ownerIndex == 0)) {
           m.pending = false;
         }
-        onNotice?.call('🎉 فتحت اللعب بـ {} نقطة!'.trp([total]));
+        onNotice?.call(rules.isRummy
+            ? '✨ أنزلت بيراتك على الطاولة!'.tr
+            : '🎉 فتحت اللعب بـ {} نقطة!'.trp([total]));
       } else {
         onNotice?.call(
             'مجموعتك {} نقطة — المجموع {}/{}. أنزل المزيد قبل الرمي وإلا ستُعاد الأحجار'

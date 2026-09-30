@@ -6,6 +6,10 @@ import '../../../widgets/skin_image.dart';
 
 /// مكون حجر الأوكي ثلاثي الأبعاد - مطابق تماماً لأحجار الصورة المرجعية
 class OkeyTileWidget extends StatelessWidget {
+  /// وضع الورق (رامي): كل حجر يُرسم كورقة لعب بشعار ورتبة بدل حجر الأوكي.
+  /// تضبطه شاشة رامي عند الفتح وتصفّره عند الإغلاق.
+  static bool cardMode = false;
+
   final OkeyTile? tile;
   final bool isSelected;
   final bool isDragging;
@@ -49,6 +53,7 @@ class OkeyTileWidget extends StatelessWidget {
     }
 
     final t = tile!;
+    if (cardMode) return _buildCard(t);
     final isOkey = t.isRealOkey;
     final isFake = t.isFalseJoker;
     final skinItem =
@@ -266,5 +271,219 @@ class OkeyTileWidget extends StatelessWidget {
       return GestureDetector(onTap: onTap, child: tileWidget);
     }
     return tileWidget;
+  }
+
+  // ─────────────────────────────────────────────────────────
+  //  وضع الورق (رامي): نفس الحجر يُرسم كورقة لعب حقيقية
+  // ─────────────────────────────────────────────────────────
+
+  /// شعار الورقة: لون الحجر = شكل الورقة (أحمر♥ أصفر♦ أزرق♠ أسود♣)
+  static String suitOf(OkeyTileColor c) {
+    switch (c) {
+      case OkeyTileColor.red:
+        return '♥';
+      case OkeyTileColor.yellow:
+        return '♦';
+      case OkeyTileColor.blue:
+        return '♠';
+      case OkeyTileColor.black:
+        return '♣';
+    }
+  }
+
+  /// حبر الورقة: القلوب والديناري حمراء، السباتي والبستوني سوداء
+  static Color suitInkOf(OkeyTileColor c) =>
+      (c == OkeyTileColor.red || c == OkeyTileColor.yellow)
+          ? const Color(0xFFCE1B2B)
+          : const Color(0xFF1F2430);
+
+  /// رتبة الورقة: 1=A و11=J و12=Q و13=K
+  static String rankOf(int v) => switch (v) {
+        1 => 'A',
+        11 => 'J',
+        12 => 'Q',
+        13 => 'K',
+        _ => '$v',
+      };
+
+  Widget _buildCard(OkeyTile t) {
+    final isJoker = t.isFalseJoker;
+    final ink = suitInkOf(t.color);
+    final suit = suitOf(t.color);
+    final rank = rankOf(t.value);
+
+    Widget face = Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFFFFFFF), Color(0xFFFBF9F2), Color(0xFFEFEADB)],
+        ),
+        borderRadius: BorderRadius.circular(width * 0.14),
+        border: Border.all(
+          color: isSelected
+              ? const Color(0xFFFFD54F)
+              : isDragging
+                  ? const Color(0xFF60A5FA)
+                  : isHighlighted
+                      ? const Color(0xFF10B981)
+                      : isJoker
+                          ? const Color(0xFFE11D48)
+                          : const Color(0xFFB9B2A0),
+          width:
+              isSelected ? 2.0 : (isHighlighted ? 1.6 : (isJoker ? 1.3 : 0.8)),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isSelected
+                ? const Color(0xFFFFD54F).withOpacity(0.55)
+                : isDragging
+                    ? const Color(0xFF3B82F6).withOpacity(0.5)
+                    : (isHighlighted
+                        ? const Color(0xFF10B981).withOpacity(0.5)
+                        : Colors.black.withOpacity(0.35)),
+            blurRadius:
+                isSelected ? 8 : (isDragging ? 10 : (isHighlighted ? 6 : 3)),
+            offset: Offset(0, isSelected ? 4 : (isDragging ? 5 : 1.5)),
+          ),
+        ],
+      ),
+      child: isJoker ? _jokerFace() : _cardFace(rank, suit, ink),
+    );
+
+    face = AnimatedContainer(
+      duration: const Duration(milliseconds: 140),
+      curve: Curves.easeOutCubic,
+      transform: Matrix4.translationValues(0, isSelected ? -7 : 0, 0),
+      margin: const EdgeInsets.symmetric(horizontal: 1.0),
+      child: face,
+    );
+
+    if (onTap != null) {
+      return GestureDetector(onTap: onTap, child: face);
+    }
+    return face;
+  }
+
+  /// وجه ورقة عادية: رتبة+شعار في الزاوية العلوية وشعار كبير بالوسط
+  Widget _cardFace(String rank, String suit, Color ink) {
+    return Stack(
+      children: [
+        // ركن علوي يسار: الرتبة فوق الشعار المصغّر
+        Positioned(
+          top: height * 0.045,
+          left: width * 0.08,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                rank,
+                style: TextStyle(
+                  fontSize: width * 0.30,
+                  fontWeight: FontWeight.w900,
+                  color: ink,
+                  height: 1.0,
+                ),
+              ),
+              Text(
+                suit,
+                style: TextStyle(
+                  fontSize: width * 0.26,
+                  color: ink,
+                  height: 1.0,
+                ),
+              ),
+            ],
+          ),
+        ),
+        // شعار كبير بالوسط
+        Center(
+          child: Padding(
+            padding: EdgeInsets.only(top: height * 0.16),
+            child: Text(
+              suit,
+              style: TextStyle(
+                fontSize: width * 0.52,
+                color: ink.withOpacity(0.92),
+                height: 1.0,
+              ),
+            ),
+          ),
+        ),
+        // لمعة علوية خفيفة
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          height: height * 0.3,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius:
+                  BorderRadius.vertical(top: Radius.circular(width * 0.14)),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.white.withOpacity(0.55),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// وجه الجوكر: شريط JOKER عمودي + نجمة
+  Widget _jokerFace() {
+    return Stack(
+      children: [
+        Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'J',
+                style: TextStyle(
+                  fontSize: width * 0.24,
+                  fontWeight: FontWeight.w900,
+                  color: const Color(0xFFE11D48),
+                  height: 1.05,
+                ),
+              ),
+              Text(
+                'O',
+                style: TextStyle(
+                  fontSize: width * 0.24,
+                  fontWeight: FontWeight.w900,
+                  color: const Color(0xFFE11D48),
+                  height: 1.05,
+                ),
+              ),
+              Text(
+                'K',
+                style: TextStyle(
+                  fontSize: width * 0.24,
+                  fontWeight: FontWeight.w900,
+                  color: const Color(0xFFE11D48),
+                  height: 1.05,
+                ),
+              ),
+              Text(
+                '★',
+                style: TextStyle(
+                  fontSize: width * 0.22,
+                  color: const Color(0xFFF59E0B),
+                  height: 1.1,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }

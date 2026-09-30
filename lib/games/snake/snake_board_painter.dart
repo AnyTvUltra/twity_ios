@@ -5,13 +5,12 @@ import 'package:flutter/material.dart';
 
 import 'snake_engine.dart';
 
-/// هندسة لوحة الحية والدرج + الرسّام — الإطار الخشبي، اللباد الأخضر،
-/// الخلايا المتعرجة، الدرجات الخشبية، والحيات بجسم S متدرّج.
-/// يصدّر cellCenter/snakePoint لتحريك الأحجار على نفس الهندسة.
+/// هندسة لوحة الحية والدرج — نفس الإحداثيات السابقة حتى يبقى
+/// توافق الأنيميشن (cellCenter / snakePoint / homeSpot) كما هو.
 class SnakeBoard {
   SnakeBoard._();
 
-  /// سمك الإطار الخشبي حول الشبكة
+  /// سمك الإطار حول الشبكة
   static double frame(Size size) => size.width * 0.045;
 
   /// مستطيل الشبكة الداخلية (10×10)
@@ -25,7 +24,7 @@ class SnakeBoard {
     final g = gridRect(size);
     final cw = g.width / 10;
     final idx = cell.clamp(1, 100) - 1;
-    final row = idx ~/ 10; // 0 = الصف السفلي
+    final row = idx ~/ 10;
     final i = idx % 10;
     final col = row.isEven ? i : 9 - i;
     return Offset(
@@ -51,7 +50,6 @@ class SnakeBoard {
     final len = dir.distance;
     if (len == 0) return Path()..moveTo(a.dx, a.dy);
     final perp = Offset(-dir.dy, dir.dx) / len;
-    // اتجاه الالتواء ثابت لكل حية (من رقم الرأس) لتنويع الأشكال
     final bend =
         (head.isEven ? 1.0 : -1.0) * (gridRect(size).width / 10) * 1.15;
     return Path()
@@ -74,241 +72,261 @@ class SnakeBoard {
   }
 }
 
-/// رسّام اللوحة الكاملة (ثابتة — الأحجار تُرسم كويدجتز فوقها)
+/// رسّام اللوحة الكرتونية — نمط ملوّن مرح:
+/// إطار مخملي ملوّن، خانات باستيل مدوّرة بأرقام عريضة،
+/// درجات مخططة بألوان الحلوى، وحيات سمينة بعيون كبيرة ضاحكة.
 class SnakeBoardPainter extends CustomPainter {
   const SnakeBoardPainter();
 
-  static const _frameDark = Color(0xFF2A170B);
-  static const _frameMid = Color(0xFF4A2E17);
-  static const _frameLight = Color(0xFF6B4527);
-  static const _feltDark = Color(0xFF1C3A12);
-  static const _feltLight = Color(0xFF3F7031);
-  static const _cellLight = Color(0xFFF0E2B6);
-  static const _cellDark = Color(0xFF2E5620);
-  static const _ladderWood = Color(0xFFCF9B62);
-  static const _ladderEdge = Color(0xFF6B4226);
-
-  // لوحات ألوان الحيات — أخضر زمردي، برتقالي ناري، بنفسجي ملكي، فيروزي
+  // لوحات الحيات الكرتونية — [الجسم، الغامق، لون البقع]
   static const _snakePalettes = [
-    [Color(0xFF84CC16), Color(0xFF166534)],
-    [Color(0xFFFB923C), Color(0xFF9A3412)],
-    [Color(0xFFA78BFA), Color(0xFF5B21B6)],
-    [Color(0xFF2DD4BF), Color(0xFF115E59)],
+    [Color(0xFF66BB33), Color(0xFF2E7D18), Color(0xFFD8F5B0)], // أخضر نعناعي
+    [Color(0xFFFF7043), Color(0xFFC63F17), Color(0xFFFFE0B2)], // برتقالي فاقع
+    [Color(0xFFAB47BC), Color(0xFF6A1B9A), Color(0xFFF3E5F5)], // بنفسجي مرح
+    [Color(0xFF26C6DA), Color(0xFF00838F), Color(0xFFB2EBF2)], // فيروزي
+    [Color(0xFFEC407A), Color(0xFFAD1457), Color(0xFFFCE4EC)], // وردي
+  ];
+
+  // ألوان الدرجات الكرتونية — كل درج بلونين مخططين
+  static const _ladderPalettes = [
+    [Color(0xFFFFB300), Color(0xFFFF6F00)], // برتقالي
+    [Color(0xFF42A5F5), Color(0xFF1565C0)], // أزرق
+    [Color(0xFFEC407A), Color(0xFFC2185B)], // وردي
+    [Color(0xFF66BB6A), Color(0xFF2E7D32)], // أخضر
+  ];
+
+  // ألوان الخانات الباستيلية المتعاقبة (أربعة ألوان تتكرر)
+  static const _cellPalette = [
+    Color(0xFFFDEBC8), // كريمي دافئ
+    Color(0xFFCDE7FF), // أزرق سماوي فاتح
+    Color(0xFFD5F5D0), // أخضر نعناعي
+    Color(0xFFFFD9E8), // وردي فاتح
   ];
 
   @override
   void paint(Canvas canvas, Size size) {
     _paintFrame(canvas, size);
-    _paintFeltAndCells(canvas, size);
+    _paintCells(canvas, size);
     _paintLadders(canvas, size);
     _paintSnakes(canvas, size);
-    _paintVignette(canvas, size);
+    _paintConfetti(canvas, size);
   }
 
-  // ── الإطار الخشبي الفخم ──
+  // ── إطار كرتوني سميك بلونين ──
   void _paintFrame(Canvas canvas, Size size) {
     final frameRect = Rect.fromLTWH(0, 0, size.width, size.height);
-    final rrect = RRect.fromRectAndRadius(frameRect, const Radius.circular(18));
+    final rrect = RRect.fromRectAndRadius(frameRect, const Radius.circular(24));
 
-    final framePaint = Paint()
-      ..shader = const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [_frameLight, _frameMid, _frameDark],
-        stops: [0.0, 0.45, 1.0],
-      ).createShader(frameRect);
-    canvas.drawRRect(rrect, framePaint);
-
-    // لمعة علوية خفيفة على الخشب
-    final sheen = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          Colors.white.withOpacity(0.16),
-          Colors.transparent,
-        ],
-        stops: const [0.0, 0.18],
-      ).createShader(frameRect);
-    canvas.drawRRect(rrect, sheen);
-
-    // خط ذهبي داخلي رفيع يفصل الإطار عن اللباد
-    final f = SnakeBoard.frame(size);
-    final inner = RRect.fromRectAndRadius(
-      Rect.fromLTWH(
-          f - 2, f - 2, size.width - f * 2 + 4, size.height - f * 2 + 4),
-      const Radius.circular(10),
-    );
+    // إطار متدرّج فيروزي→بنفسجي (مثل ألعاب الكرتون)
     canvas.drawRRect(
-      inner,
+      rrect,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF7C4DFF), Color(0xFF448AFF), Color(0xFF00BFA5)],
+        ).createShader(frameRect),
+    );
+
+    // حد أبيض لامع داخلي يعطي إحساس "اللعبة المصنوعة"
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(frameRect.deflate(3), const Radius.circular(21)),
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.6
-        ..color = const Color(0xAAE8C872),
+        ..strokeWidth = 2.4
+        ..color = Colors.white.withOpacity(0.55),
+    );
+
+    // لمعة علوية خفيفة
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Colors.white.withOpacity(0.22), Colors.transparent],
+          stops: const [0.0, 0.14],
+        ).createShader(frameRect),
     );
   }
 
-  // ── اللباد الأخضر + الخلايا المتعرجة + الأرقام ──
-  void _paintFeltAndCells(Canvas canvas, Size size) {
+  // ── الخلايا: مربعات باستيل مدوّرة بأرقام عريضة ──
+  void _paintCells(Canvas canvas, Size size) {
     final g = SnakeBoard.gridRect(size);
-    final feltRect = RRect.fromRectAndRadius(g, const Radius.circular(8));
-    canvas.save();
-    canvas.clipRRect(feltRect);
-
-    final felt = Paint()
-      ..shader = RadialGradient(
-        center: const Alignment(0, -0.2),
-        radius: 1.1,
-        colors: const [_feltLight, _feltDark],
-      ).createShader(g);
-    canvas.drawRect(g, felt);
-
     final cw = g.width / 10;
-    final numStyle = TextStyle(
-      fontSize: cw * 0.24,
-      fontWeight: FontWeight.w800,
+
+    // خلفية الشبكة: بيضاء حليبية
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(g, const Radius.circular(14)),
+      Paint()..color = const Color(0xFFFFFDF7),
+    );
+
+    final numPaint = TextStyle(
+      fontSize: cw * 0.30,
+      fontWeight: FontWeight.w900,
       height: 1,
+      letterSpacing: -0.5,
     );
 
     for (var cell = 1; cell <= 100; cell++) {
       final c = SnakeBoard.cellCenter(size, cell);
-      final rect = Rect.fromCenter(center: c, width: cw, height: cw);
       final idx = cell - 1;
       final row = idx ~/ 10;
       final col = row.isEven ? idx % 10 : 9 - (idx % 10);
-      final light = (row + col).isEven;
+      final cellColor = _cellPalette[(row + col) % _cellPalette.length];
 
-      // خانات متناوبة: بردي فاتح / أخضر داكن بشفافية
-      canvas.drawRect(
-        rect.deflate(0.6),
-        Paint()
-          ..color = light
-              ? _cellLight.withOpacity(0.92)
-              : _cellDark.withOpacity(0.55),
+      final rect =
+          Rect.fromCenter(center: c, width: cw, height: cw).deflate(cw * 0.055);
+      final rr = RRect.fromRectAndRadius(rect, Radius.circular(cw * 0.16));
+
+      // ظل داخلي خفيف + لون الخانة
+      canvas.drawRRect(
+        rr.shift(const Offset(0, 1.2)),
+        Paint()..color = Colors.black.withOpacity(0.10),
+      );
+      canvas.drawRRect(rr, Paint()..color = cellColor);
+
+      // لمعة صغيرة أعلى الخانة
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(rect.left, rect.top, rect.width, rect.height * 0.45),
+          Radius.circular(cw * 0.16),
+        ),
+        Paint()..color = Colors.white.withOpacity(0.35),
       );
 
-      // رقم الخانة في الزاوية
+      // الرقم — عريض وغامق مقروء
       final tp = TextPainter(
         text: TextSpan(
           text: '$cell',
-          style: numStyle.copyWith(
-            color: light ? const Color(0xFF5A4A22) : const Color(0xCCF5E9C9),
-          ),
+          style: numPaint.copyWith(color: const Color(0xFF4A3B2A)),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      tp.paint(canvas, Offset(rect.left + cw * 0.08, rect.top + cw * 0.06));
+      tp.paint(
+          canvas, Offset(c.dx - tp.width / 2, rect.top + rect.height * 0.10));
 
-      // خانة النهاية 100: نجمة ذهبية متوهجة
+      // خانة البداية: دائرة انطلاق خضراء مرحة
+      if (cell == 1) {
+        canvas.drawCircle(
+          c + Offset(0, cw * 0.14),
+          cw * 0.20,
+          Paint()..color = const Color(0xFF8BC34A),
+        );
+        canvas.drawCircle(
+          c + Offset(0, cw * 0.14),
+          cw * 0.20,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.6
+            ..color = Colors.white,
+        );
+        final go = TextPainter(
+          text: TextSpan(
+            text: 'GO',
+            style: TextStyle(
+                fontSize: cw * 0.20,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+                height: 1),
+          ),
+          textDirection: TextDirection.ltr,
+        )..layout();
+        go.paint(canvas, c + Offset(-go.width / 2, cw * 0.14 - go.height / 2));
+      }
+
+      // خانة النهاية: تاج ذهبي متوهج
       if (cell == 100) {
         final glow = Paint()
-          ..color = const Color(0xFFFFD54F).withOpacity(0.45)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
-        canvas.drawCircle(c, cw * 0.42, glow);
-        _drawStar(canvas, c, cw * 0.3, const Color(0xFFFFD54F));
-      }
-      // خانة البداية: سهم انطلاق أخضر
-      if (cell == 1) {
-        _drawStartFlag(canvas, rect, cw);
+          ..color = const Color(0xFFFFC107).withOpacity(0.55)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 9);
+        canvas.drawCircle(c + Offset(0, cw * 0.10), cw * 0.34, glow);
+        _drawCrown(canvas, c + Offset(0, cw * 0.08), cw * 0.46);
       }
     }
-
-    canvas.restore();
   }
 
-  void _drawStar(Canvas canvas, Offset c, double r, Color color) {
-    final path = Path();
-    for (var i = 0; i < 10; i++) {
-      final rad = i.isEven ? r : r * 0.45;
-      final a = -math.pi / 2 + i * math.pi / 5;
-      final p = c + Offset(math.cos(a) * rad, math.sin(a) * rad);
-      i == 0 ? path.moveTo(p.dx, p.dy) : path.lineTo(p.dx, p.dy);
-    }
-    path.close();
-    canvas.drawPath(path, Paint()..color = color);
+  /// تاج ذهبي كرتوني على خانة 100
+  void _drawCrown(Canvas canvas, Offset c, double w) {
+    final h = w * 0.62;
+    final path = Path()
+      ..moveTo(c.dx - w / 2, c.dy + h / 2)
+      ..lineTo(c.dx - w / 2, c.dy - h * 0.10)
+      ..lineTo(c.dx - w * 0.25, c.dy + h * 0.12)
+      ..lineTo(c.dx, c.dy - h / 2)
+      ..lineTo(c.dx + w * 0.25, c.dy + h * 0.12)
+      ..lineTo(c.dx + w / 2, c.dy - h * 0.10)
+      ..lineTo(c.dx + w / 2, c.dy + h / 2)
+      ..close();
+    canvas.drawPath(path, Paint()..color = const Color(0xFFFFC107));
     canvas.drawPath(
       path,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1
-        ..color = const Color(0xFF8D6E00),
+        ..strokeWidth = 1.4
+        ..color = const Color(0xFF9A6A00),
     );
+    // جواهر التاج
+    for (final dx in [-w * 0.26, 0.0, w * 0.26]) {
+      canvas.drawCircle(Offset(c.dx + dx, c.dy + h * 0.28), w * 0.06,
+          Paint()..color = const Color(0xFFE91E63));
+    }
   }
 
-  void _drawStartFlag(Canvas canvas, Rect rect, double cw) {
-    final c = rect.center;
-    final paint = Paint()..color = const Color(0xFF7CB342);
-    final path = Path()
-      ..moveTo(c.dx - cw * 0.22, c.dy + cw * 0.18)
-      ..lineTo(c.dx - cw * 0.22, c.dy - cw * 0.22)
-      ..lineTo(c.dx + cw * 0.20, c.dy - cw * 0.10)
-      ..lineTo(c.dx - cw * 0.22, c.dy + cw * 0.02)
-      ..close();
-    canvas.drawPath(path, paint);
-    canvas.drawLine(
-      Offset(c.dx - cw * 0.22, c.dy - cw * 0.24),
-      Offset(c.dx - cw * 0.22, c.dy + cw * 0.22),
-      Paint()
-        ..color = const Color(0xFF4A3315)
-        ..strokeWidth = 1.6,
-    );
-  }
-
-  // ── الدرجات الخشبية ──
+  // ── الدرجات: سكتان سمينتان مدورتان + درجات مخططة بألوان الحلوى ──
   void _paintLadders(Canvas canvas, Size size) {
     final cw = SnakeBoard.gridRect(size).width / 10;
+    var li = 0;
     for (final entry in SnakeEngine.ladders.entries) {
+      final pal = _ladderPalettes[li++ % _ladderPalettes.length];
       final a = SnakeBoard.cellCenter(size, entry.key);
       final b = SnakeBoard.cellCenter(size, entry.value);
       final dir = b - a;
       final len = dir.distance;
       if (len == 0) continue;
       final unit = dir / len;
-      final perp = Offset(-unit.dy, unit.dx) * cw * 0.20;
+      final perp = Offset(-unit.dy, unit.dx) * cw * 0.24;
 
-      // ظل خفيف تحت الدرج
+      // ظل كرتوني خفيف
       final shadow = Paint()
-        ..color = Colors.black.withOpacity(0.30)
+        ..color = Colors.black.withOpacity(0.18)
+        ..strokeWidth = cw * 0.13
+        ..strokeCap = StrokeCap.round;
+      canvas.drawLine(a + perp + const Offset(2, 2.5),
+          b + perp + const Offset(2, 2.5), shadow);
+      canvas.drawLine(a - perp + const Offset(2, 2.5),
+          b - perp + const Offset(2, 2.5), shadow);
+
+      // القضيبان — سمينان مدوران بلون الحلوى
+      final rail = Paint()
         ..strokeWidth = cw * 0.16
         ..strokeCap = StrokeCap.round;
-      canvas.drawLine(a + perp + const Offset(1.5, 2),
-          b + perp + const Offset(1.5, 2), shadow);
-      canvas.drawLine(a - perp + const Offset(1.5, 2),
-          b - perp + const Offset(1.5, 2), shadow);
-
-      // القضيبان
-      final rail = Paint()
-        ..color = _ladderEdge
-        ..strokeWidth = cw * 0.15
-        ..strokeCap = StrokeCap.round;
-      canvas.drawLine(a + perp, b + perp, rail);
+      canvas.drawLine(a + perp, b + perp, rail..color = pal[1]);
       canvas.drawLine(a - perp, b - perp, rail);
-      final railTop = Paint()
-        ..color = _ladderWood
-        ..strokeWidth = cw * 0.10
-        ..strokeCap = StrokeCap.round;
-      canvas.drawLine(a + perp, b + perp, railTop);
-      canvas.drawLine(a - perp, b - perp, railTop);
+      // لمعة القضبان
+      final railHi = Paint()
+        ..strokeWidth = cw * 0.06
+        ..strokeCap = StrokeCap.round
+        ..color = Colors.white.withOpacity(0.45);
+      canvas.drawLine(a + perp - unit * cw * 0.02 + const Offset(-1, -1),
+          b + perp + const Offset(-1, -1), railHi);
+      canvas.drawLine(a - perp - unit * cw * 0.02 + const Offset(-1, -1),
+          b - perp + const Offset(-1, -1), railHi);
 
-      // الدرجات الأفقية
-      final rungCount = math.max(2, (len / (cw * 0.62)).floor());
-      final rung = Paint()
-        ..color = _ladderWood
-        ..strokeWidth = cw * 0.09
-        ..strokeCap = StrokeCap.round;
-      final rungEdge = Paint()
-        ..color = _ladderEdge.withOpacity(0.8)
-        ..strokeWidth = cw * 0.12
-        ..strokeCap = StrokeCap.round;
+      // الدرجات — مخططة بالتناوب بين لوني الحلوى
+      final rungCount = math.max(2, (len / (cw * 0.58)).floor());
       for (var i = 1; i < rungCount; i++) {
         final c = a + unit * (len * i / rungCount);
-        canvas.drawLine(c - perp, c + perp, rungEdge);
-        canvas.drawLine(c - perp * 0.85, c + perp * 0.85, rung);
+        final rp = Paint()
+          ..color = i.isOdd ? pal[0] : Colors.white.withOpacity(0.95)
+          ..strokeWidth = cw * 0.115
+          ..strokeCap = StrokeCap.round;
+        canvas.drawLine(c - perp * 0.9, c + perp * 0.9, rp);
       }
     }
   }
 
-  // ── الحيات: جسم S متدرّج مرسوم كدوائر متناقصة على المسار ──
+  // ── الحيات الكرتونية: جسم سمين منقط + رأس ضخم بعيون واسعة وابتسامة ──
   void _paintSnakes(Canvas canvas, Size size) {
     final cw = SnakeBoard.gridRect(size).width / 10;
     var i = 0;
@@ -316,108 +334,144 @@ class SnakeBoardPainter extends CustomPainter {
       final palette = _snakePalettes[i++ % _snakePalettes.length];
       final head = entry.key;
       final tail = entry.value;
-      final path = SnakeBoard.snakePath(size, head, tail);
-      final metric = path.computeMetrics().first;
+      final metric =
+          SnakeBoard.snakePath(size, head, tail).computeMetrics().first;
       final headC = SnakeBoard.cellCenter(size, head);
 
-      // ظل الجسم
-      _drawSnakeBody(canvas, metric, cw,
-          dark: Colors.black.withOpacity(0.32),
-          light: Colors.transparent,
-          radiusMul: 1.06,
-          offset: const Offset(2, 3));
+      // ظل الجسم أولاً
+      _drawBody(canvas, metric, cw, Colors.black.withOpacity(0.22),
+          radiusMul: 1.10, offset: const Offset(2, 3.5), spots: null);
+      // الجسم بلون الحية + بقع فاتحة
+      _drawBody(canvas, metric, cw, palette[0], spots: palette[2]);
+      // لمسة حافة أغمق أسفل الجسم
+      _drawBody(canvas, metric, cw, palette[1].withOpacity(0.35),
+          radiusMul: 0.55, offset: const Offset(0, 1.5), spots: null);
 
-      // جسم متدرج اللون (فاتح على الظهر، داكن على الأطراف عبر طبقتين)
-      _drawSnakeBody(canvas, metric, cw, dark: palette[1], light: palette[0]);
-
-      // الرأس: دائرة أكبر + عينان + لسان مفترق
-      _drawSnakeHead(canvas, headC, metric, cw, palette);
+      // الرأس الكرتوني الكبير
+      _drawCartoonHead(canvas, headC, metric, cw, palette);
     }
   }
 
-  void _drawSnakeBody(Canvas canvas, ui.PathMetric metric, double cw,
-      {required Color dark,
-      required Color light,
-      double radiusMul = 1.0,
-      Offset offset = Offset.zero}) {
-    const samples = 34;
-    final paint = Paint()..color = dark;
-    final belly = Paint()..color = light;
+  void _drawBody(Canvas canvas, ui.PathMetric metric, double cw, Color color,
+      {double radiusMul = 1.0, Offset offset = Offset.zero, Color? spots}) {
+    const samples = 30;
+    final paint = Paint()..color = color;
+    final spotPaint = spots != null ? (Paint()..color = spots) : null;
     for (var s = 0; s <= samples; s++) {
       final t = s / samples;
       final tan = metric.getTangentForOffset(metric.length * t);
       if (tan == null) continue;
       final p = tan.position + offset;
-      // سماكة متناقصة نحو الذيل + نبض خفيف في المنتصف
-      final r =
-          cw * radiusMul * (0.30 - 0.13 * t + 0.05 * math.sin(t * math.pi * 2));
+      // جسم سمين ثابت تقريباً — ينحف قليلاً عند الذيل
+      final r = cw * radiusMul * (0.30 - 0.10 * t);
       canvas.drawCircle(p, r, paint);
-      if (light != Colors.transparent) {
-        // خط بطن فاتح منزاح قليلاً نحو الداخل
-        canvas.drawCircle(
-          p - Offset(0, r * 0.22),
-          r * 0.62,
-          belly..color = light.withOpacity(0.55),
-        );
+      // بقع كرتونية كل بضع نقاط
+      if (spotPaint != null && s % 3 == 1) {
+        canvas.drawCircle(p - Offset(r * 0.15, r * 0.25), r * 0.34, spotPaint);
       }
     }
   }
 
-  void _drawSnakeHead(Canvas canvas, Offset headC, ui.PathMetric metric,
+  void _drawCartoonHead(Canvas canvas, Offset headC, ui.PathMetric metric,
       double cw, List<Color> palette) {
-    // اتجاه الرأس = مماس البداية
     final tan = metric.getTangentForOffset(0);
     final angle = tan == null ? 0.0 : math.atan2(tan.vector.dy, tan.vector.dx);
-    final hr = cw * 0.40;
+    final hr = cw * 0.46; // رأس أكبر من الجسم — طابع كرتوني
 
     canvas.save();
     canvas.translate(headC.dx, headC.dy);
     canvas.rotate(angle);
 
-    // رأس بيضاوي بلون أغمق
-    final headPaint = Paint()..color = palette[1];
+    // رأس مدوّر ضخم
     canvas.drawOval(
-      Rect.fromCenter(center: Offset.zero, width: hr * 2.3, height: hr * 1.7),
-      headPaint,
+      Rect.fromCenter(center: Offset.zero, width: hr * 2.15, height: hr * 1.85),
+      Paint()..color = palette[0],
     );
+    canvas.drawOval(
+      Rect.fromCenter(center: Offset.zero, width: hr * 2.15, height: hr * 1.85),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.4
+        ..color = palette[1],
+    );
+    // خطفة فاتحة أسفل الرأس (خدود)
     canvas.drawOval(
       Rect.fromCenter(
-          center: Offset(-hr * 0.2, 0), width: hr * 1.5, height: hr * 1.2),
-      Paint()..color = palette[0].withOpacity(0.85),
+          center: Offset(-hr * 0.15, hr * 0.42),
+          width: hr * 1.1,
+          height: hr * 0.5),
+      Paint()..color = palette[2].withOpacity(0.7),
     );
 
-    // عينان
-    for (final dy in [-hr * 0.32, hr * 0.32]) {
+    // عينان ضخمتان (ستايل كرتون: بيض كبيرتان + حدقات)
+    for (final dy in [-hr * 0.42, hr * 0.42]) {
       canvas.drawCircle(
-          Offset(hr * 0.15, dy), hr * 0.20, Paint()..color = Colors.white);
-      canvas.drawCircle(Offset(hr * 0.19, dy), hr * 0.10,
-          Paint()..color = const Color(0xFF111111));
+          Offset(hr * 0.28, dy), hr * 0.30, Paint()..color = Colors.white);
+      canvas.drawCircle(Offset(hr * 0.34, dy), hr * 0.155,
+          Paint()..color = const Color(0xFF212121));
+      // لمعان العين
+      canvas.drawCircle(Offset(hr * 0.39, dy - hr * 0.05), hr * 0.055,
+          Paint()..color = Colors.white);
     }
 
-    // لسان مفترق أحمر يسبق الرأس
+    // ابتسامة كرتونية — قوس صغير أمام الرأس
+    final smile = Path()
+      ..moveTo(hr * 0.62, hr * 0.28)
+      ..quadraticBezierTo(hr * 0.95, hr * 0.18, hr * 0.92, -hr * 0.10);
+    canvas.drawPath(
+      smile,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = hr * 0.09
+        ..strokeCap = StrokeCap.round
+        ..color = palette[1],
+    );
+
+    // لسان مفترق أحمر يتدلى
     final tongue = Paint()
-      ..color = const Color(0xFFEF4444)
-      ..strokeWidth = hr * 0.10
+      ..color = const Color(0xFFEF5350)
+      ..strokeWidth = hr * 0.11
       ..strokeCap = StrokeCap.round;
-    canvas.drawLine(Offset(hr * 1.05, 0), Offset(hr * 1.5, 0), tongue);
-    canvas.drawLine(Offset(hr * 1.5, 0), Offset(hr * 1.72, -hr * 0.22), tongue);
-    canvas.drawLine(Offset(hr * 1.5, 0), Offset(hr * 1.72, hr * 0.22), tongue);
+    canvas.drawLine(
+        Offset(hr * 1.0, hr * 0.10), Offset(hr * 1.5, hr * 0.12), tongue);
+    canvas.drawLine(
+        Offset(hr * 1.5, hr * 0.12), Offset(hr * 1.72, -hr * 0.08), tongue);
+    canvas.drawLine(
+        Offset(hr * 1.5, hr * 0.12), Offset(hr * 1.72, hr * 0.34), tongue);
     canvas.restore();
   }
 
-  // ── تظليل حواف خفيف فوق الكل ──
-  void _paintVignette(Canvas canvas, Size size) {
+  // ── كونفيتي ونجوم صغيرة مرحة فوق اللوحة ──
+  void _paintConfetti(Canvas canvas, Size size) {
     final g = SnakeBoard.gridRect(size);
-    final paint = Paint()
-      ..shader = RadialGradient(
-        radius: 1.25,
-        colors: [
-          Colors.transparent,
-          Colors.black.withOpacity(0.22),
-        ],
-        stops: const [0.72, 1.0],
-      ).createShader(g);
-    canvas.drawRect(g, paint);
+    final rng = math.Random(7);
+    final colors = [
+      const Color(0xFFFF7043),
+      const Color(0xFFFFCA28),
+      const Color(0xFFAB47BC),
+      const Color(0xFF26C6DA),
+      const Color(0xFF66BB6A),
+    ];
+    // بقع صغيرة شبه شفافة موزعة على إطار اللوحة
+    for (var i = 0; i < 26; i++) {
+      final onEdge = rng.nextBool();
+      final x = onEdge
+          ? (rng.nextBool()
+              ? g.left - SnakeBoard.frame(size) * rng.nextDouble() * 0.7
+              : g.right + SnakeBoard.frame(size) * rng.nextDouble() * 0.7)
+          : g.left + rng.nextDouble() * g.width;
+      final y = onEdge
+          ? rng.nextDouble() * size.height
+          : (rng.nextBool()
+              ? g.top - SnakeBoard.frame(size) * rng.nextDouble() * 0.7
+              : g.bottom + SnakeBoard.frame(size) * rng.nextDouble() * 0.7);
+      if (x < 2 || y < 2 || x > size.width - 2 || y > size.height - 2) continue;
+      canvas.drawCircle(
+        Offset(x, y),
+        size.width * 0.008 * (1 + rng.nextDouble()),
+        Paint()..color = colors[i % colors.length].withOpacity(0.85),
+      );
+    }
   }
 
   @override

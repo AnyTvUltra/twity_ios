@@ -1,7 +1,7 @@
 import '../../l10n/app_lang.dart';
 
 /// قوانين الكونكان (الأوكي) المتاحة للاعب قبل دخول الطاولة
-enum OkeyRulesVariant { sulaymaniyah, erbil, turkish }
+enum OkeyRulesVariant { sulaymaniyah, erbil, turkish, rummy }
 
 class OkeyRules {
   final OkeyRulesVariant variant;
@@ -19,6 +19,10 @@ class OkeyRules {
   /// وإلا فالجوكر = الرقم الأكبر (التركي/أربيل: مؤشر 8 ← جوكر 9)
   final bool jokerBelowIndicator;
 
+  /// وضع رامي (ورق): لا مؤشر ولا أوكي بالأرقام — ورقتا JOKER بريّتان،
+  /// ولا شرط نقاط افتتاحية، وأخذ المرميات لا يحوّل الأسلوب
+  final bool isRummy;
+
   const OkeyRules({
     required this.variant,
     required this.name,
@@ -27,6 +31,7 @@ class OkeyRules {
     required this.openingPoints,
     required this.allowSevenPairs,
     this.jokerBelowIndicator = false,
+    this.isRummy = false,
   });
 
   static OkeyRules get sulaymaniyah => OkeyRules(
@@ -57,6 +62,16 @@ class OkeyRules {
         allowSevenPairs: true,
       );
 
+  static OkeyRules get rummy => OkeyRules(
+        variant: OkeyRulesVariant.rummy,
+        name: 'رامي'.tr,
+        subtitle: 'ورق — جوكر بريّ ونزول حر'.tr,
+        icon: '🃏',
+        openingPoints: 0,
+        allowSevenPairs: false,
+        isRummy: true,
+      );
+
   static OkeyRules of(OkeyRulesVariant v) {
     switch (v) {
       case OkeyRulesVariant.sulaymaniyah:
@@ -65,6 +80,8 @@ class OkeyRules {
         return erbil;
       case OkeyRulesVariant.turkish:
         return turkish;
+      case OkeyRulesVariant.rummy:
+        return rummy;
     }
   }
 
@@ -74,6 +91,8 @@ class OkeyRules {
         return sulaymaniyah;
       case 'erbil':
         return erbil;
+      case 'rummy':
+        return rummy;
       default:
         return turkish;
     }
@@ -131,6 +150,25 @@ class OkeyRules {
 • الفوز: أكمل 14 حجراً في مجموعات صالحة أو 7 أزواج ثم ارمِ حجراً. الفوز برمي حجر الأوكي يُحتسب مضاعفاً.
 
 هذا هو القانون المعتمد في البطولات التركية الرسمية للعبة Okey.''';
+      case OkeyRulesVariant.rummy:
+        return '''
+رامي (Rummy) — لعبة الورق العالمية:
+
+• التوزيع: البادئ 15 ورقة والباقون 14 ورقة من مجموعتين كاملتين (104 ورقة) + ورقتا جوكر.
+
+• الورقة المكشوفة: في بداية اللعبة تظهر ورقة على الطاولة — يستطيع أول لاعب أخذها بدل السحب من الرزمة.
+
+• الدور: اسحب ورقة (من الرزمة أو آخر ورقة رماها جارك) ثم ارمِ ورقة.
+
+• البيرات الصالحة: مجموعة (Set) من 3-4 أوراق بنفس الرتبة وأشكال مختلفة، أو سلسلة (Run) من 3+ أوراق متتالية بنفس الشكل.
+
+• الجوكر: ورقة بريّة تحل محل أي ورقة في أي بير — لا يوجد مؤشر.
+
+• النزول حر: أنزل بيراتك متى شئت — لا يوجد شرط نقاط افتتاحية.
+
+• الفوز (Rummy): حوّل كامل يدك إلى بيرات صالحة ثم اعلن الفوز.
+
+النسخة الورقية الكلاسيكية التي تُلعب بأوراق الشدة العادية.''';
     }
   }
 }

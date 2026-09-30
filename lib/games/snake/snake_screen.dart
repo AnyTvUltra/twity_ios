@@ -32,12 +32,13 @@ class _SnakeGameScreenState extends State<SnakeGameScreen>
   int _resultChips = 0;
   bool _overHandled = false;
 
-  static const _bgTop = Color(0xFF0A1420);
-  static const _bgMid = Color(0xFF071018);
-  static const _bgBot = Color(0xFF04080E);
+  // سماء كرتونية: بنفسجي عميق → أزرق ليلي مرح
+  static const _bgTop = Color(0xFF3B2B8F);
+  static const _bgMid = Color(0xFF1E2B70);
+  static const _bgBot = Color(0xFF101A45);
   static const _gold = Color(0xFFFFD54F);
-  static const _green = Color(0xFF7CB342);
-  static const _red = Color(0xFFF87171);
+  static const _green = Color(0xFF8BC34A);
+  static const _red = Color(0xFFFF5252);
 
   static const _playerColors = [_green, _red];
 
@@ -148,7 +149,7 @@ class _SnakeGameScreenState extends State<SnakeGameScreen>
           child: SafeArea(
             child: Stack(
               children: [
-                // توهج أخضر خافت خلف اللوحة
+                // توهج مرح متعدد الألوان خلف اللوحة
                 Positioned.fill(
                   child: IgnorePointer(
                     child: DecoratedBox(
@@ -157,9 +158,11 @@ class _SnakeGameScreenState extends State<SnakeGameScreen>
                           center: const Alignment(0, -0.15),
                           radius: 0.9,
                           colors: [
-                            _green.withOpacity(0.10),
+                            const Color(0xFFAB47BC).withOpacity(0.22),
+                            const Color(0xFF26C6DA).withOpacity(0.10),
                             Colors.transparent,
                           ],
+                          stops: const [0.0, 0.55, 1.0],
                         ),
                       ),
                     ),

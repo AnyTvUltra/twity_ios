@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../services/store_service.dart';
 import '../../../widgets/animated_skin_effect.dart';
 import '../../../widgets/skin_image.dart';
+import 'okey_tile_widget.dart';
 
 enum OpponentPosition { top, left, right }
 
@@ -124,7 +125,9 @@ class OkeyOpponentIstaka extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '🀄 $tileCount Taş',
+                          OkeyTileWidget.cardMode
+                              ? '🃏 $tileCount'
+                              : '🀄 $tileCount Taş',
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.75),
                             fontSize: 8.5,
@@ -151,7 +154,7 @@ class OkeyOpponentIstaka extends StatelessWidget {
                           )
                         else
                           Text(
-                            'OKEY',
+                            OkeyTileWidget.cardMode ? 'RUMMY' : 'OKEY',
                             style: TextStyle(
                               color: const Color(0xFF8FA8E8).withOpacity(0.6),
                               fontSize: 8,

@@ -34,8 +34,16 @@ class OkeyGameScreen extends StatefulWidget {
 
   /// زوجي: اللاعب المقابل (الأمامي) شريكك — فوزه فوزك
   final bool teamMode;
-  OkeyGameScreen({super.key, OkeyRules? rules, this.teamMode = false})
-      : rules = rules ?? OkeyRules.turkish;
+
+  /// وضع رامي: نفس الطاولة والميكانيكية لكن بأوراق لعب (بلا مؤشر/كونكان/فول)
+  final bool rummyMode;
+
+  OkeyGameScreen(
+      {super.key,
+      OkeyRules? rules,
+      this.teamMode = false,
+      this.rummyMode = false})
+      : rules = rules ?? (rummyMode ? OkeyRules.rummy : OkeyRules.turkish);
 
   @override
   State<OkeyGameScreen> createState() => _OkeyGameScreenState();
@@ -125,6 +133,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     // جلسة صوت مشتركة: مؤثرات اللعبة لا تُسكت الراديو والعكس
     RadioService.applySharedAudioSession();
+    // وضع رامي: الأحجار تُعرض كأوراق لعب في كل مكان
+    OkeyTileWidget.cardMode = widget.rummyMode;
 
     _discardAnimController = AnimationController(
       vsync: this,
@@ -169,7 +179,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       }
     }
     for (final s in dealOrder) {
-      _dealFlights.add((s, s == 0 ? 3 : 2, dms));
+      // في رامي الجميع 14 ورقة — الجولة الأخيرة حجران للكل
+      _dealFlights.add((s, (s == 0 && !widget.rummyMode) ? 3 : 2, dms));
       dms += _dealGapMs;
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -586,6 +597,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
 
   @override
   void dispose() {
+    OkeyTileWidget.cardMode = false;
     _engine.removeListener(_onEngineUpdate);
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
@@ -1598,6 +1610,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
 
   /// زرّا كونكان / فول — يختار اللاعب أسلوبه قبل أي نزول، ثم يُقفل
   Widget _buildStyleButtons() {
+    if (widget.rummyMode) return const SizedBox.shrink(); // لا أساليب في رامي
     final me = _engine.players[0];
     Widget btn(OkeyPlayStyle style) {
       final c = _styleColor(style);
@@ -1721,7 +1734,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             Text('🏆', style: TextStyle(fontSize: 15)),
             SizedBox(width: 7),
             Text(
-              'إعلان الفوز بالأوكي (Okey Out!)'.tr,
+              widget.rummyMode
+                  ? 'رامي! (Rummy Out!)'.tr
+                  : 'إعلان الفوز بالأوكي (Okey Out!)'.tr,
               style: TextStyle(
                 color: Color(0xFF1B0B30),
                 fontWeight: FontWeight.w900,
@@ -1773,11 +1788,11 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           stat('${_engine.liveGroupCount}', 'Per', const Color(0xFF86EFAC)),
           const SizedBox(width: 10),
           stat(
-              _engine.players[0].hasOpened
+              widget.rummyMode || _engine.players[0].hasOpened
                   ? 'مفتوح ✓'.tr
                   : '${_engine.remainingOpeningPoints}',
               'المطلوب'.tr,
-              _engine.players[0].hasOpened
+              widget.rummyMode || _engine.players[0].hasOpened
                   ? const Color(0xFF86EFAC)
                   : const Color(0xFFFCA5A5)),
         ],
@@ -2933,8 +2948,11 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        _buildIndicator(),
-        const SizedBox(width: 8),
+        // رامي: لا يوجد مؤشر — الورقة المكشوفة ضمن كومة الرمي
+        if (!widget.rummyMode) ...[
+          _buildIndicator(),
+          const SizedBox(width: 8),
+        ],
         _buildDrawTower(canDraw),
         const SizedBox(width: 10),
         // كومة رمي موحّدة مبعثرة لكل اللاعبين — مثل طاولة حقيقية
@@ -3276,6 +3294,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
 
   /// ظهر الحجر (مقلوب) — للرزمة وللحجر المسحوب منها
   Widget _tileBack(double w, double h, {bool glow = false}) {
+    if (widget.rummyMode) return _cardBack(w, h, glow: glow);
     return Container(
       width: w,
       height: h,
@@ -3306,6 +3325,52 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             shape: BoxShape.circle,
             border: Border.all(
                 color: const Color(0xFFB89A62).withOpacity(0.7), width: 1),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// ظهر ورقة اللعب (رامي): كحلي بنمط معينات بيضاء — مثل أوراق الشدة الحقيقية
+  Widget _cardBack(double w, double h, {bool glow = false}) {
+    return Container(
+      width: w,
+      height: h,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF2B4C8C), Color(0xFF1A2F5E), Color(0xFF101E42)],
+        ),
+        borderRadius: BorderRadius.circular(w * 0.14),
+        border: Border.all(color: Colors.white.withOpacity(0.85), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.4),
+              blurRadius: 3,
+              offset: const Offset(0, 2)),
+          if (glow)
+            BoxShadow(
+                color: const Color(0xFF4ADE80).withOpacity(0.55),
+                blurRadius: 10),
+        ],
+      ),
+      child: Center(
+        child: Container(
+          width: w * 0.55,
+          height: w * 0.55,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.white54, width: 0.8),
+            borderRadius: BorderRadius.circular(3),
+          ),
+          child: Center(
+            child: Text(
+              '◆',
+              style: TextStyle(
+                  color: Colors.white.withOpacity(0.75),
+                  fontSize: w * 0.3,
+                  height: 1),
+            ),
           ),
         ),
       ),

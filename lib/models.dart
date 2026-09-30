@@ -51,9 +51,9 @@ class GamesData {
         ),
         GameModel(
           id: 'solitaire',
-          title: 'سوليتر'.tr,
-          subtitle: 'Solitaire',
-          description: 'رتّب أوراقك • وحقق الفوز'.tr,
+          title: 'رامي'.tr,
+          subtitle: 'Rummy',
+          description: 'ورق • بيرات • افرغ يدك أولاً'.tr,
           route: '/games/solitaire',
           gradient: AppGradients.solitaireCard,
           primaryColor: AppColors.solitaireBg,
