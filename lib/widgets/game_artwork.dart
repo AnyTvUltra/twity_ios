@@ -720,7 +720,7 @@ class _Okey3DArtwork extends StatelessWidget {
         ),
         child: Image.asset(
           'assets/images/okey_logo.png',
-          width: 150,
+          width: 196,
           fit: BoxFit.contain,
           filterQuality: FilterQuality.high,
         ),

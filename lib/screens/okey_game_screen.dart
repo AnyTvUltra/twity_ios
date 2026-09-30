@@ -85,6 +85,18 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
 
   /// عمود أدوات الجانب الأيمن مطوي خلف زر الإعدادات؟
   bool _dockExpanded = false;
+
+  // ═══ توزيع الأحجار بأنيميشن عند بدء الجولة ═══
+  // 4 جولات × 3 أحجار لكل لاعب ثم جولة أخيرة: الخصوم 2 والبادئ 3
+  late AnimationController _dealCtrl;
+  bool _dealing = true;
+  final List<int> _dealtCount = [0, 0, 0, 0];
+  final List<(int, int, int)> _dealFlights = []; // (المقعد، الأحجار، بدء ms)
+  final Set<int> _landedFlights = {};
+  int _dealTickFired = -1;
+  static const _dealTotalMs = 2450;
+  static const _dealFlightMs = 340;
+  static const _dealGapMs = 110;
   final GlobalKey _leftDiscardKey = GlobalKey();
   Offset _discardFrom = const Offset(422, 330);
   Offset _discardTo = const Offset(422, 175);
@@ -134,6 +146,33 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       vsync: this,
       duration: const Duration(seconds: 4),
     )..repeat();
+
+    // أنيميشن التوزيع: يمين، أمامي، يسار ثم أنا — كل جولة متتالية بسرعة
+    _dealCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: _dealTotalMs),
+    )
+      ..addListener(_onDealTick)
+      ..addStatusListener((s) {
+        if (s == AnimationStatus.completed && mounted) {
+          setState(() => _dealing = false);
+        }
+      });
+    const dealOrder = [1, 2, 3, 0];
+    var dms = 80;
+    for (var r = 0; r < 4; r++) {
+      for (final s in dealOrder) {
+        _dealFlights.add((s, 3, dms));
+        dms += _dealGapMs;
+      }
+    }
+    for (final s in dealOrder) {
+      _dealFlights.add((s, s == 0 ? 3 : 2, dms));
+      dms += _dealGapMs;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _dealCtrl.forward();
+    });
 
     // تسخين خامة الخشب الافتراضية (طاولة + استكانات) قبل أول رسم
     StoreService().ensureWoodBase().then((_) {
@@ -229,6 +268,162 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             child: Center(child: IgnorePointer(child: bubble)));
     }
     return pos;
+  }
+
+  // ─────────────────────────────────────────────
+  //  توزيع الأحجار الافتتاحي (Deal Animation)
+  // ─────────────────────────────────────────────
+
+  /// صوت "تكة" عند انطلاق كل قذيفة + تحديث عدّاد الأحجار عند هبوطها
+  void _onDealTick() {
+    final t = _dealCtrl.value * _dealTotalMs;
+    var landed = false;
+    for (var i = 0; i < _dealFlights.length; i++) {
+      final f = _dealFlights[i];
+      if (t >= f.$3 && _dealTickFired < i) {
+        _dealTickFired = i;
+        OkeyAudio.playTileDraw();
+      }
+      if (t >= f.$3 + _dealFlightMs && _landedFlights.add(i)) {
+        _dealtCount[f.$1] += f.$2;
+        landed = true;
+      }
+    }
+    if (landed && mounted) setState(() {});
+  }
+
+  /// يبدأ التوزيع من جديد (بداية اللعبة أو إعادة المباراة)
+  void _startDealAnim() {
+    _dealing = true;
+    _dealTickFired = -1;
+    _landedFlights.clear();
+    for (var i = 0; i < 4; i++) {
+      _dealtCount[i] = 0;
+    }
+    _dealCtrl.forward(from: 0);
+  }
+
+  /// رفّي أثناء التوزيع — تظهر الأحجار تدريجياً مع وصول القذائف
+  List<OkeyTile?> _maskedRack(int count) {
+    final real = _engine.players[0].rackTiles;
+    final out = List<OkeyTile?>.filled(28, null);
+    var seen = 0;
+    for (var s = 0; s < 28 && seen < count; s++) {
+      final t = real[s];
+      if (t != null) {
+        out[s] = t;
+        seen++;
+      }
+    }
+    return out;
+  }
+
+  /// مواضع هبوط القذائف لكل مقعد داخل المشهد (844×390)
+  static const _dealAnchors = {
+    0: Offset(422, 282), // استكانتي أسفلاً
+    1: Offset(688, 104), // الخصم الأيمن
+    2: Offset(422, 46), // الخصم الأمامي
+    3: Offset(152, 104), // الخصم الأيسر
+  };
+
+  /// طبقة التوزيع: قذائف أحجار مقلوبة تطير من برج السحب لكل استكانة
+  Widget _buildDealOverlay() {
+    return IgnorePointer(
+      child: AnimatedBuilder(
+        animation: _dealCtrl,
+        builder: (_, __) {
+          final t = _dealCtrl.value * _dealTotalMs;
+          final deck = _deckKey.currentContext != null
+              ? _keyCenter(_deckKey)
+              : const Offset(400, 178);
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned.fill(child: _dealBanner(t)),
+              for (var i = 0; i < _dealFlights.length; i++)
+                _buildDealFlight(i, t, deck),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  /// لافتة مركزية تظهر وتختفي مع التوزيع
+  Widget _dealBanner(double t) {
+    final o = (t < 300
+            ? t / 300
+            : t > _dealTotalMs - 420
+                ? (_dealTotalMs - t) / 420
+                : 1.0)
+        .clamp(0.0, 1.0);
+    if (o <= 0) return const SizedBox.shrink();
+    return Center(
+      child: Opacity(
+        opacity: o,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF3B2E08), Color(0xFF1E1604)],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFFFD54F).withOpacity(0.6)),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withOpacity(0.5),
+                  blurRadius: 14,
+                  offset: const Offset(0, 5)),
+            ],
+          ),
+          child: Text(
+            'يتم توزيع الأحجار 🃏'.tr,
+            style: const TextStyle(
+                color: Color(0xFFFFD54F),
+                fontSize: 13,
+                fontWeight: FontWeight.w900),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// قذيفة واحدة: من الرزمة إلى مرسى المقعد بقوس خفيف ودوران
+  Widget _buildDealFlight(int i, double t, Offset from) {
+    final f = _dealFlights[i];
+    final local = ((t - f.$3) / _dealFlightMs).clamp(0.0, 1.0);
+    if (local <= 0 || local >= 1) return const SizedBox.shrink();
+    final to = _dealAnchors[f.$1]!;
+    final e = Curves.easeOutCubic.transform(local);
+    final x = from.dx + (to.dx - from.dx) * e;
+    final y = from.dy + (to.dy - from.dy) * e - math.sin(local * math.pi) * 44;
+    final sc = 0.8 + 0.3 * math.sin(local * math.pi);
+    return Positioned(
+      left: x - 17,
+      top: y - 19,
+      child: Transform.rotate(
+        angle: (f.$1.isEven ? -1 : 1) * 0.22 * math.sin(local * math.pi),
+        child: Transform.scale(scale: sc, child: _dealFan(f.$2)),
+      ),
+    );
+  }
+
+  /// حزمة 2-3 أحجار مقلوبة مروّحة تطير معاً
+  Widget _dealFan(int n) {
+    return SizedBox(
+      width: 24 + (n - 1) * 8,
+      height: 34,
+      child: Stack(
+        children: [
+          for (var k = 0; k < n; k++)
+            Positioned(
+              left: k * 7.0,
+              top: k * 1.2,
+              child: _tileBack(20, 30),
+            ),
+        ],
+      ),
+    );
   }
 
   void _syncHumanProfile() {
@@ -357,6 +552,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           _isLeaving = false;
           _engine.initGame();
           _syncHumanProfile();
+          _startDealAnim();
         });
       },
       onExit: () {
@@ -401,6 +597,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     _discardAnimController.dispose();
     _drawAnimController.dispose();
     _tableFxController.dispose();
+    _dealCtrl.dispose();
 
     _engine.dispose();
     super.dispose();
@@ -727,23 +924,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     return Offset(x, y);
   }
 
-  /// فليك سريع للأعلى على حجر الصف السفلي = رمي للطاولة
-  /// بصوت "التلولو" وأنيميشن الطيران المقوّس نفسه
-  void _onTileFlick(int slotIndex) {
-    if (_engine.currentTurnIndex != 0) {
-      _showGameNotice('ليس دورك الآن!'.tr);
-      return;
-    }
-    if (_engine.turnPhase != OkeyTurnPhase.awaitingDiscard ||
-        _engine.players[0].rackTiles[slotIndex] == null) {
-      // ليس وقت الرمي أو خانة فارغة — يعود الحجر لمكانه فقط
-      return;
-    }
-    OkeyAudio.playTileFlick(); // تلولو القذف
-    _executeDiscard(slotIndex); // يطير من مركز خانته في الاستكانة
-  }
-
   void _executeDiscard(int slotIndex, {Offset? dropGlobal}) {
+    if (_dealing) return;
     if (_engine.currentTurnIndex != 0) return;
     if (_engine.turnPhase != OkeyTurnPhase.awaitingDiscard) {
       _showGameNotice('يجب سحب حجر أولاً قبل الرمي!'.tr);
@@ -777,6 +959,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   }
 
   void _executeDraw() {
+    if (_dealing) return;
     if (_engine.currentTurnIndex != 0) return;
     if (_engine.turnPhase != OkeyTurnPhase.awaitingDraw) {
       _showGameNotice('لقد سحبت بالفعل! ارمِ حجراً لإنهاء دورك'.tr);
@@ -806,6 +989,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
 
   /// سحب بالإفلات: من الرزمة أو كومة اليسار مباشرة إلى خانة في الرف
   void _drawToSlot(int source, int toSlot) {
+    if (_dealing) return;
     if (_engine.currentTurnIndex != 0) {
       _showGameNotice('ليس دورك الآن!'.tr);
       return;
@@ -830,6 +1014,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
 
   /// سحب آخر حجر رماه اللاعب الأيسر
   void _executeDrawFromLeft() {
+    if (_dealing) return;
     if (_engine.currentTurnIndex != 0) return;
     if (_engine.turnPhase != OkeyTurnPhase.awaitingDraw) {
       _showGameNotice('لقد سحبت بالفعل! ارمِ حجراً لإنهاء دورك'.tr);
@@ -1098,8 +1283,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                       child: OkeyOpponentIstaka(
                         position: OpponentPosition.top,
                         player: _engine.players[2],
-                        tileCount: _engine.players[2].tileCount,
-                        isTurn: _engine.currentTurnIndex == 2,
+                        tileCount: _dealing
+                            ? _dealtCount[2]
+                            : _engine.players[2].tileCount,
+                        isTurn: !_dealing && _engine.currentTurnIndex == 2,
                         rackItem:
                             StoreService().equippedFor(StoreCategory.rack),
                       ),
@@ -1111,8 +1298,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                     child: OkeyOpponentIstaka(
                       position: OpponentPosition.left,
                       player: _engine.players[3],
-                      tileCount: _engine.players[3].tileCount,
-                      isTurn: _engine.currentTurnIndex == 3,
+                      tileCount: _dealing
+                          ? _dealtCount[3]
+                          : _engine.players[3].tileCount,
+                      isTurn: !_dealing && _engine.currentTurnIndex == 3,
                       rackItem: StoreService().equippedFor(StoreCategory.rack),
                     ),
                   ),
@@ -1122,8 +1311,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                     child: OkeyOpponentIstaka(
                       position: OpponentPosition.right,
                       player: _engine.players[1],
-                      tileCount: _engine.players[1].tileCount,
-                      isTurn: _engine.currentTurnIndex == 1,
+                      tileCount: _dealing
+                          ? _dealtCount[1]
+                          : _engine.players[1].tileCount,
+                      isTurn: !_dealing && _engine.currentTurnIndex == 1,
                       rackItem: StoreService().equippedFor(StoreCategory.rack),
                     ),
                   ),
@@ -1131,25 +1322,30 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                     left: 0,
                     right: 0,
                     bottom: 12,
-                    child: OkeyIstakaWidget(
-                      rackTiles: _engine.players[0].rackTiles,
-                      selectedIndex: _engine.selectedTileIndex,
-                      isTurn: isHumanTurn,
-                      highlightedIndices: _engine.getHighlightedSlotIndices(),
-                      dragScaleX: scaleX,
-                      dragScaleY: scaleY,
-                      feedbackQuarterTurns: _sceneRotated ? 1 : 0,
-                      rackItem: StoreService().equippedFor(StoreCategory.rack),
-                      onTileTap: _handleTileTap,
-                      onTileMove: (fromSlot, toSlot) =>
-                          _engine.moveTile(fromSlot, toSlot),
-                      onDropAboveRack: _dropOnTable,
-                      onDrawToSlot: _drawToSlot,
-                      onGroupMove: (slot, to) => _engine.moveGroup(slot, to),
-                      onTileFlick: _onTileFlick,
+                    child: IgnorePointer(
+                      ignoring: _dealing,
+                      child: OkeyIstakaWidget(
+                        rackTiles: _dealing
+                            ? _maskedRack(_dealtCount[0])
+                            : _engine.players[0].rackTiles,
+                        selectedIndex: _engine.selectedTileIndex,
+                        isTurn: isHumanTurn && !_dealing,
+                        highlightedIndices: _engine.getHighlightedSlotIndices(),
+                        dragScaleX: scaleX,
+                        dragScaleY: scaleY,
+                        feedbackQuarterTurns: _sceneRotated ? 1 : 0,
+                        rackItem:
+                            StoreService().equippedFor(StoreCategory.rack),
+                        onTileTap: _handleTileTap,
+                        onTileMove: (fromSlot, toSlot) =>
+                            _engine.moveTile(fromSlot, toSlot),
+                        onDropAboveRack: _dropOnTable,
+                        onDrawToSlot: _drawToSlot,
+                        onGroupMove: (slot, to) => _engine.moveGroup(slot, to),
+                      ),
                     ),
                   ),
-                  if (_engine.canDeclareOkeyOut)
+                  if (_engine.canDeclareOkeyOut && !_dealing)
                     Positioned(
                       left: 0,
                       right: 0,
@@ -1231,6 +1427,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                         );
                       },
                     ),
+
+                  // ═══════ أنيميشن توزيع الأحجار الافتتاحي ═══════
+                  if (_dealing) _buildDealOverlay(),
                 ],
               ),
             ),
@@ -1632,6 +1831,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
 
   /// إفلات حجر على الطاولة (أي مكان خارج الاستكانة وأماكن البير) = رمي
   void _dropOnTable(int slot, Offset dropGlobal) {
+    if (_dealing) return;
     if (OkeyDrag.isGroup(slot)) {
       // كتلة مرفوعة أُفلتت على الطاولة: إن كانت Per صحيحاً تنزل، ولا تُرمى أبداً
       final s = slot - OkeyDrag.groupBase;

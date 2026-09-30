@@ -1,4 +1,3 @@
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/services.dart';
 import 'package:game_hub/utils/haptics.dart';
 
@@ -23,19 +22,6 @@ class OkeyAudio {
     AppHaptics.medium();
     try {
       SystemSound.play(SystemSoundType.click);
-    } catch (_) {}
-  }
-
-  /// صوت "التلولو" — قذف الحجر للأعلى بفليك سريع
-  static void playTileFlick() {
-    if (!soundEnabled) return;
-    AppHaptics.medium();
-    try {
-      final p = AudioPlayer()
-        ..setPlayerMode(PlayerMode.lowLatency)
-        ..setVolume(sfxVolume);
-      p.play(AssetSource('audio/okey/flick.wav'));
-      p.onPlayerComplete.first.then((_) => p.dispose());
     } catch (_) {}
   }
 

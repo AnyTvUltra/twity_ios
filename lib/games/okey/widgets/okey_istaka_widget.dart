@@ -59,15 +59,10 @@ class OkeyIstakaWidget extends StatelessWidget {
     this.onDropAboveRack,
     this.onDrawToSlot,
     this.onGroupMove,
-    this.onTileFlick,
   });
 
   /// إفلات الحجر فوق الرف (على الطاولة) — يُستخدم للرمي
   final void Function(int slot, Offset dropGlobal)? onDropAboveRack;
-
-  /// فليك سريع للأعلى على حجر من الصف السفلي — رمي بأنيميشن التلولو
-  /// (حجر الصف العلوي المفلوك يعود لمكانه بلا رمي)
-  final void Function(int slot)? onTileFlick;
 
   /// سحب حجر من الرزمة/كومة اليسار وإفلاته في خانة محددة
   final void Function(int source, int toSlot)? onDrawToSlot;
@@ -346,38 +341,6 @@ class OkeyIstakaWidget extends StatelessWidget {
   /// صندوق الرف المعروض (للتحويل من إحداثيات الشاشة)
   static RenderBox? _rackBox;
 
-  // تتبع سرعة السحب لكشف "الفليك للأعلى" — الإفلات فوق أي هدف يأكل
-  // الحدث فلا يصل onDraggableCanceled، فنحسب السرعة من onMove
-  static Offset? _lastMovePos;
-  static DateTime? _lastMoveTime;
-  static double _sceneUpSpeed = 0;
-
-  /// سرعة الحركة اللحظية نحو أعلى المشهد (px/s) — تراعي دوران المشهد
-  void _trackFlick(Offset pos, bool rotated) {
-    final now = DateTime.now();
-    final lastP = _lastMovePos;
-    final lastT = _lastMoveTime;
-    if (lastP != null && lastT != null) {
-      final ms = now.difference(lastT).inMilliseconds;
-      if (ms > 0) {
-        // في الشاشة العمودية المشهد مدار 90°: أعلى المشهد = يمين الشاشة
-        final upDelta = rotated ? (pos.dx - lastP.dx) : (lastP.dy - pos.dy);
-        _sceneUpSpeed = upDelta * 1000 / ms;
-      }
-    }
-    _lastMovePos = pos;
-    _lastMoveTime = now;
-  }
-
-  static void _resetFlick() {
-    _sceneUpSpeed = 0;
-    _lastMovePos = null;
-    _lastMoveTime = null;
-  }
-
-  /// فليك صاعد قوي بما يكفي لعدّه رمية؟
-  static bool get _flickedUp => _sceneUpSpeed > 700;
-
   /// مركز الحجر المرسوم على الشاشة من موضع الـ feedback
   Offset _dragCenter(Offset feedbackTopLeft, double tileW, double tileH) =>
       feedbackTopLeft +
@@ -417,7 +380,6 @@ class OkeyIstakaWidget extends StatelessWidget {
     return DragTarget<int>(
       onWillAcceptWithDetails: (_) => true,
       onMove: (details) {
-        _trackFlick(details.offset, feedbackQuarterTurns.isOdd);
         final d = details.data;
         final s = _slotAt(_dragCenter(details.offset, tileW, tileH),
             OkeyDrag.isRackTile(d) ? d : -99, slotW, tileH,
@@ -427,19 +389,10 @@ class OkeyIstakaWidget extends StatelessWidget {
       },
       onLeave: (_) {
         _hoverSlot.value = null;
-        _resetFlick();
       },
       onAcceptWithDetails: (details) {
         _hoverSlot.value = null;
         final d = details.data;
-        // فليك صاعد سريع على حجر الصف السفلي = رمي للطاولة بأنيميشن
-        // (الصف العلوي المفلوك يعود لمكانه فقط — بدون إعادة ترتيب)
-        if (OkeyDrag.isRackTile(d) && _flickedUp && onTileFlick != null) {
-          _resetFlick();
-          if (d >= 14) onTileFlick!(d);
-          return;
-        }
-        _resetFlick();
         final center = _dragCenter(details.offset, tileW, tileH);
         if (!OkeyDrag.isRackTile(d)) {
           final s = _slotAt(center, -99, slotW, tileH, raw: true);
@@ -596,12 +549,10 @@ class OkeyIstakaWidget extends StatelessWidget {
                     child: Draggable<int>(
                       data: slotIndex,
                       onDragStarted: () {
-                        _resetFlick();
                         HapticFeedback.selectionClick();
                       },
                       onDragEnd: (_) {
                         _hoverSlot.value = null;
-                        _resetFlick();
                       },
                       // الحجر يتوسط الإصبع ويرتفع فوقه قليلاً ليبقى ظاهراً
                       dragAnchorStrategy: (Draggable<Object> draggable,
