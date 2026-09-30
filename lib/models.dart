@@ -126,7 +126,6 @@ class GamesData {
           borderLightColor: AppColors.dominoBorderLight,
           glowColor: AppColors.dominoGlow,
           hasCrown: false,
-          comingSoon: true,
         ),
       ];
 

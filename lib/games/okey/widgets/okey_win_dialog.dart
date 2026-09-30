@@ -42,7 +42,9 @@ class OkeyWinDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isHuman = winner.isHuman;
-    final winTitle = isHuman ? '🎉 مبروك! لقد فزت بالجولة!'.tr : 'انتهت الجولة بفوز {}'.trp([winner.name]);
+    final winTitle = isHuman
+        ? '🎉 مبروك! لقد فزت بالجولة!'.tr
+        : 'انتهت الجولة بفوز {}'.trp([winner.name]);
     final winSub = winType == WinType.discardOkey
         ? 'فوز استثنائي برمي حجر الأوكي! (Okey ile Bitti)'.tr
         : (winType == WinType.sevenPairs
@@ -63,8 +65,9 @@ class OkeyWinDialog extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: (isHuman ? const Color(0xFFFFD54F) : const Color(0xFF3B82F6))
-                  .withOpacity(0.35),
+              color:
+                  (isHuman ? const Color(0xFFFFD54F) : const Color(0xFF3B82F6))
+                      .withOpacity(0.35),
               blurRadius: 30,
               spreadRadius: 2,
             ),
@@ -93,7 +96,9 @@ class OkeyWinDialog extends StatelessWidget {
                 ],
               ),
               child: Icon(
-                isHuman ? Icons.emoji_events_rounded : Icons.military_tech_rounded,
+                isHuman
+                    ? Icons.emoji_events_rounded
+                    : Icons.military_tech_rounded,
                 color: Colors.white,
                 size: 32,
               ),

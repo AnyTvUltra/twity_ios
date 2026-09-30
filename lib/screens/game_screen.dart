@@ -11,6 +11,8 @@ import 'okey_game_screen.dart';
 import 'chess_game_screen.dart';
 import 'backgammon_game_screen.dart';
 import '../games/snake/snake_screen.dart';
+import '../games/ludo/ludo_screen.dart';
+import '../games/domino/domino_screen.dart';
 import '../l10n/app_lang.dart';
 
 class GameScreen extends StatefulWidget {
@@ -383,6 +385,26 @@ class _GameScreenState extends State<GameScreen> {
                             Navigator.of(context).push(
                               MaterialPageRoute(
                                   builder: (_) => SnakeGameScreen(
+                                        vsAI: _selectedMode != 1,
+                                        bet: _selectedMode == 1
+                                            ? 0
+                                            : _selectedBet,
+                                      )),
+                            );
+                          } else if (widget.gameId == 'ludo') {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                  builder: (_) => LudoGameScreen(
+                                        vsAI: _selectedMode != 1,
+                                        bet: _selectedMode == 1
+                                            ? 0
+                                            : _selectedBet,
+                                      )),
+                            );
+                          } else if (widget.gameId == 'domino') {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                  builder: (_) => DominoGameScreen(
                                         vsAI: _selectedMode != 1,
                                         bet: _selectedMode == 1
                                             ? 0

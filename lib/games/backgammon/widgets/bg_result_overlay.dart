@@ -60,17 +60,16 @@ class _BgResultOverlayState extends State<BgResultOverlay>
       builder: (context, _) {
         final t = _enter.value;
         final fade = Curves.easeOut.transform((t * 2).clamp(0.0, 1.0));
-        final pop = Curves.elasticOut.transform(((t - 0.1) / 0.9).clamp(0.0, 1.0));
-        final count = Curves.easeOutCubic
-            .transform(((t - 0.35) / 0.65).clamp(0.0, 1.0));
+        final pop =
+            Curves.elasticOut.transform(((t - 0.1) / 0.9).clamp(0.0, 1.0));
+        final count =
+            Curves.easeOutCubic.transform(((t - 0.35) / 0.65).clamp(0.0, 1.0));
         return Stack(
           fit: StackFit.expand,
           children: [
-            Container(
-                color: Colors.black.withValues(alpha: 0.62 * fade)),
+            Container(color: Colors.black.withValues(alpha: 0.62 * fade)),
             if (widget.win)
-              CustomPaint(
-                  painter: _RaysPainter(_loop.value, fade, accent)),
+              CustomPaint(painter: _RaysPainter(_loop.value, fade, accent)),
             if (widget.win)
               IgnorePointer(
                   child: CustomPaint(
@@ -118,8 +117,8 @@ class _BgResultOverlayState extends State<BgResultOverlay>
                                 ),
                               ),
                               Transform.translate(
-                                offset: Offset(0,
-                                    math.sin(_loop.value * math.pi * 6) * 5),
+                                offset: Offset(
+                                    0, math.sin(_loop.value * math.pi * 6) * 5),
                                 child: Transform.rotate(
                                   angle: math.sin(_loop.value * math.pi * 4) *
                                       0.06,
@@ -179,7 +178,8 @@ class _BgResultOverlayState extends State<BgResultOverlay>
                                     Text(
                                       '${widget.chips > 0 ? '+' : '-'}${(widget.chips.abs() * count).round()} 🪙',
                                       style: TextStyle(
-                                          color: widget.chips > 0 ? _gold : _red,
+                                          color:
+                                              widget.chips > 0 ? _gold : _red,
                                           fontSize: 22,
                                           fontWeight: FontWeight.w900),
                                     ),
@@ -195,7 +195,9 @@ class _BgResultOverlayState extends State<BgResultOverlay>
                                   ),
                                   const SizedBox(width: 10),
                                   Expanded(
-                                    child: _btn('جولة جديدة'.tr, _mint,
+                                    child: _btn(
+                                        'جولة جديدة'.tr,
+                                        _mint,
                                         const Color(0xFF052E1C),
                                         widget.onRematch),
                                   ),
@@ -261,7 +263,8 @@ class _RaysPainter extends CustomPainter {
             ..shader = RadialGradient(colors: [
               color.withValues(alpha: 0.28 * fade),
               color.withValues(alpha: 0.0),
-            ]).createShader(Rect.fromCircle(center: Offset.zero, radius: r * 0.6)));
+            ]).createShader(
+                Rect.fromCircle(center: Offset.zero, radius: r * 0.6)));
     }
     canvas.restore();
   }

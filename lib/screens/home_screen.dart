@@ -82,12 +82,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   void _navigateToGame(String gameId) {
     AppHaptics.medium();
-    // ألعاب قيد التطوير — تظهر بطاقتها للتشويق وتُفعَّل لاحقاً
-    if (gameId == 'domino') {
-      _showNotice('هذه اللعبة قيد التطوير — قريباً! 🚧'.tr,
-          icon: Icons.construction_rounded);
-      return;
-    }
     final Widget destination =
         gameId == 'okey' ? const OkeyRulesScreen() : GameScreen(gameId: gameId);
     Navigator.of(context).push(

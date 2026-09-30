@@ -113,8 +113,7 @@ class _ChessBoardWidgetState extends State<ChessBoardWidget>
     return widget.engine.kingSquare(widget.engine.turn);
   }
 
-  String _assetFor(ChessPiece p) =>
-      'assets/images/chess/'
+  String _assetFor(ChessPiece p) => 'assets/images/chess/'
       '${p.color == ChessColor.white ? 'white' : 'black'}'
       '_${p.type.name}.png';
 
@@ -146,8 +145,8 @@ class _ChessBoardWidgetState extends State<ChessBoardWidget>
 
   /// هندسة قطعة داخل مربع: ترجع (left, top, w, h) بإحداثيات اللوحة
   /// بحيث يقع مركز قاعدة القطعة على نقطة الارتكاز بدقة.
-  Rect _pieceRect(ChessPiece p, double f, double r, double s,
-      double frame, double ph) {
+  Rect _pieceRect(
+      ChessPiece p, double f, double r, double s, double frame, double ph) {
     final m = chessPieceMetrics[_keyFor(p)]!;
     final drawnH = ph / m.visH;
     final drawnW = drawnH * m.aspect;
@@ -223,8 +222,7 @@ class _ChessBoardWidgetState extends State<ChessBoardWidget>
           final delay = (r * 8 + f) / 64 * 0.55;
           final isCheckedKing = checkedSq == i;
           final ph = s * _heights[p.type]!;
-          final rect = _pieceRect(p, f.toDouble(), r.toDouble(),
-              s, frame, ph);
+          final rect = _pieceRect(p, f.toDouble(), r.toDouble(), s, frame, ph);
 
           children.add(
             AnimatedPositioned(
@@ -270,8 +268,7 @@ class _ChessBoardWidgetState extends State<ChessBoardWidget>
         for (final g in _ghosts) {
           final f = ChessEngine.fileOf(g.square);
           final r = ChessEngine.rankOf(g.square);
-          final rect = _pieceRect(g.piece, f.toDouble(),
-              r.toDouble(), s, frame,
+          final rect = _pieceRect(g.piece, f.toDouble(), r.toDouble(), s, frame,
               s * _heights[g.piece.type]!);
           children.add(
             Positioned(
@@ -297,8 +294,7 @@ class _ChessBoardWidgetState extends State<ChessBoardWidget>
                     ),
                   ),
                 ),
-                child: _pieceImage(
-                    g.piece, s * _heights[g.piece.type]!,
+                child: _pieceImage(g.piece, s * _heights[g.piece.type]!,
                     ghost: true),
               ),
             ),
@@ -350,8 +346,7 @@ class _Upright extends StatelessWidget {
       w = AnimatedBuilder(
         animation: shake!,
         builder: (context, c) => Transform.translate(
-          offset:
-              Offset(math.sin(shake!.value * math.pi * 4) * 2.4, 0),
+          offset: Offset(math.sin(shake!.value * math.pi * 4) * 2.4, 0),
           child: c,
         ),
         child: w,
@@ -452,16 +447,14 @@ class _ChessBoardPainter extends CustomPainter {
     final inner = w - frame * 2;
     final s = inner / 8;
     final outer = Rect.fromLTWH(0, 0, w, w);
-    final rrect = RRect.fromRectAndRadius(
-        outer, Radius.circular(w * 0.028));
+    final rrect = RRect.fromRectAndRadius(outer, Radius.circular(w * 0.028));
 
     // ═══ هالة بنفسجية نيونية حول الرقعة (كالمرجع) ═══
     canvas.drawRRect(
       rrect.inflate(w * 0.008),
       Paint()
         ..color = _glow.withOpacity(0.32)
-        ..maskFilter =
-            MaskFilter.blur(BlurStyle.normal, w * 0.03),
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, w * 0.03),
     );
 
     // ═══ سماكة اللوحة السفلية ═══
@@ -476,8 +469,7 @@ class _ChessBoardPainter extends CustomPainter {
       slabPath.shift(const Offset(0, 7)),
       Paint()
         ..color = Colors.black.withOpacity(0.45)
-        ..maskFilter =
-            const MaskFilter.blur(BlurStyle.normal, 8),
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
     );
     canvas.drawPath(
       slabPath,
@@ -485,10 +477,7 @@ class _ChessBoardPainter extends CustomPainter {
         ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            _frameBottom,
-            Color.lerp(_frameEdge, _glow, 0.18)!
-          ],
+          colors: [_frameBottom, Color.lerp(_frameEdge, _glow, 0.18)!],
         ).createShader(Rect.fromLTWH(0, w, w, thickness + 4)),
     );
 
@@ -498,8 +487,8 @@ class _ChessBoardPainter extends CustomPainter {
       canvas.clipRRect(rrect);
       canvas.drawImageRect(
         boardImage!,
-        Rect.fromLTWH(0, 0, boardImage!.width.toDouble(),
-            boardImage!.height.toDouble()),
+        Rect.fromLTWH(
+            0, 0, boardImage!.width.toDouble(), boardImage!.height.toDouble()),
         outer,
         Paint()..filterQuality = FilterQuality.medium,
       );
@@ -560,8 +549,8 @@ class _ChessBoardPainter extends CustomPainter {
     if (boardImage != null) {
       canvas.drawImageRect(
         boardImage!,
-        Rect.fromLTWH(0, 0, boardImage!.width.toDouble(),
-            boardImage!.height.toDouble()),
+        Rect.fromLTWH(
+            0, 0, boardImage!.width.toDouble(), boardImage!.height.toDouble()),
         boardRect,
         Paint()..filterQuality = FilterQuality.medium,
       );
@@ -569,8 +558,7 @@ class _ChessBoardPainter extends CustomPainter {
     for (int r = 0; r < 8; r++) {
       for (int f = 0; f < 8; f++) {
         final light = (r + f) % 2 == 0;
-        final rect =
-            Rect.fromLTWH(frame + f * s, frame + r * s, s, s);
+        final rect = Rect.fromLTWH(frame + f * s, frame + r * s, s, s);
         if (boardImage != null) {
           canvas.drawRect(
             rect,
@@ -649,8 +637,7 @@ class _ChessBoardPainter extends CustomPainter {
     // ═══ الإبرازات ═══
     void fillSq(int sq, Color c) {
       final f = ChessEngine.fileOf(sq), r = ChessEngine.rankOf(sq);
-      canvas.drawRect(
-          Rect.fromLTWH(frame + f * s, frame + r * s, s, s),
+      canvas.drawRect(Rect.fromLTWH(frame + f * s, frame + r * s, s, s),
           Paint()..color = c);
     }
 
@@ -665,20 +652,17 @@ class _ChessBoardPainter extends CustomPainter {
       if (engine.inCheck(c)) {
         final k = engine.kingSquare(c);
         final f = ChessEngine.fileOf(k), r = ChessEngine.rankOf(k);
-        final center =
-            Offset(frame + f * s + s / 2, frame + r * s + s / 2);
+        final center = Offset(frame + f * s + s / 2, frame + r * s + s / 2);
         final wave = math.sin(pulse.value * math.pi * 2);
         canvas.drawCircle(
           center,
           s * (0.5 + 0.1 * wave),
           Paint()
             ..shader = RadialGradient(colors: [
-              const Color(0xFFEF4444)
-                  .withOpacity(0.55 + 0.3 * wave),
+              const Color(0xFFEF4444).withOpacity(0.55 + 0.3 * wave),
               const Color(0xFFEF4444).withOpacity(0.15),
               Colors.transparent,
-            ]).createShader(
-                Rect.fromCircle(center: center, radius: s * 0.62)),
+            ]).createShader(Rect.fromCircle(center: center, radius: s * 0.62)),
         );
       }
     }
@@ -686,8 +670,7 @@ class _ChessBoardPainter extends CustomPainter {
     if (selected != null) {
       final f = ChessEngine.fileOf(selected!);
       final r = ChessEngine.rankOf(selected!);
-      final selRect =
-          Rect.fromLTWH(frame + f * s, frame + r * s, s, s);
+      final selRect = Rect.fromLTWH(frame + f * s, frame + r * s, s, s);
       canvas.drawRect(
         selRect,
         Paint()
@@ -708,24 +691,21 @@ class _ChessBoardPainter extends CustomPainter {
     // نقطة نعناعية صغيرة متوهجة للحركة العادية
     for (final t in legalTargets) {
       final f = ChessEngine.fileOf(t), r = ChessEngine.rankOf(t);
-      final center =
-          Offset(frame + f * s + s / 2, frame + r * s + s / 2);
+      final center = Offset(frame + f * s + s / 2, frame + r * s + s / 2);
       canvas.drawCircle(
         center,
         s * 0.15,
         Paint()
           ..color = _accent.withOpacity(0.4)
-          ..maskFilter =
-              MaskFilter.blur(BlurStyle.normal, s * 0.08),
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, s * 0.08),
       );
-      canvas.drawCircle(center, s * 0.10,
-          Paint()..color = _accent.withOpacity(0.9));
+      canvas.drawCircle(
+          center, s * 0.10, Paint()..color = _accent.withOpacity(0.9));
     }
     // حلقة نعناعية للأخذ
     for (final t in captureTargets) {
       final f = ChessEngine.fileOf(t), r = ChessEngine.rankOf(t);
-      final center =
-          Offset(frame + f * s + s / 2, frame + r * s + s / 2);
+      final center = Offset(frame + f * s + s / 2, frame + r * s + s / 2);
       canvas.drawCircle(
         center,
         s * 0.38,
@@ -741,8 +721,7 @@ class _ChessBoardPainter extends CustomPainter {
           ..style = PaintingStyle.stroke
           ..strokeWidth = s * 0.055
           ..color = _accent.withOpacity(0.4)
-          ..maskFilter =
-              MaskFilter.blur(BlurStyle.normal, s * 0.06),
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, s * 0.06),
       );
     }
 
@@ -753,8 +732,7 @@ class _ChessBoardPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = s * 0.09
         ..color = const Color(0xFF150D24).withOpacity(0.35)
-        ..maskFilter =
-            MaskFilter.blur(BlurStyle.normal, s * 0.07),
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, s * 0.07),
     );
 
     canvas.restore();
@@ -779,27 +757,29 @@ class _ChessBoardPainter extends CustomPainter {
     final coordPaint = _coord.withOpacity(0.6);
     for (int f = 0; f < 8; f++) {
       // الحروف أسفل-يمين مربعات الصف الأخير
-      _drawText(canvas, files[f],
-          Offset(frame + f * s + s * 0.85,
-              frame + 7 * s + s * 0.83),
-          s * 0.15, coordPaint);
+      _drawText(
+          canvas,
+          files[f],
+          Offset(frame + f * s + s * 0.85, frame + 7 * s + s * 0.83),
+          s * 0.15,
+          coordPaint);
       // الأرقام أعلى-يسار مربعات العمود الأول
-      _drawText(canvas, '${8 - f}',
-          Offset(frame + s * 0.15,
-              frame + f * s + s * 0.16),
-          s * 0.15, coordPaint);
+      _drawText(
+          canvas,
+          '${8 - f}',
+          Offset(frame + s * 0.15, frame + f * s + s * 0.16),
+          s * 0.15,
+          coordPaint);
     }
   }
 
-  void _drawText(Canvas canvas, String text, Offset center,
-      double size, Color color) {
+  void _drawText(
+      Canvas canvas, String text, Offset center, double size, Color color) {
     final tp = TextPainter(
       text: TextSpan(
         text: text,
         style: TextStyle(
-            color: color,
-            fontSize: size,
-            fontWeight: FontWeight.w700),
+            color: color, fontSize: size, fontWeight: FontWeight.w700),
       ),
       textDirection: TextDirection.ltr,
     )..layout();

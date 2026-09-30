@@ -175,8 +175,7 @@ class OkeyTablePainter extends CustomPainter {
       // تأثير متحرك على خشب حقيقي — حبيبات الخشب تُدمج فوق التأثير
       canvas.save();
       canvas.clipPath(tablePath);
-      paintSkinEffect(canvas, size, surfaceEffect, animT,
-          wood: woodBase);
+      paintSkinEffect(canvas, size, surfaceEffect, animT, wood: woodBase);
       canvas.drawRect(
         tablePath.getBounds(),
         Paint()..color = Colors.black.withOpacity(0.15),
@@ -191,10 +190,8 @@ class OkeyTablePainter extends CustomPainter {
       final cover = math.max(dst.width / imgW, dst.height / imgH) * zoom;
       final dw = imgW * cover;
       final dh = imgH * cover;
-      final dx =
-          dst.center.dx - dw / 2 + surfaceItem!.offsetX * dst.width / 2;
-      final dy =
-          dst.center.dy - dh / 2 + surfaceItem!.offsetY * dst.height / 2;
+      final dx = dst.center.dx - dw / 2 + surfaceItem!.offsetX * dst.width / 2;
+      final dy = dst.center.dy - dh / 2 + surfaceItem!.offsetY * dst.height / 2;
       canvas.save();
       canvas.clipPath(tablePath);
       canvas.drawImageRect(
@@ -222,8 +219,7 @@ class OkeyTablePainter extends CustomPainter {
         canvas.drawImageRect(
           woodBase,
           Rect.fromLTWH(0, 0, iw, ih),
-          Rect.fromLTWH(
-              dst.center.dx - dw / 2, dst.center.dy - dh / 2, dw, dh),
+          Rect.fromLTWH(dst.center.dx - dw / 2, dst.center.dy - dh / 2, dw, dh),
           Paint(),
         );
         // بقعة ضوء مركزية خفيفة فوق الخشب

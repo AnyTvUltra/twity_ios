@@ -124,8 +124,14 @@ class ChessEngine extends ChangeNotifier {
 
     // هجوم الفرسان
     for (final o in const [
-      [1, 2], [2, 1], [-1, 2], [-2, 1],
-      [1, -2], [2, -1], [-1, -2], [-2, -1],
+      [1, 2],
+      [2, 1],
+      [-1, 2],
+      [-2, 1],
+      [1, -2],
+      [2, -1],
+      [-1, -2],
+      [-2, -1],
     ]) {
       final nf = f + o[0], nr = r + o[1];
       if (inBounds(nf, nr)) {
@@ -151,7 +157,12 @@ class ChessEngine extends ChangeNotifier {
     }
 
     // انزلاق عمودي/أفقي (قلعة + وزير)
-    for (final d in const [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    for (final d in const [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1]
+    ]) {
       var nf = f + d[0], nr = r + d[1];
       while (inBounds(nf, nr)) {
         final p = board[sq(nf, nr)];
@@ -168,7 +179,12 @@ class ChessEngine extends ChangeNotifier {
     }
 
     // انزلاق قطري (فيل + وزير)
-    for (final d in const [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+    for (final d in const [
+      [1, 1],
+      [1, -1],
+      [-1, 1],
+      [-1, -1]
+    ]) {
       var nf = f + d[0], nr = r + d[1];
       while (inBounds(nf, nr)) {
         final p = board[sq(nf, nr)];
@@ -239,8 +255,14 @@ class ChessEngine extends ChangeNotifier {
 
       case PieceType.knight:
         for (final o in const [
-          [1, 2], [2, 1], [-1, 2], [-2, 1],
-          [1, -2], [2, -1], [-1, -2], [-2, -1],
+          [1, 2],
+          [2, 1],
+          [-1, 2],
+          [-2, 1],
+          [1, -2],
+          [2, -1],
+          [-1, -2],
+          [-2, -1],
         ]) {
           final nf = f + o[0], nr = r + o[1];
           if (!inBounds(nf, nr)) continue;
@@ -257,10 +279,20 @@ class ChessEngine extends ChangeNotifier {
       case PieceType.queen:
         final dirs = <List<int>>[];
         if (p.type != PieceType.bishop) {
-          dirs.addAll(const [[1, 0], [-1, 0], [0, 1], [0, -1]]);
+          dirs.addAll(const [
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1]
+          ]);
         }
         if (p.type != PieceType.rook) {
-          dirs.addAll(const [[1, 1], [1, -1], [-1, 1], [-1, -1]]);
+          dirs.addAll(const [
+            [1, 1],
+            [1, -1],
+            [-1, 1],
+            [-1, -1]
+          ]);
         }
         for (final d in dirs) {
           var nf = f + d[0], nr = r + d[1];
@@ -295,10 +327,8 @@ class ChessEngine extends ChangeNotifier {
         // التبييت
         final home = p.color == ChessColor.white ? 7 : 0;
         if (r == home && f == 4) {
-          final kingSide =
-              p.color == ChessColor.white ? wkCastle : bkCastle;
-          final queenSide =
-              p.color == ChessColor.white ? wqCastle : bqCastle;
+          final kingSide = p.color == ChessColor.white ? wkCastle : bkCastle;
+          final queenSide = p.color == ChessColor.white ? wqCastle : bqCastle;
           if (kingSide &&
               board[sq(5, home)] == null &&
               board[sq(6, home)] == null &&
@@ -347,9 +377,8 @@ class ChessEngine extends ChangeNotifier {
       board[undo.capturedSq] = null;
     }
 
-    board[m.to] = m.promotion != null
-        ? ChessPiece(m.promotion!, piece.color)
-        : piece;
+    board[m.to] =
+        m.promotion != null ? ChessPiece(m.promotion!, piece.color) : piece;
 
     // تحريك القلعة في التبييت
     if (m.isCastle) {
@@ -383,10 +412,9 @@ class ChessEngine extends ChangeNotifier {
     }
 
     epSquare = m.isDoublePush ? (m.from + m.to) ~/ 2 : -1;
-    halfmoveClock =
-        (piece.type == PieceType.pawn || undo.captured != null)
-            ? 0
-            : halfmoveClock + 1;
+    halfmoveClock = (piece.type == PieceType.pawn || undo.captured != null)
+        ? 0
+        : halfmoveClock + 1;
     turn = opponent(turn);
     return undo;
   }
@@ -440,8 +468,7 @@ class ChessEngine extends ChangeNotifier {
     return out;
   }
 
-  bool inCheck(ChessColor c) =>
-      isAttacked(kingSquare(c), opponent(c));
+  bool inCheck(ChessColor c) => isAttacked(kingSquare(c), opponent(c));
 
   bool insufficientMaterial() {
     int minors = 0;
@@ -540,8 +567,7 @@ class ChessAI {
       score += sign * _values[p.type]!;
       // مكافأة بسيطة للسيطرة على المركز
       final f = ChessEngine.fileOf(i), r = ChessEngine.rankOf(i);
-      if (p.type != PieceType.king &&
-          f >= 2 && f <= 5 && r >= 2 && r <= 5) {
+      if (p.type != PieceType.king && f >= 2 && f <= 5 && r >= 2 && r <= 5) {
         score += sign * 8;
       }
     }
@@ -567,8 +593,7 @@ class ChessAI {
     if (depth == 0) {
       return (e.turn == ChessColor.white ? 1 : -1) * _eval(e);
     }
-    moves.sort((a, b) =>
-        _orderScore(e, b).compareTo(_orderScore(e, a)));
+    moves.sort((a, b) => _orderScore(e, b).compareTo(_orderScore(e, a)));
     var best = -1000000;
     for (final m in moves) {
       final u = e._apply(m);
@@ -584,8 +609,7 @@ class ChessAI {
   static ChessMove? bestMove(ChessEngine e, {int depth = 2}) {
     final moves = e.allLegalMoves(e.turn);
     if (moves.isEmpty) return null;
-    moves.sort((a, b) =>
-        _orderScore(e, b).compareTo(_orderScore(e, a)));
+    moves.sort((a, b) => _orderScore(e, b).compareTo(_orderScore(e, a)));
     ChessMove? best;
     var bestScore = -1000000;
     for (final m in moves) {

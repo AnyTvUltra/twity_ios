@@ -27,50 +27,39 @@ class ChessAudio {
       _play('select', volume: 0.6, haptic: AppHaptics.selection);
 
   /// حركة عادية — طرقة خشبية
-  static void move() =>
-      _play('move', haptic: AppHaptics.light);
+  static void move() => _play('move', haptic: AppHaptics.light);
 
   /// أخذ قطعة — ثud أثقل
-  static void capture() =>
-      _play('capture', haptic: AppHaptics.medium);
+  static void capture() => _play('capture', haptic: AppHaptics.medium);
 
   /// تبييت — طرقتان
-  static void castle() =>
-      _play('castle', haptic: AppHaptics.medium);
+  static void castle() => _play('castle', haptic: AppHaptics.medium);
 
   /// ترقية بيدق
-  static void promote() =>
-      _play('promote', haptic: AppHaptics.medium);
+  static void promote() => _play('promote', haptic: AppHaptics.medium);
 
   /// كش — رنّة تحذيرية
-  static void check() =>
-      _play('check', haptic: AppHaptics.heavy);
+  static void check() => _play('check', haptic: AppHaptics.heavy);
 
   /// حركة غير قانونية / ضغطة مرفوضة
   static void illegal() =>
       _play('illegal', volume: 0.5, haptic: AppHaptics.light);
 
   /// بداية مباراة جديدة
-  static void gameStart() =>
-      _play('game_start', haptic: AppHaptics.medium);
+  static void gameStart() => _play('game_start', haptic: AppHaptics.medium);
 
   /// فوز
-  static void win() =>
-      _play('win', haptic: AppHaptics.heavy);
+  static void win() => _play('win', haptic: AppHaptics.heavy);
 
   /// خسارة
-  static void lose() =>
-      _play('lose', haptic: AppHaptics.heavy);
+  static void lose() => _play('lose', haptic: AppHaptics.heavy);
 
   /// تعادل
-  static void draw() =>
-      _play('draw', volume: 0.8, haptic: AppHaptics.medium);
+  static void draw() => _play('draw', volume: 0.8, haptic: AppHaptics.medium);
 
   /// نبضة وقت منخفض
-  static void lowTime() =>
-      _play('low_time', volume: 0.45);
+  static void lowTime() => _play('low_time', volume: 0.45);
 
   /// ضغطة زر واجهة
-  static void tap() =>
-      _play('select', volume: 0.45, haptic: AppHaptics.light);
+  static void tap() => _play('select', volume: 0.45, haptic: AppHaptics.light);
 }

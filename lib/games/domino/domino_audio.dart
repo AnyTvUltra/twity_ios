@@ -1,0 +1,54 @@
+import 'package:audioplayers/audioplayers.dart';
+
+import '../../utils/haptics.dart';
+
+/// مؤثرات الدومينو — يعيد استخدام ملفات الصوت الموجودة
+class DominoAudio {
+  DominoAudio._();
+
+  static bool soundEnabled = true;
+  static double sfxVolume = 0.85;
+
+  static void _play(String path, {double volume = 1.0}) {
+    if (!soundEnabled) return;
+    try {
+      final p = AudioPlayer()
+        ..setPlayerMode(PlayerMode.lowLatency)
+        ..setVolume(sfxVolume * volume);
+      p.play(AssetSource('audio/$path.wav'));
+      p.onPlayerComplete.first.then((_) => p.dispose());
+    } catch (_) {}
+  }
+
+  /// خلط وتوزيع الأحجار
+  static void shuffle() {
+    AppHaptics.light();
+    _play('backgammon/dice', volume: 0.6);
+  }
+
+  /// وضع حجر على الطاولة
+  static void place() {
+    AppHaptics.medium();
+    _play('backgammon/place', volume: 0.95);
+  }
+
+  /// سحب حجر من البونيارد
+  static void draw() {
+    _play('backgammon/pop', volume: 0.5);
+  }
+
+  /// نهاية جولة
+  static void roundEnd() {
+    AppHaptics.medium();
+    _play('backgammon/open', volume: 0.8);
+  }
+
+  static void win() {
+    AppHaptics.heavy();
+    _play('chess/win');
+  }
+
+  static void lose() {
+    _play('chess/lose', volume: 0.8);
+  }
+}
