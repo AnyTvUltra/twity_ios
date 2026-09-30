@@ -442,9 +442,21 @@ class OkeyEngine extends ChangeNotifier {
     if (recycled.isEmpty) return;
     recycled.shuffle(_random);
     drawDeck.addAll(recycled);
-    onNotice?.call(
-        '🔄 نفدت رزمة السحب — أُعيد خلط {} حجراً مرموياً'.trp([recycled.length]));
+    onNotice?.call('🔄 نفدت رزمة السحب — أُعيد خلط {} حجراً مرموياً'
+        .trp([recycled.length]));
   }
+
+  /// يضمن وجود أحجار قابلة للسحب: إن نفدت الرزمة تُعاد خلط المرميات
+  /// (يُستخدم من الواجهة قبل عرض أنيميشن السحب). يُرجع false فقط
+  /// إن لم يتبقَّ أي حجر نهائياً (الرزمة والمرميات فارغة معاً).
+  bool ensureDrawableDeck() {
+    if (drawDeck.isEmpty) _refillDeckFromDiscards();
+    return drawDeck.isNotEmpty;
+  }
+
+  /// هل يمكن إعادة ملء الرزمة من المرميات الآن؟
+  bool get canRefillDeck =>
+      drawDeck.isEmpty && discardPiles.any((p) => p.isNotEmpty);
 
   /// Draw from center stock
   bool drawFromDeck({int? toSlot}) {
@@ -1053,10 +1065,8 @@ class OkeyEngine extends ChangeNotifier {
         while (j < rowStart + 14 && rack[j] != null) {
           j++;
         }
-        final block =
-            rack.sublist(i, j).whereType<OkeyTile>().toList();
-        if (block.length >= 3 &&
-            (_isValidRun(block) || _isValidSet(block))) {
+        final block = rack.sublist(i, j).whereType<OkeyTile>().toList();
+        if (block.length >= 3 && (_isValidRun(block) || _isValidSet(block))) {
           groups.add(block);
         }
         i = j;
@@ -1136,10 +1146,13 @@ class OkeyEngine extends ChangeNotifier {
   }
 
   /// صرف حجر من رف اللاعب البشري على بير نازل على الطاولة
-  /// يشترط أن يكون اللاعب قد فتح اللعب (نازل ببيراته الخاصة)
+  /// - بيراتك المعلّقة (لم تكتمل نقاط الافتتاح بعد) تُمدّ دائماً في دورك
+  /// - بيراتك الثابتة وبيرات الخصوم تشترط أن تكون قد فتحت اللعب
+  /// - في الكونكان والفول لا يوجد نزول على الطاولة أصلاً
   bool layTileOnMeld(int slotIndex, int meldIndex) {
     final human = players[0];
-    if (!human.hasOpened) return false;
+    if (currentTurnIndex != 0) return false;
+    if (!humanCanLayMelds) return false;
     if (slotIndex < 0 ||
         slotIndex >= 28 ||
         meldIndex < 0 ||
@@ -1147,15 +1160,19 @@ class OkeyEngine extends ChangeNotifier {
     final tile = human.rackTiles[slotIndex];
     if (tile == null) return false;
     final meld = tableMelds[meldIndex];
+    final myPending = meld.ownerIndex == 0 && meld.pending;
+    if (!human.hasOpened && !myPending) return false;
     if (!canLayOffTile(tile, meld)) return false;
 
     human.rackTiles[slotIndex] = null;
 
     // الإدراج في الموضع الصحيح للعرض المرتب
     if (meld.isRun && !tile.isRealOkey) {
-      final values =
-          meld.tiles.where((t) => !t.isRealOkey).map((t) => t.value).toList()
-            ..sort();
+      final values = meld.tiles
+          .where((t) => !t.isRealOkey)
+          .map((t) => t.value)
+          .toList()
+        ..sort();
       if (tile.value == 1 && values.isNotEmpty && values.last == 13) {
         meld.tiles.add(tile); // التفاف 12-13-1
       } else {
@@ -1175,9 +1192,25 @@ class OkeyEngine extends ChangeNotifier {
 
     selectedTileIndex = null;
     OkeyAudio.playTileDiscard();
-    final ownerName =
-        meld.ownerIndex == 0 ? 'بيرك'.tr : 'بير {}'.trp([players[meld.ownerIndex].name]);
-    onNotice?.call('✨ صرفت حجراً على {} (+{} نقطة)'.trp([ownerName, tile.value]));
+
+    // إن كان البير معلّقاً فالصرف يزيد نقاط الافتتاح — وقد يكمل الفتح
+    if (meld.pending && !human.hasOpened) {
+      final total = meldPointsFor(0);
+      if (total >= rules.openingPoints) {
+        human.hasOpened = true;
+        human.openedPoints = total;
+        for (final m in tableMelds.where((m) => m.ownerIndex == 0)) {
+          m.pending = false;
+        }
+        onNotice?.call('🎉 فتحت اللعب بـ {} نقطة!'.trp([total]));
+      }
+    }
+
+    final ownerName = meld.ownerIndex == 0
+        ? 'بيرك'.tr
+        : 'بير {}'.trp([players[meld.ownerIndex].name]);
+    onNotice
+        ?.call('✨ صرفت حجراً على {} (+{} نقطة)'.trp([ownerName, tile.value]));
     notifyListeners();
     return true;
   }
@@ -1205,71 +1238,156 @@ class OkeyEngine extends ChangeNotifier {
       tableMelds.remove(meld);
     }
     if (returned > 0) {
-      onNotice?.call(
-          'لم تكتمل نقاط الافتتاح ({}) — أُعيدت الأحجار إلى رفّك'.trp([rules.openingPoints]));
+      onNotice?.call('لم تكتمل نقاط الافتتاح ({}) — أُعيدت الأحجار إلى رفّك'
+          .trp([rules.openingPoints]));
     }
   }
 
-  /// محاولة البوت إنزال أطول مجموعة صالحة من رفّه
-  void _botTryLayMeld(OkeyPlayer bot, int playerIndex) {
-    if (bot.playStyle != OkeyPlayStyle.normal) return;
-    final rack = bot.rackTiles;
+  /// يبحث في أحجار البوت الفعلية عن كل المجموعات الصالحة غير
+  /// المتداخلة — سلاسل ومجموعات قيمة — ويستعين بالأوكي الحقيقي
+  /// لإكمال زوجٍ إلى ثلاثية
+  List<_BotMeld> _findBotMelds(OkeyPlayer bot) {
+    final tiles = bot.activeTiles;
+    final jokers = tiles.where((t) => t.isRealOkey).toList();
+    final normal = tiles.where((t) => !t.isRealOkey).toList();
+    final used = <OkeyTile>{};
+    final melds = <_BotMeld>[];
+    var jokersUsed = 0;
 
-    // ترتيب رف البوت داخلياً حتى تظهر المجموعات الصالحة متجاورة
-    final sorted = rack.whereType<OkeyTile>().toList()
-      ..sort((a, b) {
-        final c = a.color.index.compareTo(b.color.index);
-        return c != 0 ? c : a.value.compareTo(b.value);
-      });
-    for (int i = 0; i < 28; i++) {
-      rack[i] = i < sorted.length ? sorted[i] : null;
+    // مجموعات القيمة: نفس الرقم بألوان مختلفة (3 أو 4)
+    final byValue = <int, Map<OkeyTileColor, OkeyTile>>{};
+    for (final t in normal) {
+      byValue.putIfAbsent(t.value, () => {}).putIfAbsent(t.color, () => t);
     }
-
-    List<int>? bestSlots;
-    bool bestIsRun = false;
-
-    for (final rowStart in [0, 14]) {
-      final rowEnd = rowStart + 14;
-      for (int start = rowStart; start < rowEnd; start++) {
-        if (rack[start] == null) continue;
-        for (int end = start + 3; end <= rowEnd; end++) {
-          final slots = List.generate(end - start, (i) => start + i);
-          if (slots.any((i) => rack[i] == null)) break;
-          final tiles = slots.map((i) => rack[i]!).toList();
-          final isRun = _isValidRun(tiles);
-          final isSet = _isValidSet(tiles);
-          if ((isRun || isSet) &&
-              (bestSlots == null || slots.length > bestSlots.length)) {
-            bestSlots = slots;
-            bestIsRun = isRun;
-          }
-        }
+    for (final entry in byValue.entries) {
+      final distinct = entry.value.values.toList();
+      if (distinct.length >= 3) {
+        final g = distinct.take(4).toList();
+        melds.add(_BotMeld(List.of(g), false));
+        used.addAll(g);
       }
     }
 
-    if (bestSlots == null) return;
-    // البوت قد يتأخر في ملاحظة مجموعة جاهزة (واقعية اللعب)
-    if (_random.nextDouble() < _mistakeChance(bot.botDifficulty) * 0.5) return;
-    final tiles = bestSlots.map((i) => rack[i]!).toList();
-    final points = tiles.fold(0, (sum, t) => sum + t.value);
+    // سلاسل اللون: نفس اللون بقيم متتالية (3+)
+    final byColor = <OkeyTileColor, Map<int, OkeyTile>>{};
+    for (final t in normal) {
+      if (used.contains(t)) continue;
+      byColor.putIfAbsent(t.color, () => {})[t.value] = t;
+    }
+    for (final entry in byColor.entries) {
+      final vals = entry.value.keys.toList()..sort();
+      var i = 0;
+      while (i < vals.length) {
+        var j = i;
+        while (j + 1 < vals.length && vals[j + 1] == vals[j] + 1) j++;
+        final len = j - i + 1;
+        if (len >= 3) {
+          final g = [for (var k = i; k <= j; k++) entry.value[vals[k]]!];
+          melds.add(_BotMeld(g, true));
+          used.addAll(g);
+        } else if (len == 2 && jokersUsed < jokers.length) {
+          // زوج متتالي + أوكي = سلسلة ثلاثية
+          final g = [entry.value[vals[i]]!, entry.value[vals[j]]!];
+          melds.add(_BotMeld(g, true, jokers: 1));
+          used.addAll(g);
+          jokersUsed++;
+        }
+        i = j + 1;
+      }
+    }
 
-    // لا يُسمح بالنزول قبل اكتمال نقاط الافتتاح المطلوبة
-    if (!bot.hasOpened && points < rules.openingPoints) return;
+    // زوج قيمة + أوكي = مجموعة ثلاثية
+    for (final entry in byValue.entries) {
+      if (jokersUsed >= jokers.length) break;
+      final free = entry.value.values.where((t) => !used.contains(t));
+      if (free.length == 2) {
+        final g = free.toList();
+        melds.add(_BotMeld(g, false, jokers: 1));
+        used.addAll(g);
+        jokersUsed++;
+      }
+    }
+    return melds;
+  }
 
+  /// نقاط مجموعة بوت للافتتاح (الأوكي المستخدم يُحتسب 10)
+  int _botMeldPoints(_BotMeld m) =>
+      m.tiles.fold(0, (s, t) => s + t.value) + m.jokers * 10;
+
+  /// إنزال مجموعة بوت واحدة على الطاولة (يُرفق أوكي حقيقي إن استُخدم)
+  void _layBotMeld(int playerIndex, _BotMeld meld) {
+    final bot = players[playerIndex];
+    final tiles = List<OkeyTile>.of(meld.tiles);
+    for (var j = 0; j < meld.jokers; j++) {
+      final joker = bot.activeTiles
+          .where((t) => t.isRealOkey && !tiles.contains(t))
+          .firstOrNull;
+      if (joker != null) tiles.add(joker);
+    }
+    for (final t in tiles) {
+      final slot = bot.rackTiles.indexOf(t);
+      if (slot != -1) bot.rackTiles[slot] = null;
+    }
     tableMelds.add(OkeyGroup(
       tiles: tiles,
-      isRun: bestIsRun,
+      isRun: meld.isRun,
       ownerIndex: playerIndex,
     ));
-    for (final slot in bestSlots) {
-      rack[slot] = null;
+  }
+
+  /// محاولة البوت إنزال مجموعات على الطاولة
+  /// - قبل الفتح: يجب أن يملك مجموعات مجموعها ≥ نقاط الافتتاح فينزلها
+  ///   دفعة واحدة (قاعدة الـ101) — إصلاح: كان يبحث عن مجموعة واحدة
+  ///   مستحيلة النقاط فلم يفتح أي بوت قط
+  /// - بعد الفتح: ينزل مجموعة كل دور + يصرف أحجاراً مفردة على
+  ///   بيرات الطاولة (إشليمة) كاللاعب الحقيقي
+  void _botTryLayMeld(OkeyPlayer bot, int playerIndex) {
+    if (bot.playStyle != OkeyPlayStyle.normal) return;
+    // البوت قد يتأخر في ملاحظة مجموعة جاهزة (واقعية اللعب)
+    if (_random.nextDouble() < _mistakeChance(bot.botDifficulty) * 0.5) {
+      return;
     }
+
+    final melds = _findBotMelds(bot);
+
     if (!bot.hasOpened) {
+      if (melds.length < 2) return; // الافتتاح يحتاج أكثر من مجموعة عادة
+      final total = melds.fold(0, (s, m) => s + _botMeldPoints(m));
+      if (total < rules.openingPoints) return;
+      for (final m in melds) {
+        _layBotMeld(playerIndex, m);
+      }
       bot.hasOpened = true;
-      bot.openedPoints = points;
+      bot.openedPoints = total;
+      onNotice?.call('🎉 {} فتح اللعب بـ {} نقطة!'.trp([bot.name, total]));
+      notifyListeners();
+      return;
     }
-    onNotice?.call('🀄 {} أنزل مجموعة على الطاولة (+{} نقطة)'.trp([bot.name, points]));
-    notifyListeners();
+
+    // فاتح: أنزل أطول مجموعة جاهزة إن وُجدت
+    var laid = false;
+    if (melds.isNotEmpty) {
+      melds.sort((a, b) => b.tiles.length.compareTo(a.tiles.length));
+      _layBotMeld(playerIndex, melds.first);
+      onNotice?.call('🀄 {} أنزل مجموعة على الطاولة'.trp([bot.name]));
+      laid = true;
+    }
+    // ثم يصرف حجراً مفرداً على بير موجود (بحد أقصى حجرين بالدور)
+    var laidOff = 0;
+    for (var s = 0; s < bot.rackTiles.length && laidOff < 2; s++) {
+      final tile = bot.rackTiles[s];
+      if (tile == null || tile.isRealOkey) continue;
+      for (final meld in tableMelds) {
+        if (canLayOffTile(tile, meld)) {
+          bot.rackTiles[s] = null;
+          meld.tiles.add(tile);
+          laidOff++;
+          laid = true;
+          break;
+        }
+      }
+    }
+    if (laid) notifyListeners();
   }
 
   bool layMeldContainingSlot(int slotIndex) {
@@ -1328,7 +1446,8 @@ class OkeyEngine extends ChangeNotifier {
         onNotice?.call('🎉 فتحت اللعب بـ {} نقطة!'.trp([total]));
       } else {
         onNotice?.call(
-            'مجموعتك {} نقطة — المجموع {}/{}. أنزل المزيد قبل الرمي وإلا ستُعاد الأحجار'.trp([group.points, total, rules.openingPoints]));
+            'مجموعتك {} نقطة — المجموع {}/{}. أنزل المزيد قبل الرمي وإلا ستُعاد الأحجار'
+                .trp([group.points, total, rules.openingPoints]));
       }
     }
 
@@ -1559,4 +1678,12 @@ class OkeyEngine extends ChangeNotifier {
     _botTimer?.cancel();
     super.dispose();
   }
+}
+
+/// مجموعة بوت مُكتشفة قبل إنزالها — أحجار + هل هي سلسلة + عدد الأوكي المُكمل
+class _BotMeld {
+  final List<OkeyTile> tiles;
+  final bool isRun;
+  final int jokers;
+  _BotMeld(this.tiles, this.isRun, {this.jokers = 0});
 }

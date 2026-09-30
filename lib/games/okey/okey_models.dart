@@ -120,7 +120,10 @@ class OkeyTile {
 
   /// Whether this tile is identical to another (same color and value)
   bool isIdenticalTo(OkeyTile other) {
-    return color == other.color && value == other.value && !isRealOkey && !other.isRealOkey;
+    return color == other.color &&
+        value == other.value &&
+        !isRealOkey &&
+        !other.isRealOkey;
   }
 
   @override
@@ -132,14 +135,15 @@ class OkeyTile {
   int get hashCode => id.hashCode;
 
   @override
-  String toString() =>
-      isFalseJoker ? 'FakeJoker' : '${color.name}-$value${isRealOkey ? "(OKEY)" : ""}';
+  String toString() => isFalseJoker
+      ? 'FakeJoker'
+      : '${color.name}-$value${isRealOkey ? "(OKEY)" : ""}';
 }
 
 class OkeyPlayer {
   final String id;
   final String name;
-  final String avatarUrl;
+  String avatarUrl; // قابلة للتحديث عند مزامنة صورة الحساب الحقيقية
   final int level;
   int rating;
   int chips;
@@ -174,7 +178,8 @@ class OkeyPlayer {
 /// Represents a grouped set or run of tiles for validation
 class OkeyGroup {
   final List<OkeyTile> tiles;
-  final bool isRun; // true = run (sequence same color), false = set (same number distinct colors)
+  final bool
+      isRun; // true = run (sequence same color), false = set (same number distinct colors)
   final int ownerIndex; // اللاعب صاحب النزول (0 = البشري)
   bool pending; // بانتظار اكتمال نقاط الافتتاح (101)
 
@@ -188,5 +193,6 @@ class OkeyGroup {
   int get points => tiles.fold(0, (sum, t) => sum + t.value);
 
   @override
-  String toString() => '${isRun ? "Run" : "Set"}: ${tiles.map((t) => t.value).toList()}';
+  String toString() =>
+      '${isRun ? "Run" : "Set"}: ${tiles.map((t) => t.value).toList()}';
 }

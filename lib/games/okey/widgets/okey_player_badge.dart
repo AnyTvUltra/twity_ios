@@ -65,7 +65,8 @@ class OkeyPlayerBadge extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: isTurn ? const Color(0xFF4ADE80) : const Color(0xFF6B7280),
+                color:
+                    isTurn ? const Color(0xFF4ADE80) : const Color(0xFF6B7280),
                 width: isTurn ? 2.2 : 1.2,
               ),
               boxShadow: [
@@ -340,6 +341,10 @@ class OkeyPlayerBadge extends StatelessWidget {
   }
 
   Widget _buildAvatarWithDot({required bool isFemale}) {
+    final url = player.avatarUrl;
+    final grad = isFemale
+        ? const [Color(0xFFEC4899), Color(0xFF8B5CF6)]
+        : const [Color(0xFF3B82F6), Color(0xFF1D4ED8)];
     return Stack(
       alignment: Alignment.topRight,
       clipBehavior: Clip.none,
@@ -349,22 +354,21 @@ class OkeyPlayerBadge extends StatelessWidget {
           height: 26,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isFemale
-                  ? const [Color(0xFFEC4899), Color(0xFF8B5CF6)]
-                  : const [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
-            ),
+            gradient: LinearGradient(begin: Alignment.topLeft, colors: grad),
             border: Border.all(
               color: isTurn ? const Color(0xFF4ADE80) : Colors.white24,
               width: 1,
             ),
           ),
-          child: Icon(
-            isFemale ? Icons.face_3 : Icons.face,
-            color: Colors.white,
-            size: 16,
+          child: ClipOval(
+            // صورة اللاعب الحقيقية عند توفر رابطها — وإلا حرف اسمه
+            child: url.startsWith('http')
+                ? Image.network(
+                    url,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _initialAvatar(isFemale),
+                  )
+                : _initialAvatar(isFemale),
           ),
         ),
         // نقطة الاتصال الخضراء بالأعلى
@@ -382,6 +386,22 @@ class OkeyPlayerBadge extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  /// أفاتار الحرف الأول من اسم اللاعب — عند غياب صورة حقيقية
+  Widget _initialAvatar(bool isFemale) {
+    final letter = player.name.isNotEmpty ? player.name.characters.first : '?';
+    return Center(
+      child: Text(
+        letter.toUpperCase(),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 13,
+          fontWeight: FontWeight.w900,
+          shadows: [Shadow(color: Colors.black45, blurRadius: 3)],
+        ),
+      ),
     );
   }
 }

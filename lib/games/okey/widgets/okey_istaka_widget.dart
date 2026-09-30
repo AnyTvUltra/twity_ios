@@ -59,10 +59,15 @@ class OkeyIstakaWidget extends StatelessWidget {
     this.onDropAboveRack,
     this.onDrawToSlot,
     this.onGroupMove,
+    this.onTileFlick,
   });
 
   /// إفلات الحجر فوق الرف (على الطاولة) — يُستخدم للرمي
   final void Function(int slot, Offset dropGlobal)? onDropAboveRack;
+
+  /// فليك سريع للأعلى على حجر من الصف السفلي — رمي بأنيميشن التلولو
+  /// (حجر الصف العلوي المفلوك يعود لمكانه بلا رمي)
+  final void Function(int slot)? onTileFlick;
 
   /// سحب حجر من الرزمة/كومة اليسار وإفلاته في خانة محددة
   final void Function(int source, int toSlot)? onDrawToSlot;
@@ -110,137 +115,141 @@ class OkeyIstakaWidget extends StatelessWidget {
             tileW: tileW,
             tileH: tileH,
             child: SizedBox(
-            width: totalWidgetW,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                // ══════════════════════════════════════════════════════
-                // 1. جسم الاستكانة الخشبي مع الحواف والظلال (Rack Stand)
-                // ══════════════════════════════════════════════════════
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.10),
-                      width: 1.0,
-                    ),
-                    boxShadow: [
-                      // عمق + إضاءة محيطية زجاجية خافتة
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.6),
-                        blurRadius: 18,
-                        offset: const Offset(0, 10),
+              width: totalWidgetW,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  // ══════════════════════════════════════════════════════
+                  // 1. جسم الاستكانة الخشبي مع الحواف والظلال (Rack Stand)
+                  // ══════════════════════════════════════════════════════
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.10),
+                        width: 1.0,
                       ),
-                      BoxShadow(
-                        color: const Color(0xFF3FF5A8).withOpacity(0.08),
-                        blurRadius: 14,
-                        spreadRadius: -2,
-                      ),
-                      BoxShadow(
-                        color: Colors.white.withOpacity(0.08),
-                        blurRadius: 1,
-                        offset: const Offset(0, -1),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Stack(
-                      children: [
-                        // الكسنة تغطي كامل جسم الاستكانة (أو الخشب الافتراضي)
-                        // — إن كان للكسنة نموذج GLB ثلاثي الأبعاد يُعرض النموذج نفسه
-                        Positioned.fill(
-                          child: rackItem != null &&
-                                  rackItem!.model3d.isNotEmpty
-                              ? OkeyRack3DModel(modelPath: rackItem!.model3d)
-                              : rackItem != null
-                                  ? (skinEffectOf(rackItem) != SkinEffect.none
-                                      ? AnimatedSkinLayer(
-                                          effect: skinEffectOf(rackItem),
-                                          woodUnderlay: true)
-                                      : SkinTransformImage.fromItem(rackItem!))
-                                  : SkinTransformImage.fromItem(
-                                      StoreService.defaultWoodItem),
+                      boxShadow: [
+                        // عمق + إضاءة محيطية زجاجية خافتة
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.6),
+                          blurRadius: 18,
+                          offset: const Offset(0, 10),
                         ),
-                        // تعتيم خفيف فوق الكسنة/الخشب
-                        if (rackItem == null ||
-                            rackItem!.model3d.isEmpty)
-                          Positioned.fill(
-                            child: Container(
-                              color: Colors.black.withOpacity(0.12),
-                            ),
-                          ),
-                        Column(
-                        mainAxisSize: MainAxisSize.min,
+                        BoxShadow(
+                          color: const Color(0xFF3FF5A8).withOpacity(0.08),
+                          blurRadius: 14,
+                          spreadRadius: -2,
+                        ),
+                        BoxShadow(
+                          color: Colors.white.withOpacity(0.08),
+                          blurRadius: 1,
+                          offset: const Offset(0, -1),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Stack(
                         children: [
-                          // ── اللوح الخلفي العلوي — شريط زجاجي ──
-                          Container(
-                            width: double.infinity,
-                            height: 20,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: (rackItem?.model3d.isNotEmpty ?? false)
-                                    ? const [
-                                        Color(0x00000000),
-                                        Color(0x00000000),
-                                      ]
-                                    : const [
-                                        Color(0x2FFFFFFF),
-                                        Color(0x14FFFFFF),
-                                      ],
+                          // الكسنة تغطي كامل جسم الاستكانة (أو الخشب الافتراضي)
+                          // — إن كان للكسنة نموذج GLB ثلاثي الأبعاد يُعرض النموذج نفسه
+                          Positioned.fill(
+                            child: rackItem != null &&
+                                    rackItem!.model3d.isNotEmpty
+                                ? OkeyRack3DModel(modelPath: rackItem!.model3d)
+                                : rackItem != null
+                                    ? (skinEffectOf(rackItem) != SkinEffect.none
+                                        ? AnimatedSkinLayer(
+                                            effect: skinEffectOf(rackItem),
+                                            woodUnderlay: true)
+                                        : SkinTransformImage.fromItem(
+                                            rackItem!))
+                                    : SkinTransformImage.fromItem(
+                                        StoreService.defaultWoodItem),
+                          ),
+                          // تعتيم خفيف فوق الكسنة/الخشب
+                          if (rackItem == null || rackItem!.model3d.isEmpty)
+                            Positioned.fill(
+                              child: Container(
+                                color: Colors.black.withOpacity(0.12),
                               ),
-                              border: Border(
-                                bottom: BorderSide(
-                                  color: (rackItem?.model3d.isNotEmpty ?? false)
-                                      ? const Color(0x00000000)
-                                      : const Color(0x338FA8E8),
-                                  width: 1.0,
+                            ),
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // ── اللوح الخلفي العلوي — شريط زجاجي ──
+                              Container(
+                                width: double.infinity,
+                                height: 20,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors:
+                                        (rackItem?.model3d.isNotEmpty ?? false)
+                                            ? const [
+                                                Color(0x00000000),
+                                                Color(0x00000000),
+                                              ]
+                                            : const [
+                                                Color(0x2FFFFFFF),
+                                                Color(0x14FFFFFF),
+                                              ],
+                                  ),
+                                  border: Border(
+                                    bottom: BorderSide(
+                                      color: (rackItem?.model3d.isNotEmpty ??
+                                              false)
+                                          ? const Color(0x00000000)
+                                          : const Color(0x338FA8E8),
+                                      width: 1.0,
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
 
-                          // ── مساحة الرفين للأحجار ──
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 4),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                // الصف الأول (العلوي)
-                                _buildShelfRow(0, 14, slotW, tileW, tileH),
+                              // ── مساحة الرفين للأحجار ──
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 4),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    // الصف الأول (العلوي)
+                                    _buildShelfRow(0, 14, slotW, tileW, tileH),
 
-                                // الفاصل المعدني بين الرفين — Glass Metal
-                                Container(
-                                  height: 4,
-                                  margin:
-                                      const EdgeInsets.symmetric(vertical: 2.5),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                      colors:
-                                          (rackItem?.model3d.isNotEmpty ?? false)
-                                              ? const [
-                                                  Color(0x00000000),
-                                                  Color(0x00000000),
-                                                  Color(0x00000000),
-                                                  Color(0x00000000),
-                                                ]
-                                              : const [
-                                                  Color(0xFF0A0F22),
-                                                  Color(0xFF5C6FA6),
-                                                  Color(0xFF9FB4E8),
-                                                  Color(0xFF1A2444),
-                                                ],
-                                      stops: const [0.0, 0.3, 0.7, 1.0],
-                                    ),
-                                    borderRadius: BorderRadius.circular(2),
-                                    boxShadow:
-                                        (rackItem?.model3d.isNotEmpty ?? false)
+                                    // الفاصل المعدني بين الرفين — Glass Metal
+                                    Container(
+                                      height: 4,
+                                      margin: const EdgeInsets.symmetric(
+                                          vertical: 2.5),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors:
+                                              (rackItem?.model3d.isNotEmpty ??
+                                                      false)
+                                                  ? const [
+                                                      Color(0x00000000),
+                                                      Color(0x00000000),
+                                                      Color(0x00000000),
+                                                      Color(0x00000000),
+                                                    ]
+                                                  : const [
+                                                      Color(0xFF0A0F22),
+                                                      Color(0xFF5C6FA6),
+                                                      Color(0xFF9FB4E8),
+                                                      Color(0xFF1A2444),
+                                                    ],
+                                          stops: const [0.0, 0.3, 0.7, 1.0],
+                                        ),
+                                        borderRadius: BorderRadius.circular(2),
+                                        boxShadow: (rackItem
+                                                    ?.model3d.isNotEmpty ??
+                                                false)
                                             ? null
                                             : [
                                                 BoxShadow(
@@ -256,70 +265,70 @@ class OkeyIstakaWidget extends StatelessWidget {
                                                   spreadRadius: -1,
                                                 ),
                                               ],
+                                      ),
+                                    ),
+
+                                    // الصف الثاني (السفلي)
+                                    _buildShelfRow(14, 28, slotW, tileW, tileH),
+                                  ],
+                                ),
+                              ),
+
+                              // الشفة السفلية — معدن زجاجي داكن
+                              Container(
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors:
+                                        (rackItem?.model3d.isNotEmpty ?? false)
+                                            ? const [
+                                                Color(0x00000000),
+                                                Color(0x00000000),
+                                                Color(0x00000000),
+                                              ]
+                                            : const [
+                                                Color(0xFF0A0F22),
+                                                Color(0xFF3A4A7A),
+                                                Color(0xFF0A0F22),
+                                              ],
                                   ),
                                 ),
-
-                                // الصف الثاني (السفلي)
-                                _buildShelfRow(14, 28, slotW, tileW, tileH),
-                              ],
-                            ),
-                          ),
-
-                          // الشفة السفلية — معدن زجاجي داكن
-                          Container(
-                            height: 4,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors:
-                                    (rackItem?.model3d.isNotEmpty ?? false)
-                                        ? const [
-                                            Color(0x00000000),
-                                            Color(0x00000000),
-                                            Color(0x00000000),
-                                          ]
-                                        : const [
-                                            Color(0xFF0A0F22),
-                                            Color(0xFF3A4A7A),
-                                            Color(0xFF0A0F22),
-                                          ],
                               ),
-                            ),
+                            ],
                           ),
                         ],
-                        ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
 
-                // ══════════════════════════════════════════════════════
-                // 2. الغطاء الخشبي الجانبي المثلث - يسار
-                // ══════════════════════════════════════════════════════
-                const Positioned(
-                  left: 0,
-                  top: 3,
-                  bottom: 3,
-                  width: 12,
-                  child: CustomPaint(
-                    painter: _TriangularEndCapPainter(isLeft: true),
+                  // ══════════════════════════════════════════════════════
+                  // 2. الغطاء الخشبي الجانبي المثلث - يسار
+                  // ══════════════════════════════════════════════════════
+                  const Positioned(
+                    left: 0,
+                    top: 3,
+                    bottom: 3,
+                    width: 12,
+                    child: CustomPaint(
+                      painter: _TriangularEndCapPainter(isLeft: true),
+                    ),
                   ),
-                ),
 
-                // ══════════════════════════════════════════════════════
-                // 3. الغطاء الخشبي الجانبي المثلث - يمين
-                // ══════════════════════════════════════════════════════
-                const Positioned(
-                  right: 0,
-                  top: 3,
-                  bottom: 3,
-                  width: 12,
-                  child: CustomPaint(
-                    painter: _TriangularEndCapPainter(isLeft: false),
+                  // ══════════════════════════════════════════════════════
+                  // 3. الغطاء الخشبي الجانبي المثلث - يمين
+                  // ══════════════════════════════════════════════════════
+                  const Positioned(
+                    right: 0,
+                    top: 3,
+                    bottom: 3,
+                    width: 12,
+                    child: CustomPaint(
+                      painter: _TriangularEndCapPainter(isLeft: false),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
           ),
         );
       },
@@ -336,6 +345,38 @@ class OkeyIstakaWidget extends StatelessWidget {
 
   /// صندوق الرف المعروض (للتحويل من إحداثيات الشاشة)
   static RenderBox? _rackBox;
+
+  // تتبع سرعة السحب لكشف "الفليك للأعلى" — الإفلات فوق أي هدف يأكل
+  // الحدث فلا يصل onDraggableCanceled، فنحسب السرعة من onMove
+  static Offset? _lastMovePos;
+  static DateTime? _lastMoveTime;
+  static double _sceneUpSpeed = 0;
+
+  /// سرعة الحركة اللحظية نحو أعلى المشهد (px/s) — تراعي دوران المشهد
+  void _trackFlick(Offset pos, bool rotated) {
+    final now = DateTime.now();
+    final lastP = _lastMovePos;
+    final lastT = _lastMoveTime;
+    if (lastP != null && lastT != null) {
+      final ms = now.difference(lastT).inMilliseconds;
+      if (ms > 0) {
+        // في الشاشة العمودية المشهد مدار 90°: أعلى المشهد = يمين الشاشة
+        final upDelta = rotated ? (pos.dx - lastP.dx) : (lastP.dy - pos.dy);
+        _sceneUpSpeed = upDelta * 1000 / ms;
+      }
+    }
+    _lastMovePos = pos;
+    _lastMoveTime = now;
+  }
+
+  static void _resetFlick() {
+    _sceneUpSpeed = 0;
+    _lastMovePos = null;
+    _lastMoveTime = null;
+  }
+
+  /// فليك صاعد قوي بما يكفي لعدّه رمية؟
+  static bool get _flickedUp => _sceneUpSpeed > 700;
 
   /// مركز الحجر المرسوم على الشاشة من موضع الـ feedback
   Offset _dragCenter(Offset feedbackTopLeft, double tileW, double tileH) =>
@@ -376,6 +417,7 @@ class OkeyIstakaWidget extends StatelessWidget {
     return DragTarget<int>(
       onWillAcceptWithDetails: (_) => true,
       onMove: (details) {
+        _trackFlick(details.offset, feedbackQuarterTurns.isOdd);
         final d = details.data;
         final s = _slotAt(_dragCenter(details.offset, tileW, tileH),
             OkeyDrag.isRackTile(d) ? d : -99, slotW, tileH,
@@ -383,10 +425,21 @@ class OkeyIstakaWidget extends StatelessWidget {
         final v = (s < 0 || s == d) ? null : s;
         if (_hoverSlot.value != v) _hoverSlot.value = v;
       },
-      onLeave: (_) => _hoverSlot.value = null,
+      onLeave: (_) {
+        _hoverSlot.value = null;
+        _resetFlick();
+      },
       onAcceptWithDetails: (details) {
         _hoverSlot.value = null;
         final d = details.data;
+        // فليك صاعد سريع على حجر الصف السفلي = رمي للطاولة بأنيميشن
+        // (الصف العلوي المفلوك يعود لمكانه فقط — بدون إعادة ترتيب)
+        if (OkeyDrag.isRackTile(d) && _flickedUp && onTileFlick != null) {
+          _resetFlick();
+          if (d >= 14) onTileFlick!(d);
+          return;
+        }
+        _resetFlick();
         final center = _dragCenter(details.offset, tileW, tileH);
         if (!OkeyDrag.isRackTile(d)) {
           final s = _slotAt(center, -99, slotW, tileH, raw: true);
@@ -445,8 +498,8 @@ class OkeyIstakaWidget extends StatelessWidget {
         color: Colors.transparent,
         child: Transform(
           alignment: Alignment.topLeft,
-          transform: Matrix4.diagonal3Values(
-              dragScaleX * 1.04, dragScaleY * 1.04, 1),
+          transform:
+              Matrix4.diagonal3Values(dragScaleX * 1.04, dragScaleY * 1.04, 1),
           child: Container(
             padding: const EdgeInsets.all(pad),
             decoration: BoxDecoration(
@@ -522,8 +575,8 @@ class OkeyIstakaWidget extends StatelessWidget {
 
             // الكتلة المتجاورة — تُرفع كاملة بالضغط المطوّل
             final groupTiles = _groupForSlot(slotIndex);
-            final groupStart = slotIndex -
-                groupTiles.indexWhere((t) => identical(t, tile));
+            final groupStart =
+                slotIndex - groupTiles.indexWhere((t) => identical(t, tile));
             // الحجر في خانة النزول يُزاح قليلاً ليفسح مكاناً للإدراج
             final hoverOffset = isHovering ? slotW * 0.38 : 0.0;
             return SizedBox(
@@ -541,70 +594,76 @@ class OkeyIstakaWidget extends StatelessWidget {
                     tileW: tileW,
                     tileH: tileH,
                     child: Draggable<int>(
-                    data: slotIndex,
-                    onDragStarted: () => HapticFeedback.selectionClick(),
-                    onDragEnd: (_) => _hoverSlot.value = null,
-                    // الحجر يتوسط الإصبع ويرتفع فوقه قليلاً ليبقى ظاهراً
-                    dragAnchorStrategy: (Draggable<Object> draggable,
-                        BuildContext context, Offset position) {
-                      if (feedbackQuarterTurns.isOdd) {
-                        return Offset(tileH / 2, tileW / 2);
-                      }
-                      return Offset(
-                          tileW / 2, tileH / 2 + tileH * dragScaleY * 0.28);
-                    },
-                    feedback: Material(
-                      color: Colors.transparent,
-                      elevation: 10,
-                      borderRadius: BorderRadius.circular(4),
-                      child: RotatedBox(
-                        quarterTurns: feedbackQuarterTurns,
-                        child: Transform(
-                          alignment: Alignment.center,
-                          transform: Matrix4.diagonal3Values(
-                              dragScaleX * 1.08, dragScaleY * 1.08, 1),
-                          child: OkeyTileWidget(
-                            tile: tile,
-                            isDragging: true,
-                            width: tileW,
-                            height: tileH,
-                          ),
-                        ),
-                      ),
-                    ),
-                    childWhenDragging: Container(
-                      width: tileW,
-                      height: tileH,
-                      decoration: BoxDecoration(
-                        color: const Color(0x1AFFFFFF),
+                      data: slotIndex,
+                      onDragStarted: () {
+                        _resetFlick();
+                        HapticFeedback.selectionClick();
+                      },
+                      onDragEnd: (_) {
+                        _hoverSlot.value = null;
+                        _resetFlick();
+                      },
+                      // الحجر يتوسط الإصبع ويرتفع فوقه قليلاً ليبقى ظاهراً
+                      dragAnchorStrategy: (Draggable<Object> draggable,
+                          BuildContext context, Offset position) {
+                        if (feedbackQuarterTurns.isOdd) {
+                          return Offset(tileH / 2, tileW / 2);
+                        }
+                        return Offset(
+                            tileW / 2, tileH / 2 + tileH * dragScaleY * 0.28);
+                      },
+                      feedback: Material(
+                        color: Colors.transparent,
+                        elevation: 10,
                         borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                          color: const Color(0x33FFFFFF),
-                          width: 0.8,
+                        child: RotatedBox(
+                          quarterTurns: feedbackQuarterTurns,
+                          child: Transform(
+                            alignment: Alignment.center,
+                            transform: Matrix4.diagonal3Values(
+                                dragScaleX * 1.08, dragScaleY * 1.08, 1),
+                            child: OkeyTileWidget(
+                              tile: tile,
+                              isDragging: true,
+                              width: tileW,
+                              height: tileH,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                    // الجوكر يظهر مقلوباً (أبيض) — لمسة تكشفه ثانيتين
-                    child: tile.isRealOkey
-                        ? OkeyJokerTile(
-                            tile: tile,
-                            isSelected: isSelected,
-                            isHighlighted:
-                                highlightedIndices.contains(slotIndex),
-                            width: tileW,
-                            height: tileH,
-                            onTap: () => onTileTap(slotIndex),
-                          )
-                        : OkeyTileWidget(
-                            tile: tile,
-                            isSelected: isSelected,
-                            isHighlighted:
-                                highlightedIndices.contains(slotIndex),
-                            width: tileW,
-                            height: tileH,
-                            onTap: () => onTileTap(slotIndex),
+                      childWhenDragging: Container(
+                        width: tileW,
+                        height: tileH,
+                        decoration: BoxDecoration(
+                          color: const Color(0x1AFFFFFF),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: const Color(0x33FFFFFF),
+                            width: 0.8,
                           ),
-                  ),
+                        ),
+                      ),
+                      // الجوكر يظهر مقلوباً (أبيض) — لمسة تكشفه ثانيتين
+                      child: tile.isRealOkey
+                          ? OkeyJokerTile(
+                              tile: tile,
+                              isSelected: isSelected,
+                              isHighlighted:
+                                  highlightedIndices.contains(slotIndex),
+                              width: tileW,
+                              height: tileH,
+                              onTap: () => onTileTap(slotIndex),
+                            )
+                          : OkeyTileWidget(
+                              tile: tile,
+                              isSelected: isSelected,
+                              isHighlighted:
+                                  highlightedIndices.contains(slotIndex),
+                              width: tileW,
+                              height: tileH,
+                              onTap: () => onTileTap(slotIndex),
+                            ),
+                    ),
                   ),
                 ),
               ),

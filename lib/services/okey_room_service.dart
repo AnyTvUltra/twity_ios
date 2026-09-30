@@ -292,6 +292,42 @@ class OkeyRoomService {
     }
   }
 
+  /// إضافة روبوت واحد لمقعد فارغ (بدون بدء اللعبة)
+  Future<void> addBot(String roomId) async {
+    try {
+      final docRef = _firestore.collection('rooms').doc(roomId);
+      final doc = await docRef.get();
+      if (!doc.exists) return;
+
+      final room = OkeyRoom.fromDoc(doc);
+      if (room.players.length >= 4) return;
+
+      final botNames = [
+        'سارة (Bot)',
+        'أحمد (Bot)',
+        'كابتن طارق (Bot)',
+        'أمير النرد (Bot)'
+      ];
+      final seat = room.players.length;
+      final bot = OkeyRoomPlayer(
+        uid: 'bot_${seat}_${DateTime.now().millisecondsSinceEpoch}',
+        name: botNames[seat % botNames.length],
+        username: 'bot_$seat',
+        photoUrl: '',
+        seatIndex: seat,
+        isBot: true,
+        tileCount: 14,
+      );
+
+      await docRef.update({
+        'players': FieldValue.arrayUnion([bot.toMap()]),
+        'playerUids': FieldValue.arrayUnion([bot.uid]),
+      });
+    } catch (e) {
+      debugPrint('Error adding bot: $e');
+    }
+  }
+
   /// تسجيل رمي حجر في الغرفة
   Future<void> recordDiscard(
       String roomId, Map<String, dynamic> tile, int currentSeat) async {

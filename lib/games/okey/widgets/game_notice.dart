@@ -9,14 +9,32 @@ class GameNotice {
   /// معالج الإشعار داخل المشهد (يُسجَّل من شاشة اللعبة)
   static void Function(String message, {IconData? icon})? handler;
 
-  static void show(BuildContext context, String message,
-      {IconData? icon}) {
+  static void show(BuildContext context, String message, {IconData? icon}) {
     final h = handler;
     if (h != null) {
       h(message, icon: icon);
       return;
     }
     TopNotification.show(context, message);
+  }
+}
+
+/// فقاعة رسالة لاعب داخل المشهد — تظهر فوق استكانة المرسل مباشرة
+/// (أنت أسفل، المقابل أعلى، والجانبيان يمين/يسار) بدون أي كلمة إضافية
+class GameBubble {
+  GameBubble._();
+
+  /// معالج الفقاعة (يُسجَّل من شاشة اللعبة): الرسالة + رقم اللاعب
+  static void Function(String message, int playerIndex)? handler;
+
+  static void show(BuildContext context, String message,
+      {int playerIndex = 0}) {
+    final h = handler;
+    if (h != null) {
+      h(message, playerIndex);
+      return;
+    }
+    GameNotice.show(context, message);
   }
 }
 
@@ -42,8 +60,8 @@ Future<T?> showOkeyLandscapeDialog<T>(BuildContext context,
           width: media.size.height,
           height: media.size.width,
           child: MediaQuery(
-            data: media.copyWith(
-                size: Size(media.size.height, media.size.width)),
+            data:
+                media.copyWith(size: Size(media.size.height, media.size.width)),
             child: Center(child: builder(ctx)),
           ),
         ),
