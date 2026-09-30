@@ -1066,10 +1066,14 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     if (_lastTappedSlot == slotIndex &&
         _lastTapTime != null &&
         now.difference(_lastTapTime!) < const Duration(milliseconds: 350)) {
-      if (_engine.getHighlightedSlotIndices().contains(slotIndex) &&
-          _engine.layMeldContainingSlot(slotIndex)) {
-        AppHaptics.medium();
-        _showGameNotice('تم إنزال الـ Per على الطاولة'.tr);
+      if (_engine.getHighlightedSlotIndices().contains(slotIndex)) {
+        if (!_humanHasReadyPer) {
+          _showGameNotice('لم تبلغ نقاط الفتح بعد — المطلوب {} نقطة'
+              .trp([_engine.rules.openingPoints]));
+        } else if (_engine.layMeldContainingSlot(slotIndex)) {
+          AppHaptics.medium();
+          _showGameNotice('تم إنزال الـ Per على الطاولة'.tr);
+        }
         _lastTappedSlot = null;
         _lastTapTime = null;
         return;
@@ -1251,11 +1255,13 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                       );
                     }),
                   ),
-                  // منطقة رمي تغطي المشهد كله: إسقاط الحجر في أي مكان خارج
-                  // الاستكانة وأماكن البير = رمي (الأهداف الأدق فوقها لها الأولوية)
+                  // منطقة رمي تغطي سطح الطاولة فقط (فوق مستوى الاستكانة):
+                  // إسقاط الحجر هناك = رمي. الإفلات أسفل/عند الاستكانة لا يُقبل
+                  // فيعود الحجر مكانه — لا رمي بالخطأ من سحب سريع داخل الرف
                   Positioned.fill(
                     child: DragTarget<int>(
-                      onWillAcceptWithDetails: (details) => true,
+                      onWillAcceptWithDetails: (details) =>
+                          _isOverTable(details.offset),
                       onAcceptWithDetails: (details) =>
                           _dropOnTable(details.data, details.offset),
                       builder: (context, candidateData, rejectedData) {
@@ -1800,15 +1806,41 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     );
   }
 
-  /// إفلات حجر على الطاولة (أي مكان خارج الاستكانة وأماكن البير) = رمي
+  /// هل نقطة الإفلات فوق سطح الطاولة فعلاً (فوق مستوى الاستكانة)؟
+  /// الإفلات عند مستوى الاستكانة أو أسفلها لا يُحتسب رمياً أبداً —
+  /// هذا يمنع السحب السريع داخل/تحت الاستكانة من رمي الحجر بالخطأ
+  bool _isOverTable(Offset dropGlobal) {
+    final ctx = _sceneKey.currentContext;
+    if (ctx == null) return true;
+    final scene = ctx.findRenderObject() as RenderBox;
+    final local = scene.globalToLocal(dropGlobal);
+    return local.dy < 232; // أعلى الاستكانة (الأحجار تبدأ ~237)
+  }
+
+  /// إفلات حجر على سطح الطاولة (منطقة اللعب فوق الاستكانة) = رمي
   void _dropOnTable(int slot, Offset dropGlobal) {
     if (_dealing) return;
+    if (!_isOverTable(dropGlobal)) return; // إفلات عند مستوى الاستكانة ≠ رمي
     if (OkeyDrag.isGroup(slot)) {
-      // كتلة مرفوعة أُفلتت على الطاولة: إن كانت Per صحيحاً تنزل، ولا تُرمى أبداً
+      // كتلة مرفوعة أُفلتت على الطاولة: إن كانت Per صحيحاً والشروط مستوفاة
+      // تنزل — وإلا لا تُرمى أبداً، فقط تنبيه وترجع مكانها
+      if (!_engine.humanCanLayMelds) {
+        _showGameNotice('أنت تلعب {} — لا نزول على الطاولة'
+            .trp([_engine.players[0].playStyle.label]));
+        return;
+      }
       final s = slot - OkeyDrag.groupBase;
-      if (_engine.getHighlightedSlotIndices().contains(s) &&
-          _engine.layMeldContainingSlot(s)) {
-        AppHaptics.medium();
+      if (_engine.getHighlightedSlotIndices().contains(s)) {
+        if (!_humanHasReadyPer) {
+          _showGameNotice('لم تبلغ نقاط الفتح بعد — المطلوب {} نقطة'
+              .trp([_engine.rules.openingPoints]));
+          return;
+        }
+        if (_engine.layMeldContainingSlot(s)) {
+          AppHaptics.medium();
+        } else {
+          _showGameNotice('هذه الأحجار لا تكوّن Per صحيحاً'.tr);
+        }
       } else {
         _showGameNotice('لا يمكن رمي مجموعة — ارمِ حجراً واحداً'.tr);
       }
@@ -1861,7 +1893,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       // بير كل لاعب مُدار نحو مقعده — نزوله أمامه ومواجه له
       final angle = _meldAngles[owner] ?? 0;
       final content = melds.isEmpty
-          ? (owner == 0 ? _myMeldHint() : const SizedBox.shrink())
+          ? (owner == 0 && _humanHasReadyPer
+              ? _myMeldHint()
+              : const SizedBox.shrink())
           : Transform.rotate(
               angle: angle,
               child: _meldsOnTable(melds, zone),
@@ -1879,24 +1913,29 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       ? data
       : (OkeyDrag.isGroup(data) ? data - OkeyDrag.groupBase : -1);
 
+  /// شروط النزول مستوفاة: أسلوب عادي + يوجد Per صحيح مميّز على الرف،
+  /// وقبل أول نزول يجب بلوغ نقاط الافتتاح (معلّقة الطاولة + جاهزة الرف).
+  /// المستطيل يبقى مخفياً حتى يتحقق هذا — لا نزول ولا إسقاط قبله
+  bool get _humanHasReadyPer {
+    if (!_engine.humanCanLayMelds) return false;
+    if (_engine.getHighlightedSlotIndices().isEmpty) return false;
+    return _engine.players[0].hasOpened ||
+        _engine.livePoints >= _engine.rules.openingPoints;
+  }
+
   /// منطقتك: إسقاط Per مميّز هنا = نزول على الطاولة
   Widget _myMeldDropZone(Widget child) {
     return DragTarget<int>(
-      // نقبل كل حجر من الرف: المميّز ينزل كبير، وغيره يُرمى على الطاولة
-      onWillAcceptWithDetails: (details) => _rackSlotOf(details.data) != -1,
+      // لا يُقبل هنا إلا حجر ضمن Per صحيح جاهز للنزول وبعد استيفاء
+      // شروط النزول كاملة (المستطيل مخفي حتى ذلك) — غيره يرفض ويعود للرف
+      onWillAcceptWithDetails: (details) {
+        final slot = _rackSlotOf(details.data);
+        return slot != -1 &&
+            _humanHasReadyPer &&
+            _engine.getHighlightedSlotIndices().contains(slot);
+      },
       onAcceptWithDetails: (details) {
         final slot = _rackSlotOf(details.data);
-        final isPer = _engine.getHighlightedSlotIndices().contains(slot);
-        if (!isPer) {
-          // حجر مفرد غير مميّز أُفلت هنا = رمي عادي على الطاولة
-          _dropOnTable(details.data, details.offset);
-          return;
-        }
-        if (!_engine.humanCanLayMelds) {
-          _showGameNotice('أنت تلعب {} — لا نزول على الطاولة'
-              .trp([_engine.players[0].playStyle.label]));
-          return;
-        }
         if (_engine.layMeldContainingSlot(slot)) {
           AppHaptics.medium();
         } else {
@@ -1987,9 +2026,6 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           _showGameNotice(
               'افتح اللعب أولاً (نزّل {} نقطة) قبل الصرف على بيرات غيرك'
                   .trp([_engine.rules.openingPoints]));
-        } else if (_engine.turnPhase == OkeyTurnPhase.awaitingDiscard) {
-          // آخر حل: حجر مفرد في دور الرمي على طاولة فارغة = رمي عادي
-          _executeDiscard(details.data, dropGlobal: details.offset);
         } else {
           _showGameNotice('هذا الحجر لا يصرف على هذا البير'.tr);
         }

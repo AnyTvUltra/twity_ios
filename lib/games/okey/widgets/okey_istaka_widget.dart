@@ -357,7 +357,9 @@ class OkeyIstakaWidget extends StatelessWidget {
     // بداية الأحجار داخل الرف: هامش 12 + حشوة 14 + حد 1 / الشريط العلوي 20 + 4 + حد 1
     const x0 = 27.0;
     const y0 = 25.0;
-    if (local.dy < y0 - tileH * 0.45) return -1;
+    // فوق الرف = فوق حافة الويدجت نفسها (مركز الحجر خارج الاستكانة للأعلى) —
+    // سحب داخل الاستكانة مهما كان سريعاً لا يتحول لرمي
+    if (local.dy < -10) return -1;
     final row = local.dy < y0 + tileH + 4.5 ? 0 : 1;
     final p = ((local.dx - x0) / slotW).clamp(0.0, 13.999);
     final col = p.floor();
