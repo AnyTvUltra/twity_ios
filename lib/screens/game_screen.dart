@@ -10,6 +10,7 @@ import '../services/auth_service.dart';
 import 'okey_game_screen.dart';
 import 'chess_game_screen.dart';
 import 'backgammon_game_screen.dart';
+import '../games/snake/snake_screen.dart';
 import '../l10n/app_lang.dart';
 
 class GameScreen extends StatefulWidget {
@@ -25,7 +26,11 @@ class _GameScreenState extends State<GameScreen> {
   int _selectedMode = 0;
   int _selectedBet = 500;
 
-  final List<String> _modes = ['أونلاين'.tr, 'مع صديق'.tr, 'ضد الذكاء الاصطناعي'.tr];
+  final List<String> _modes = [
+    'أونلاين'.tr,
+    'مع صديق'.tr,
+    'ضد الذكاء الاصطناعي'.tr
+  ];
   final List<int> _bets = [100, 250, 500, 1000, 2500];
 
   static const _bgTop = Color(0xFF0A0F24);
@@ -91,8 +96,7 @@ class _GameScreenState extends State<GameScreen> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Text('🪙',
-                                  style: TextStyle(fontSize: 13)),
+                              const Text('🪙', style: TextStyle(fontSize: 13)),
                               const SizedBox(width: 4),
                               Text(
                                 formatBalance(user?.chips ?? 0),
@@ -104,8 +108,8 @@ class _GameScreenState extends State<GameScreen> {
                               Container(
                                 width: 1,
                                 height: 13,
-                                margin: const EdgeInsets.symmetric(
-                                    horizontal: 7),
+                                margin:
+                                    const EdgeInsets.symmetric(horizontal: 7),
                                 color: const Color(0x33FFFFFF),
                               ),
                               const GemIcon(size: 13),
@@ -130,8 +134,8 @@ class _GameScreenState extends State<GameScreen> {
               Expanded(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 20, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                   child: Column(
                     children: [
                       const SizedBox(height: 8),
@@ -218,8 +222,7 @@ class _GameScreenState extends State<GameScreen> {
                             child: Padding(
                               padding: EdgeInsets.only(
                                 left: index == 0 ? 0 : 4,
-                                right:
-                                    index == _modes.length - 1 ? 0 : 4,
+                                right: index == _modes.length - 1 ? 0 : 4,
                               ),
                               child: GestureDetector(
                                 onTap: () {
@@ -227,10 +230,9 @@ class _GameScreenState extends State<GameScreen> {
                                   setState(() => _selectedMode = index);
                                 },
                                 child: AnimatedContainer(
-                                  duration:
-                                      const Duration(milliseconds: 180),
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 11),
+                                  duration: const Duration(milliseconds: 180),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 11),
                                   decoration: BoxDecoration(
                                     gradient: isSel
                                         ? const LinearGradient(colors: [
@@ -238,11 +240,9 @@ class _GameScreenState extends State<GameScreen> {
                                             Color(0xFF1D4ED8),
                                           ])
                                         : null,
-                                    color: isSel
-                                        ? null
-                                        : const Color(0x2E141C3C),
-                                    borderRadius:
-                                        BorderRadius.circular(14),
+                                    color:
+                                        isSel ? null : const Color(0x2E141C3C),
+                                    borderRadius: BorderRadius.circular(14),
                                     border: Border.all(
                                       color: isSel
                                           ? _neonBlue
@@ -252,8 +252,8 @@ class _GameScreenState extends State<GameScreen> {
                                     boxShadow: isSel
                                         ? [
                                             BoxShadow(
-                                              color: _neonBlue
-                                                  .withOpacity(0.35),
+                                              color:
+                                                  _neonBlue.withOpacity(0.35),
                                               blurRadius: 12,
                                             ),
                                           ]
@@ -264,9 +264,7 @@ class _GameScreenState extends State<GameScreen> {
                                       _modes[index],
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
-                                        color: isSel
-                                            ? Colors.white
-                                            : _textDim,
+                                        color: isSel ? Colors.white : _textDim,
                                         fontSize: 11.5,
                                         fontWeight: isSel
                                             ? FontWeight.w900
@@ -299,8 +297,7 @@ class _GameScreenState extends State<GameScreen> {
                                   setState(() => _selectedBet = bet);
                                 },
                                 child: AnimatedContainer(
-                                  duration:
-                                      const Duration(milliseconds: 180),
+                                  duration: const Duration(milliseconds: 180),
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 16, vertical: 9),
                                   decoration: BoxDecoration(
@@ -311,11 +308,9 @@ class _GameScreenState extends State<GameScreen> {
                                             Color(0xFFE8A820),
                                           ])
                                         : null,
-                                    color: isSel
-                                        ? null
-                                        : const Color(0x2E141C3C),
-                                    borderRadius:
-                                        BorderRadius.circular(16),
+                                    color:
+                                        isSel ? null : const Color(0x2E141C3C),
+                                    borderRadius: BorderRadius.circular(16),
                                     border: Border.all(
                                       color: isSel
                                           ? const Color(0xFFFFE9A8)
@@ -325,8 +320,7 @@ class _GameScreenState extends State<GameScreen> {
                                     boxShadow: isSel
                                         ? [
                                             BoxShadow(
-                                              color: _gold
-                                                  .withOpacity(0.4),
+                                              color: _gold.withOpacity(0.4),
                                               blurRadius: 12,
                                             ),
                                           ]
@@ -336,8 +330,7 @@ class _GameScreenState extends State<GameScreen> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       const Text('🪙',
-                                          style:
-                                              TextStyle(fontSize: 13)),
+                                          style: TextStyle(fontSize: 13)),
                                       const SizedBox(width: 5),
                                       Text(
                                         formatBalance(bet),
@@ -366,8 +359,7 @@ class _GameScreenState extends State<GameScreen> {
                           if (widget.gameId == 'okey') {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                  builder: (_) =>
-                                      OkeyGameScreen()),
+                                  builder: (_) => OkeyGameScreen()),
                             );
                           } else if (widget.gameId == 'chess') {
                             Navigator.of(context).push(
@@ -387,6 +379,16 @@ class _GameScreenState extends State<GameScreen> {
                                             : _selectedBet,
                                       )),
                             );
+                          } else if (widget.gameId == 'snake') {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                  builder: (_) => SnakeGameScreen(
+                                        vsAI: _selectedMode != 1,
+                                        bet: _selectedMode == 1
+                                            ? 0
+                                            : _selectedBet,
+                                      )),
+                            );
                           } else {
                             TopNotification.show(
                               context,
@@ -397,8 +399,7 @@ class _GameScreenState extends State<GameScreen> {
                         },
                         child: Container(
                           width: double.infinity,
-                          padding:
-                              const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
                               begin: Alignment.topCenter,
@@ -413,8 +414,7 @@ class _GameScreenState extends State<GameScreen> {
                             ),
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(
-                                color: const Color(0xFFFFE9A8),
-                                width: 1.4),
+                                color: const Color(0xFFFFE9A8), width: 1.4),
                             boxShadow: [
                               BoxShadow(
                                   color: _gold.withOpacity(0.4),
@@ -436,8 +436,7 @@ class _GameScreenState extends State<GameScreen> {
                                 height: 13,
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    borderRadius:
-                                        BorderRadius.circular(20),
+                                    borderRadius: BorderRadius.circular(20),
                                     gradient: LinearGradient(
                                       colors: [
                                         Colors.white.withOpacity(0.5),
@@ -448,12 +447,10 @@ class _GameScreenState extends State<GameScreen> {
                                 ),
                               ),
                               Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.center,
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(Icons.play_arrow_rounded,
-                                      color: Color(0xFF1B0B30),
-                                      size: 26),
+                                      color: Color(0xFF1B0B30), size: 26),
                                   SizedBox(width: 8),
                                   Text(
                                     'العب الآن'.tr,

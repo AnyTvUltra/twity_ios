@@ -83,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void _navigateToGame(String gameId) {
     AppHaptics.medium();
     // ألعاب قيد التطوير — تظهر بطاقتها للتشويق وتُفعَّل لاحقاً
-    if (gameId == 'snake' || gameId == 'domino') {
+    if (gameId == 'domino') {
       _showNotice('هذه اللعبة قيد التطوير — قريباً! 🚧'.tr,
           icon: Icons.construction_rounded);
       return;
@@ -218,8 +218,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   onStoreTap: () {
                     AppHaptics.selection();
                     Navigator.of(context).push(
-                      MaterialPageRoute(
-                          builder: (_) => const StoreScreen()),
+                      MaterialPageRoute(builder: (_) => const StoreScreen()),
                     );
                   },
                 ),
