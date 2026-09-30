@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../services/store_service.dart';
 import '../../../widgets/animated_skin_effect.dart';
 import '../../../widgets/skin_image.dart';
-import '../okey_models.dart';
 
 enum OpponentPosition { top, left, right }
 
@@ -13,9 +12,6 @@ class OkeyOpponentIstaka extends StatelessWidget {
   final int tileCount;
   final bool isTurn;
 
-  /// اللاعب صاحب الاستكانة — لعرض صورته الحقيقية على حافة الاستكانة
-  final OkeyPlayer? player;
-
   /// كسنة الاستكانة — تُطبق على استكانات الخصوم أيضاً
   final StoreItem? rackItem;
 
@@ -24,7 +20,6 @@ class OkeyOpponentIstaka extends StatelessWidget {
     required this.position,
     this.tileCount = 14,
     this.isTurn = false,
-    this.player,
     this.rackItem,
   });
 
@@ -41,62 +36,9 @@ class OkeyOpponentIstaka extends StatelessWidget {
     return SkinTransformImage.fromItem(StoreService.defaultWoodItem);
   }
 
-  /// أفاتار اللاعب على حافة الاستكانة — صورته الحقيقية أو حرف اسمه
-  Widget _avatarChip() {
-    final p = player;
-    final grad = position == OpponentPosition.right
-        ? const [Color(0xFF3B82F6), Color(0xFF1D4ED8)]
-        : position == OpponentPosition.left
-            ? const [Color(0xFFF59E0B), Color(0xFFD97706)]
-            : const [Color(0xFFEC4899), Color(0xFF8B5CF6)];
-    final letter =
-        (p?.name.isNotEmpty ?? false) ? p!.name.characters.first : '🤖';
-    final url = p?.avatarUrl ?? '';
-    return Container(
-      width: 24,
-      height: 24,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(begin: Alignment.topLeft, colors: grad),
-        border: Border.all(
-            color: isTurn ? const Color(0xFF4ADE80) : Colors.white38,
-            width: isTurn ? 1.6 : 0.9),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 5),
-        ],
-      ),
-      child: ClipOval(
-        child: url.startsWith('http')
-            ? Image.network(url,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _avatarLetter(letter))
-            : _avatarLetter(letter),
-      ),
-    );
-  }
-
-  Widget _avatarLetter(String letter) => Center(
-        child: Text(
-          letter == '🤖' ? letter : letter.toUpperCase(),
-          style: const TextStyle(
-              color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900),
-        ),
-      );
-
   @override
   Widget build(BuildContext context) {
-    // الاستكانة مع أفاتار صاحبها مثبّت على حافتها العلوية
-    final rack = Stack(
-      clipBehavior: Clip.none,
-      alignment: Alignment.topCenter,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: _buildTopIstaka(),
-        ),
-        Positioned(top: 0, child: _avatarChip()),
-      ],
-    );
+    final rack = _buildTopIstaka();
     switch (position) {
       case OpponentPosition.top:
         // ميلان عمق ثري-دي مثل سطح الطاولة المجاورة + مقلوباً نحو الخصم

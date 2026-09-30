@@ -123,6 +123,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       DeviceOrientation.landscapeRight,
     ]);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    // جلسة صوت مشتركة: مؤثرات اللعبة لا تُسكت الراديو والعكس
+    RadioService.applySharedAudioSession();
 
     _discardAnimController = AnimationController(
       vsync: this,
@@ -1282,7 +1284,6 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                     child: Center(
                       child: OkeyOpponentIstaka(
                         position: OpponentPosition.top,
-                        player: _engine.players[2],
                         tileCount: _dealing
                             ? _dealtCount[2]
                             : _engine.players[2].tileCount,
@@ -1297,7 +1298,6 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                     top: 66,
                     child: OkeyOpponentIstaka(
                       position: OpponentPosition.left,
-                      player: _engine.players[3],
                       tileCount: _dealing
                           ? _dealtCount[3]
                           : _engine.players[3].tileCount,
@@ -1310,7 +1310,6 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                     top: 66,
                     child: OkeyOpponentIstaka(
                       position: OpponentPosition.right,
-                      player: _engine.players[1],
                       tileCount: _dealing
                           ? _dealtCount[1]
                           : _engine.players[1].tileCount,
@@ -1461,24 +1460,22 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           left: 60,
           child: _buildStyleButtons(),
         ),
+        // صورة الخصم الأمامي + اسمه — تواجهني أنا لا اتجاهه هو
         Positioned(
-          top: 4,
+          top: 2,
           left: 0,
           right: 0,
           child: Center(
             child: Row(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _withStyleChip(
-                  OkeyPlayerBadge(
-                    player: _engine.players[2],
-                    isTurn: _engine.currentTurnIndex == 2,
-                    type: PlayerBadgeType.top,
-                  ),
-                  _engine.players[2],
-                ),
+                _seatBadge(2),
                 const SizedBox(width: 6),
-                _roleChip(widget.teamMode),
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: _roleChip(widget.teamMode),
+                ),
               ],
             ),
           ),
@@ -1501,6 +1498,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                       : Colors.white54,
                   onTap: () async {
                     await VoiceService().toggleMic();
+                    // فتح المايك يوقف الراديو حتى لا يختلط الصوتان
+                    if (VoiceService().isMicOn && RadioService().isPlaying) {
+                      RadioService().togglePlay();
+                    }
                     _showGameNotice(
                       VoiceService().isMicOn
                           ? '🎙️ المايك مفعّل'
@@ -1509,7 +1510,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                   },
                 ),
                 const SizedBox(width: 6),
-                // الراديو داخل اللعبة
+                // الراديو داخل اللعبة — الضغط يفتح قائمة المحطات لتغيير الأغنية
                 _landscapeCircleButton(
                   icon: RadioService().isPlaying
                       ? Icons.radio_rounded
@@ -1518,12 +1519,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                       ? const Color(0xFFFBBF24)
                       : Colors.white54,
                   onTap: () {
-                    RadioService().togglePlay();
-                    _showGameNotice(
-                      RadioService().isPlaying
-                          ? '📻 الراديو يعمل'
-                          : '📻 الراديو متوقف',
-                    );
+                    AppHaptics.selection();
+                    RadioPlayerSheet.show(context);
                   },
                 ),
                 const SizedBox(width: 6),
@@ -1543,41 +1540,33 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           ),
         ),
 
+        // صورة الخصم الأيسر + اسمه — باتجاهي أنا
         Positioned(
           left: 10,
           top: 138,
-          child: _withStyleChip(
-            OkeyPlayerBadge(
-              player: _engine.players[3],
-              isTurn: _engine.currentTurnIndex == 3,
-              type: PlayerBadgeType.left,
-            ),
-            _engine.players[3],
-          ),
+          child: _seatBadge(3),
         ),
+        // صورة الخصم الأيمن + اسمه — باتجاهي أنا
         Positioned(
           right: 10,
           top: 138,
-          child: _withStyleChip(
-            OkeyPlayerBadge(
-              player: _engine.players[1],
-              isTurn: _engine.currentTurnIndex == 1,
-              type: PlayerBadgeType.right,
-            ),
-            _engine.players[1],
-          ),
+          child: _seatBadge(1),
         ),
         Positioned(
           left: 12,
           top: 70,
           child: _buildRoundStats(),
         ),
-        // بطاقة اللاعب والأزرار — أعمدة جانبية رفيعة على الحافتين
-        // حتى لا تغطي طرفي الاستكانة أبداً
+        // شريط الوقت الرفيع فوق استكانتي — يظهر أثناء دوري وينقص مع الوقت
         Positioned(
-          left: 8,
-          bottom: 8,
-          child: _buildSidePlayerBadge('$minutes:$seconds', isHumanTurn),
+          left: 210,
+          right: 210,
+          top: 226,
+          child: AnimatedOpacity(
+            opacity: isHumanTurn ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 200),
+            child: _myTurnBar('$minutes:$seconds'),
+          ),
         ),
         Positioned(
           right: 8,
@@ -1606,39 +1595,6 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
 
   Color _styleColor(OkeyPlayStyle s) =>
       s == OkeyPlayStyle.full ? _fullColor : _konkanColor;
-
-  /// شارة صغيرة فوق بطاقة اللاعب تبيّن أنه بدأ كونكان أو فول — يراها الجميع
-  Widget _withStyleChip(Widget badge, OkeyPlayer p) {
-    if (p.playStyle == OkeyPlayStyle.normal) return badge;
-    final c = _styleColor(p.playStyle);
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        badge,
-        Positioned(
-          top: -9,
-          right: -4,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: c,
-              borderRadius: BorderRadius.circular(8),
-              boxShadow: [
-                BoxShadow(color: c.withOpacity(0.55), blurRadius: 8),
-              ],
-            ),
-            child: Text(
-              p.playStyle.label,
-              style: const TextStyle(
-                  color: Color(0xFF1B0B30),
-                  fontSize: 8.5,
-                  fontWeight: FontWeight.w900),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
   /// زرّا كونكان / فول — يختار اللاعب أسلوبه قبل أي نزول، ثم يُقفل
   Widget _buildStyleButtons() {
@@ -1861,11 +1817,20 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   // ══════════════════════════════════════════════════════
 
   /// منطقة كل لاعب على سطح الطاولة (بإحداثيات المشهد 844×390)
+  /// كل منطقة أمام استكانة صاحبها مباشرة
   static const _meldZones = <int, Rect>{
-    0: Rect.fromLTWH(196, 192, 452, 44), // أنت — طرف الطاولة القريب
-    2: Rect.fromLTWH(238, 62, 368, 40), // الخصم المقابل
-    3: Rect.fromLTWH(150, 100, 170, 94), // الخصم الأيسر
-    1: Rect.fromLTWH(608, 100, 108, 94), // الخصم الأيمن (بعد كومة الرمي)
+    0: Rect.fromLTWH(196, 182, 452, 42), // أنت — أمام استكانتك مباشرة
+    2: Rect.fromLTWH(238, 56, 368, 44), // الخصم المقابل — أمام استكانته
+    3: Rect.fromLTWH(150, 104, 168, 88), // الخصم الأيسر — أمام استكانته
+    1: Rect.fromLTWH(610, 104, 108, 88), // الخصم الأيمن — أمام استكانته
+  };
+
+  /// دوران محتوى بير كل لاعب ليواجه صاحبه — مثل اتجاه استكانتِه
+  static final _meldAngles = <int, double>{
+    0: 0, // أنا: باتجاهي
+    2: math.pi, // الأمامي: نحوه
+    3: math.pi / 2, // الأيسر: نص بيره يشير يميناً (باتجاهه)
+    1: -math.pi / 2, // الأيمن: نص بيره يشير يساراً (باتجاهه)
   };
 
   List<Widget> _buildTableMelds() {
@@ -1878,9 +1843,14 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           if (_engine.tableMelds[i].ownerIndex == owner)
             MapEntry(i, _engine.tableMelds[i]),
       ];
+      // بير كل لاعب مُدار نحو مقعده — نزوله أمامه ومواجه له
+      final angle = _meldAngles[owner] ?? 0;
       final content = melds.isEmpty
           ? (owner == 0 ? _myMeldHint() : const SizedBox.shrink())
-          : _meldsOnTable(melds, zone);
+          : Transform.rotate(
+              angle: angle,
+              child: _meldsOnTable(melds, zone),
+            );
       out.add(Positioned.fromRect(
         rect: zone,
         child: owner == 0 ? _myMeldDropZone(content) : content,
@@ -2224,123 +2194,175 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     );
   }
 
-  /// بطاقة لاعب جانبية عمودية رفيعة (يسار أسفل) — أفاتار + اسم + مؤقت
-  Widget _buildSidePlayerBadge(String timerString, bool isTurn) {
-    final player = _engine.players[0];
-    return Container(
-      width: 88,
-      margin: const EdgeInsets.only(right: 2),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xEB1A1E29),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isTurn ? const Color(0xFF4ADE80) : const Color(0x334B5563),
-          width: isTurn ? 1.5 : 1.0,
+  /// شريط الوقت الرفيع فوق استكانتي — ينقص كل ثانية ويحمر قرب النفاد
+  Widget _myTurnBar(String timerString) {
+    final remain = _engine.turnTimeRemaining;
+    final low = remain <= 10;
+    final c = low ? const Color(0xFFEF4444) : const Color(0xFF4ADE80);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          timerString,
+          style: TextStyle(
+              color: c,
+              fontSize: 8.5,
+              fontWeight: FontWeight.w800,
+              height: 1.0,
+              shadows: const [Shadow(color: Colors.black87, blurRadius: 4)]),
         ),
-        boxShadow: [
-          if (isTurn)
-            BoxShadow(
-              color: const Color(0xFF4ADE80).withOpacity(0.35),
-              blurRadius: 12,
-              spreadRadius: 1,
-            )
-          else
-            BoxShadow(
-              color: Colors.black.withOpacity(0.5),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color:
-                    isTurn ? const Color(0xFF4ADE80) : const Color(0xFF6B7280),
-                width: isTurn ? 2.0 : 1.2,
-              ),
-            ),
-            child: ClipOval(
-              child: Container(
-                color: const Color(0xFF2E384D),
-                child: const Icon(Icons.person, color: Colors.white, size: 16),
-              ),
+        const SizedBox(height: 2),
+        SizedBox(
+          height: 5,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(3),
+            child: LinearProgressIndicator(
+              value: (remain / _engine.turnDuration).clamp(0.0, 1.0),
+              backgroundColor: Colors.white12,
+              valueColor: AlwaysStoppedAnimation<Color>(c),
             ),
           ),
-          const SizedBox(height: 3),
-          Text(
-            player.name,
+        ),
+      ],
+    );
+  }
+
+  /// صورة خصم + اسمه + حلقة وقت دائرية فوقها — موجّهة لي أنا مهما كان مقعده
+  Widget _seatBadge(int seat) {
+    final p = _engine.players[seat];
+    final isTurn = !_dealing && _engine.currentTurnIndex == seat;
+    final low = _engine.turnTimeRemaining <= 10;
+    final ringColor = low ? const Color(0xFFEF4444) : const Color(0xFF4ADE80);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 44,
+          height: 44,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // حلقة الوقت المتبقي — تدور حول الصورة وتنقص
+              if (isTurn)
+                SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: CircularProgressIndicator(
+                    value: (_engine.turnTimeRemaining / _engine.turnDuration)
+                        .clamp(0.0, 1.0),
+                    strokeWidth: 3,
+                    strokeCap: StrokeCap.round,
+                    backgroundColor: Colors.white12,
+                    valueColor: AlwaysStoppedAnimation<Color>(ringColor),
+                  ),
+                ),
+              _seatAvatar(p, seat, isTurn),
+            ],
+          ),
+        ),
+        const SizedBox(height: 3),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.55),
+            borderRadius: BorderRadius.circular(7),
+          ),
+          child: Text(
+            p.name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
             style: const TextStyle(
                 color: Colors.white,
-                fontSize: 9.5,
+                fontSize: 8.5,
                 fontWeight: FontWeight.w700,
                 height: 1.1),
           ),
-          const SizedBox(height: 2),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '${player.rating}',
-                style: const TextStyle(
-                    color: Color(0xFF9CA3AF),
-                    fontSize: 8,
-                    fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(width: 4),
-              Container(
-                width: 4,
-                height: 4,
-                decoration: const BoxDecoration(
-                    color: Color(0xFF4ADE80), shape: BoxShape.circle),
-              ),
-              const SizedBox(width: 3),
-              Text(
-                timerString,
-                style: TextStyle(
-                    color: isTurn
-                        ? (_engine.turnTimeRemaining <= 10
-                            ? const Color(0xFFEF4444)
-                            : const Color(0xFF4ADE80))
-                        : const Color(0xFFD1D5DB),
-                    fontSize: 8.5,
-                    fontWeight: isTurn ? FontWeight.w800 : FontWeight.w600),
-              ),
-            ],
-          ),
-          if (isTurn) ...[
-            const SizedBox(height: 3),
-            SizedBox(
-              width: 64,
-              height: 3,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(2),
-                child: LinearProgressIndicator(
-                  value: (_engine.turnTimeRemaining / _engine.turnDuration)
-                      .clamp(0.0, 1.0),
-                  backgroundColor: Colors.white12,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    _engine.turnTimeRemaining <= 10
-                        ? const Color(0xFFEF4444)
-                        : const Color(0xFF4ADE80),
-                  ),
-                ),
-              ),
+        ),
+        // شارة أسلوب اللعب (كونكان/فول) تحت الاسم
+        if (p.playStyle != OkeyPlayStyle.normal)
+          Container(
+            margin: const EdgeInsets.only(top: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+            decoration: BoxDecoration(
+              color: _styleColor(p.playStyle),
+              borderRadius: BorderRadius.circular(6),
             ),
-          ],
+            child: Text(
+              p.playStyle.label,
+              style: const TextStyle(
+                  color: Color(0xFF1B0B30),
+                  fontSize: 7.5,
+                  fontWeight: FontWeight.w900),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// أفاتار اللاعب — صورته الحقيقية أو أول حرف من اسمه، باتجاه الشاشة دائماً
+  Widget _seatAvatar(OkeyPlayer p, int seat, bool isTurn) {
+    const seatColors = [
+      Color(0xFF4ADE80),
+      Color(0xFF60A5FA),
+      Color(0xFFF472B6),
+      Color(0xFFFBBF24),
+    ];
+    final color = seatColors[seat % seatColors.length];
+    final letter = p.name.isNotEmpty ? p.name.characters.first : '?';
+    final url = p.avatarUrl;
+    Widget face;
+    if (url.startsWith('http')) {
+      face = Image.network(url,
+          width: 34,
+          height: 34,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Center(
+              child: Text(letter,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800))));
+    } else if (url.startsWith('assets/')) {
+      face = Image.asset(url,
+          width: 34,
+          height: 34,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Center(
+              child: Text(letter,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800))));
+    } else {
+      face = Center(
+          child: Text(letter,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800)));
+    }
+    return Container(
+      width: 34,
+      height: 34,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: const Color(0xFF2E384D),
+        border: Border.all(
+          color: isTurn ? const Color(0xFF4ADE80) : color,
+          width: isTurn ? 2.0 : 1.4,
+        ),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.5),
+              blurRadius: 6,
+              offset: const Offset(0, 2)),
+          if (isTurn)
+            BoxShadow(
+                color: const Color(0xFF4ADE80).withOpacity(0.45),
+                blurRadius: 10),
         ],
       ),
+      child: ClipOval(child: face),
     );
   }
 
@@ -2571,7 +2593,6 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           child: Center(
             child: OkeyOpponentIstaka(
               position: OpponentPosition.top,
-              player: _engine.players[2],
               tileCount: _engine.players[2].tileCount,
               isTurn: _engine.currentTurnIndex == 2,
             ),
@@ -2613,7 +2634,6 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                         const SizedBox(height: 6),
                         OkeyOpponentIstaka(
                           position: OpponentPosition.left,
-                          player: _engine.players[3],
                           tileCount: _engine.players[3].tileCount,
                           isTurn: _engine.currentTurnIndex == 3,
                         ),
@@ -2639,7 +2659,6 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                         const SizedBox(height: 6),
                         OkeyOpponentIstaka(
                           position: OpponentPosition.right,
-                          player: _engine.players[1],
                           tileCount: _engine.players[1].tileCount,
                           isTurn: _engine.currentTurnIndex == 1,
                         ),

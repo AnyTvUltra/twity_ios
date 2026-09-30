@@ -42,51 +42,52 @@ class RadioService extends ChangeNotifier {
 
   /// محطات احتياطية تُستخدم إن لم توجد بيانات في Firestore
   static List<RadioStation> get _fallbackStations => [
-    RadioStation(
-      id: 'quran',
-      name: 'إذاعة القرآن الكريم (القاهرة)'.tr,
-      genre: 'قرآن وتلاوات'.tr,
-      url: 'https://stream.radiojar.com/8s5u5tpdtwzuv',
-      flag: '📖',
-      groupId: '_default',
-    ),
-    RadioStation(
-      id: 'rotana_tarab',
-      name: 'روتانا طرب كلاسيك'.tr,
-      genre: 'طرب وأصالة'.tr,
-      url: 'https://stream.zeno.fm/f3wvbbqmdg8uv',
-      flag: '🎶',
-      groupId: '_default',
-    ),
-    RadioStation(
-      id: 'mc_doualiya',
-      name: 'مونت كارلو الدولية'.tr,
-      genre: 'منوعات وأخبار'.tr,
-      url: 'https://montecarlodoualiyaaudio.akacdn.perfora.net/mcd/all/mcd-128k.mp3',
-      flag: '🌍',
-      groupId: '_default',
-    ),
-    RadioStation(
-      id: 'kral_pop',
-      name: 'Kral Pop (تركيا)'.tr,
-      genre: 'موسيقى تركية حماسية'.tr,
-      url: 'https://kralwmedia.radyotvonline.net/kralpop/chunklist.m3u8',
-      flag: '🇹🇷',
-      groupId: '_default',
-    ),
-    RadioStation(
-      id: 'lofi_gaming',
-      name: 'Lofi Chillout Beats',
-      genre: 'موسيقى هادئة للتركيز'.tr,
-      url: 'https://stream.zeno.fm/0r0xa792kwzuv',
-      flag: '🎧',
-      groupId: '_default',
-    ),
-  ];
+        RadioStation(
+          id: 'quran',
+          name: 'إذاعة القرآن الكريم (القاهرة)'.tr,
+          genre: 'قرآن وتلاوات'.tr,
+          url: 'https://stream.radiojar.com/8s5u5tpdtwzuv',
+          flag: '📖',
+          groupId: '_default',
+        ),
+        RadioStation(
+          id: 'rotana_tarab',
+          name: 'روتانا طرب كلاسيك'.tr,
+          genre: 'طرب وأصالة'.tr,
+          url: 'https://stream.zeno.fm/f3wvbbqmdg8uv',
+          flag: '🎶',
+          groupId: '_default',
+        ),
+        RadioStation(
+          id: 'mc_doualiya',
+          name: 'مونت كارلو الدولية'.tr,
+          genre: 'منوعات وأخبار'.tr,
+          url:
+              'https://montecarlodoualiyaaudio.akacdn.perfora.net/mcd/all/mcd-128k.mp3',
+          flag: '🌍',
+          groupId: '_default',
+        ),
+        RadioStation(
+          id: 'kral_pop',
+          name: 'Kral Pop (تركيا)'.tr,
+          genre: 'موسيقى تركية حماسية'.tr,
+          url: 'https://kralwmedia.radyotvonline.net/kralpop/chunklist.m3u8',
+          flag: '🇹🇷',
+          groupId: '_default',
+        ),
+        RadioStation(
+          id: 'lofi_gaming',
+          name: 'Lofi Chillout Beats',
+          genre: 'موسيقى هادئة للتركيز'.tr,
+          url: 'https://stream.zeno.fm/0r0xa792kwzuv',
+          flag: '🎧',
+          groupId: '_default',
+        ),
+      ];
 
   static List<RadioGroup> get _fallbackGroups => [
-    RadioGroup(id: '_default', name: 'محطات عامة'.tr, flag: '📻'),
-  ];
+        RadioGroup(id: '_default', name: 'محطات عامة'.tr, flag: '📻'),
+      ];
 
   List<RadioStation> _stations = _fallbackStations;
   List<RadioGroup> _groups = _fallbackGroups;
@@ -176,11 +177,46 @@ class RadioService extends ChangeNotifier {
   bool _isPlaying = false;
   bool get isPlaying => _isPlaying;
 
+  /// سياق صوتي مشترك: الراديو يشتغل مع مؤثرات اللعبة دون أن يُخفَض أو يُقطع،
+  /// والمؤثرات نفسها لا تسرق جلسة الصوت (ambient + بدون طلب focus).
+  static void applySharedAudioSession() {
+    try {
+      // الراديو: playback + mixWithOthers حتى لا تخفّه المؤثرات
+      // المؤثرات: ambient/no-focus حتى لا تُسكت الراديو إطلاقاً
+      AudioPlayer.global.setAudioContext(AudioContext(
+        iOS: AudioContextIOS(
+          category: AVAudioSessionCategory.ambient,
+          options: const {AVAudioSessionOptions.mixWithOthers},
+        ),
+        android: const AudioContextAndroid(
+          audioFocus: AndroidAudioFocus.none,
+          contentType: AndroidContentType.sonification,
+          usageType: AndroidUsageType.game,
+        ),
+      ));
+    } catch (_) {}
+  }
+
   /// مشغّل المنصات الأصلية (iOS/Android) عبر audioplayers
   AudioPlayer _ensureNativePlayer() {
+    applySharedAudioSession();
     final p = _nativePlayer;
     if (p != null) return p;
     final player = AudioPlayer()..setReleaseMode(ReleaseMode.stop);
+    try {
+      player.setAudioContext(AudioContext(
+        iOS: AudioContextIOS(
+          category: AVAudioSessionCategory.playback,
+          options: const {AVAudioSessionOptions.mixWithOthers},
+        ),
+        android: const AudioContextAndroid(
+          audioFocus: AndroidAudioFocus.none,
+          contentType: AndroidContentType.music,
+          usageType: AndroidUsageType.media,
+          stayAwake: true,
+        ),
+      ));
+    } catch (_) {}
     player.setVolume(_volume);
     _nativeStateSub = player.onPlayerStateChanged.listen((state) {
       _isPlaying = state == PlayerState.playing;
