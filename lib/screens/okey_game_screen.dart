@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../games/okey/okey_engine.dart';
@@ -113,6 +114,40 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
 
   /// هل مشهد اللعبة مُدار 90° (شاشة عمودية)؟ — لتدوير الحجر المسحوب مثله
   bool _sceneRotated = false;
+
+  /// حجم اللوحة المنطقية الفعلي — يُحدَّث في كل LayoutBuilder وتملأ
+  /// نسبتها نسبة الشاشة تماماً (لا أشرطة سوداء ولا تشويه)
+  Size _sceneSize = const Size(844, 390);
+
+  /// المقعد الذي يشاهد منه هذا العميل — 0=أسفل دائماً.
+  /// اتجاه أحجار الطاولة والحوامل Viewer-Dependent: يُحسب من موضع
+  /// المقعد على الشاشة لا من بيانات اللاعب، فيرى كل مشاهد الحجر نفسه
+  /// موجّهاً نحو صاحبه. قابل للتبديل في وضع التصحيح لمعاينة بقية المقاعد.
+  int _viewerSeat = 0;
+
+  /// اللاعب الجالس في موضع الشاشة [seat] (0=أسفل، 1=يمين، 2=أعلى، 3=يسار)
+  int _playerAtSeat(int seat) => (seat + _viewerSeat) % 4;
+
+  /// موضع الشاشة الذي يجلس فيه اللاعب [playerIndex]
+  int _seatOfPlayer(int playerIndex) => (playerIndex - _viewerSeat + 4) % 4;
+
+  /// مستطيل سطح الطاولة داخل اللوحة المنطقية — نسبي للأبعاد الفعلية
+  Rect _tableRect(Size s) => Rect.fromLTRB(
+      s.width * 0.175, s.height * 0.169, s.width * 0.825, s.height * 0.672);
+
+  /// مركز حامل أحجار المقعد على حافة الطاولة
+  Offset _seatRackCenter(int seat, Rect t, Size s) {
+    switch (seat) {
+      case 2:
+        return Offset(s.width / 2, t.top + 30);
+      case 3:
+        return Offset(t.left + 26, t.center.dy);
+      case 1:
+        return Offset(t.right - 26, t.center.dy);
+      default:
+        return Offset(s.width / 2, s.height - 88);
+    }
+  }
 
   static const int _winChips = 200;
   static const int _lossChips = 50;
@@ -257,25 +292,32 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         ),
       ),
     );
-    switch (_chatBubblePlayer) {
+    // مقعد صاحب الفقاعة على الشاشة من منظور هذا المشاهد + مواضع نسبية
+    // للطاولة الفعلية حتى تبقى قرب حامله على أي أبعاد شاشة
+    final t = _tableRect(_sceneSize);
+    switch (_seatOfPlayer(_chatBubblePlayer)) {
       case 2:
         pos = Positioned(
-            top: 52,
+            top: t.top - 14,
             left: 0,
             right: 0,
             child: Center(child: IgnorePointer(child: bubble)));
         break;
       case 3:
-        pos =
-            Positioned(left: 64, top: 150, child: IgnorePointer(child: bubble));
+        pos = Positioned(
+            left: math.max(4, t.left - 84),
+            top: t.center.dy - 14,
+            child: IgnorePointer(child: bubble));
         break;
       case 1:
         pos = Positioned(
-            right: 64, top: 150, child: IgnorePointer(child: bubble));
+            right: math.max(4, _sceneSize.width - t.right - 84),
+            top: t.center.dy - 14,
+            child: IgnorePointer(child: bubble));
         break;
       default:
         pos = Positioned(
-            bottom: 122,
+            bottom: 140 * (_rackSlotW() / 40) - 18,
             left: 0,
             right: 0,
             child: Center(child: IgnorePointer(child: bubble)));
@@ -331,13 +373,13 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     return out;
   }
 
-  /// مواضع هبوط القذائف لكل مقعد داخل المشهد (844×390)
-  static const _dealAnchors = {
-    0: Offset(422, 282), // استكانتي أسفلاً
-    1: Offset(688, 104), // الخصم الأيمن
-    2: Offset(422, 46), // الخصم الأمامي
-    3: Offset(152, 104), // الخصم الأيسر
-  };
+  /// مواضع هبوط القذائف لكل مقعد — مراكز الحوامل على الطاولة الفعلية
+  Map<int, Offset> _dealAnchors(Rect t, Size s) => {
+        0: Offset(s.width / 2, s.height - 88), // استكانتي أسفلاً
+        1: _seatRackCenter(1, t, s), // حامل الأيمن على حافة الطاولة
+        2: _seatRackCenter(2, t, s), // حامل الأمامي
+        3: _seatRackCenter(3, t, s), // حامل الأيسر
+      };
 
   /// طبقة التوزيع: قذائف أحجار مقلوبة تطير من برج السحب لكل استكانة
   Widget _buildDealOverlay() {
@@ -406,7 +448,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     final f = _dealFlights[i];
     final local = ((t - f.$3) / _dealFlightMs).clamp(0.0, 1.0);
     if (local <= 0 || local >= 1) return const SizedBox.shrink();
-    final to = _dealAnchors[f.$1]!;
+    final to = _dealAnchors(_tableRect(_sceneSize), _sceneSize)[f.$1]!;
     final e = Curves.easeOutCubic.transform(local);
     final x = from.dx + (to.dx - from.dx) * e;
     final y = from.dy + (to.dy - from.dy) * e - math.sin(local * math.pi) * 44;
@@ -927,13 +969,18 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     return scene.globalToLocal(box.localToGlobal(box.size.center(Offset.zero)));
   }
 
-  /// موقع خانة الرف التقريبي داخل المشهد
+  /// عرض خانة الرف الفعلي — نفس معادلة OkeyIstakaWidget (حتى 40 كحد أقصى)
+  double _rackSlotW() => ((_sceneSize.width - 64) / 14).clamp(24.0, 40.0);
+
+  /// موقع خانة الرف التقريبي داخل المشهد — محسوب من أبعاده الفعلية
   Offset _rackSlotCenter(int slot) {
-    const slotW = 40.0;
-    const tileH = 52.0;
-    const rackTop = 390.0 - 12.0 - 141.0; // ارتفاع الاستكانة + الحافة السفلية
-    const startX = 162.0 + slotW / 2; // مركز أول خانة
-    final x = startX + slotW * (slot % 14);
+    final s = _sceneSize;
+    final slotW = _rackSlotW();
+    final tileH = (slotW - 2) * 1.36;
+    final rackTop = s.height - 12 - 140 * (slotW / 40);
+    // الاستكانة ممرّكة: جسمها = slotW*14 + 52 والتجويف يبدأ +26 داخله
+    final x0 = (s.width - (slotW * 14 + 52)) / 2 + 26;
+    final x = x0 + slotW / 2 + slotW * (slot % 14);
     final y = slot < 14 ? rackTop + 24 + tileH / 2 : rackTop + 29 + tileH * 1.5;
     return Offset(x, y);
   }
@@ -1142,8 +1189,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   }
 
   Widget _buildLandscapeLayout(BuildContext context) {
-    const sw = 844.0;
-    const sh = 390.0;
+    // حجم التصميم المرجعي — اللوحة المنطقية لا تصغر عنه أبداً
+    const designW = 844.0;
+    const designH = 390.0;
     final isHumanTurn = _engine.currentTurnIndex == 0;
     final minutes =
         (_engine.turnTimeRemaining ~/ 60).toString().padLeft(2, '0');
@@ -1151,18 +1199,26 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // معامل تكبير FittedBox + تكبير المستخدم لمطابقة حجم الحجر المسحوب
-        final scaleX = constraints.maxWidth / sw;
-        final scaleY = constraints.maxHeight / sh;
+        // Responsive Full-Screen Scaling:
+        // مقياس موحّد واحد (لا تشويه ولا تمدّد غير متساوٍ) يكفي لتغطية
+        // الشاشة، واللوحة المنطقية تتمدد في البعد الأوسع فقط حتى تطابق
+        // نسبة الـViewport بالضبط — تملؤها حافة-لحافة بلا أشرطة سوداء
+        // ولا Letterboxing/Pillarboxing على أي أبعاد (16:9 / 19.5:9 / 20:9…)
+        final s = math.min(
+            constraints.maxWidth / designW, constraints.maxHeight / designH);
+        final sw = constraints.maxWidth / s;
+        final sh = constraints.maxHeight / s;
+        _sceneSize = Size(sw, sh);
         return SizedBox.expand(
-          child: FittedBox(
-            fit: BoxFit.contain,
+          child: Transform.scale(
+            scale: s,
+            alignment: Alignment.topLeft,
             child: SizedBox(
               key: _sceneKey,
               width: sw,
               height: sh,
               child: _buildScene(
-                  context, isHumanTurn, minutes, seconds, scaleX, scaleY),
+                  context, isHumanTurn, minutes, seconds, s, sw, sh),
             ),
           ),
         );
@@ -1171,9 +1227,12 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   }
 
   Widget _buildScene(BuildContext context, bool isHumanTurn, String minutes,
-      String seconds, double scaleX, double scaleY) {
-    const sw = 844.0;
-    const sh = 390.0;
+      String seconds, double scale, double sw, double sh) {
+    final tbl = _tableRect(Size(sw, sh));
+    // حامل الخصم مصغّر بنفس تصميم استكانتي — مقياسه من ارتفاع الطاولة
+    final oppTileW = (tbl.height / 15).clamp(10.0, 14.0);
+    final oppRackW = oppTileW * 9.5 + 4;
+    final oppRackH = oppTileW * 4.32 + 8;
     return Stack(
       fit: StackFit.expand,
       clipBehavior: Clip.none,
@@ -1225,11 +1284,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                       ),
                     ),
                   ),
-                  Positioned(
-                    left: 148,
-                    right: 148,
-                    top: 66,
-                    bottom: 128,
+                  Positioned.fromRect(
+                    rect: tbl,
                     child: Builder(builder: (context) {
                       final tblSkin =
                           StoreService().equippedFor(StoreCategory.table);
@@ -1268,11 +1324,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                         final hovering =
                             candidateData.isNotEmpty && isHumanTurn;
                         return Stack(children: [
-                          Positioned(
-                            left: 148,
-                            right: 148,
-                            top: 62,
-                            bottom: 128,
+                          Positioned.fromRect(
+                            rect: Rect.fromLTRB(
+                                tbl.left, tbl.top - 4, tbl.right, tbl.bottom),
                             child: IgnorePointer(
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 150),
@@ -1295,61 +1349,58 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                       },
                     ),
                   ),
-                  Positioned(
-                    top: 26,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: OkeyOpponentIstaka(
-                        position: OpponentPosition.top,
-                        tileCount: _dealing
-                            ? _dealtCount[2]
-                            : _engine.players[2].tileCount,
-                        isTurn: !_dealing && _engine.currentTurnIndex == 2,
-                        rackItem:
-                            StoreService().equippedFor(StoreCategory.rack),
+                  // ═══ حوامل الخصوم على حواف الطاولة ═══
+                  // نفس تصميم استكانة اللاعب الحالي (خامة/شريط زجاجي/رفّان/
+                  // فاصل معدني) بمقياس أصغر، وكل حامل مستلقٍ على سطح الطاولة
+                  // موجّهاً وجهه نحو مقعد صاحبه — منظور 3D محسوب من موضع
+                  // المقعد، وليس تدويراً ثابتاً: المشاهد في الأسفل يرى
+                  // أحجارهم مقلوبة أمامه، ومن مقاعدهم تبدو موجهةً إليهم.
+                  for (final seat in [2, 3, 1])
+                    Positioned(
+                      left: _seatRackCenter(seat, tbl, Size(sw, sh)).dx -
+                          oppRackW / 2,
+                      top: _seatRackCenter(seat, tbl, Size(sw, sh)).dy -
+                          oppRackH / 2,
+                      child: SizedBox(
+                        width: oppRackW,
+                        child: IgnorePointer(
+                          child: OkeyOpponentIstaka(
+                            position: seat == 2
+                                ? OpponentPosition.top
+                                : seat == 3
+                                    ? OpponentPosition.left
+                                    : OpponentPosition.right,
+                            tileW: oppTileW,
+                            tileCount: _dealing
+                                ? _dealtCount[seat]
+                                : _engine
+                                    .players[_playerAtSeat(seat)].tileCount,
+                            isTurn: !_dealing &&
+                                _engine.currentTurnIndex == _playerAtSeat(seat),
+                            rackItem:
+                                StoreService().equippedFor(StoreCategory.rack),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                  Positioned(
-                    left: 96,
-                    top: 66,
-                    child: OkeyOpponentIstaka(
-                      position: OpponentPosition.left,
-                      tileCount: _dealing
-                          ? _dealtCount[3]
-                          : _engine.players[3].tileCount,
-                      isTurn: !_dealing && _engine.currentTurnIndex == 3,
-                      rackItem: StoreService().equippedFor(StoreCategory.rack),
-                    ),
-                  ),
-                  Positioned(
-                    right: 96,
-                    top: 66,
-                    child: OkeyOpponentIstaka(
-                      position: OpponentPosition.right,
-                      tileCount: _dealing
-                          ? _dealtCount[1]
-                          : _engine.players[1].tileCount,
-                      isTurn: !_dealing && _engine.currentTurnIndex == 1,
-                      rackItem: StoreService().equippedFor(StoreCategory.rack),
-                    ),
-                  ),
+                  // استكانة المقعد السفلي — تُظهر أحجار اللاعب الجالس فيه
+                  // من منظور هذا المشاهد (عادةً 0=أنا). التفاعل مقصور على
+                  // منظوري الحقيقي حتى لا تتحرك أحجار غيري في المعاينة
                   Positioned(
                     left: 0,
                     right: 0,
                     bottom: 12,
                     child: IgnorePointer(
-                      ignoring: _dealing,
+                      ignoring: _dealing || _viewerSeat != 0,
                       child: OkeyIstakaWidget(
                         rackTiles: _dealing
                             ? _maskedRack(_dealtCount[0])
-                            : _engine.players[0].rackTiles,
+                            : _engine.players[_playerAtSeat(0)].rackTiles,
                         selectedIndex: _engine.selectedTileIndex,
                         isTurn: isHumanTurn && !_dealing,
                         highlightedIndices: _engine.getHighlightedSlotIndices(),
-                        dragScaleX: scaleX,
-                        dragScaleY: scaleY,
+                        dragScaleX: scale,
+                        dragScaleY: scale,
                         feedbackQuarterTurns: _sceneRotated ? 1 : 0,
                         rackItem:
                             StoreService().equippedFor(StoreCategory.rack),
@@ -1366,17 +1417,18 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                     Positioned(
                       left: 0,
                       right: 0,
-                      bottom: 132,
+                      // فوق استكانتي مباشرة — مثبّت على ارتفاعها الفعلي
+                      bottom: 140 * (_rackSlotW() / 40) + 12,
                       child: Center(child: _buildOkeyOutButton()),
                     ),
                   Positioned(
-                    left: 326,
-                    right: 244,
-                    top: 98,
+                    left: 0,
+                    right: 0,
+                    top: tbl.top + tbl.height * 0.14,
                     child: Center(child: _buildTableCenter(isHumanTurn)),
                   ),
                   // أماكن البير على الطاولة — لكل لاعب جهته، ظاهرة للجميع
-                  ..._buildTableMelds(),
+                  ..._buildTableMelds(_meldZones(Size(sw, sh), tbl)),
                   // ═══════ أنيميشن الحجر الطائر: الرمي من يد اللاعب ═══════
                   if (_animatingDiscardTile != null)
                     AnimatedBuilder(
@@ -1453,9 +1505,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           ),
         ),
         // ═══ عناصر الواجهة الثابتة ═══
-        // إشعار داخل المشهد — أفقي باتجاه اللعبة المدوّرة
+        // إشعار داخل المشهد — فوق حافة الطاولة العلوية مباشرة
         Positioned(
-          top: 60,
+          top: tbl.top - 6,
           left: 0,
           right: 0,
           child: IgnorePointer(
@@ -1473,6 +1525,21 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             onTap: _requestExit,
           ),
         ),
+        // معاينة منظور المقاعد الأربعة (وضع التصحيح فقط) — للتحقق أن
+        // الحوامل والأحجار تواجه دائماً اللاعب الذي يشاهد الشاشة
+        if (kDebugMode)
+          Positioned(
+            top: 6,
+            left: 158,
+            child: _landscapeCircleButton(
+              icon: Icons.rotate_90_degrees_ccw_rounded,
+              color: const Color(0xFF93C5FD),
+              onTap: () => setState(() {
+                _viewerSeat = (_viewerSeat + 1) % 4;
+                _showGameNotice('منظور المقعد: $_viewerSeat');
+              }),
+            ),
+          ),
         Positioned(
           top: 10,
           left: 60,
@@ -1558,28 +1625,28 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           ),
         ),
 
-        // صورة الخصم الأيسر + اسمه — باتجاهي أنا
+        // صورة الخصم الأيسر + اسمه — باتجاهي أنا، بمحاذاة حامله
         Positioned(
           left: 10,
-          top: 138,
+          top: tbl.center.dy - 24,
           child: _seatBadge(3),
         ),
-        // صورة الخصم الأيمن + اسمه — باتجاهي أنا
+        // صورة الخصم الأيمن + اسمه — باتجاهي أنا، بمحاذاة حامله
         Positioned(
           right: 10,
-          top: 138,
+          top: tbl.center.dy - 24,
           child: _seatBadge(1),
         ),
         Positioned(
           left: 12,
-          top: 70,
+          top: tbl.top + 4,
           child: _buildRoundStats(),
         ),
         // شريط الوقت الرفيع فوق استكانتي — يظهر أثناء دوري وينقص مع الوقت
         Positioned(
           left: 210,
           right: 210,
-          top: 226,
+          top: sh - 24 - 140 * (_rackSlotW() / 40),
           child: AnimatedOpacity(
             opacity: isHumanTurn ? 1.0 : 0.0,
             duration: const Duration(milliseconds: 200),
@@ -1814,7 +1881,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     if (ctx == null) return true;
     final scene = ctx.findRenderObject() as RenderBox;
     final local = scene.globalToLocal(dropGlobal);
-    return local.dy < 232; // أعلى الاستكانة (الأحجار تبدأ ~237)
+    // الحد = الحافة العلوية للاستكانة — يُحسب من أبعاد المشهد الفعلية
+    final rackTop = _sceneSize.height - 12 - 140 * (_rackSlotW() / 40);
+    return local.dy < rackTop - 8;
   }
 
   /// إفلات حجر على سطح الطاولة (منطقة اللعب فوق الاستكانة) = رمي
@@ -1863,37 +1932,61 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   // الأحجار مرسومة ممدّدة على السطح بمنظور ثلاثي الأبعاد وظل
   // ══════════════════════════════════════════════════════
 
-  /// منطقة كل لاعب على سطح الطاولة (بإحداثيات المشهد 844×390)
-  /// كل منطقة أمام استكانة صاحبها مباشرة
-  static const _meldZones = <int, Rect>{
-    0: Rect.fromLTWH(196, 182, 452, 42), // أنت — أمام استكانتك مباشرة
-    2: Rect.fromLTWH(238, 56, 368, 44), // الخصم المقابل — أمام استكانته
-    3: Rect.fromLTWH(150, 104, 168, 88), // الخصم الأيسر — أمام استكانته
-    1: Rect.fromLTWH(610, 104, 108, 88), // الخصم الأيمن — أمام استكانته
-  };
+  /// منطقة كل مقعد على سطح الطاولة — تُحسب من مستطيل الطاولة الفعلي
+  /// (نسبية لأبعاد الـViewport) وكل منطقة أمام حامل صاحبها مباشرة
+  Map<int, Rect> _meldZones(Size s, Rect t) {
+    return {
+      // المشاهد (أسفل) — أمام استكانتي مباشرة فوق حافة الطاولة السفلية
+      0: Rect.fromCenter(
+          center: Offset(s.width / 2, t.bottom - t.height * 0.225),
+          width: t.width * 0.80,
+          height: t.height * 0.20),
+      // المقابل (أعلى) — أمام حامله مباشرة تحت حافة الطاولة العلوية
+      2: Rect.fromCenter(
+          center: Offset(s.width / 2, t.top + t.height * 0.44),
+          width: t.width * 0.60,
+          height: t.height * 0.20),
+      // الأيسر — يمين حامله (أمامه نحو مركز الطاولة)
+      3: Rect.fromCenter(
+          center: Offset(t.left + t.width * 0.19, t.center.dy),
+          width: t.width * 0.17,
+          height: t.height * 0.52),
+      // الأيمن — يسار حامله (أمامه نحو مركز الطاولة)
+      1: Rect.fromCenter(
+          center: Offset(t.right - t.width * 0.19, t.center.dy),
+          width: t.width * 0.17,
+          height: t.height * 0.52),
+    };
+  }
 
-  /// دوران محتوى بير كل لاعب ليواجه صاحبه — مثل اتجاه استكانتِه
+  /// اتجاه العرض لكل موضع مقعد على الشاشة — Viewer-Dependent:
+  /// بيرات اللاعب الجالس في المقعد تُدار لتوجه نحوه. لا تُعدَّل بيانات
+  /// الحجر في الـGame State — الزاوية تُحسب محلياً من موضع المقعد فقط.
   static final _meldAngles = <int, double>{
-    0: 0, // أنا: باتجاهي
-    2: math.pi, // الأمامي: نحوه
+    0: 0, // المشاهد: باتجاهه
+    2: math.pi, // المقابل: نحوه (من منظوره أحجاره تبدو مستقيمة)
     3: math.pi / 2, // الأيسر: نص بيره يشير يميناً (باتجاهه)
     1: -math.pi / 2, // الأيمن: نص بيره يشير يساراً (باتجاهه)
   };
 
-  List<Widget> _buildTableMelds() {
+  List<Widget> _buildTableMelds(Map<int, Rect> zones) {
     final out = <Widget>[];
-    for (final entry in _meldZones.entries) {
-      final owner = entry.key;
+    for (final entry in zones.entries) {
+      final seat = entry.key; // موضع المقعد على الشاشة
+      final owner =
+          _playerAtSeat(seat); // اللاعب الجالس فيه من منظور هذا المشاهد
       final zone = entry.value;
       final melds = <MapEntry<int, OkeyGroup>>[
         for (var i = 0; i < _engine.tableMelds.length; i++)
           if (_engine.tableMelds[i].ownerIndex == owner)
             MapEntry(i, _engine.tableMelds[i]),
       ];
-      // بير كل لاعب مُدار نحو مقعده — نزوله أمامه ومواجه له
-      final angle = _meldAngles[owner] ?? 0;
+      // بيرات المقعد تُدار نحو صاحبها — نفس الحجر يظهر باتجاه مختلف
+      // لكل مشاهد حسب مقعده، بينما يبقى الـGame Object واحداً مشتركاً
+      final angle = _meldAngles[seat] ?? 0;
+      final isMine = owner == 0;
       final content = melds.isEmpty
-          ? (owner == 0 && _humanHasReadyPer
+          ? (isMine && _humanHasReadyPer
               ? _myMeldHint()
               : const SizedBox.shrink())
           : Transform.rotate(
@@ -1902,7 +1995,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             );
       out.add(Positioned.fromRect(
         rect: zone,
-        child: owner == 0 ? _myMeldDropZone(content) : content,
+        child: isMine ? _myMeldDropZone(content) : content,
       ));
     }
     return out;
@@ -2280,8 +2373,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
 
   /// صورة خصم + اسمه + حلقة وقت دائرية فوقها — موجّهة لي أنا مهما كان مقعده
   Widget _seatBadge(int seat) {
-    final p = _engine.players[seat];
-    final isTurn = !_dealing && _engine.currentTurnIndex == seat;
+    // seat = موضع المقعد على الشاشة؛ اللاعب الظاهر فيه يعتمد على مقعد المشاهد
+    final playerIndex = _playerAtSeat(seat);
+    final p = _engine.players[playerIndex];
+    final isTurn = !_dealing && _engine.currentTurnIndex == playerIndex;
     final low = _engine.turnTimeRemaining <= 10;
     final ringColor = low ? const Color(0xFFEF4444) : const Color(0xFF4ADE80);
     return Column(
