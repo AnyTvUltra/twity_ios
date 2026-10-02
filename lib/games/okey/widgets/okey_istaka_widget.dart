@@ -101,11 +101,10 @@ class OkeyIstakaWidget extends StatelessWidget {
         final availableW = constraints.maxWidth;
         if (ghostMode) {
           // وضع الغرفة: صفّا أحجار فقط — بلا جسم استكانة مرسوم.
-          // الأحجار أصغر قليلاً وبفاصل صفّي أوضح حتى يجلس الصف العلوي
-          // في أخدود الحامل والسفلي على اللوح الغائر تحته تماماً.
-          // نفس المعادلة تتكرر في _rackSlotCenter بالشاشة — أي تعديل هنا
-          // يجب أن ينعكس هناك
-          final gSlotW = ((availableW - 24) / 14 * 0.82).clamp(18.0, 38.0);
+          // حجم الحجر الطبيعي يملأ التجويف: الصف العلوي قاعدته على
+          // الأخدود والسفلي يقف على اللوح الغائر. نفس المعادلة تتكرر
+          // في _rackSlotCenter بالشاشة — أي تعديل هنا ينعكس هناك
+          final gSlotW = ((availableW - 24) / 14).clamp(20.0, 40.0);
           final gTileW = gSlotW - 1.5;
           final gTileH = gTileW * 1.36;
           const gGap = 8.0;

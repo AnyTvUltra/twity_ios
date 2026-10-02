@@ -142,23 +142,24 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   static const String _roomImage = 'assets/images/okey_room.png';
   static const double _roomImgW = 1024, _roomImgH = 436;
 
-  // سجادة اللعب الوسطى — منطقة البيرات والرزمة والمؤشر
-  static const _roomCarpetF = Rect.fromLTWH(0.300, 0.255, 0.405, 0.365);
-  // تجويف استكانتي: اللوح الغائر داخل الحامل الخشبي السفلي — الأحجار
-  // تقف واقفة داخله صفّين فوق الشريط المزخرف
-  static const _roomRackMineF = Rect.fromLTWH(0.260, 0.600, 0.480, 0.215);
+  // سجادة اللعب الوسطى — تنتهي فوق حافة الاستكانة حتى لا يُحسب
+  // الإفلات على أحجاري رمياً على "الطاولة"
+  static const _roomCarpetF = Rect.fromLTWH(0.300, 0.255, 0.405, 0.240);
+  // تجويف استكانتي: الأخدود + اللوح الغائر — الصف العلوي قاعدته على
+  // الأخدود وقمتّه عند حافة الإطار، والسفلي يقف على اللوح الغائر
+  static const _roomRackMineF = Rect.fromLTWH(0.250, 0.525, 0.500, 0.255);
   // حامل المقابل — العارضة الخشبية الأفقية تحت الوسادة الخلفية مباشرة
   static const _roomRackTopF = Rect.fromLTWH(0.375, 0.165, 0.250, 0.085);
   // حاملا الجانبين (المسندان الخشبيان المائلان بين الوسائد والطاولة)
   static const _roomRackLeftF = Rect.fromLTWH(0.255, 0.320, 0.075, 0.300);
   static const _roomRackRightF = Rect.fromLTWH(0.670, 0.320, 0.075, 0.300);
   // مناطق نزول البيرات على السجادة — أمام حامل كل لاعب
-  static const _roomMeldMineF = Rect.fromLTWH(0.330, 0.520, 0.340, 0.075);
+  static const _roomMeldMineF = Rect.fromLTWH(0.330, 0.440, 0.340, 0.065);
   static const _roomMeldTopF = Rect.fromLTWH(0.360, 0.255, 0.280, 0.075);
   static const _roomMeldLeftF = Rect.fromLTWH(0.300, 0.380, 0.075, 0.170);
   static const _roomMeldRightF = Rect.fromLTWH(0.630, 0.380, 0.075, 0.170);
   // مركز السجادة — الرزمة والمؤشر وكومة المرميات
-  static const _roomCenterF = Rect.fromLTWH(0.350, 0.355, 0.300, 0.150);
+  static const _roomCenterF = Rect.fromLTWH(0.330, 0.330, 0.340, 0.105);
 
   /// مزود صورة الغرفة — كسنة المتجر المجهزة أو الصورة الافتراضية المدمجة.
   /// كل تصاميم الغرفة تشترك في نفس التخطيط فتبقى مناطق الضبط صالحة للجميع
@@ -1083,7 +1084,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     if (_roomScene) {
       // نفس معادلة ghostMode في OkeyIstakaWidget — يجب أن تبقى متطابقة
       final zone = _mapToImg(_roomRackMineF, s);
-      final slotW = ((zone.width - 24) / 14 * 0.82).clamp(18.0, 38.0);
+      final slotW = ((zone.width - 24) / 14).clamp(20.0, 40.0);
       final tileH = (slotW - 1.5) * 1.36;
       const rowGap = 8.0;
       final rowsH = tileH * 2 + rowGap;
