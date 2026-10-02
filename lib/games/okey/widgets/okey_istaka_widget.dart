@@ -44,6 +44,10 @@ class OkeyIstakaWidget extends StatelessWidget {
   /// كسنة الاستكانة (اختيارية) — تغطي كامل الجسم مع دعم التكبير والإزاحة
   final StoreItem? rackItem;
 
+  /// وضع الغرفة: بلا جسم خشبي/شريط/قاعدة — يُرسم صفّا الأحجار فقط
+  /// فوق استكانة مرسومة في صورة المشهد، مع الحفاظ على كل منطق السحب
+  final bool ghostMode;
+
   const OkeyIstakaWidget({
     super.key,
     required this.rackTiles,
@@ -56,6 +60,7 @@ class OkeyIstakaWidget extends StatelessWidget {
     this.dragScaleY = 1.0,
     this.feedbackQuarterTurns = 0,
     this.rackItem,
+    this.ghostMode = false,
     this.onDropAboveRack,
     this.onDrawToSlot,
     this.onGroupMove,
@@ -94,6 +99,34 @@ class OkeyIstakaWidget extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final availableW = constraints.maxWidth;
+        if (ghostMode) {
+          // وضع الغرفة: صفّا أحجار فقط — بلا جسم استكانة مرسوم.
+          // نفس معادلة الخانات في كل الاتجاهات حتى يبقى _slotAt متسقاً
+          final gSlotW = ((availableW - 24) / 14).clamp(20.0, 40.0);
+          final gTileW = gSlotW - 1.5;
+          final gTileH = gTileW * 1.36;
+          return _buildDropArea(
+            slotW: gSlotW,
+            tileW: gTileW,
+            tileH: gTileH,
+            x0: (availableW - gSlotW * 14) / 2,
+            y0: 0,
+            rowGap: 3,
+            child: SizedBox(
+              width: availableW,
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildShelfRow(0, 14, gSlotW, gTileW, gTileH),
+                    const SizedBox(height: 3),
+                    _buildShelfRow(14, 28, gSlotW, gTileW, gTileH),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
         // العرض المحسوب للخانة الواحدة بحيث تتسع الـ 14 خانة بداخل الرف مع هوامش مريحة
         final slotW = ((availableW - 64) / 14).clamp(24.0, 40.0);
         final tileW =
@@ -350,17 +383,17 @@ class OkeyIstakaWidget extends StatelessWidget {
 
   /// يحوّل موضع الحجر إلى خانة (أو -1 = فوق الرف، أي على الطاولة)
   int _slotAt(Offset global, int fromSlot, double slotW, double tileH,
-      {bool raw = false}) {
+      {bool raw = false,
+      double x0 = 27.0,
+      double y0 = 25.0,
+      double rowGap = 4.5}) {
     final box = _rackBox;
     if (box == null || !box.attached) return fromSlot;
     final local = box.globalToLocal(global);
-    // بداية الأحجار داخل الرف: هامش 12 + حشوة 14 + حد 1 / الشريط العلوي 20 + 4 + حد 1
-    const x0 = 27.0;
-    const y0 = 25.0;
     // فوق الرف = فوق حافة الويدجت نفسها (مركز الحجر خارج الاستكانة للأعلى) —
     // سحب داخل الاستكانة مهما كان سريعاً لا يتحول لرمي
     if (local.dy < -10) return -1;
-    final row = local.dy < y0 + tileH + 4.5 ? 0 : 1;
+    final row = local.dy < y0 + tileH + rowGap ? 0 : 1;
     final p = ((local.dx - x0) / slotW).clamp(0.0, 13.999);
     final col = p.floor();
     final slot = row * 14 + col;
@@ -378,6 +411,9 @@ class OkeyIstakaWidget extends StatelessWidget {
     required double slotW,
     required double tileW,
     required double tileH,
+    double x0 = 27.0,
+    double y0 = 25.0,
+    double rowGap = 4.5,
   }) {
     return DragTarget<int>(
       onWillAcceptWithDetails: (_) => true,
@@ -385,7 +421,7 @@ class OkeyIstakaWidget extends StatelessWidget {
         final d = details.data;
         final s = _slotAt(_dragCenter(details.offset, tileW, tileH),
             OkeyDrag.isRackTile(d) ? d : -99, slotW, tileH,
-            raw: !OkeyDrag.isRackTile(d));
+            raw: !OkeyDrag.isRackTile(d), x0: x0, y0: y0, rowGap: rowGap);
         final v = (s < 0 || s == d) ? null : s;
         if (_hoverSlot.value != v) _hoverSlot.value = v;
       },
@@ -397,7 +433,8 @@ class OkeyIstakaWidget extends StatelessWidget {
         final d = details.data;
         final center = _dragCenter(details.offset, tileW, tileH);
         if (!OkeyDrag.isRackTile(d)) {
-          final s = _slotAt(center, -99, slotW, tileH, raw: true);
+          final s = _slotAt(center, -99, slotW, tileH,
+              raw: true, x0: x0, y0: y0, rowGap: rowGap);
           if (OkeyDrag.isGroup(d)) {
             if (s >= 0) {
               HapticFeedback.lightImpact();
@@ -411,7 +448,8 @@ class OkeyIstakaWidget extends StatelessWidget {
           }
           return;
         }
-        final s = _slotAt(center, d, slotW, tileH);
+        final s =
+            _slotAt(center, d, slotW, tileH, x0: x0, y0: y0, rowGap: rowGap);
         if (s < 0) {
           // الحجر فوق الرف (على الطاولة) — يُعامل كرمي
           onDropAboveRack?.call(details.data, details.offset);
