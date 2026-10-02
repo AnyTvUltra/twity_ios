@@ -155,12 +155,16 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   static const _roomRackRightF = Rect.fromLTWH(0.670, 0.320, 0.075, 0.300);
   // مناطق نزول البيرات على السجادة — أمام حامل كل لاعب، كبيرة كفاية
   // لتظهر الأحجار بمقاس مقروء
-  static const _roomMeldMineF = Rect.fromLTWH(0.335, 0.425, 0.330, 0.115);
-  static const _roomMeldTopF = Rect.fromLTWH(0.360, 0.252, 0.280, 0.095);
+  static const _roomMeldMineF = Rect.fromLTWH(0.335, 0.455, 0.330, 0.095);
+  static const _roomMeldTopF = Rect.fromLTWH(0.360, 0.238, 0.280, 0.090);
   static const _roomMeldLeftF = Rect.fromLTWH(0.295, 0.295, 0.085, 0.195);
   static const _roomMeldRightF = Rect.fromLTWH(0.622, 0.295, 0.085, 0.195);
-  // مركز السجادة — الرزمة والمؤشر وكومة المرميات
-  static const _roomCenterF = Rect.fromLTWH(0.325, 0.330, 0.350, 0.105);
+  // مركز السجادة — الرزمة والمؤشر وكومة المرميات (ارتفاعه يكفي لتظهر
+  // الأحجار بمقاس مقروء بلا أن يضغطها الـFittedBox)
+  static const _roomCenterF = Rect.fromLTWH(0.325, 0.305, 0.350, 0.165);
+  // حاشية التقاط هدف الرف حول منطقة الاستكانة — تلتقط الإفلات السريع
+  // المتجاوز لحدودها (الإصبع يسبق الحجر المرئي) فيقع على أقرب خانة
+  static const _rackHitPad = EdgeInsets.fromLTRB(40, 18, 40, 24);
 
   /// مزود صورة الغرفة — كسنة المتجر المجهزة أو الصورة الافتراضية المدمجة.
   /// كل تصاميم الغرفة تشترك في نفس التخطيط فتبقى مناطق الضبط صالحة للجميع
@@ -1122,8 +1126,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       final tileH = slotW * 1.28 * 1.18;
       final x0 = zone.left + (zone.width - slotW * 14) / 2;
       final x = x0 + slotW * (slot % 14 + 0.5);
-      final row1BaseY = zone.bottom - zone.height * (0.935 - 0.758) / 0.335;
-      final y = slot < 14 ? row1BaseY - tileH / 2 : zone.bottom - tileH / 2;
+      final row0BaseY = zone.bottom - zone.height * (0.935 - 0.758) / 0.335;
+      final row1BaseY = zone.bottom - zone.height * (0.935 - 0.922) / 0.335;
+      final y = slot < 14 ? row0BaseY - tileH / 2 : row1BaseY - tileH / 2;
       return Offset(x, y);
     }
     final slotW = _rackSlotW();
@@ -1588,24 +1593,32 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                   // من منظور هذا المشاهد (عادةً 0=أنا). التفاعل مقصور على
                   // منظوري الحقيقي حتى لا تتحرك أحجار غيري في المعاينة
                   Positioned(
+                    // منطقة الالتقاط موسّعة بحاشية hitPad حول تجويف
+                    // الاستكانة — الإفلات السريع المتجاوز للحدود يقع
+                    // على أقرب خانة بدل أن يرتد الحجر مكانه
                     left: _roomScene
-                        ? _mapToImg(_roomRackMineF, Size(sw, sh)).left
+                        ? _mapToImg(_roomRackMineF, Size(sw, sh)).left -
+                            _rackHitPad.left
                         : 0,
                     right: _roomScene ? null : 0,
                     bottom: _roomScene ? null : 12,
                     top: _roomScene
-                        ? _mapToImg(_roomRackMineF, Size(sw, sh)).top
+                        ? _mapToImg(_roomRackMineF, Size(sw, sh)).top -
+                            _rackHitPad.top
                         : null,
                     width: _roomScene
-                        ? _mapToImg(_roomRackMineF, Size(sw, sh)).width
+                        ? _mapToImg(_roomRackMineF, Size(sw, sh)).width +
+                            _rackHitPad.horizontal
                         : null,
                     height: _roomScene
-                        ? _mapToImg(_roomRackMineF, Size(sw, sh)).height
+                        ? _mapToImg(_roomRackMineF, Size(sw, sh)).height +
+                            _rackHitPad.vertical
                         : null,
                     child: IgnorePointer(
                       ignoring: _dealing || _viewerSeat != 0,
                       child: OkeyIstakaWidget(
                         ghostMode: _roomScene,
+                        hitPad: _roomScene ? _rackHitPad : EdgeInsets.zero,
                         rackTiles: _dealing
                             ? _maskedRack(_dealtCount[0])
                             : _engine.players[_playerAtSeat(0)].rackTiles,
@@ -3394,10 +3407,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         ? _engine.discardPiles[3].last
         : null;
 
-    final w = _roomScene ? 168.0 : 140.0;
-    final h = _roomScene ? 106.0 : 92.0;
-    final tw = _roomScene ? 30.0 : 24.0;
-    final th = _roomScene ? 41.0 : 33.0;
+    final w = _roomScene ? 200.0 : 140.0;
+    final h = _roomScene ? 78.0 : 92.0;
+    final tw = _roomScene ? 34.0 : 24.0;
+    final th = _roomScene ? 47.0 : 33.0;
     return GestureDetector(
       onTap: () {
         if (canDiscard && _engine.selectedTileIndex != null) {
@@ -3685,8 +3698,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             ),
             child: OkeyTileWidget(
                 tile: _engine.indicatorTile,
-                width: _roomScene ? 30 : 24,
-                height: _roomScene ? 41 : 33),
+                width: _roomScene ? 34 : 24,
+                height: _roomScene ? 46 : 33),
           ),
           const SizedBox(height: 3),
           Text('مؤشر'.tr,
@@ -3791,9 +3804,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     final refillable = remaining == 0 && _engine.canRefillDeck;
     final drawable = canDraw && (remaining > 0 || refillable);
     final layers = (remaining / 6).ceil().clamp(1, 8);
-    final w = _roomScene ? 37.0 : 30.0;
-    final h = _roomScene ? 50.0 : 41.0;
-    final step = _roomScene ? 4.4 : 3.8;
+    final w = _roomScene ? 46.0 : 30.0;
+    final h = _roomScene ? 62.0 : 41.0;
+    final step = _roomScene ? 5.0 : 3.8;
     final tower = SizedBox(
       width: w + 2,
       height: h + step * (layers - 1),

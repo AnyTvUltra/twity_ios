@@ -48,6 +48,11 @@ class OkeyIstakaWidget extends StatelessWidget {
   /// فوق استكانة مرسومة في صورة المشهد، مع الحفاظ على كل منطق السحب
   final bool ghostMode;
 
+  /// حاشية التقاط حول منطقة الرف (وضع الغرفة): الإصبع يسبق الحجر
+  /// المرئي خارج مستطيل الرف أثناء السحب السريع — بهذه الحاشية يبقى
+  /// الإفلات داخل هدف الرف فيُحسب لأقرب خانة بدل أن يرتد الحجر مكانه
+  final EdgeInsets hitPad;
+
   const OkeyIstakaWidget({
     super.key,
     required this.rackTiles,
@@ -61,6 +66,7 @@ class OkeyIstakaWidget extends StatelessWidget {
     this.feedbackQuarterTurns = 0,
     this.rackItem,
     this.ghostMode = false,
+    this.hitPad = EdgeInsets.zero,
     this.onDropAboveRack,
     this.onDrawToSlot,
     this.onGroupMove,
@@ -101,45 +107,50 @@ class OkeyIstakaWidget extends StatelessWidget {
         final availableW = constraints.maxWidth;
         if (ghostMode) {
           // وضع الغرفة: صفّا أحجار فقط فوق استكانة الصورة — الصف العلوي
-          // قاعدته على أرضية اللوح الغائر (المنطقة العلوية) والسفلي يقف
-          // على الشريط الأمامي (المنطقة السفلية). الحجر أعرض من الخانة
-          // قليلاً → تداخل طبيعي كاستكانة حقيقية ويملأ المنطقة عمودياً.
+          // قاعدته على أرضية اللوح الغائر والسفلي مرفوعاً قليلاً فوق
+          // الشريط الأمامي. hitPad يوسّع منطقة الالتقاط حول الرف دون
+          // تغيير مواضع الأحجار. الحجر أعرض من الخانة → تداخل طبيعي
           // نفس المعادلة تتكرر في _rackSlotCenter بالشاشة — أي تعديل
           // هنا يجب أن ينعكس هناك
-          final gSlotW = ((availableW - 24) / 14).clamp(20.0, 40.0);
+          final innerW = availableW - hitPad.horizontal;
+          final innerH = constraints.maxHeight - hitPad.vertical;
+          final gSlotW = ((innerW - 24) / 14).clamp(20.0, 40.0);
           final gTileW = gSlotW * 1.28;
           final gTileH = gTileW * 1.18;
-          final gH = constraints.maxHeight;
           // قاعدة الصف العلوي = 0.758 من ارتفاع الصورة (أرضية اللوح
-          // الغائر) وأسفل الويدجت = 0.935 (داخل الشريط المزخرف،
-          // قبل حافة الإطار) — نسب من قياس صورة المشهد
-          const row1BaseFromBottom = (0.935 - 0.758) / 0.335;
-          // حدّ الصفين لحساب الخانات = الفاصل الخشبي بين المنطقتين
-          final split = gH * ((0.800 - 0.600) / 0.335);
+          // الغائر) وقاعدة السفلي = 0.922 (فوق الشريط المزخرف مرفوعة
+          // قليلاً) — أعلى منطقة الاستكانة = 0.600 وأسفلها = 0.935
+          const topBaseFromBottom = (0.935 - 0.758) / 0.335;
+          const botBaseFromBottom = (0.935 - 0.922) / 0.335;
+          // حدّ الصفين = منتصف الفجوة المرئية بين الصفّين — الإفلات
+          // يُحسب لأقرب صفٍّ يقع تحت مركز الحجر لا لخطٍّ اعتباطي
+          final row0BaseY = innerH * (1 - topBaseFromBottom);
+          final row1BaseY = innerH * (1 - botBaseFromBottom);
+          final rowSplit = (row0BaseY + (row1BaseY - gTileH)) / 2;
           return _buildDropArea(
             slotW: gSlotW,
             tileW: gTileW,
             tileH: gTileH,
-            x0: (availableW - gSlotW * 14) / 2,
-            y0: 0,
-            rowGap: split - gTileH,
+            x0: (innerW - gSlotW * 14) / 2,
+            rowSplit: rowSplit,
+            hitPad: hitPad,
             child: SizedBox(
-              width: availableW,
-              height: gH,
+              width: innerW,
+              height: innerH,
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
                   Positioned(
                     left: 0,
                     right: 0,
-                    bottom: gH * row1BaseFromBottom,
+                    bottom: innerH * topBaseFromBottom,
                     child: Center(
                         child: _buildShelfRow(0, 14, gSlotW, gTileW, gTileH)),
                   ),
                   Positioned(
                     left: 0,
                     right: 0,
-                    bottom: 0,
+                    bottom: innerH * botBaseFromBottom,
                     child: Center(
                         child: _buildShelfRow(14, 28, gSlotW, gTileW, gTileH)),
                   ),
@@ -163,6 +174,8 @@ class OkeyIstakaWidget extends StatelessWidget {
             slotW: slotW,
             tileW: tileW,
             tileH: tileH,
+            // حدّ الصفين = منتصف الفاصل المعدني بينهما (أقرب صف لمركز الحجر)
+            rowSplit: 25.0 + tileH + 4.5 / 2,
             child: SizedBox(
               width: totalWidgetW,
               child: Stack(
@@ -392,8 +405,11 @@ class OkeyIstakaWidget extends StatelessWidget {
   /// الخانة المستهدفة أثناء السحب (لمعاينة مكان النزول)
   static final ValueNotifier<int?> _hoverSlot = ValueNotifier<int?>(null);
 
-  /// صندوق الرف المعروض (للتحويل من إحداثيات الشاشة)
-  static RenderBox? _rackBox;
+  /// صندوق محتوى الرف الداخلي (داخل حاشية الالتقاط) — إحداثيات
+  /// الخانات محسوبة من حدوده، بينما هدف السحب أكبر منه بحاشية hitPad
+  static final GlobalKey _rackInnerKey = GlobalKey();
+  static RenderBox? get _rackBox =>
+      _rackInnerKey.currentContext?.findRenderObject() as RenderBox?;
 
   /// نسبة ارتفاع الحجر فوق الإصبع أثناء السحب — صغيرة حتى يبقى
   /// الحجر قريباً من الإصبع والإفلات دقيقاً ومباشراً
@@ -410,18 +426,16 @@ class OkeyIstakaWidget extends StatelessWidget {
           : Offset(0, -tileH * dragScaleY * _dragLiftFactor));
 
   /// يحوّل موضع الحجر إلى خانة (أو -1 = فوق الرف، أي على الطاولة)
-  int _slotAt(Offset global, int fromSlot, double slotW, double tileH,
-      {bool raw = false,
-      double x0 = 27.0,
-      double y0 = 25.0,
-      double rowGap = 4.5}) {
+  /// rowSplit = الحد العمودي بين الصفّين بإحداثيات الرف الداخلية
+  int _slotAt(Offset global, int fromSlot, double slotW,
+      {bool raw = false, double x0 = 27.0, double rowSplit = 0}) {
     final box = _rackBox;
     if (box == null || !box.attached) return fromSlot;
     final local = box.globalToLocal(global);
-    // فوق الرف = فوق حافة الويدجت نفسها (مركز الحجر خارج الاستكانة للأعلى) —
-    // سحب داخل الاستكانة مهما كان سريعاً لا يتحول لرمي
-    if (local.dy < -10) return -1;
-    final row = local.dy < y0 + tileH + rowGap ? 0 : 1;
+    // فوق الرف = فوق حاشية الالتقاط العلوية كلها (خارجها يتولاها هدف
+    // الطاولة) — الإفلات داخل الحاشية يُحسب للصف العلوي لا رمياً بالخطأ
+    if (local.dy < -10 - hitPad.top) return -1;
+    final row = local.dy < rowSplit ? 0 : 1;
     final p = ((local.dx - x0) / slotW).clamp(0.0, 13.999);
     final col = p.floor();
     final slot = row * 14 + col;
@@ -440,16 +454,16 @@ class OkeyIstakaWidget extends StatelessWidget {
     required double tileW,
     required double tileH,
     double x0 = 27.0,
-    double y0 = 25.0,
-    double rowGap = 4.5,
+    double rowSplit = 0,
+    EdgeInsets hitPad = EdgeInsets.zero,
   }) {
     return DragTarget<int>(
       onWillAcceptWithDetails: (_) => true,
       onMove: (details) {
         final d = details.data;
         final s = _slotAt(_dragCenter(details.offset, tileW, tileH),
-            OkeyDrag.isRackTile(d) ? d : -99, slotW, tileH,
-            raw: !OkeyDrag.isRackTile(d), x0: x0, y0: y0, rowGap: rowGap);
+            OkeyDrag.isRackTile(d) ? d : -99, slotW,
+            raw: !OkeyDrag.isRackTile(d), x0: x0, rowSplit: rowSplit);
         final v = (s < 0 || s == d) ? null : s;
         if (_hoverSlot.value != v) _hoverSlot.value = v;
       },
@@ -461,8 +475,8 @@ class OkeyIstakaWidget extends StatelessWidget {
         final d = details.data;
         final center = _dragCenter(details.offset, tileW, tileH);
         if (!OkeyDrag.isRackTile(d)) {
-          final s = _slotAt(center, -99, slotW, tileH,
-              raw: true, x0: x0, y0: y0, rowGap: rowGap);
+          final s = _slotAt(center, -99, slotW,
+              raw: true, x0: x0, rowSplit: rowSplit);
           if (OkeyDrag.isGroup(d)) {
             if (s >= 0) {
               HapticFeedback.lightImpact();
@@ -476,8 +490,7 @@ class OkeyIstakaWidget extends StatelessWidget {
           }
           return;
         }
-        final s =
-            _slotAt(center, d, slotW, tileH, x0: x0, y0: y0, rowGap: rowGap);
+        final s = _slotAt(center, d, slotW, x0: x0, rowSplit: rowSplit);
         if (s < 0) {
           // الحجر فوق الرف (على الطاولة) — يُعامل كرمي
           onDropAboveRack?.call(details.data, details.offset);
@@ -488,10 +501,12 @@ class OkeyIstakaWidget extends StatelessWidget {
           onTileMove?.call(details.data, s);
         }
       },
-      builder: (context, _, __) {
-        _rackBox = context.findRenderObject() as RenderBox?;
-        return child;
-      },
+      // Hit padding: يوسّع منطقة الالتقاط حول محتوى الرف — الخانة
+      // تُحسب من الصندوق الداخلي المُفتاح فيبقى التعيين دقيقاً
+      builder: (context, _, __) => Padding(
+        padding: hitPad,
+        child: SizedBox(key: _rackInnerKey, child: child),
+      ),
     );
   }
 
@@ -564,6 +579,9 @@ class OkeyIstakaWidget extends StatelessWidget {
                 slotIndex < rackTiles.length ? rackTiles[slotIndex] : null;
             final isSelected = selectedIndex == slotIndex;
             final isHovering = hover == slotIndex;
+            // وضع الغرفة: بلا تظليل أخضر — الاستكانة في الصورة تبقى
+            // نظيفة، ومعاينة النزول تقتصر على إزاحة الأحجار المجاورة
+            final hoverGlow = isHovering && !ghostMode;
 
             if (tile == null) {
               // خانة فارغة — تتوهج عندما تكون هي مكان النزول
@@ -574,18 +592,18 @@ class OkeyIstakaWidget extends StatelessWidget {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 140),
                     curve: Curves.easeOutCubic,
-                    width: isHovering ? slotW : tileW,
+                    width: hoverGlow ? slotW : tileW,
                     height: tileH,
                     decoration: BoxDecoration(
-                      color: isHovering
+                      color: hoverGlow
                           ? const Color(0x334ADE80)
                           : const Color(0x14FFFFFF),
                       borderRadius: BorderRadius.circular(3),
                       border: Border.all(
-                        color: isHovering
+                        color: hoverGlow
                             ? const Color(0xFF4ADE80)
                             : const Color(0x1AFFFFFF),
-                        width: isHovering ? 1.2 : 0.5,
+                        width: hoverGlow ? 1.2 : 0.5,
                       ),
                     ),
                   ),
