@@ -145,9 +145,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   // سجادة اللعب الوسطى — تنتهي فوق حافة الاستكانة حتى لا يُحسب
   // الإفلات على أحجاري رمياً على "الطاولة"
   static const _roomCarpetF = Rect.fromLTWH(0.300, 0.255, 0.405, 0.240);
-  // تجويف استكانتي: الأخدود + اللوح الغائر — الصف العلوي قاعدته على
-  // الأخدود وقمتّه عند حافة الإطار، والسفلي يقف على اللوح الغائر
-  static const _roomRackMineF = Rect.fromLTWH(0.250, 0.525, 0.500, 0.255);
+  // استكانتي: الاتحاد العمودي لمنطقتي الأحجار — اللوح الغائر (الصف
+  // العلوي) والشريط المزخرف الأمامي (الصف السفلي) — 0.60..0.925
+  static const _roomRackMineF = Rect.fromLTWH(0.235, 0.600, 0.540, 0.325);
   // حامل المقابل — العارضة الخشبية الأفقية تحت الوسادة الخلفية مباشرة
   static const _roomRackTopF = Rect.fromLTWH(0.375, 0.165, 0.250, 0.085);
   // حاملا الجانبين (المسندان الخشبيان المائلان بين الوسائد والطاولة)
@@ -1082,16 +1082,16 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   Offset _rackSlotCenter(int slot) {
     final s = _sceneSize;
     if (_roomScene) {
-      // نفس معادلة ghostMode في OkeyIstakaWidget — يجب أن تبقى متطابقة
+      // نفس معادلة ghostMode في OkeyIstakaWidget — يجب أن تبقى متطابقة:
+      // الصف العلوي قاعدته عند 0.770 من الصورة والسفلي عند أسفل المنطقة
       final zone = _mapToImg(_roomRackMineF, s);
       final slotW = ((zone.width - 24) / 14).clamp(20.0, 40.0);
-      final tileH = (slotW - 1.5) * 1.36;
-      const rowGap = 8.0;
-      final rowsH = tileH * 2 + rowGap;
+      final tileW = slotW * 1.28;
+      final tileH = tileW * 1.36;
       final x0 = zone.left + (zone.width - slotW * 14) / 2;
-      final y0 = zone.top + (zone.height - rowsH) / 2;
       final x = x0 + slotW * (slot % 14 + 0.5);
-      final y = y0 + (slot < 14 ? tileH / 2 : tileH + rowGap + tileH / 2);
+      final row1BaseY = zone.top + zone.height * (1 - (0.925 - 0.770) / 0.325);
+      final y = slot < 14 ? row1BaseY - tileH / 2 : zone.bottom - tileH / 2;
       return Offset(x, y);
     }
     final slotW = _rackSlotW();

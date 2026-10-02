@@ -100,35 +100,50 @@ class OkeyIstakaWidget extends StatelessWidget {
       builder: (context, constraints) {
         final availableW = constraints.maxWidth;
         if (ghostMode) {
-          // وضع الغرفة: صفّا أحجار فقط — بلا جسم استكانة مرسوم.
-          // حجم الحجر الطبيعي يملأ التجويف: الصف العلوي قاعدته على
-          // الأخدود والسفلي يقف على اللوح الغائر. نفس المعادلة تتكرر
-          // في _rackSlotCenter بالشاشة — أي تعديل هنا ينعكس هناك
+          // وضع الغرفة: صفّا أحجار فقط فوق استكانة الصورة — الصف العلوي
+          // قاعدته على أرضية اللوح الغائر (المنطقة العلوية) والسفلي يقف
+          // على الشريط الأمامي (المنطقة السفلية). الحجر أعرض من الخانة
+          // قليلاً → تداخل طبيعي كاستكانة حقيقية ويملأ المنطقة عمودياً.
+          // نفس المعادلة تتكرر في _rackSlotCenter بالشاشة — أي تعديل
+          // هنا يجب أن ينعكس هناك
           final gSlotW = ((availableW - 24) / 14).clamp(20.0, 40.0);
-          final gTileW = gSlotW - 1.5;
+          final gTileW = gSlotW * 1.28;
           final gTileH = gTileW * 1.36;
-          const gGap = 8.0;
-          // الصفوف ممركزة داخل التجويف — الإزاحة تطابق الإحداثيات المرئية
-          final gY0 = ((constraints.maxHeight - (gTileH * 2 + gGap)) / 2)
-              .clamp(0.0, 999.0);
+          final gH = constraints.maxHeight;
+          // قاعدة الصف العلوي = 0.770 من ارتفاع الصورة، وأسفل الويدجت
+          // = 0.925 — نسبة ثابتة من قياس صورة المشهد
+          const row1BaseFromBottom = (0.925 - 0.770) / 0.325;
+          final row1BaseY = gH * (1 - row1BaseFromBottom);
+          // حدّ الصفين لحساب الخانات = منتصف الفجوة بين الصفين
+          final split = (row1BaseY + (gH - gTileH)) / 2;
           return _buildDropArea(
             slotW: gSlotW,
             tileW: gTileW,
             tileH: gTileH,
             x0: (availableW - gSlotW * 14) / 2,
-            y0: gY0,
-            rowGap: gGap,
+            y0: 0,
+            rowGap: split - gTileH,
             child: SizedBox(
               width: availableW,
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildShelfRow(0, 14, gSlotW, gTileW, gTileH),
-                    const SizedBox(height: gGap),
-                    _buildShelfRow(14, 28, gSlotW, gTileW, gTileH),
-                  ],
-                ),
+              height: gH,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: gH * row1BaseFromBottom,
+                    child: Center(
+                        child: _buildShelfRow(0, 14, gSlotW, gTileW, gTileH)),
+                  ),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: Center(
+                        child: _buildShelfRow(14, 28, gSlotW, gTileW, gTileH)),
+                  ),
+                ],
               ),
             ),
           );
