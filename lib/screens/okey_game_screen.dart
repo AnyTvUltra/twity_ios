@@ -147,7 +147,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   static const _roomCarpetF = Rect.fromLTWH(0.300, 0.255, 0.405, 0.240);
   // استكانتي: الاتحاد العمودي لمنطقتي الأحجار — اللوح الغائر (الصف
   // العلوي قاعدته 0.758) والشريط المزخرف الأمامي (الصف السفلي حتى 0.950)
-  static const _roomRackMineF = Rect.fromLTWH(0.235, 0.600, 0.540, 0.350);
+  static const _roomRackMineF = Rect.fromLTWH(0.235, 0.600, 0.540, 0.335);
   // حامل المقابل — العارضة الخشبية الأفقية تحت الوسادة الخلفية مباشرة
   static const _roomRackTopF = Rect.fromLTWH(0.365, 0.185, 0.270, 0.090);
   // حاملا الجانبين (المسندان الخشبيان المائلان بين الوسائد والطاولة)
@@ -206,6 +206,37 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         img.top + f.top * img.height,
         f.width * img.width,
         f.height * img.height);
+  }
+
+  /// شريحة حافة من صورة الغرفة نفسها: الثلث الأقصى من الصورة مكبّر
+  /// بعرض الشاشة ومقلوب عمودياً فيلتحم صفّها الحدي بحافة المستطيل —
+  /// الجدار يكمل فوق الصورة والأرضية/السجاد تحتها (للشاشات الضيقة
+  /// التي لا تكفي فيها التغطية بالقصّ) — ويدجت بحت لا يعتمد على
+  /// فكّ ترميز الصورة فيعمل دائماً
+  Widget _roomEdgeSlice(
+      {required double bandH,
+      required double imgH,
+      required double sw,
+      required bool top}) {
+    if (bandH <= 0) return const SizedBox.shrink();
+    const fracH = 0.34;
+    final k = bandH / (fracH * imgH);
+    return ClipRect(
+      child: Transform.translate(
+        // الشريط العلوي: قاعه = حافة الصورة العليا (صفّ 0) فيلتحم —
+        // translate يُنزله حتى يقع الصف 0 (أسفل الصورة المقلوبة) عند bandH
+        offset: Offset(0, top ? bandH - imgH * k : 0.0),
+        child: Transform(
+          alignment: Alignment.center,
+          transform: Matrix4.diagonal3Values(1.0, -1.0, 1.0),
+          child: SizedBox(
+            width: sw,
+            height: imgH * k,
+            child: Image(image: _roomProvider, fit: BoxFit.fill),
+          ),
+        ),
+      ),
+    );
   }
 
   /// مستطيل سطح اللعب (السجادة في وضع الغرفة) — نسبي للأبعاد الفعلية
@@ -1088,10 +1119,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       // الصف العلوي قاعدته عند 0.758 من الصورة والسفلي عند أسفل المنطقة
       final zone = _mapToImg(_roomRackMineF, s);
       final slotW = ((zone.width - 24) / 14).clamp(20.0, 40.0);
-      final tileH = slotW * 1.28 * 1.20;
+      final tileH = slotW * 1.28 * 1.18;
       final x0 = zone.left + (zone.width - slotW * 14) / 2;
       final x = x0 + slotW * (slot % 14 + 0.5);
-      final row1BaseY = zone.bottom - zone.height * (0.950 - 0.758) / 0.350;
+      final row1BaseY = zone.bottom - zone.height * (0.935 - 0.758) / 0.335;
       final y = slot < 14 ? row1BaseY - tileH / 2 : zone.bottom - tileH / 2;
       return Offset(x, y);
     }
@@ -1281,14 +1312,20 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           )
         : media;
     _sceneRotated = rotateToLandscape;
+    final scene = AnimatedBuilder(
+      animation: Listenable.merge([_engine, StoreService()]),
+      builder: (context, _) => _buildLandscapeLayout(context),
+    );
     final game = MediaQuery(
       data: landscapeMedia,
-      child: SafeArea(
-        child: AnimatedBuilder(
-          animation: Listenable.merge([_engine, StoreService()]),
-          builder: (context, _) => _buildLandscapeLayout(context),
-        ),
-      ),
+      // الوضع المدوّر (الهاتف عمودي): بلا SafeArea — حواف الجزيرة/
+      // الشريط كانت تقتطع جانبي اللوحة المدوّرة فتظهر كأشرطة سوداء
+      // أعلى وأسفل المشهد. المشهد يملأ الشاشة كلها، والأزرار الزاوية
+      // بعيدة عن مناطق الجزيرة أصلاً. الوضع الأفقي الأصلي: نحافظ على
+      // الجوانب (الجزيرة جانبية) ونملأ الأعلى والأسفل
+      child: rotateToLandscape
+          ? scene
+          : SafeArea(top: false, bottom: false, child: scene),
     );
 
     return Directionality(
@@ -1299,7 +1336,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           if (!didPop) _requestExit();
         },
         child: Scaffold(
-          backgroundColor: const Color(0xFF070B13),
+          backgroundColor: const Color(0xFF141018),
           body: rotateToLandscape
               ? RotatedBox(quarterTurns: 1, child: game)
               : game,
@@ -1370,17 +1407,34 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                 children: [
                   if (_roomScene) ...[
                     // ═══ خلفية الغرفة تملأ الشاشة حافة-لحافة: ═══
-                    // أساس داكن ثم شرائح ممدودة من قلب الصورة نفسها
-                    // (الجدار المضيء يكمل فوقاً والأرضية تحت) — تغطي أي
-                    // فراغ على الشاشات الضيقة دون أشرطة سوداء أو تمويه
+                    // أساس داكن ثم شريحتان من الصورة نفسها مكبّرتان
+                    // ومقلوبتان عمودياً — الجدار يكمل فوقاً والأرضية
+                    // تحتاً بالتحامٍ مثالي مع حواف الصورة المعروضة
                     const Positioned.fill(
                         child: ColoredBox(color: Color(0xFF141018))),
-                    if (_roomUiImg != null)
-                      Positioned.fill(
-                        child: CustomPaint(
-                          painter: _RoomEdgeFillPainter(
-                              image: _roomUiImg!, imgRect: imgRect),
-                        ),
+                    if (imgRect.top > 0.5)
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        top: 0,
+                        height: imgRect.top,
+                        child: _roomEdgeSlice(
+                            bandH: imgRect.top,
+                            imgH: imgRect.height,
+                            sw: sw,
+                            top: true),
+                      ),
+                    if (sh - imgRect.bottom > 0.5)
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        top: imgRect.bottom,
+                        height: sh - imgRect.bottom,
+                        child: _roomEdgeSlice(
+                            bandH: sh - imgRect.bottom,
+                            imgH: imgRect.height,
+                            sw: sw,
+                            top: false),
                       ),
                     // الصورة الحادة — تملأ العرض دائماً، وتملأ الارتفاع
                     // على الشاشات القريبة من نسبتها (قصّ حواف آمن)
@@ -1817,9 +1871,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
               : tbl.center.dy - 24,
           child: _seatBadge(1),
         ),
+        // إحصائيات الجولة — تحت صف الأزرار اليسرى حتى لا تغطي زر الخروج
         Positioned(
           left: 12,
-          top: _roomScene ? _imgRect(Size(sw, sh)).top + 8 : tbl.top + 4,
+          top: _roomScene ? _imgRect(Size(sw, sh)).top + 50 : tbl.top + 4,
           child: _buildRoundStats(),
         ),
         // شريط الوقت الرفيع فوق استكانتي — يظهر أثناء دوري وينقص مع الوقت
@@ -2078,12 +2133,13 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
 
   /// ارتفاع رفع الحجر فوق الإصبع أثناء السحب — بإحداثيات المشهد
   double get _dropLiftScene {
+    const lift = OkeyIstakaWidget.dragLiftFactor;
     if (_roomScene) {
       final zone = _mapToImg(_roomRackMineF, _sceneSize);
-      final tileH = (((zone.width - 24) / 14).clamp(20.0, 40.0)) * 1.536;
-      return 0.28 * tileH;
+      final tileH = (((zone.width - 24) / 14).clamp(20.0, 40.0)) * 1.5104;
+      return lift * tileH;
     }
-    return 12.0;
+    return 9.0;
   }
 
   /// إفلات حجر على سطح الطاولة (منطقة اللعب فوق الاستكانة) = رمي
@@ -3562,8 +3618,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         data: OkeyDrag.leftPile,
         maxSimultaneousDrags: 1,
         onDragStarted: () => AppHaptics.selection(),
-        dragAnchorStrategy: (d, c, p) =>
-            const Offset(_rackTileW / 2, _rackTileH / 2 + _rackTileH * 0.28),
+        dragAnchorStrategy: (d, c, p) => const Offset(_rackTileW / 2,
+            _rackTileH / 2 + _rackTileH * OkeyIstakaWidget.dragLiftFactor),
         feedback: Material(
           color: Colors.transparent,
           elevation: 10,
@@ -3766,8 +3822,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         data: OkeyDrag.deck,
         maxSimultaneousDrags: drawable ? 1 : 0,
         onDragStarted: () => AppHaptics.selection(),
-        dragAnchorStrategy: (d, c, p) =>
-            const Offset(_rackTileW / 2, _rackTileH / 2 + _rackTileH * 0.28),
+        dragAnchorStrategy: (d, c, p) => const Offset(_rackTileW / 2,
+            _rackTileH / 2 + _rackTileH * OkeyIstakaWidget.dragLiftFactor),
         feedback: Material(
           color: Colors.transparent,
           elevation: 10,
@@ -3965,44 +4021,3 @@ class _PileEntry {
 /// رسام تمديد حواف صورة الغرفة: يملأ أي فراغ فوق/تحت الصورة بشرائح
 /// ممدودة ومقلوبة من الصورة نفسها — الجدار يكمل للأعلى والأرضية/السجاد
 /// للأسفل — بحيث تبقى الصورة متصلة بلا أشرطة سوداء على أي أبعاد شاشة
-class _RoomEdgeFillPainter extends CustomPainter {
-  final ui.Image image;
-  final Rect imgRect;
-  const _RoomEdgeFillPainter({required this.image, required this.imgRect});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final iw = image.width.toDouble(), ih = image.height.toDouble();
-    final paint = Paint()..filterQuality = FilterQuality.medium;
-    // الشريحة تُقلب عمودياً حول مركز المقصد: الصفّ الملاصق للصورة يطابق
-    // صفّها الحدي تماماً (سلاسة) والطرف البعيد يعرض محتوىً مضيئاً
-    void band(Rect src, Rect dst) {
-      canvas.save();
-      canvas.clipRect(dst);
-      canvas.translate(dst.center.dx, dst.center.dy);
-      canvas.scale(1, -1);
-      canvas.translate(-dst.center.dx, -dst.center.dy);
-      canvas.drawImageRect(image, src, dst, paint);
-      canvas.restore();
-    }
-
-    if (imgRect.top > 1) {
-      // فوق: حافة الصورة العلوية (ظل السقف) تلتصق بالصورة، وأعلى الشريط
-      // يعرض الجدار المضيء — تدرّج ظل طبيعي نحو الأعلى
-      band(Rect.fromLTWH(0, 0, iw, ih * 0.34),
-          Rect.fromLTWH(0, 0, size.width, imgRect.top + 1));
-    }
-    if (imgRect.bottom < size.height - 1) {
-      // تحت: حافة الصورة السفلية (الإطار/الأرضية الداكنة) تلتصق بالصورة
-      // وأسفل الشريط يعرض السجاد والأرضية المضيئة
-      band(
-          Rect.fromLTWH(0, ih * 0.60, iw, ih * 0.40),
-          Rect.fromLTWH(0, imgRect.bottom - 1, size.width,
-              size.height - imgRect.bottom + 1));
-    }
-  }
-
-  @override
-  bool shouldRepaint(_RoomEdgeFillPainter old) =>
-      old.image != image || old.imgRect != imgRect;
-}

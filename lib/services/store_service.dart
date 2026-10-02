@@ -838,7 +838,112 @@ class StoreService extends ChangeNotifier {
           ),
       ];
 
-  List<StoreItem> _items = _builtinItems();
+  /// الكتالوج الكامل المعروض: غرف الكونكان أولاً ثم كل العناصر
+  /// المدمجة ما عدا كسنات الاستكانة/الأحجار/الخلفية — حُذفت لأن
+  /// مشهد الغرفة الموحّد يغطي دورها كلها في شاشة اللعب
+  static List<StoreItem> _catalogItems() => [
+        ..._roomItems(),
+        for (final e in _builtinItems())
+          if (e.category != StoreCategory.rack &&
+              e.category != StoreCategory.tile &&
+              e.category != StoreCategory.background)
+            e,
+      ];
+
+  /// تصاميم غرفة الكونكان — مشاهد كاملة (1024×436) بنفس تخطيط
+  /// الغرفة الافتراضية فتعمل عليها مناطق اللعب المحسوبة نفسها —
+  /// جهّز أي منها ليستبدل غرفة اللعب بأكملها فوراً
+  static List<StoreItem> _roomItems() => [
+        for (final r in [
+          (
+            'classic',
+            'الغرفة الكوردية الكلاسيكية'.tr,
+            0,
+            StoreCurrency.chips,
+            'assets/images/okey_room.png'
+          ),
+          (
+            'gold',
+            'غرفة الذهب الملكي'.tr,
+            3000,
+            StoreCurrency.chips,
+            'assets/images/rooms/room_gold.png'
+          ),
+          (
+            'teal',
+            'غرفة الفيروز'.tr,
+            3000,
+            StoreCurrency.chips,
+            'assets/images/rooms/room_teal.png'
+          ),
+          (
+            'glass',
+            'غرفة الكريستال'.tr,
+            35,
+            StoreCurrency.gems,
+            'assets/images/rooms/room_glass.png'
+          ),
+          (
+            'silver',
+            'غرفة الصاج الفضي'.tr,
+            3500,
+            StoreCurrency.chips,
+            'assets/images/rooms/room_silver.png'
+          ),
+          (
+            'amber',
+            'غرفة العنبر'.tr,
+            3500,
+            StoreCurrency.chips,
+            'assets/images/rooms/room_amber.png'
+          ),
+          (
+            'green',
+            'الغرفة الخضراء'.tr,
+            2500,
+            StoreCurrency.chips,
+            'assets/images/rooms/room_green.jpg'
+          ),
+          (
+            'navy',
+            'الغرفة الكحلية'.tr,
+            2500,
+            StoreCurrency.chips,
+            'assets/images/rooms/room_navy.jpg'
+          ),
+          (
+            'emerald',
+            'غرفة الزمرد الملكية'.tr,
+            40,
+            StoreCurrency.gems,
+            'assets/images/rooms/room_emerald.png'
+          ),
+          (
+            'beige',
+            'غرفة الرمال'.tr,
+            2500,
+            StoreCurrency.chips,
+            'assets/images/rooms/room_beige.png'
+          ),
+          (
+            'bronze',
+            'الغرفة البرونزية'.tr,
+            30,
+            StoreCurrency.gems,
+            'assets/images/rooms/room_bronze.jpg'
+          ),
+        ])
+          StoreItem(
+            id: 'builtin_room_${r.$1}',
+            name: r.$2,
+            category: StoreCategory.okeyRoom,
+            price: r.$3,
+            currency: r.$4,
+            imageBase64: 'asset:${r.$5}',
+          ),
+      ];
+
+  List<StoreItem> _items = _catalogItems();
   List<StoreItem> get items => _items;
 
   StreamSubscription<QuerySnapshot>? _itemsSub;
@@ -882,7 +987,7 @@ class StoreService extends ChangeNotifier {
         .snapshots()
         .listen((snapshot) {
       _items = [
-        ..._builtinItems(),
+        ..._catalogItems(),
         ...snapshot.docs.map((doc) => StoreItem.fromDoc(doc)),
       ];
       _warmImageCache();

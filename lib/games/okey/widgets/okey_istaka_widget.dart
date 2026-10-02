@@ -108,13 +108,14 @@ class OkeyIstakaWidget extends StatelessWidget {
           // هنا يجب أن ينعكس هناك
           final gSlotW = ((availableW - 24) / 14).clamp(20.0, 40.0);
           final gTileW = gSlotW * 1.28;
-          final gTileH = gTileW * 1.20;
+          final gTileH = gTileW * 1.18;
           final gH = constraints.maxHeight;
           // قاعدة الصف العلوي = 0.758 من ارتفاع الصورة (أرضية اللوح
-          // الغائر) وأسفل الويدجت = 0.950 — نسب من قياس صورة المشهد
-          const row1BaseFromBottom = (0.950 - 0.758) / 0.350;
+          // الغائر) وأسفل الويدجت = 0.935 (داخل الشريط المزخرف،
+          // قبل حافة الإطار) — نسب من قياس صورة المشهد
+          const row1BaseFromBottom = (0.935 - 0.758) / 0.335;
           // حدّ الصفين لحساب الخانات = الفاصل الخشبي بين المنطقتين
-          final split = gH * ((0.800 - 0.600) / 0.350);
+          final split = gH * ((0.800 - 0.600) / 0.335);
           return _buildDropArea(
             slotW: gSlotW,
             tileW: gTileW,
@@ -394,6 +395,11 @@ class OkeyIstakaWidget extends StatelessWidget {
   /// صندوق الرف المعروض (للتحويل من إحداثيات الشاشة)
   static RenderBox? _rackBox;
 
+  /// نسبة ارتفاع الحجر فوق الإصبع أثناء السحب — صغيرة حتى يبقى
+  /// الحجر قريباً من الإصبع والإفلات دقيقاً ومباشراً
+  static const double dragLiftFactor = 0.18;
+  static const double _dragLiftFactor = dragLiftFactor;
+
   /// مركز الحجر الظاهر على الشاشة أثناء السحب — الـanchor يُبقي الحجر
   /// مرتفعاً فوق الإصبع بـ0.28×ارتفاعه (بمقياس السحب) ومتوسّطاً أفقياً
   /// عليها، فنقيّم الخانة عند المركز الظاهر لا عند موضع الإصبع
@@ -401,7 +407,7 @@ class OkeyIstakaWidget extends StatelessWidget {
       pointerGlobal +
       (feedbackQuarterTurns.isOdd
           ? Offset.zero
-          : Offset(0, -tileH * dragScaleY * 0.28));
+          : Offset(0, -tileH * dragScaleY * _dragLiftFactor));
 
   /// يحوّل موضع الحجر إلى خانة (أو -1 = فوق الرف، أي على الطاولة)
   int _slotAt(Offset global, int fromSlot, double slotW, double tileH,
@@ -508,13 +514,12 @@ class OkeyIstakaWidget extends StatelessWidget {
       // الحجر المضغوط يبقى تحت الإصبع، والكتلة ممتدة حوله
       dragAnchorStrategy: (d, c, p) => Offset(
           pad + gap + indexInGroup * (tileW + gap * 2) + tileW / 2,
-          pad + tileH / 2 + tileH * dragScaleY * 0.28),
+          pad + tileH / 2 + tileH * dragScaleY * _dragLiftFactor),
       feedback: Material(
         color: Colors.transparent,
         child: Transform(
           alignment: Alignment.topLeft,
-          transform:
-              Matrix4.diagonal3Values(dragScaleX * 1.04, dragScaleY * 1.04, 1),
+          transform: Matrix4.diagonal3Values(dragScaleX, dragScaleY, 1),
           child: Container(
             padding: const EdgeInsets.all(pad),
             decoration: BoxDecoration(
@@ -622,8 +627,8 @@ class OkeyIstakaWidget extends StatelessWidget {
                         if (feedbackQuarterTurns.isOdd) {
                           return Offset(tileH / 2, tileW / 2);
                         }
-                        return Offset(
-                            tileW / 2, tileH / 2 + tileH * dragScaleY * 0.28);
+                        return Offset(tileW / 2,
+                            tileH / 2 + tileH * dragScaleY * _dragLiftFactor);
                       },
                       feedback: Material(
                         color: Colors.transparent,
@@ -634,7 +639,7 @@ class OkeyIstakaWidget extends StatelessWidget {
                           child: Transform(
                             alignment: Alignment.center,
                             transform: Matrix4.diagonal3Values(
-                                dragScaleX * 1.08, dragScaleY * 1.08, 1),
+                                dragScaleX, dragScaleY, 1),
                             child: OkeyTileWidget(
                               tile: tile,
                               isDragging: true,
