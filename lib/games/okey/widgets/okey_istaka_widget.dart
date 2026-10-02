@@ -101,12 +101,16 @@ class OkeyIstakaWidget extends StatelessWidget {
         final availableW = constraints.maxWidth;
         if (ghostMode) {
           // وضع الغرفة: صفّا أحجار فقط — بلا جسم استكانة مرسوم.
-          // نفس معادلة الخانات في كل الاتجاهات حتى يبقى _slotAt متسقاً
-          final gSlotW = ((availableW - 24) / 14).clamp(20.0, 40.0);
+          // الأحجار أصغر قليلاً وبفاصل صفّي أوضح حتى يجلس الصف العلوي
+          // في أخدود الحامل والسفلي على اللوح الغائر تحته تماماً.
+          // نفس المعادلة تتكرر في _rackSlotCenter بالشاشة — أي تعديل هنا
+          // يجب أن ينعكس هناك
+          final gSlotW = ((availableW - 24) / 14 * 0.82).clamp(18.0, 38.0);
           final gTileW = gSlotW - 1.5;
           final gTileH = gTileW * 1.36;
+          const gGap = 8.0;
           // الصفوف ممركزة داخل التجويف — الإزاحة تطابق الإحداثيات المرئية
-          final gY0 = ((constraints.maxHeight - (gTileH * 2 + 3)) / 2)
+          final gY0 = ((constraints.maxHeight - (gTileH * 2 + gGap)) / 2)
               .clamp(0.0, 999.0);
           return _buildDropArea(
             slotW: gSlotW,
@@ -114,7 +118,7 @@ class OkeyIstakaWidget extends StatelessWidget {
             tileH: gTileH,
             x0: (availableW - gSlotW * 14) / 2,
             y0: gY0,
-            rowGap: 3,
+            rowGap: gGap,
             child: SizedBox(
               width: availableW,
               child: Center(
@@ -122,7 +126,7 @@ class OkeyIstakaWidget extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _buildShelfRow(0, 14, gSlotW, gTileW, gTileH),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: gGap),
                     _buildShelfRow(14, 28, gSlotW, gTileW, gTileH),
                   ],
                 ),

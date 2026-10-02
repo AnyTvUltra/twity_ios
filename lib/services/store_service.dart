@@ -20,6 +20,8 @@ class StoreCategory {
   static const String chessPieces = 'chessPieces';
   static const String bgBoard = 'bgBoard';
   static const String bgCheckers = 'bgCheckers';
+  // غرفة الكونكان — تصميم المشهد الكامل (نفس تخطيط الصورة المرجعية)
+  static const String okeyRoom = 'okeyRoom';
 
   static const List<String> all = [
     tile,
@@ -31,6 +33,7 @@ class StoreCategory {
     chessPieces,
     bgBoard,
     bgCheckers,
+    okeyRoom,
   ];
 
   static String label(String category) {
@@ -53,6 +56,8 @@ class StoreCategory {
         return 'لوح الطاولي'.tr;
       case bgCheckers:
         return 'أحجار الطاولي'.tr;
+      case okeyRoom:
+        return 'غرفة الكونكان'.tr;
       default:
         return category;
     }
@@ -78,6 +83,8 @@ class StoreCategory {
         return Icons.view_week_rounded;
       case bgCheckers:
         return Icons.radio_button_checked_rounded;
+      case okeyRoom:
+        return Icons.meeting_room_rounded;
       default:
         return Icons.category_rounded;
     }
@@ -195,8 +202,9 @@ class StoreItem {
   ImageProvider get provider {
     final p = _provider;
     if (p != null) return p;
-    final ImageProvider created =
-        isAssetImage ? AssetImage(assetPath) as ImageProvider : MemoryImage(bytes);
+    final ImageProvider created = isAssetImage
+        ? AssetImage(assetPath) as ImageProvider
+        : MemoryImage(bytes);
     _provider = created;
     return created;
   }
@@ -938,13 +946,15 @@ class StoreService extends ChangeNotifier {
     if (user == null) return 'يرجى تسجيل الدخول أولاً'.tr;
     if (isOwned(item.id)) return 'تمتلك هذه الكسنة بالفعل'.tr;
     if (item.requiredWins > 0 && user.wins < item.requiredWins) {
-      return 'كسنة أسطورية مقفلة! تحتاج {} فوزاً 🏆 (عندك {})'.trp([item.requiredWins, user.wins]);
+      return 'كسنة أسطورية مقفلة! تحتاج {} فوزاً 🏆 (عندك {})'
+          .trp([item.requiredWins, user.wins]);
     }
 
     final isGems = item.currency == StoreCurrency.gems;
     final balance = isGems ? user.gems : user.chips;
     if (balance < item.price) {
-      return 'رصيدك غير كافٍ! تحتاج {} {}'.trp([item.price, isGems ? '💎' : '🪙']);
+      return 'رصيدك غير كافٍ! تحتاج {} {}'
+          .trp([item.price, isGems ? '💎' : '🪙']);
     }
 
     final paid = isGems
