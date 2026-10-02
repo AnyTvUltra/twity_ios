@@ -143,16 +143,22 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   static const double _roomImgW = 1024, _roomImgH = 436;
 
   // سجادة اللعب الوسطى — منطقة البيرات والرزمة والمؤشر
-  static const _roomCarpetF = Rect.fromLTWH(0.293, 0.252, 0.414, 0.436);
-  // تجويف استكانتي: الأخدود الداكن + اللوح الغائر أسفله — الأحجار
+  static const _roomCarpetF = Rect.fromLTWH(0.300, 0.255, 0.405, 0.365);
+  // تجويف استكانتي: اللوح الغائر داخل الحامل الخشبي السفلي — الأحجار
   // تقف واقفة داخله صفّين فوق الشريط المزخرف
-  static const _roomRackMineF = Rect.fromLTWH(0.260, 0.560, 0.480, 0.250);
-  // حامل المقابل (العارضة الخشبية أمام الوسادة الخلفية) — ظهور
-  // أحجاره تقف على سطح العارضة
-  static const _roomRackTopF = Rect.fromLTWH(0.395, 0.450, 0.215, 0.115);
+  static const _roomRackMineF = Rect.fromLTWH(0.260, 0.600, 0.480, 0.215);
+  // حامل المقابل — العارضة الخشبية الأفقية تحت الوسادة الخلفية مباشرة
+  static const _roomRackTopF = Rect.fromLTWH(0.375, 0.165, 0.250, 0.085);
   // حاملا الجانبين (المسندان الخشبيان المائلان بين الوسائد والطاولة)
-  static const _roomRackLeftF = Rect.fromLTWH(0.235, 0.420, 0.100, 0.340);
-  static const _roomRackRightF = Rect.fromLTWH(0.665, 0.420, 0.100, 0.340);
+  static const _roomRackLeftF = Rect.fromLTWH(0.255, 0.320, 0.075, 0.300);
+  static const _roomRackRightF = Rect.fromLTWH(0.670, 0.320, 0.075, 0.300);
+  // مناطق نزول البيرات على السجادة — أمام حامل كل لاعب
+  static const _roomMeldMineF = Rect.fromLTWH(0.330, 0.520, 0.340, 0.075);
+  static const _roomMeldTopF = Rect.fromLTWH(0.360, 0.255, 0.280, 0.075);
+  static const _roomMeldLeftF = Rect.fromLTWH(0.300, 0.380, 0.075, 0.170);
+  static const _roomMeldRightF = Rect.fromLTWH(0.630, 0.380, 0.075, 0.170);
+  // مركز السجادة — الرزمة والمؤشر وكومة المرميات
+  static const _roomCenterF = Rect.fromLTWH(0.350, 0.355, 0.300, 0.150);
 
   /// مستطيل الصورة المعروضة داخل اللوحة — بعرض الشاشة كاملاً
   /// (نسبتها 2.35 قريبة من اللوحة فيبقى كل المشهد بلا قصّ)
@@ -353,7 +359,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     switch (_seatOfPlayer(_chatBubblePlayer)) {
       case 2:
         pos = Positioned(
-            top: t.top - 14,
+            top: _roomScene
+                ? _imgRect(_sceneSize).top + _imgRect(_sceneSize).height * 0.145
+                : t.top - 14,
             left: 0,
             right: 0,
             child: Center(child: IgnorePointer(child: bubble)));
@@ -1301,6 +1309,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   Widget _buildScene(BuildContext context, bool isHumanTurn, String minutes,
       String seconds, double scale, double sw, double sh) {
     final tbl = _tableRect(Size(sw, sh));
+    final imgRect = _imgRect(Size(sw, sh));
     // حامل الخصم مصغّر بنفس تصميم استكانتي — مقياسه من ارتفاع الطاولة
     final oppTileW = (tbl.height / 15).clamp(10.0, 14.0);
     final oppRackW = oppTileW * 9.5 + 4;
@@ -1320,20 +1329,59 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                 clipBehavior: Clip.none,
                 children: [
                   if (_roomScene) ...[
-                    // ═══ خلفية الغرفة: نفس صورة المشهد مموّهة تملأ الشاشة
-                    // حافة-لحافة خلف الصورة الحادة (لا أشرطة ولا فراغ) ═══
-                    Positioned.fill(
-                      child: ImageFiltered(
-                        imageFilter: ImageFilter.blur(sigmaX: 26, sigmaY: 26),
-                        child: Image.asset(_roomImage, fit: BoxFit.cover),
+                    // ═══ خلفية الغرفة: الصورة نفسها تملأ الشاشة حافة-لحافة.
+                    // الحافتان العلوية والسفلية تُمدَّدان بمرآة سلسة من الصورة
+                    // نفسها (الحائط يكمل فوقاً والأرضية/السجاد تحت) بنفس مقياس
+                    // البكسل → امتداد متصل بلا أشرطة سوداء ولا تشويه ═══
+                    const Positioned.fill(
+                        child: ColoredBox(color: Color(0xFF0A0C12))),
+                    if (imgRect.top > 0.5)
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        top: 0,
+                        height: imgRect.top + 1,
+                        child: ClipRect(
+                          child: OverflowBox(
+                            alignment: Alignment.bottomCenter,
+                            maxHeight: imgRect.height,
+                            child: Transform.flip(
+                              flipY: true,
+                              child: Image.asset(
+                                _roomImage,
+                                width: imgRect.width,
+                                height: imgRect.height,
+                                fit: BoxFit.fill,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    Positioned.fill(
-                      child: ColoredBox(color: Colors.black.withOpacity(0.38)),
-                    ),
+                    if (imgRect.bottom < sh - 0.5)
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        height: sh - imgRect.bottom + 1,
+                        child: ClipRect(
+                          child: OverflowBox(
+                            alignment: Alignment.topCenter,
+                            maxHeight: imgRect.height,
+                            child: Transform.flip(
+                              flipY: true,
+                              child: Image.asset(
+                                _roomImage,
+                                width: imgRect.width,
+                                height: imgRect.height,
+                                fit: BoxFit.fill,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     // الصورة الحادة بعرض الشاشة كاملاً — بنسبتها الأصلية
                     Positioned.fromRect(
-                      rect: _imgRect(Size(sw, sh)),
+                      rect: imgRect,
                       child: Image.asset(_roomImage, fit: BoxFit.fill),
                     ),
                   ] else ...[
@@ -1538,9 +1586,18 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                     left: 0,
                     right: 0,
                     top: _roomScene
-                        ? tbl.top + tbl.height * 0.30
+                        ? _mapToImg(_roomCenterF, Size(sw, sh)).top
                         : tbl.top + tbl.height * 0.14,
-                    child: Center(child: _buildTableCenter(isHumanTurn)),
+                    height: _roomScene
+                        ? _mapToImg(_roomCenterF, Size(sw, sh)).height
+                        : null,
+                    child: Center(
+                      child: _roomScene
+                          ? FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: _buildTableCenter(isHumanTurn))
+                          : _buildTableCenter(isHumanTurn),
+                    ),
                   ),
                   // أماكن البير على الطاولة — لكل لاعب جهته، ظاهرة للجميع
                   ..._buildTableMelds(_meldZones(Size(sw, sh), tbl)),
@@ -1660,12 +1717,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           left: 60,
           child: _buildStyleButtons(),
         ),
-        // صورة الخصم الأمامي + اسمه — على الوسادة الخلفية فوق حامله
+        // صورة الخصم الأمامي + اسمه — على وسادته الخلفية فوق عارضته
         Positioned(
-          top: _roomScene
-              ? _imgRect(Size(sw, sh)).top +
-                  _imgRect(Size(sw, sh)).height * 0.17
-              : 2,
+          top: _roomScene ? imgRect.top + imgRect.height * 0.055 : 2,
           left: 0,
           right: 0,
           child: Center(
@@ -1743,16 +1797,21 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           ),
         ),
 
-        // صورة الخصم الأيسر + اسمه — باتجاهي أنا، على وسادته في الصورة
+        // صورة الخصم الأيسر + اسمه — باتجاهي أنا، على وسادته اليسرى في الصورة
         Positioned(
-          left: _roomScene ? sw * 0.055 : 10,
-          top: tbl.center.dy - 24,
+          left: _roomScene ? imgRect.left + imgRect.width * 0.135 - 25 : 10,
+          top: _roomScene
+              ? imgRect.top + imgRect.height * 0.46 - 20
+              : tbl.center.dy - 24,
           child: _seatBadge(3),
         ),
-        // صورة الخصم الأيمن + اسمه — باتجاهي أنا، على وسادته في الصورة
+        // صورة الخصم الأيمن + اسمه — باتجاهي أنا، على وسادته اليمنى في الصورة
         Positioned(
-          right: _roomScene ? sw * 0.055 : 10,
-          top: tbl.center.dy - 24,
+          left: _roomScene ? imgRect.left + imgRect.width * 0.865 - 25 : null,
+          right: _roomScene ? null : 10,
+          top: _roomScene
+              ? imgRect.top + imgRect.height * 0.46 - 20
+              : tbl.center.dy - 24,
           child: _seatBadge(1),
         ),
         Positioned(
@@ -2003,9 +2062,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     if (ctx == null) return true;
     final scene = ctx.findRenderObject() as RenderBox;
     final local = scene.globalToLocal(dropGlobal);
-    // الحد = الحافة العلوية للاستكانة — يُحسب من أبعاد المشهد الفعلية
+    // وضع الغرفة: "الطاولة" = سطح السجادة في الصورة (بهامش بسيط) —
+    // إفلات الحجر على الوسائد أو خارج السجادة لا يُحتسب رمياً
     if (_roomScene) {
-      return local.dy < _mapToImg(_roomRackMineF, _sceneSize).top - 4;
+      return _mapToImg(_roomCarpetF, _sceneSize).inflate(14).contains(local);
     }
     final rackTop = _sceneSize.height - 12 - 140 * (_rackSlotW() / 40);
     return local.dy < rackTop - 8;
@@ -2074,9 +2134,12 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     if (count <= 0) return const SizedBox.shrink();
     final isTurn = !_dealing && _engine.currentTurnIndex == _playerAtSeat(seat);
     final angle = _meldAngles[seat] ?? 0;
-    // عرض الظهر يُشتق من أقصر بُعد للمنطقة حتى يملأ الحامل بلا فيض
-    final shortSide = math.min(zone.width / 7, zone.height / 1.6);
-    final tw = shortSide.clamp(9.0, 15.0);
+    // عرض الظهر من بُعد المنطقة الملائم: جانبياً يقيّده طول المسند
+    // (الصف المدّار يمتد رأسياً)، وللأعلى يقيّده عرض العارضة
+    final tw = (seat == 2
+            ? math.min(zone.width / 7.5, zone.height / 1.15)
+            : math.min(zone.height / 8.2, zone.width / 1.6))
+        .clamp(10.0, 16.0);
     final th = tw * 1.36;
     final row1 = (count / 2).ceil().clamp(1, 7);
     final row2 = (count - row1).clamp(0, 7);
@@ -2128,21 +2191,22 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   /// منطقة كل مقعد على سطح الطاولة — تُحسب من مستطيل الطاولة الفعلي
   /// (نسبية لأبعاد الـViewport) وكل منطقة أمام حامل صاحبها مباشرة
   Map<int, Rect> _meldZones(Size s, Rect t) {
-    // في وضع الغرفة: منطقة نزولي تنتهي ملاصقة لحافة أخدود الاستكانة
-    // داخل الصورة حتى لا تتداخل مع أحجاري الواقفة
-    final mineZone = _roomScene
-        ? Rect.fromLTWH(
-            t.left + t.width * 0.10,
-            _mapToImg(_roomRackMineF, s).top - t.height * 0.20,
-            t.width * 0.80,
-            t.height * 0.20)
-        : Rect.fromCenter(
-            center: Offset(s.width / 2, t.bottom - t.height * 0.225),
-            width: t.width * 0.80,
-            height: t.height * 0.20);
+    // وضع الغرفة: مناطق النزول مثبتة على السجادة في الصورة —
+    // أمام حامل كل لاعب مباشرة، بعيداً عن الأخدود والحوامل
+    if (_roomScene) {
+      return {
+        0: _mapToImg(_roomMeldMineF, s),
+        2: _mapToImg(_roomMeldTopF, s),
+        3: _mapToImg(_roomMeldLeftF, s),
+        1: _mapToImg(_roomMeldRightF, s),
+      };
+    }
     return {
       // المشاهد (أسفل) — أمام استكانتي مباشرة فوق حافة الطاولة السفلية
-      0: mineZone,
+      0: Rect.fromCenter(
+          center: Offset(s.width / 2, t.bottom - t.height * 0.225),
+          width: t.width * 0.80,
+          height: t.height * 0.20),
       // المقابل (أعلى) — أمام حامله مباشرة تحت حافة الطاولة العلوية
       2: Rect.fromCenter(
           center: Offset(s.width / 2, t.top + t.height * 0.44),

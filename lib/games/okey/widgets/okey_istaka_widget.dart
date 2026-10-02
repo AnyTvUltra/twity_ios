@@ -105,12 +105,15 @@ class OkeyIstakaWidget extends StatelessWidget {
           final gSlotW = ((availableW - 24) / 14).clamp(20.0, 40.0);
           final gTileW = gSlotW - 1.5;
           final gTileH = gTileW * 1.36;
+          // الصفوف ممركزة داخل التجويف — الإزاحة تطابق الإحداثيات المرئية
+          final gY0 = ((constraints.maxHeight - (gTileH * 2 + 3)) / 2)
+              .clamp(0.0, 999.0);
           return _buildDropArea(
             slotW: gSlotW,
             tileW: gTileW,
             tileH: gTileH,
             x0: (availableW - gSlotW * 14) / 2,
-            y0: 0,
+            y0: gY0,
             rowGap: 3,
             child: SizedBox(
               width: availableW,
