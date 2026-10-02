@@ -108,14 +108,13 @@ class OkeyIstakaWidget extends StatelessWidget {
           // هنا يجب أن ينعكس هناك
           final gSlotW = ((availableW - 24) / 14).clamp(20.0, 40.0);
           final gTileW = gSlotW * 1.28;
-          final gTileH = gTileW * 1.36;
+          final gTileH = gTileW * 1.20;
           final gH = constraints.maxHeight;
-          // قاعدة الصف العلوي = 0.770 من ارتفاع الصورة، وأسفل الويدجت
-          // = 0.925 — نسبة ثابتة من قياس صورة المشهد
-          const row1BaseFromBottom = (0.925 - 0.770) / 0.325;
-          final row1BaseY = gH * (1 - row1BaseFromBottom);
-          // حدّ الصفين لحساب الخانات = منتصف الفجوة بين الصفين
-          final split = (row1BaseY + (gH - gTileH)) / 2;
+          // قاعدة الصف العلوي = 0.758 من ارتفاع الصورة (أرضية اللوح
+          // الغائر) وأسفل الويدجت = 0.950 — نسب من قياس صورة المشهد
+          const row1BaseFromBottom = (0.950 - 0.758) / 0.350;
+          // حدّ الصفين لحساب الخانات = الفاصل الخشبي بين المنطقتين
+          final split = gH * ((0.800 - 0.600) / 0.350);
           return _buildDropArea(
             slotW: gSlotW,
             tileW: gTileW,
@@ -395,12 +394,14 @@ class OkeyIstakaWidget extends StatelessWidget {
   /// صندوق الرف المعروض (للتحويل من إحداثيات الشاشة)
   static RenderBox? _rackBox;
 
-  /// مركز الحجر المرسوم على الشاشة من موضع الـ feedback
-  Offset _dragCenter(Offset feedbackTopLeft, double tileW, double tileH) =>
-      feedbackTopLeft +
+  /// مركز الحجر الظاهر على الشاشة أثناء السحب — الـanchor يُبقي الحجر
+  /// مرتفعاً فوق الإصبع بـ0.28×ارتفاعه (بمقياس السحب) ومتوسّطاً أفقياً
+  /// عليها، فنقيّم الخانة عند المركز الظاهر لا عند موضع الإصبع
+  Offset _dragCenter(Offset pointerGlobal, double tileW, double tileH) =>
+      pointerGlobal +
       (feedbackQuarterTurns.isOdd
-          ? Offset(tileH / 2, tileW / 2)
-          : Offset(tileW / 2, tileH / 2));
+          ? Offset.zero
+          : Offset(0, -tileH * dragScaleY * 0.28));
 
   /// يحوّل موضع الحجر إلى خانة (أو -1 = فوق الرف، أي على الطاولة)
   int _slotAt(Offset global, int fromSlot, double slotW, double tileH,

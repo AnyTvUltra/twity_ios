@@ -146,20 +146,21 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   // الإفلات على أحجاري رمياً على "الطاولة"
   static const _roomCarpetF = Rect.fromLTWH(0.300, 0.255, 0.405, 0.240);
   // استكانتي: الاتحاد العمودي لمنطقتي الأحجار — اللوح الغائر (الصف
-  // العلوي) والشريط المزخرف الأمامي (الصف السفلي) — 0.60..0.925
-  static const _roomRackMineF = Rect.fromLTWH(0.235, 0.600, 0.540, 0.325);
+  // العلوي قاعدته 0.758) والشريط المزخرف الأمامي (الصف السفلي حتى 0.950)
+  static const _roomRackMineF = Rect.fromLTWH(0.235, 0.600, 0.540, 0.350);
   // حامل المقابل — العارضة الخشبية الأفقية تحت الوسادة الخلفية مباشرة
-  static const _roomRackTopF = Rect.fromLTWH(0.375, 0.165, 0.250, 0.085);
+  static const _roomRackTopF = Rect.fromLTWH(0.365, 0.185, 0.270, 0.090);
   // حاملا الجانبين (المسندان الخشبيان المائلان بين الوسائد والطاولة)
   static const _roomRackLeftF = Rect.fromLTWH(0.255, 0.320, 0.075, 0.300);
   static const _roomRackRightF = Rect.fromLTWH(0.670, 0.320, 0.075, 0.300);
-  // مناطق نزول البيرات على السجادة — أمام حامل كل لاعب
-  static const _roomMeldMineF = Rect.fromLTWH(0.330, 0.440, 0.340, 0.065);
-  static const _roomMeldTopF = Rect.fromLTWH(0.360, 0.255, 0.280, 0.075);
-  static const _roomMeldLeftF = Rect.fromLTWH(0.300, 0.380, 0.075, 0.170);
-  static const _roomMeldRightF = Rect.fromLTWH(0.630, 0.380, 0.075, 0.170);
+  // مناطق نزول البيرات على السجادة — أمام حامل كل لاعب، كبيرة كفاية
+  // لتظهر الأحجار بمقاس مقروء
+  static const _roomMeldMineF = Rect.fromLTWH(0.335, 0.425, 0.330, 0.115);
+  static const _roomMeldTopF = Rect.fromLTWH(0.360, 0.252, 0.280, 0.095);
+  static const _roomMeldLeftF = Rect.fromLTWH(0.295, 0.295, 0.085, 0.195);
+  static const _roomMeldRightF = Rect.fromLTWH(0.622, 0.295, 0.085, 0.195);
   // مركز السجادة — الرزمة والمؤشر وكومة المرميات
-  static const _roomCenterF = Rect.fromLTWH(0.330, 0.330, 0.340, 0.105);
+  static const _roomCenterF = Rect.fromLTWH(0.325, 0.330, 0.350, 0.105);
 
   /// مزود صورة الغرفة — كسنة المتجر المجهزة أو الصورة الافتراضية المدمجة.
   /// كل تصاميم الغرفة تشترك في نفس التخطيط فتبقى مناطق الضبط صالحة للجميع
@@ -178,7 +179,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   /// مستطيل الصورة المعروضة داخل اللوحة — تملأ الشاشة دائماً:
   /// - شاشة أوسع من الصورة: بعرض كامل ويُقصّ فائض الارتفاع (الحائط
   ///   والأرضية) — كل عناصر المشهد تبقى مرئية
-  /// - أضيق قليلاً (هواتف): بارتفاع كامل ويُقصّ ≤8% من كل جانب
+  /// - أضيق قليلاً (هواتف): بارتفاع كامل ويُقصّ ≤12.5% من كل جانب
+  ///   (الحوامل والاستكانات كلها داخل 0.235..0.77 فلا يُفقد شيء)
   /// - أضيق بكثير (أجهزة لوحية): بعرض كامل وتُملأ الأطراف العلوية/
   ///   السفلية بشرائح ممدودة من الصورة نفسها — بلا أشرطة ولا قصّ
   Rect _imgRect(Size s) {
@@ -188,7 +190,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       final h = s.width / a;
       return Rect.fromLTWH(0, (s.height - h) / 2, s.width, h);
     }
-    if (sceneA >= a * 0.85) {
+    if (sceneA >= a * 0.75) {
       final w = s.height * a;
       return Rect.fromLTWH((s.width - w) / 2, 0, w, s.height);
     }
@@ -1083,14 +1085,13 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     final s = _sceneSize;
     if (_roomScene) {
       // نفس معادلة ghostMode في OkeyIstakaWidget — يجب أن تبقى متطابقة:
-      // الصف العلوي قاعدته عند 0.770 من الصورة والسفلي عند أسفل المنطقة
+      // الصف العلوي قاعدته عند 0.758 من الصورة والسفلي عند أسفل المنطقة
       final zone = _mapToImg(_roomRackMineF, s);
       final slotW = ((zone.width - 24) / 14).clamp(20.0, 40.0);
-      final tileW = slotW * 1.28;
-      final tileH = tileW * 1.36;
+      final tileH = slotW * 1.28 * 1.20;
       final x0 = zone.left + (zone.width - slotW * 14) / 2;
       final x = x0 + slotW * (slot % 14 + 0.5);
-      final row1BaseY = zone.top + zone.height * (1 - (0.925 - 0.770) / 0.325);
+      final row1BaseY = zone.bottom - zone.height * (0.950 - 0.758) / 0.350;
       final y = slot < 14 ? row1BaseY - tileH / 2 : zone.bottom - tileH / 2;
       return Offset(x, y);
     }
@@ -1116,11 +1117,11 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
 
     OkeyAudio.playTileDiscard();
 
-    // الحجر يطير من نقطة إفلات الإصبع (اليد) وليس من الخشبة
+    // الحجر يطير من مركزه الظاهر (مرفوعاً فوق الإصبع) وليس من الخشبة
     Offset from;
     if (dropGlobal != null && _sceneKey.currentContext != null) {
       final scene = _sceneKey.currentContext!.findRenderObject() as RenderBox;
-      from = scene.globalToLocal(dropGlobal);
+      from = scene.globalToLocal(dropGlobal).translate(0, -_dropLiftScene);
     } else {
       from = _rackSlotCenter(slotIndex);
     }
@@ -1716,23 +1717,26 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           left: 60,
           child: _buildStyleButtons(),
         ),
-        // صورة الخصم الأمامي + اسمه — على وسادته الخلفية فوق عارضته
+        // صورة الخصم الأمامي + اسمه — متوسّطة على وسادته الخلفية،
+        // وشريحة الدور تتراكب جانباً فلا تُزيح الأفاتار عن المركز
         Positioned(
-          top: _roomScene ? imgRect.top + imgRect.height * 0.055 : 2,
+          top: _roomScene ? imgRect.top + imgRect.height * 0.022 : 2,
           left: 0,
           right: 0,
           child: Center(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _seatBadge(2),
-                const SizedBox(width: 6),
-                Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: _roleChip(widget.teamMode),
-                ),
-              ],
+            child: SizedBox(
+              width: 92,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Center(child: _seatBadge(2)),
+                  Positioned(
+                    right: 0,
+                    top: 13,
+                    child: _roleChip(widget.teamMode),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -1798,18 +1802,18 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
 
         // صورة الخصم الأيسر + اسمه — باتجاهي أنا، على وسادته اليسرى في الصورة
         Positioned(
-          left: _roomScene ? imgRect.left + imgRect.width * 0.135 - 25 : 10,
+          left: _roomScene ? imgRect.left + imgRect.width * 0.145 - 25 : 10,
           top: _roomScene
-              ? imgRect.top + imgRect.height * 0.46 - 20
+              ? imgRect.top + imgRect.height * 0.375
               : tbl.center.dy - 24,
           child: _seatBadge(3),
         ),
         // صورة الخصم الأيمن + اسمه — باتجاهي أنا، على وسادته اليمنى في الصورة
         Positioned(
-          left: _roomScene ? imgRect.left + imgRect.width * 0.865 - 25 : null,
+          left: _roomScene ? imgRect.left + imgRect.width * 0.855 - 25 : null,
           right: _roomScene ? null : 10,
           top: _roomScene
-              ? imgRect.top + imgRect.height * 0.46 - 20
+              ? imgRect.top + imgRect.height * 0.375
               : tbl.center.dy - 24,
           child: _seatBadge(1),
         ),
@@ -2060,7 +2064,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     final ctx = _sceneKey.currentContext;
     if (ctx == null) return true;
     final scene = ctx.findRenderObject() as RenderBox;
-    final local = scene.globalToLocal(dropGlobal);
+    // الحجر يطفو فوق الإصبع أثناء السحب (~0.28×ارتفاعه) — نقيّم مركزه
+    // الظاهر لا موضع الإصبع حتى يكون الرمي مطابقاً لما يراه المستخدم
+    final local = scene.globalToLocal(dropGlobal).translate(0, -_dropLiftScene);
     // وضع الغرفة: "الطاولة" = سطح السجادة في الصورة (بهامش بسيط) —
     // إفلات الحجر على الوسائد أو خارج السجادة لا يُحتسب رمياً
     if (_roomScene) {
@@ -2068,6 +2074,16 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     }
     final rackTop = _sceneSize.height - 12 - 140 * (_rackSlotW() / 40);
     return local.dy < rackTop - 8;
+  }
+
+  /// ارتفاع رفع الحجر فوق الإصبع أثناء السحب — بإحداثيات المشهد
+  double get _dropLiftScene {
+    if (_roomScene) {
+      final zone = _mapToImg(_roomRackMineF, _sceneSize);
+      final tileH = (((zone.width - 24) / 14).clamp(20.0, 40.0)) * 1.536;
+      return 0.28 * tileH;
+    }
+    return 12.0;
   }
 
   /// إفلات حجر على سطح الطاولة (منطقة اللعب فوق الاستكانة) = رمي
@@ -2185,7 +2201,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
               : const SizedBox.shrink())
           : Transform.rotate(
               angle: angle,
-              child: _meldsOnTable(melds, zone),
+              child:
+                  _meldsOnTable(melds, zone, vertical: seat == 1 || seat == 3),
             );
       out.add(Positioned.fromRect(
         rect: zone,
@@ -2269,12 +2286,14 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     );
   }
 
-  /// مجموعة بيرات لاعب واحد ممدّدة على السطح بمنظور ثري دي
-  Widget _meldsOnTable(List<MapEntry<int, OkeyGroup>> melds, Rect zone) {
+  /// مجموعة بيرات لاعب واحد ممدّدة على السطح بمنظور ثري دي —
+  /// للمقاعد الجانبية يكون المحور الطويل هو الارتفاع (المحتوى يُدار 90°)
+  Widget _meldsOnTable(List<MapEntry<int, OkeyGroup>> melds, Rect zone,
+      {required bool vertical}) {
     return FittedBox(
       fit: BoxFit.scaleDown,
       child: SizedBox(
-        width: zone.width * 1.25,
+        width: (vertical ? zone.height : zone.width) * 1.25,
         child: Transform(
           alignment: Alignment.center,
           // ميلان للخلف: الأحجار تبدو مستلقية على الطاولة
@@ -2382,7 +2401,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                           blurRadius: 2),
                     ],
                   ),
-                  child: OkeyTileWidget(tile: tile, width: 26, height: 35),
+                  child: OkeyTileWidget(
+                      tile: tile,
+                      width: _roomScene ? 33 : 26,
+                      height: _roomScene ? 44 : 35),
                 ),
             ],
           ),
@@ -3316,8 +3338,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         ? _engine.discardPiles[3].last
         : null;
 
-    const w = 140.0, h = 92.0;
-    const tw = 24.0, th = 33.0;
+    final w = _roomScene ? 168.0 : 140.0;
+    final h = _roomScene ? 106.0 : 92.0;
+    final tw = _roomScene ? 30.0 : 24.0;
+    final th = _roomScene ? 41.0 : 33.0;
     return GestureDetector(
       onTap: () {
         if (canDiscard && _engine.selectedTileIndex != null) {
@@ -3604,7 +3628,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
               ],
             ),
             child: OkeyTileWidget(
-                tile: _engine.indicatorTile, width: 24, height: 33),
+                tile: _engine.indicatorTile,
+                width: _roomScene ? 30 : 24,
+                height: _roomScene ? 41 : 33),
           ),
           const SizedBox(height: 3),
           Text('مؤشر'.tr,
@@ -3709,7 +3735,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     final refillable = remaining == 0 && _engine.canRefillDeck;
     final drawable = canDraw && (remaining > 0 || refillable);
     final layers = (remaining / 6).ceil().clamp(1, 8);
-    const w = 30.0, h = 41.0, step = 3.8;
+    final w = _roomScene ? 37.0 : 30.0;
+    final h = _roomScene ? 50.0 : 41.0;
+    final step = _roomScene ? 4.4 : 3.8;
     final tower = SizedBox(
       width: w + 2,
       height: h + step * (layers - 1),
