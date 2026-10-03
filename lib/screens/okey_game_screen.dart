@@ -3435,39 +3435,47 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     );
   }
 
-  /// كومة أحجار مرمية مشتركة ومبعثرة: أحجار الجميع في مكان واحد
-  /// بزوايا وإزاحات عشوائية ثابتة. حجر اليسار الأخير وحده قابل للأخذ
-  /// (توهّج أخضر + لمس أو سحب)، وأحجار الفول تبقى مقلوبة بيضاء.
+  /// كومات مرميات اللاعبين الأربعة: لكل لاعب كومة مكدّسة — كل رمية جديدة
+  /// تظهر فوق ما قبلها، والأحجار القديمة مقلوبة على ظهرها ولا يظهر إلا
+  /// آخر حجر مرمي من كل كومة. حجر اليسار الأخير وحده قابل للأخذ
+  /// (توهّج أخضر + لمس أو سحب)، ومرميات الفول تبقى مقلوبة كلها.
   Widget _buildScatterPile({
     required bool canDraw,
     required bool canDiscard,
     required bool canTakeLeft,
   }) {
-    // اجمع مرميات اللاعبين الأربعة بالترتيب (صاحب اللاعب الأخير يظهر فوقاً)
-    // كل عنصر يحمل: اللاعب + ترتيبه داخل كومته الخاصة (بذرة ثابتة لا تتأثر
-    // برميات اللاعبين الآخرين) + الحجر نفسه
-    final entries = <_PileEntry>[];
-    for (var p = 0; p < 4; p++) {
-      final pile = _engine.discardPiles[p];
-      for (var k = 0; k < pile.length; k++) {
-        entries.add(_PileEntry(p, k, pile[k]));
-      }
-    }
-    final total = entries.length;
-    // نعرض آخر 22 حجراً كحد أقصى حتى لا تتكاثر الكومة بلا حدود
-    const maxShown = 22;
-    final shown = entries.length > maxShown
-        ? entries.sublist(entries.length - maxShown)
-        : entries;
     // الحجر الوحيد القابل للأخذ = آخر رمية للاعب اليسار
     final leftTopTile = _engine.discardPiles[3].isNotEmpty
         ? _engine.discardPiles[3].last
         : null;
+    final total = _engine.discardPiles.fold<int>(0, (s, p) => s + p.length);
 
     final w = _roomScene ? 200.0 : 140.0;
     final h = _roomScene ? 78.0 : 92.0;
-    final tw = _roomScene ? 34.0 : 24.0;
-    final th = _roomScene ? 47.0 : 33.0;
+    final tw = _roomScene ? 32.0 : 22.0;
+    final th = _roomScene ? 44.0 : 30.0;
+    final step = _roomScene ? 3.0 : 2.4;
+    // كم حجراً يظهر من كل كومة (الأقدم يُدفن تحت الأحدث)
+    const maxShown = 7;
+    // ترتيب الكومات يسار→يمين يطابق مقاعد اللاعبين حول الطاولة
+    const laneOrder = [3, 2, 1, 0];
+    final laneW = w / 4;
+
+    final stacks = <Widget>[];
+    for (var lane = 0; lane < 4; lane++) {
+      stacks.addAll(_pileLane(
+        player: laneOrder[lane],
+        laneCenter: laneW * lane + laneW / 2,
+        h: h,
+        tw: tw,
+        th: th,
+        step: step,
+        maxShown: maxShown,
+        canTakeLeft: canTakeLeft,
+        leftTopTile: leftTopTile,
+      ));
+    }
+
     return GestureDetector(
       onTap: () {
         if (canDiscard && _engine.selectedTileIndex != null) {
@@ -3508,21 +3516,99 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                             fontSize: 8,
                             fontWeight: FontWeight.w900)),
                   ),
-                  for (var i = 0; i < shown.length; i++)
-                    _scatteredTile(
-                      entry: shown[i],
-                      w: w,
-                      h: h,
-                      tw: tw,
-                      th: th,
-                      isTakeable: canTakeLeft &&
-                          identical(shown[i].tile, leftTopTile) &&
-                          shown[i].player == 3,
-                    ),
+                  ...stacks,
                 ],
               ),
       ),
     );
+  }
+
+  /// كومة لاعب واحد داخل حيّزه: الأحجار القديمة مقلوبة على ظهرها
+  /// والأحدث مكشوفة فوق القمة. يُرجع ويدجات Positioned للكومة الأم.
+  List<Widget> _pileLane({
+    required int player,
+    required double laneCenter,
+    required double h,
+    required double tw,
+    required double th,
+    required double step,
+    required int maxShown,
+    required bool canTakeLeft,
+    required OkeyTile? leftTopTile,
+  }) {
+    final pile = _engine.discardPiles[player];
+    if (pile.isEmpty) return const [];
+    final isFull =
+        player != 0 && _engine.players[player].playStyle == OkeyPlayStyle.full;
+    final shown =
+        pile.length > maxShown ? pile.sublist(pile.length - maxShown) : pile;
+    final laneColors = [
+      const Color(0xFF4ADE80),
+      const Color(0xFF38BDF8),
+      const Color(0xFFF472B6),
+      const Color(0xFFFBBF24),
+    ];
+    final base = h - th - 8;
+    final out = <Widget>[];
+    for (var i = 0; i < shown.length; i++) {
+      final t = shown[i];
+      final isTop = i == shown.length - 1;
+      final faceDown = isFull || !isTop;
+      Widget tile = faceDown
+          ? _tileBack(tw, th)
+          : OkeyTileWidget(tile: t, width: tw, height: th);
+      if (isTop && canTakeLeft && player == 3 && identical(t, leftTopTile)) {
+        tile = Draggable<int>(
+          key: _leftDiscardKey,
+          data: OkeyDrag.leftPile,
+          maxSimultaneousDrags: 1,
+          onDragStarted: () => AppHaptics.selection(),
+          dragAnchorStrategy: (d, c, p) => const Offset(_rackTileW / 2,
+              _rackTileH / 2 + _rackTileH * OkeyIstakaWidget.dragLiftFactor),
+          feedback: Material(
+            color: Colors.transparent,
+            elevation: 10,
+            child: OkeyTileWidget(
+                tile: t,
+                isDragging: true,
+                width: _rackTileW,
+                height: _rackTileH),
+          ),
+          childWhenDragging: Opacity(opacity: 0.25, child: tile),
+          child: GestureDetector(
+            onTap: _executeDrawFromLeft,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(5),
+                boxShadow: [
+                  BoxShadow(
+                      color: const Color(0xFF4ADE80).withOpacity(0.75),
+                      blurRadius: 9,
+                      spreadRadius: 1.5),
+                ],
+              ),
+              child: tile,
+            ),
+          ),
+        );
+      }
+      out.add(Positioned(
+          left: laneCenter - tw / 2, top: base - i * step, child: tile));
+    }
+    // شريط بلون مقعد اللاعب أسفل كومته لتمييز صاحبها
+    out.add(Positioned(
+      left: laneCenter - 10,
+      bottom: 0.5,
+      child: Container(
+        width: 20,
+        height: 2.5,
+        decoration: BoxDecoration(
+          color: laneColors[player].withOpacity(0.65),
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
+    ));
+    return out;
   }
 
   /// نافذة عرض مرميات كل لاعب — للاطلاع فقط، لا يمكن أخذ أي حجر منها
@@ -3653,71 +3739,6 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         ],
       ),
     );
-  }
-
-  Widget _scatteredTile({
-    required _PileEntry entry,
-    required double w,
-    required double h,
-    required double tw,
-    required double th,
-    required bool isTakeable,
-  }) {
-    // بذرة ثابتة لكل حجر = لاعبه + ترتيبه داخل كومته + هويته
-    // لا تتأثر برميات اللاعبين الآخرين ولا بانزلاق نافذة العرض
-    final seed = (entry.tile.hashCode ^
-            (entry.player * 7919) ^
-            (entry.pileIndex * 104729)) &
-        0x7fffffff;
-    final r = math.Random(seed);
-    final dx = 8 + r.nextDouble() * (w - tw - 16);
-    final dy = 4 + r.nextDouble() * (h - th - 8);
-    final angle = (r.nextDouble() - 0.5) * 0.9; // ±25°
-    final faceDown = entry.player != 0 &&
-        _engine.players[entry.player].playStyle == OkeyPlayStyle.full;
-
-    Widget tile = Transform.rotate(
-      angle: angle,
-      child: faceDown
-          ? _tileBack(tw, th)
-          : OkeyTileWidget(tile: entry.tile, width: tw, height: th),
-    );
-    if (isTakeable) {
-      tile = Draggable<int>(
-        key: _leftDiscardKey,
-        data: OkeyDrag.leftPile,
-        maxSimultaneousDrags: 1,
-        onDragStarted: () => AppHaptics.selection(),
-        dragAnchorStrategy: (d, c, p) => const Offset(_rackTileW / 2,
-            _rackTileH / 2 + _rackTileH * OkeyIstakaWidget.dragLiftFactor),
-        feedback: Material(
-          color: Colors.transparent,
-          elevation: 10,
-          child: OkeyTileWidget(
-              tile: entry.tile,
-              isDragging: true,
-              width: _rackTileW,
-              height: _rackTileH),
-        ),
-        childWhenDragging: Opacity(opacity: 0.25, child: tile),
-        child: GestureDetector(
-          onTap: _executeDrawFromLeft,
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(5),
-              boxShadow: [
-                BoxShadow(
-                    color: const Color(0xFF4ADE80).withOpacity(0.75),
-                    blurRadius: 9,
-                    spreadRadius: 1.5),
-              ],
-            ),
-            child: tile,
-          ),
-        ),
-      );
-    }
-    return Positioned(left: dx, top: dy, child: tile);
   }
 
   Widget _buildIndicator() {
@@ -4077,15 +4098,6 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       ),
     );
   }
-}
-
-/// عنصر في كومة المرميات الموحّدة — يحفظ مالك الحجر وترتيبه داخل كومته
-/// حتى تبقى بذرة موضعه ثابتة مهما رمى اللاعبون الآخرون
-class _PileEntry {
-  final int player;
-  final int pileIndex;
-  final OkeyTile tile;
-  const _PileEntry(this.player, this.pileIndex, this.tile);
 }
 
 /// رسام تمديد حواف صورة الغرفة: يملأ أي فراغ فوق/تحت الصورة بشرائح

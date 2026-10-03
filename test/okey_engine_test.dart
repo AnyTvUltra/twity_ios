@@ -6,11 +6,7 @@ import 'package:game_hub/games/okey/okey_rules.dart';
 OkeyTile t(int id, OkeyTileColor c, int v,
         {bool fake = false, bool real = false}) =>
     OkeyTile(
-        id: 't$id',
-        color: c,
-        value: v,
-        isFalseJoker: fake,
-        isRealOkey: real);
+        id: 't$id', color: c, value: v, isFalseJoker: fake, isRealOkey: real);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -277,8 +273,7 @@ void main() {
 
       // مرميات اللاعبين الأربعة
       for (int i = 0; i < 4; i++) {
-        e.discardPiles[i]
-            .add(t(100 + i, OkeyTileColor.values[i], 3 + i));
+        e.discardPiles[i].add(t(100 + i, OkeyTileColor.values[i], 3 + i));
       }
 
       e.currentTurnIndex = 0;
@@ -332,7 +327,10 @@ void main() {
       rack[16] = blocker;
       expect(e.moveGroup(0, 16), isTrue);
       expect(rack[16], blocker);
-      final placed = [for (var i = 14; i < 28; i++) if (rack[i] == a) i];
+      final placed = [
+        for (var i = 14; i < 28; i++)
+          if (rack[i] == a) i
+      ];
       expect(placed.length, 1);
       expect(rack[placed.first + 1], b);
       e.dispose();
@@ -406,7 +404,7 @@ void main() {
       e.dispose();
     });
 
-    test('أخذ حجر اليسار يحوّل العادي إلى كونكان، ومرميات الفول لا تؤخذ', () {
+    test('أخذ حجر اليسار لا يحوّل اللاعب كونكان — الأسلوب يُختار يدوياً', () {
       final e = OkeyEngine();
       e.currentTurnIndex = 0;
       e.turnPhase = OkeyTurnPhase.awaitingDraw;
@@ -417,8 +415,105 @@ void main() {
       expect(e.drawFromDiscard(), isFalse);
       e.players[3].playStyle = OkeyPlayStyle.normal;
       expect(e.drawFromDiscard(), isTrue);
-      expect(e.players[0].playStyle, OkeyPlayStyle.konkan);
-      expect(e.humanCanLayMelds, isFalse);
+      // يبقى عادياً ويستطيع النزول — لا تحويل تلقائي لكونكان
+      expect(e.players[0].playStyle, OkeyPlayStyle.normal);
+      expect(e.humanCanLayMelds, isTrue);
+      e.dispose();
+    });
+
+    test('أخذ حجر اليسار دون فتح يعيده للكومة ويسحب بديلاً من الرزمة', () {
+      final e = OkeyEngine();
+      e.currentTurnIndex = 0;
+      e.turnPhase = OkeyTurnPhase.awaitingDraw;
+      // يد حتمية من 14 حجراً غير فائزة ولا تكوّن أي بير
+      final rack = e.players[0].rackTiles;
+      for (int i = 0; i < 28; i++) {
+        rack[i] = null;
+      }
+      const vals = [1, 3, 5, 7, 9, 11, 13, 2, 4, 6, 8, 10, 12, 1];
+      const cols = [
+        OkeyTileColor.red,
+        OkeyTileColor.blue,
+        OkeyTileColor.black,
+        OkeyTileColor.yellow,
+        OkeyTileColor.red,
+        OkeyTileColor.blue,
+        OkeyTileColor.black,
+        OkeyTileColor.yellow,
+        OkeyTileColor.red,
+        OkeyTileColor.blue,
+        OkeyTileColor.black,
+        OkeyTileColor.yellow,
+        OkeyTileColor.red,
+        OkeyTileColor.blue,
+      ];
+      for (int i = 0; i < 14; i++) {
+        rack[i] = t(400 + i, cols[i], vals[i]);
+      }
+      final taken = t(300, OkeyTileColor.red, 3);
+      e.discardPiles[3].add(taken);
+      expect(e.players[0].activeTiles.length, 14);
+
+      expect(e.drawFromDiscard(), isTrue);
+      expect(e.players[0].activeTiles.length, 15);
+      expect(e.players[0].playStyle, OkeyPlayStyle.normal);
+
+      // رمي حجر آخر دون إكمال الافتتاح → المأخوذ يعود لكومة اليسار
+      // ويُسحب بديل من الرزمة ثم يُرمى الحجر المختار
+      final candidate = e.players[0].rackTiles[0]!;
+      expect(identical(candidate, taken), isFalse);
+      final deckBefore = e.drawDeck.length;
+      e.discardSlot(0);
+
+      expect(e.discardPiles[3].last, same(taken),
+          reason: 'الحجر المأخوذ يجب أن يعود فوق كومة اليسار');
+      expect(e.discardPiles[0].last, same(candidate));
+      expect(e.drawDeck.length, deckBefore - 1,
+          reason: 'بديل واحد يُسحب من الرزمة');
+      expect(e.players[0].activeTiles.length, 14,
+          reason: 'بعد الإعادة+السحب+الرمي يبقى الرف 14 حجراً');
+      expect(e.currentTurnIndex, 1);
+      e.dispose();
+    });
+
+    test('رمي الحجر المأخوذ نفسه يعيده ويسحب بديلاً ولا يرمي شيئاً', () {
+      final e = OkeyEngine();
+      e.currentTurnIndex = 0;
+      e.turnPhase = OkeyTurnPhase.awaitingDraw;
+      // البادئ عنده 15 حجراً — أفرغ خانة مشغولة ليصبح 14
+      e.players[0].rackTiles[0] = null;
+      final taken = t(300, OkeyTileColor.red, 3);
+      e.discardPiles[3].add(taken);
+
+      expect(e.drawFromDiscard(), isTrue);
+      final slot =
+          e.players[0].rackTiles.indexWhere((x) => identical(x, taken));
+      expect(slot, isNot(-1));
+
+      e.discardSlot(slot);
+      // الحجر عاد لكومة اليسار وسُحب بديل — ولم يُرمَ أي حجر بعد
+      expect(e.discardPiles[3].last, same(taken));
+      expect(e.discardPiles[0], isEmpty);
+      expect(e.turnPhase, OkeyTurnPhase.awaitingDiscard);
+      expect(e.currentTurnIndex, 0);
+      expect(e.players[0].activeTiles.length, 15);
+      e.dispose();
+    });
+
+    test('الفاتح أو الكونكان يحتفظ بحجر اليسار المأخوذ', () {
+      final e = OkeyEngine();
+      e.currentTurnIndex = 0;
+      e.turnPhase = OkeyTurnPhase.awaitingDraw;
+      e.players[0].rackTiles[0] = null;
+      e.players[0].hasOpened = true;
+      final taken = t(300, OkeyTileColor.red, 3);
+      e.discardPiles[3].add(taken);
+
+      expect(e.drawFromDiscard(), isTrue);
+      e.discardSlot(1);
+      // الفاتح لا يحتاج نقاط افتتاح — يحتفظ بالحجر
+      expect(e.discardPiles[3], isEmpty,
+          reason: 'لا إعادة للحجر عندما يكون اللاعب فاتحاً');
       e.dispose();
     });
   });

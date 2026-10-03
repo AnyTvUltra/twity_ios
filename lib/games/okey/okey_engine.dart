@@ -233,6 +233,8 @@ class OkeyEngine extends ChangeNotifier {
         : OkeyTurnPhase.awaitingDiscard;
     gameState = OkeyGameState.yourTurn;
     selectedTileIndex = null;
+    _lastDrawn = null;
+    _takenLeftTile = null;
 
     // Auto sort human hand initially for a clean presentation
     sortHumanTiles();
@@ -459,6 +461,10 @@ class OkeyEngine extends ChangeNotifier {
 
   OkeyTile? _lastDrawn;
 
+  /// الحجر المأخوذ من مرميات اليسار هذا الدور — يُتتبَّع لقاعدة الإعادة:
+  /// من أخذه ولم يفتح اللعب ولم ينزل يُعاده للكومة ويسحب بديلاً من الرزمة
+  OkeyTile? _takenLeftTile;
+
   void swapTiles(int slotA, int slotB) {
     final temp = players[0].rackTiles[slotA];
     players[0].rackTiles[slotA] = players[0].rackTiles[slotB];
@@ -535,9 +541,10 @@ class OkeyEngine extends ChangeNotifier {
     turnPhase = OkeyTurnPhase.awaitingDiscard;
     gameState = OkeyGameState.discardPhase;
     _lastDrawn = tile;
+    _takenLeftTile = tile;
     _placeDrawnAt(emptySlot, toSlot);
-    // من يأخذ حجر غيره وهو عادي يتحول تلقائياً إلى كونكان
-    _convertToKonkanIfNormal(0);
+    // أخذ حجر غيره لا يحوّل اللاعب كونكان — الأسلوب يُختار يدوياً فقط.
+    // وإن لم يكمل نقاط الافتتاح ولم ينزل يُعاد الحجر عند الرمي.
     OkeyAudio.playTilePickup();
     notifyListeners();
     return true;
@@ -666,12 +673,33 @@ class OkeyEngine extends ChangeNotifier {
     if (currentTurnIndex != 0 || turnPhase != OkeyTurnPhase.awaitingDiscard) {
       return false;
     }
-    final tile = players[0].rackTiles[slotIndex];
+    var tile = players[0].rackTiles[slotIndex];
     if (tile == null) return false;
 
     // إذا أنزل أحجاراً ولم تكتمل نقاط الافتتاح (101) تُعاد إلى الرف
     if (!players[0].hasOpened) {
       _retractPendingMelds(0);
+    }
+
+    // من أخذ حجر مرميات اليسار ولم يفتح اللعب (لم يكمل النقاط ولم ينزل)
+    // يُعاد الحجر إلى كومته ويسحب بديلاً من الرزمة. الفاتح والكونكان
+    // والفول ورامي يحتفظون بحجرهم — لا نقاط افتتاح مطلوبة منهم
+    final taken = _takenLeftTile;
+    _takenLeftTile = null;
+    if (taken != null &&
+        !rules.isRummy &&
+        players[0].playStyle == OkeyPlayStyle.normal &&
+        !players[0].hasOpened) {
+      _returnTakenLeftTile(taken);
+      if (identical(tile, taken)) {
+        // كان يحاول رمي الحجر المأخوذ نفسه — عاد للكومة وسُحب بديله؛
+        // يختار الآن حجراً آخر للرمي
+        notifyListeners();
+        return true;
+      }
+      // قد تكون الخانة المختارة أُعيد ملؤها بالسحب — أعد القراءة
+      tile = players[0].rackTiles[slotIndex];
+      if (tile == null) return false;
     }
 
     players[0].rackTiles[slotIndex] = null;
@@ -1280,6 +1308,31 @@ class OkeyEngine extends ChangeNotifier {
       onNotice?.call('لم تكتمل نقاط الافتتاح ({}) — أُعيدت الأحجار إلى رفّك'
           .trp([rules.openingPoints]));
     }
+  }
+
+  /// من أخذ حجر مرميات اليسار ولم يكمل نقاط الافتتاح ولم ينزل:
+  /// يُعاد الحجر إلى كومة صاحبه ويسحب اللاعب بديلاً من الرزمة
+  /// في الخانة نفسها — فيكمل دوره ويرمي بشكل طبيعي
+  void _returnTakenLeftTile(OkeyTile taken) {
+    final rack = players[0].rackTiles;
+    final slot = rack.indexWhere((t) => identical(t, taken));
+    if (slot != -1) {
+      rack[slot] = null;
+      discardPiles[3].add(taken);
+    }
+    if (drawDeck.isEmpty) _refillDeckFromDiscards();
+    if (drawDeck.isNotEmpty) {
+      final empty = rack.indexOf(null);
+      if (empty != -1) {
+        final drawn = drawDeck.removeAt(0);
+        rack[empty] = drawn;
+        _lastDrawn = drawn;
+        selectedTileIndex = empty;
+      }
+    }
+    onNotice?.call(
+        'لم تكتمل نقاط الافتتاح — عاد الحجر لكومة اليسار وسحبت من الرزمة'.tr);
+    OkeyAudio.playTileDraw();
   }
 
   /// يبحث في أحجار البوت الفعلية عن كل المجموعات الصالحة غير
