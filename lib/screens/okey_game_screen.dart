@@ -157,8 +157,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   // لتظهر الأحجار بمقاس مقروء
   static const _roomMeldMineF = Rect.fromLTWH(0.335, 0.455, 0.330, 0.095);
   static const _roomMeldTopF = Rect.fromLTWH(0.360, 0.238, 0.280, 0.090);
-  static const _roomMeldLeftF = Rect.fromLTWH(0.295, 0.295, 0.085, 0.195);
-  static const _roomMeldRightF = Rect.fromLTWH(0.622, 0.295, 0.085, 0.195);
+  static const _roomMeldLeftF = Rect.fromLTWH(0.298, 0.285, 0.088, 0.190);
+  static const _roomMeldRightF = Rect.fromLTWH(0.616, 0.285, 0.088, 0.190);
   // مركز السجادة — الرزمة والمؤشر وكومة المرميات (ارتفاعه يكفي لتظهر
   // الأحجار بمقاس مقروء بلا أن يضغطها الـFittedBox)
   static const _roomCenterF = Rect.fromLTWH(0.325, 0.305, 0.350, 0.165);
@@ -1127,7 +1127,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       final x0 = zone.left + (zone.width - slotW * 14) / 2;
       final x = x0 + slotW * (slot % 14 + 0.5);
       final row0BaseY = zone.bottom - zone.height * (0.935 - 0.758) / 0.335;
-      final row1BaseY = zone.bottom - zone.height * (0.935 - 0.922) / 0.335;
+      final row1BaseY = zone.bottom - zone.height * (0.935 - 0.912) / 0.335;
       final y = slot < 14 ? row0BaseY - tileH / 2 : row1BaseY - tileH / 2;
       return Offset(x, y);
     }
@@ -1153,11 +1153,12 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
 
     OkeyAudio.playTileDiscard();
 
-    // الحجر يطير من مركزه الظاهر (مرفوعاً فوق الإصبع) وليس من الخشبة
+    // الحجر يطير من مركزه الظاهر — details.offset هو زاوية صندوق
+    // الـfeedback فيضاف نصف حجم الحجر للوصول للمركز
     Offset from;
     if (dropGlobal != null && _sceneKey.currentContext != null) {
       final scene = _sceneKey.currentContext!.findRenderObject() as RenderBox;
-      from = scene.globalToLocal(dropGlobal).translate(0, -_dropLiftScene);
+      from = scene.globalToLocal(dropGlobal + _dropTileHalfScene);
     } else {
       from = _rackSlotCenter(slotIndex);
     }
@@ -2132,9 +2133,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     final ctx = _sceneKey.currentContext;
     if (ctx == null) return true;
     final scene = ctx.findRenderObject() as RenderBox;
-    // الحجر يطفو فوق الإصبع أثناء السحب (~0.28×ارتفاعه) — نقيّم مركزه
-    // الظاهر لا موضع الإصبع حتى يكون الرمي مطابقاً لما يراه المستخدم
-    final local = scene.globalToLocal(dropGlobal).translate(0, -_dropLiftScene);
+    // details.offset = زاوية صندوق الـfeedback لا الإصبع ولا المركز —
+    // نضيف نصف حجم الحجر فيصل التقييم لمركزه الظاهر الفعلي
+    final local = scene.globalToLocal(dropGlobal + _dropTileHalfScene);
     // وضع الغرفة: "الطاولة" = سطح السجادة في الصورة (بهامش بسيط) —
     // إفلات الحجر على الوسائد أو خارج السجادة لا يُحتسب رمياً
     if (_roomScene) {
@@ -2144,15 +2145,16 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     return local.dy < rackTop - 8;
   }
 
-  /// ارتفاع رفع الحجر فوق الإصبع أثناء السحب — بإحداثيات المشهد
-  double get _dropLiftScene {
-    const lift = OkeyIstakaWidget.dragLiftFactor;
+  /// إزاحة من زاوية صندوق الـfeedback إلى مركز الحجر الظاهر —
+  /// نصف حجم حجر الرف (قيم الـfeedback تساوي مقاسه الظاهر نفسه)
+  Offset get _dropTileHalfScene {
     if (_roomScene) {
       final zone = _mapToImg(_roomRackMineF, _sceneSize);
-      final tileH = (((zone.width - 24) / 14).clamp(20.0, 40.0)) * 1.5104;
-      return lift * tileH;
+      final tileW = (((zone.width - 24) / 14).clamp(20.0, 40.0)) * 1.28;
+      return Offset(tileW / 2, tileW * 1.18 / 2);
     }
-    return 9.0;
+    final tileW = _rackSlotW() - 2;
+    return Offset(tileW / 2, tileW * 1.36 / 2);
   }
 
   /// إفلات حجر على سطح الطاولة (منطقة اللعب فوق الاستكانة) = رمي

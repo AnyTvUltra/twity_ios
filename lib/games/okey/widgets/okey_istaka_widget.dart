@@ -118,10 +118,10 @@ class OkeyIstakaWidget extends StatelessWidget {
           final gTileW = gSlotW * 1.28;
           final gTileH = gTileW * 1.18;
           // قاعدة الصف العلوي = 0.758 من ارتفاع الصورة (أرضية اللوح
-          // الغائر) وقاعدة السفلي = 0.922 (فوق الشريط المزخرف مرفوعة
+          // الغائر) وقاعدة السفلي = 0.912 (فوق الشريط المزخرف مرفوعة
           // قليلاً) — أعلى منطقة الاستكانة = 0.600 وأسفلها = 0.935
           const topBaseFromBottom = (0.935 - 0.758) / 0.335;
-          const botBaseFromBottom = (0.935 - 0.922) / 0.335;
+          const botBaseFromBottom = (0.935 - 0.912) / 0.335;
           // حدّ الصفين = منتصف الفجوة المرئية بين الصفّين — الإفلات
           // يُحسب لأقرب صفٍّ يقع تحت مركز الحجر لا لخطٍّ اعتباطي
           final row0BaseY = innerH * (1 - topBaseFromBottom);
@@ -416,14 +416,15 @@ class OkeyIstakaWidget extends StatelessWidget {
   static const double dragLiftFactor = 0.18;
   static const double _dragLiftFactor = dragLiftFactor;
 
-  /// مركز الحجر الظاهر على الشاشة أثناء السحب — الـanchor يُبقي الحجر
-  /// مرتفعاً فوق الإصبع بـ0.28×ارتفاعه (بمقياس السحب) ومتوسّطاً أفقياً
-  /// عليها، فنقيّم الخانة عند المركز الظاهر لا عند موضع الإصبع
-  Offset _dragCenter(Offset pointerGlobal, double tileW, double tileH) =>
-      pointerGlobal +
+  /// مركز الحجر الظاهر على الشاشة أثناء السحب — details.offset في
+  /// DragTarget هو الزاوية العليا-اليسرى لصندوق الـfeedback نفسه
+  /// (_lastOffset = الإصبع − الـanchor)، والرفع عن الإصبع مشمول أصلاً
+  /// في الـanchor — فالمركز الظاهر = الزاوية + نصف حجم الصندوق
+  Offset _dragCenter(Offset feedbackTopLeft, double tileW, double tileH) =>
+      feedbackTopLeft +
       (feedbackQuarterTurns.isOdd
-          ? Offset.zero
-          : Offset(0, -tileH * dragScaleY * _dragLiftFactor));
+          ? Offset(tileH / 2, tileW / 2)
+          : Offset(tileW / 2, tileH / 2));
 
   /// يحوّل موضع الحجر إلى خانة (أو -1 = فوق الرف، أي على الطاولة)
   /// rowSplit = الحد العمودي بين الصفّين بإحداثيات الرف الداخلية
@@ -475,8 +476,20 @@ class OkeyIstakaWidget extends StatelessWidget {
         final d = details.data;
         final center = _dragCenter(details.offset, tileW, tileH);
         if (!OkeyDrag.isRackTile(d)) {
-          final s = _slotAt(center, -99, slotW,
-              raw: true, x0: x0, rowSplit: rowSplit);
+          // الكتلة: الـfeedback صفٌّ من الأحجار بحاشية — مركز الحجر
+          // المضغوط يحسب من موضعه داخل الصف لا من نصف الصندوق
+          Offset eval = center;
+          if (OkeyDrag.isGroup(d)) {
+            const pad = 3.0, gap = 1.0;
+            final gi = d - OkeyDrag.groupBase;
+            final idx = _groupForSlot(gi)
+                .indexWhere((t) => identical(t, rackTiles[gi]));
+            eval = details.offset +
+                Offset(pad + gap + idx * (tileW + gap * 2) + tileW / 2,
+                    pad + tileH / 2);
+          }
+          final s =
+              _slotAt(eval, -99, slotW, raw: true, x0: x0, rowSplit: rowSplit);
           if (OkeyDrag.isGroup(d)) {
             if (s >= 0) {
               HapticFeedback.lightImpact();
