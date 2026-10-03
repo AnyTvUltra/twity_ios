@@ -120,6 +120,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   /// نسبتها نسبة الشاشة تماماً (لا أشرطة سوداء ولا تشويه)
   Size _sceneSize = const Size(844, 390);
 
+  /// حاشية الجهاز بوحدات اللوحة المنطقية (الجزيرة/النوتش) — تُزيح
+  /// أزرار الزوايا عن الحواف غير الآمنة بينما يملأ المشهد الشاشة كاملة
+  double _safePadL = 0, _safePadR = 0, _safePadT = 0, _safePadB = 0;
+
   /// المقعد الذي يشاهد منه هذا العميل — 0=أسفل دائماً.
   /// اتجاه أحجار الطاولة والحوامل Viewer-Dependent: يُحسب من موضع
   /// المقعد على الشاشة لا من بيانات اللاعب، فيرى كل مشاهد الحجر نفسه
@@ -163,8 +167,11 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   // الأحجار بمقاس مقروء بلا أن يضغطها الـFittedBox)
   static const _roomCenterF = Rect.fromLTWH(0.325, 0.305, 0.350, 0.165);
   // حاشية التقاط هدف الرف حول منطقة الاستكانة — تلتقط الإفلات السريع
-  // المتجاوز لحدودها (الإصبع يسبق الحجر المرئي) فيقع على أقرب خانة
-  static const _rackHitPad = EdgeInsets.fromLTRB(40, 18, 40, 24);
+  // المتجاوز لحدودها (الإصبع يسبق الحجر المرئي) فيقع على أقرب خانة.
+  // الحاشية السفلية أوسع بكثير: الحجر المرئي يطفو فوق الإصبع فيكون
+  // الإصبع تحت أسفل الرف عند الإفلات على الصف السفلي — بلا حاشية
+  // كافية يقع الإفلات خارج الهدف فيرتد الحجر وكأنه غير مقبول
+  static const _rackHitPad = EdgeInsets.fromLTRB(48, 26, 48, 70);
 
   /// مزود صورة الغرفة — كسنة المتجر المجهزة أو الصورة الافتراضية المدمجة.
   /// كل تصاميم الغرفة تشترك في نفس التخطيط فتبقى مناطق الضبط صالحة للجميع
@@ -1324,14 +1331,11 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     );
     final game = MediaQuery(
       data: landscapeMedia,
-      // الوضع المدوّر (الهاتف عمودي): بلا SafeArea — حواف الجزيرة/
-      // الشريط كانت تقتطع جانبي اللوحة المدوّرة فتظهر كأشرطة سوداء
-      // أعلى وأسفل المشهد. المشهد يملأ الشاشة كلها، والأزرار الزاوية
-      // بعيدة عن مناطق الجزيرة أصلاً. الوضع الأفقي الأصلي: نحافظ على
-      // الجوانب (الجزيرة جانبية) ونملأ الأعلى والأسفل
-      child: rotateToLandscape
-          ? scene
-          : SafeArea(top: false, bottom: false, child: scene),
+      // بلا SafeArea في الحالتين: المشهد يملأ الشاشة حافة-لحافة —
+      // حواف الجزيرة/النوتش الجانبية كانت تقتطع عرض اللوحة الأفقية
+      // فتظهر كأشرطة سوداء على الجانبين. أزرار الزوايا تُزاح يدوياً
+      // بمقدار حاشية الجهاز داخل المشهد (انظر _safePadL/_safePadR)
+      child: scene,
     );
 
     return Directionality(
@@ -1372,6 +1376,13 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         final sw = constraints.maxWidth / s;
         final sh = constraints.maxHeight / s;
         _sceneSize = Size(sw, sh);
+        // حاشية الجهاز (الجزيرة/النوتش) بوحدات اللوحة المنطقية — المشهد
+        // يملأ الشاشة كلها وأزرار الزوايا تُزاح عن منطقة الحاشية فقط
+        final pad = MediaQuery.of(context).padding;
+        _safePadL = pad.left / s;
+        _safePadR = pad.right / s;
+        _safePadT = pad.top / s;
+        _safePadB = pad.bottom / s;
         return SizedBox.expand(
           child: Transform.scale(
             scale: s,
@@ -1757,8 +1768,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         // فقاعات الشات — فوق استكانة المرسل داخل المشهد
         _buildChatBubbles(),
         Positioned(
-          top: 6,
-          left: 14,
+          top: 6 + _safePadT,
+          left: 14 + _safePadL,
           child: _landscapeCircleButton(
             icon: Icons.logout_rounded,
             color: const Color(0xFFFCA5A5),
@@ -1770,7 +1781,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         if (kDebugMode)
           Positioned(
             top: 6,
-            left: 158,
+            left: 158 + _safePadL,
             child: _landscapeCircleButton(
               icon: Icons.rotate_90_degrees_ccw_rounded,
               color: const Color(0xFF93C5FD),
@@ -1781,8 +1792,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             ),
           ),
         Positioned(
-          top: 10,
-          left: 60,
+          top: 10 + _safePadT,
+          left: 60 + _safePadL,
           child: _buildStyleButtons(),
         ),
         // صورة الخصم الأمامي + اسمه — متوسّطة على وسادته الخلفية،
@@ -1809,8 +1820,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           ),
         ),
         Positioned(
-          top: 7,
-          right: 14,
+          top: 7 + _safePadT,
+          right: 14 + _safePadR,
           child: AnimatedBuilder(
             animation: Listenable.merge([VoiceService(), RadioService()]),
             builder: (context, _) => Row(
@@ -1887,7 +1898,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         ),
         // إحصائيات الجولة — تحت صف الأزرار اليسرى حتى لا تغطي زر الخروج
         Positioned(
-          left: 12,
+          left: 12 + _safePadL,
           top: _roomScene ? _imgRect(Size(sw, sh)).top + 50 : tbl.top + 4,
           child: _buildRoundStats(),
         ),
@@ -1907,8 +1918,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           ),
         ),
         Positioned(
-          right: 8,
-          bottom: 8,
+          right: 8 + _safePadR,
+          bottom: 8 + _safePadB,
           child: _buildLandscapeDock(),
         ),
         // ═══ طبقة احتفال الفوز — تظهر للجميع فوق الطاولة ═══

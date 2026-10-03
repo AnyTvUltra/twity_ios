@@ -176,8 +176,12 @@ class OkeyTileWidget extends StatelessWidget {
                   const SizedBox(height: 1),
                   Text(
                     '${t.value}',
+                    // الأرقام من خانتين (10-13) أصغر حتى لا يلتف النص
+                    // لسطرين فوق بعضهما — سطر واحد بلا التفاف أبداً
+                    softWrap: false,
+                    maxLines: 1,
                     style: TextStyle(
-                      fontSize: width * 0.52,
+                      fontSize: width * (t.value >= 10 ? 0.38 : 0.52),
                       fontWeight: FontWeight.w900,
                       // على السكنات المتحركة: بأليت ألوان مضيئة تحافظ على
                       // تمييز لون الحجر (الأسود→فضّي أبيض)
