@@ -274,6 +274,16 @@
         );
       }
 
+      if (category === 'okeyRoom') {
+        // غرفة الكونكان: صورة المشهد كاملة بلا موك-أب وهمي فوقها
+        return (
+          <div className="absolute inset-0 rounded-xl overflow-hidden">
+            <div className="absolute inset-0"><Img fallback="radial-gradient(circle,#2a1f14,#0e0803)" /></div>
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg,rgba(0,0,0,0) 55%,rgba(0,0,0,.35))' }}></div>
+          </div>
+        );
+      }
+
       // background: مشهد كامل — الخلفية + طاولة مصغرة + استكانة
       return (
         <div className="absolute inset-0 rounded-xl overflow-hidden">
@@ -316,7 +326,7 @@
       const [tickets, setTickets] = useState([]);
       const [skinFilter, setSkinFilter] = useState('all');
       const [showAddSkinModal, setShowAddSkinModal] = useState(false);
-      const [newSkin, setNewSkin] = useState({ name: '', category: 'tile', price: 500, currency: 'chips', zoom: 1, ox: 0, oy: 0 });
+      const [newSkin, setNewSkin] = useState({ name: '', category: 'okeyRoom', price: 500, currency: 'chips', zoom: 1, ox: 0, oy: 0 });
       const skinDragRef = React.useRef(null);
       const [skinImageB64, setSkinImageB64] = useState('');
       const [skinImageDataUri, setSkinImageDataUri] = useState('');
@@ -724,7 +734,7 @@
       };
 
       // ═══════════ المتجر والسكنات ═══════════
-      const categoryLabels = { tile: 'الأحجار 🀄', table: 'الطاولة 🟫', rack: 'الاستكانة 🪵', background: 'الخلفية 🖼️', frame: 'إطار الصورة 🖼️', chessBoard: 'لوحة الشطرنج ♞', chessPieces: 'أحجار الشطرنج ♟️' };
+      const categoryLabels = { okeyRoom: 'غرفة الكونكان 🚪', frame: 'إطار الصورة 🖼️', chessBoard: 'لوحة الشطرنج ♞', chessPieces: 'أحجار الشطرنج ♟️' };
 
       const handleSkinImagePick = (e) => {
         const file = e.target.files && e.target.files[0];
@@ -758,7 +768,7 @@
             createdAt: serverTimestamp()
           });
           setShowAddSkinModal(false);
-          setNewSkin({ name: '', category: 'tile', price: 500, currency: 'chips', zoom: 1, ox: 0, oy: 0 });
+          setNewSkin({ name: '', category: 'okeyRoom', price: 500, currency: 'chips', zoom: 1, ox: 0, oy: 0 });
           setSkinImageB64('');
           setSkinImageDataUri('');
           showToast('🎉 تم نشر التصميم في المتجر وظهر للاعبين فوراً!');
@@ -1649,10 +1659,7 @@
                         className="bg-dark-800 border border-gray-700 text-gray-300 text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-emerald-500"
                       >
                         <option value="all">كل الفئات ({storeItems.length})</option>
-                        <option value="tile">🀄 الأحجار</option>
-                        <option value="table">🟫 الطاولة</option>
-                        <option value="rack">🪵 الاستكانة</option>
-                        <option value="background">🖼️ الخلفية</option>
+                        <option value="okeyRoom">🚪 غرفة الكونكان</option>
                         <option value="frame">👤 إطار الصورة</option>
                         <option value="chessBoard">♞ لوحة الشطرنج</option>
                         <option value="chessPieces">♟️ أحجار الشطرنج</option>
@@ -2352,10 +2359,7 @@
                       onChange={(e) => setNewSkin(prev => ({ ...prev, category: e.target.value }))}
                       className="w-full bg-dark-800 border border-gray-700 text-gray-200 text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-emerald-500"
                     >
-                      <option value="tile">🀄 الأحجار (وجه الحجر)</option>
-                      <option value="table">🟫 الطاولة (سطح اللعب)</option>
-                      <option value="rack">🪵 الاستكانة (الخشبة الحاملة)</option>
-                      <option value="background">🖼️ خلفية المشهد</option>
+                      <option value="okeyRoom">🚪 غرفة الكونكان (المشهد كاملاً)</option>
                       <option value="frame">👤 إطار الصورة الشخصية</option>
                       <option value="chessBoard">♞ لوحة الشطرنج (الخشبة والمربعات)</option>
                       <option value="chessPieces">♟️ أحجار الشطرنج (نسيج القطع)</option>

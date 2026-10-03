@@ -592,38 +592,79 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     );
   }
 
-  /// قذيفة واحدة: من الرزمة إلى مرسى المقعد بقوس خفيف ودوران
+  /// قذيفة واحدة: من الرزمة إلى مرسى المقعد بقوس عالٍ ودوران طبيعي
+  /// وظلّ أرضي يتبع مسارها — يكبر الحجر في الجوّ ثم يهبط لحجم خانته
   Widget _buildDealFlight(int i, double t, Offset from) {
     final f = _dealFlights[i];
     final local = ((t - f.$3) / _dealFlightMs).clamp(0.0, 1.0);
     if (local <= 0 || local >= 1) return const SizedBox.shrink();
     final to = _dealAnchors(_tableRect(_sceneSize), _sceneSize)[f.$1]!;
-    final e = Curves.easeOutCubic.transform(local);
+    // مسار أفقي متسارع-متباطئ وعمودي يهبط بنعومة + قوس ارتفاع واضح
+    final e = Curves.easeInOutCubic.transform(local);
     final x = from.dx + (to.dx - from.dx) * e;
-    final y = from.dy + (to.dy - from.dy) * e - math.sin(local * math.pi) * 44;
-    final sc = 0.8 + 0.3 * math.sin(local * math.pi);
-    return Positioned(
-      left: x - 17,
-      top: y - 19,
-      child: Transform.rotate(
-        angle: (f.$1.isEven ? -1 : 1) * 0.22 * math.sin(local * math.pi),
-        child: Transform.scale(scale: sc, child: _dealFan(f.$2)),
+    final arcLift = math.sin(local * math.pi) * 62;
+    final gy =
+        from.dy + (to.dy - from.dy) * Curves.easeOutQuad.transform(local);
+    final y = gy - arcLift;
+    // يبدأ بمقاس الرزمة، يكبر في الجوّ ليقترب من المشاهد، ثم يهبط
+    // لمقاس خانة مقعده (مقعدي كبير، الخصوم أصغر)
+    final seatScale = f.$1 == 0 ? 1.12 : 0.78;
+    final sc = seatScale + (1.34 - seatScale) * math.sin(local * math.pi);
+    final dir = f.$1.isEven ? -1.0 : 1.0;
+    final shadowT = 1.0 - arcLift / 62;
+    return Stack(clipBehavior: Clip.none, children: [
+      // الظل الأرضي: يتبع نقطة الهبوط تحت القذيفة ويصغر كلما ارتفعت
+      Positioned(
+        left: x - 13,
+        top: gy - 4,
+        child: Opacity(
+          opacity: 0.30 * shadowT.clamp(0.0, 1.0),
+          child: Transform(
+            alignment: Alignment.center,
+            transform: Matrix4.diagonal3Values(
+                0.55 + 0.45 * shadowT, 0.55 + 0.45 * shadowT, 1.0),
+            child: Container(
+              width: 26,
+              height: 7,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.black,
+                boxShadow: [BoxShadow(blurRadius: 6, color: Colors.black54)],
+              ),
+            ),
+          ),
+        ),
       ),
-    );
+      // الحزمة الطائرة — دوران متصل خفيف يتوقف عند الهبوط
+      Positioned(
+        left: x - 17,
+        top: y - 19,
+        child: Transform.rotate(
+          angle: dir * local * (f.$1 == 0 ? 0.45 : 0.7),
+          child: Transform.scale(scale: sc, child: _dealFan(f.$2)),
+        ),
+      ),
+    ]);
   }
 
-  /// حزمة 2-3 أحجار مقلوبة مروّحة تطير معاً
+  /// حزمة 2-3 أحجار مقلوبة مروّحة تطير معاً — كل حجر مائل قليلاً
+  /// عن التالي ليبدو كورقة مفروشة لا كومة مكدّسة
   Widget _dealFan(int n) {
+    final mid = (n - 1) / 2;
     return SizedBox(
       width: 24 + (n - 1) * 8,
-      height: 34,
+      height: 36,
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
           for (var k = 0; k < n; k++)
             Positioned(
               left: k * 7.0,
-              top: k * 1.2,
-              child: _tileBack(20, 30),
+              top: (k - mid).abs() * 1.6,
+              child: Transform.rotate(
+                angle: (k - mid) * 0.10,
+                child: _tileBack(20, 30),
+              ),
             ),
         ],
       ),
@@ -1821,7 +1862,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         ),
         Positioned(
           top: 7 + _safePadT,
-          right: 14 + _safePadR,
+          // مسحوب قليلاً عن حافة اليمين ليظهر صف أزرار الصوت كاملاً
+          right: 30 + _safePadR,
           child: AnimatedBuilder(
             animation: Listenable.merge([VoiceService(), RadioService()]),
             builder: (context, _) => Row(
@@ -1879,20 +1921,22 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           ),
         ),
 
-        // صورة الخصم الأيسر + اسمه — باتجاهي أنا، على وسادته اليسرى في الصورة
+        // صورة الخصم الأيسر + اسمه — باتجاهي أنا، فوق مقعده على
+        // ظهر الكنبة اليسرى في الصورة حيث يجلس اللاعب فعلياً
         Positioned(
-          left: _roomScene ? imgRect.left + imgRect.width * 0.145 - 25 : 10,
+          left: _roomScene ? imgRect.left + imgRect.width * 0.105 - 25 : 10,
           top: _roomScene
-              ? imgRect.top + imgRect.height * 0.375
+              ? imgRect.top + imgRect.height * 0.300
               : tbl.center.dy - 24,
           child: _seatBadge(3),
         ),
-        // صورة الخصم الأيمن + اسمه — باتجاهي أنا، على وسادته اليمنى في الصورة
+        // صورة الخصم الأيمن + اسمه — باتجاهي أنا، فوق مقعده على
+        // ظهر الكنبة اليمنى في الصورة حيث يجلس اللاعب فعلياً
         Positioned(
-          left: _roomScene ? imgRect.left + imgRect.width * 0.855 - 25 : null,
+          left: _roomScene ? imgRect.left + imgRect.width * 0.895 - 25 : null,
           right: _roomScene ? null : 10,
           top: _roomScene
-              ? imgRect.top + imgRect.height * 0.375
+              ? imgRect.top + imgRect.height * 0.300
               : tbl.center.dy - 24,
           child: _seatBadge(1),
         ),

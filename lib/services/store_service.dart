@@ -23,18 +23,21 @@ class StoreCategory {
   // غرفة الكونكان — تصميم المشهد الكامل (نفس تخطيط الصورة المرجعية)
   static const String okeyRoom = 'okeyRoom';
 
+  /// الفئات المعروضة كتبويبات في المتجر — الأحجار/الطاولة/الاستكانة/
+  /// الخلفية محذوفة لأن غرفة الكونكان الموحّدة تغطيها كلها
   static const List<String> all = [
-    tile,
-    table,
-    rack,
-    background,
+    okeyRoom,
     frame,
     chessBoard,
     chessPieces,
     bgBoard,
     bgCheckers,
-    okeyRoom,
   ];
+
+  /// فئات محذوفة من العرض تماماً (متجراً وأدمن) — ثوابتها تبقى
+  /// للاستعمالات الداخلية (equippedFor / SkinMockup / عناصر قديمة)
+  static bool isHiddenCategory(String c) =>
+      c == tile || c == table || c == rack || c == background;
 
   static String label(String category) {
     switch (category) {
@@ -839,15 +842,12 @@ class StoreService extends ChangeNotifier {
       ];
 
   /// الكتالوج الكامل المعروض: غرف الكونكان أولاً ثم كل العناصر
-  /// المدمجة ما عدا كسنات الاستكانة/الأحجار/الخلفية — حُذفت لأن
-  /// مشهد الغرفة الموحّد يغطي دورها كلها في شاشة اللعب
+  /// المدمجة ما عدا الفئات المحذوفة (الأحجار/الطاولة/الاستكانة/
+  /// الخلفية) — مشهد الغرفة الموحّد يغطي دورها كلها في شاشة اللعب
   static List<StoreItem> _catalogItems() => [
         ..._roomItems(),
         for (final e in _builtinItems())
-          if (e.category != StoreCategory.rack &&
-              e.category != StoreCategory.tile &&
-              e.category != StoreCategory.background)
-            e,
+          if (!StoreCategory.isHiddenCategory(e.category)) e,
       ];
 
   /// تصاميم غرفة الكونكان — مشاهد كاملة (1024×436) بنفس تخطيط
@@ -988,8 +988,8 @@ class StoreService extends ChangeNotifier {
         .listen((snapshot) {
       _items = [
         ..._catalogItems(),
-        ...snapshot.docs.map((doc) => StoreItem.fromDoc(doc)),
-      ];
+        for (final doc in snapshot.docs) StoreItem.fromDoc(doc),
+      ].where((it) => !StoreCategory.isHiddenCategory(it.category)).toList();
       _warmImageCache();
       notifyListeners();
     }, onError: (Object e) {
