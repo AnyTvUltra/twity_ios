@@ -235,6 +235,8 @@ class OkeyEngine extends ChangeNotifier {
     selectedTileIndex = null;
     _lastDrawn = null;
     _takenLeftTile = null;
+    lastDiscardTile = null;
+    lastDiscardPlayer = -1;
 
     // Auto sort human hand initially for a clean presentation
     sortHumanTiles();
@@ -465,6 +467,12 @@ class OkeyEngine extends ChangeNotifier {
   /// من أخذه ولم يفتح اللعب ولم ينزل يُعاده للكومة ويسحب بديلاً من الرزمة
   OkeyTile? _takenLeftTile;
 
+  /// آخر حجر رُمي على الطاولة من أي لاعب ولاعبه — تُظهره الواجهة وحيداً
+  /// فوق كومة المرميات الثابتة. يُصفَّر إذا أُخذ من الكومة أو أُعيد خلط
+  /// المرميات في الرزمة، ويُحدَّث مع كل رمية جديدة.
+  OkeyTile? lastDiscardTile;
+  int lastDiscardPlayer = -1;
+
   void swapTiles(int slotA, int slotB) {
     final temp = players[0].rackTiles[slotA];
     players[0].rackTiles[slotA] = players[0].rackTiles[slotB];
@@ -480,6 +488,8 @@ class OkeyEngine extends ChangeNotifier {
       recycled.addAll(pile);
       pile.clear();
     }
+    lastDiscardTile = null;
+    lastDiscardPlayer = -1;
     if (recycled.isEmpty) return;
     recycled.shuffle(_random);
     drawDeck.addAll(recycled);
@@ -536,6 +546,10 @@ class OkeyEngine extends ChangeNotifier {
     if (emptySlot == -1) return false;
 
     final tile = leftPlayerDiscards.removeLast();
+    if (identical(tile, lastDiscardTile)) {
+      lastDiscardTile = null;
+      lastDiscardPlayer = -1;
+    }
     players[0].rackTiles[emptySlot] = tile;
     selectedTileIndex = emptySlot;
     turnPhase = OkeyTurnPhase.awaitingDiscard;
@@ -695,6 +709,8 @@ class OkeyEngine extends ChangeNotifier {
     players[0].rackTiles[slotIndex] = null;
     // لا نضغط الصف — الفجوات تحافظ على تجميعات اللاعب منفصلة
     discardPiles[0].add(tile);
+    lastDiscardTile = tile;
+    lastDiscardPlayer = 0;
     selectedTileIndex = null;
     OkeyAudio.playTileDiscard();
 
@@ -807,6 +823,10 @@ class OkeyEngine extends ChangeNotifier {
 
       if (takeDiscard && prevDiscards.isNotEmpty) {
         drawnTile = prevDiscards.removeLast();
+        if (identical(drawnTile, lastDiscardTile)) {
+          lastDiscardTile = null;
+          lastDiscardPlayer = -1;
+        }
       } else {
         // رزمة فارغة؟ أعد خلط المرميات أولاً
         if (drawDeck.isEmpty) _refillDeckFromDiscards();
@@ -847,6 +867,8 @@ class OkeyEngine extends ChangeNotifier {
             final slot = bot.rackTiles.indexOf(candidateDiscard);
             if (slot != -1) bot.rackTiles[slot] = null;
             discardPiles[currentTurnIndex].add(candidateDiscard);
+            lastDiscardTile = candidateDiscard;
+            lastDiscardPlayer = currentTurnIndex;
             _declareWinner(
                 bot,
                 candidateDiscard.isRealOkey
@@ -863,6 +885,8 @@ class OkeyEngine extends ChangeNotifier {
           bot.rackTiles[slot] = null;
         }
         discardPiles[currentTurnIndex].add(discardTile);
+        lastDiscardTile = discardTile;
+        lastDiscardPlayer = currentTurnIndex;
         OkeyAudio.playTileDiscard();
 
         _advanceTurn();
@@ -1103,6 +1127,46 @@ class OkeyEngine extends ChangeNotifier {
     return _canPartitionIntoValidMelds(tiles);
   }
 
+  /// هل يمكن إفراغ كل الأحجار المتبقية على الطاولة؟ كل حجر إما يُصرف
+  /// على بير موجود (يمدّ سلسلة أو يكمل مجموعة) أو يدخل في بير جديد
+  /// صحيح يُنزل من الأحجار نفسها — وهذا شرط إعلان الفوز للفاتح
+  bool _remainingAllPlaceableOnTable(List<OkeyTile> tiles) {
+    if (tiles.isEmpty) return true;
+    final sim = tableMelds.map(_MeldBound.of).toList();
+    return _searchPlaceAll(List<OkeyTile>.from(tiles), sim);
+  }
+
+  bool _searchPlaceAll(List<OkeyTile> rem, List<_MeldBound> sim) {
+    if (rem.isEmpty) return true;
+    final first = rem.first;
+    final rest = rem.sublist(1);
+
+    // ١) صرفه على بير موجود على الطاولة
+    if (first.isRealOkey) {
+      // الأوكي يمثّل أي حجر — يُصرف على أي بير بلا تغيير حدوده
+      if (sim.isNotEmpty && _searchPlaceAll(rest, sim)) return true;
+    } else {
+      for (final m in sim) {
+        final snap = m.snapshot();
+        if (m.fits(first)) {
+          m.apply(first);
+          if (_searchPlaceAll(rest, sim)) return true;
+          m.restore(snap);
+        }
+      }
+    }
+
+    // ٢) يدخل في بير جديد يُنزل من الأحجار المتبقية نفسها
+    for (final meld in _findMeldsContaining(rem, first)) {
+      final next = List<OkeyTile>.from(rem);
+      for (final t in meld) {
+        next.remove(t);
+      }
+      if (_searchPlaceAll(next, sim)) return true;
+    }
+    return false;
+  }
+
   /// المجموعات الجاهزة على رف اللاعب البشري (كتل متجاورة صحيحة)
   /// — لعرض النقاط/البيرات لحظياً قبل النزول
   List<List<OkeyTile>> get rackReadyGroups {
@@ -1308,6 +1372,9 @@ class OkeyEngine extends ChangeNotifier {
     if (slot != -1) {
       rack[slot] = null;
       discardPiles[3].add(taken);
+      // الحجر العائد لقمة الكومة — يُظهر مكشوفاً فوقها من جديد
+      lastDiscardTile = taken;
+      lastDiscardPlayer = 3;
     }
     if (drawDeck.isEmpty) _refillDeckFromDiscards();
     if (drawDeck.isNotEmpty) {
@@ -1654,13 +1721,11 @@ class OkeyEngine extends ChangeNotifier {
       return false;
     }
 
-    // بعد فتح اللعب: الفوز إذا بقي كل شيء قابلاً للتقسيم بعد رمي حجر
+    // بعد فتح اللعب: الفوز يُعلن فقط إذا أمكن إفراغ الرف كاملاً على
+    // الطاولة — كل حجر يُصرف على بير موجود أو يدخل في بير جديد صحيح.
+    // حجر واحد لا يصرف على شيء = لا فوز بعد، ولا يظهر الزر قبل أوانه
     if (player.hasOpened) {
-      for (int i = 0; i < active.length; i++) {
-        final rest = List<OkeyTile>.from(active)..removeAt(i);
-        if (_remainingAllMeldable(rest)) return true;
-      }
-      return false;
+      return _remainingAllPlaceableOnTable(active);
     }
 
     if (active.length == 14) return isWinningHand(active);
@@ -1769,4 +1834,84 @@ class _BotMeld {
   final bool isRun;
   final int jokers;
   _BotMeld(this.tiles, this.isRun, {this.jokers = 0});
+}
+
+/// لقطة حدود بير نازل على الطاولة لمحاكاة الصرف — بلا لمس الكائن الأصلي
+class _MeldBound {
+  final bool isRun;
+  OkeyTileColor? color; // لون السلسلة (من أول حجر غير أوكي)
+  int lo = 14; // أدنى قيمة في السلسلة
+  int hi = 0; // أعلى قيمة في السلسلة
+  bool hasOne = false; // هل تضم الواحد (لالتفاف 12-13-1)
+  int value = 0; // قيمة المجموعة (Set)
+  int count; // عدد الأحجار — للمجموعات لا تتجاوز 4
+  final Set<OkeyTileColor> colors = {}; // ألوان المجموعة المستخدمة
+
+  _MeldBound._({required this.isRun, this.count = 0});
+
+  factory _MeldBound.of(OkeyGroup g) {
+    final b = _MeldBound._(isRun: g.isRun, count: g.tiles.length);
+    for (final t in g.tiles) {
+      if (t.isRealOkey) continue;
+      if (g.isRun) {
+        b.color ??= t.color;
+        if (t.value < b.lo) b.lo = t.value;
+        if (t.value > b.hi) b.hi = t.value;
+        if (t.value == 1) b.hasOne = true;
+      } else {
+        b.value = t.value;
+        b.colors.add(t.color);
+      }
+    }
+    if (b.lo == 14) b.lo = 0; // بير كلّه أوكي — لا حدود فعلية
+    return b;
+  }
+
+  /// هل يصرف الحجر على هذا البير — مرآة canLayOffTile (فحص فقط بلا تعديل)
+  bool fits(OkeyTile t) {
+    if (t.isRealOkey) return true;
+    if (isRun) {
+      if (color == null) return true; // بير كلّه أوكي — يقبل أي لون
+      if (t.color != color) return false;
+      if (t.value == lo - 1 || t.value == hi + 1) return true;
+      if (hi == 13 && t.value == 1 && !hasOne) return true;
+      return false;
+    }
+    if (count >= 4) return false;
+    if (value != 0 && t.value != value) return false;
+    return !colors.contains(t.color);
+  }
+
+  (int, int, bool, int, int, OkeyTileColor?, Set<OkeyTileColor>) snapshot() =>
+      (lo, hi, hasOne, value, count, color, Set.of(colors));
+
+  void apply(OkeyTile t) {
+    if (t.isRealOkey) {
+      count++;
+      return;
+    }
+    if (isRun) {
+      color ??= t.color;
+      if (t.value < lo) lo = t.value;
+      if (t.value > hi) hi = t.value;
+      if (t.value == 1) hasOne = true;
+    } else {
+      if (value == 0) value = t.value;
+      colors.add(t.color);
+    }
+    count++;
+  }
+
+  void restore(
+      (int, int, bool, int, int, OkeyTileColor?, Set<OkeyTileColor>) s) {
+    lo = s.$1;
+    hi = s.$2;
+    hasOne = s.$3;
+    value = s.$4;
+    count = s.$5;
+    color = s.$6;
+    colors
+      ..clear()
+      ..addAll(s.$7);
+  }
 }

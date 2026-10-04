@@ -116,7 +116,7 @@ class OkeyIstakaWidget extends StatelessWidget {
           final innerH = constraints.maxHeight - hitPad.vertical;
           final gSlotW = ((innerW - 24) / 14).clamp(20.0, 40.0);
           final gTileW = gSlotW * 1.28;
-          final gTileH = gTileW * 1.18;
+          final gTileH = gTileW * 1.10;
           // قاعدة الصف العلوي = 0.758 من ارتفاع الصورة (أرضية اللوح
           // الغائر) وقاعدة السفلي = 0.912 (فوق الشريط المزخرف مرفوعة
           // قليلاً) — أعلى منطقة الاستكانة = 0.600 وأسفلها = 0.935
@@ -163,7 +163,7 @@ class OkeyIstakaWidget extends StatelessWidget {
         final slotW = ((availableW - 64) / 14).clamp(24.0, 40.0);
         final tileW =
             slotW - 2.0; // يضمن وجود مساحة 1.0 بكسل لكل جهة دون أي تداخل
-        final tileH = tileW * 1.36;
+        final tileH = tileW * 1.28;
 
         final innerShelfW = slotW * 14;
         final rackContainerW = innerShelfW + 28.0;

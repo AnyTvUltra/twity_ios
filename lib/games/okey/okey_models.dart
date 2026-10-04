@@ -12,13 +12,13 @@ extension OkeyTileColorExtension on OkeyTileColor {
   Color get color {
     switch (this) {
       case OkeyTileColor.red:
-        return const Color(0xFFDC2626); // Ruby Red
+        return const Color(0xFFBE123C); // قرمزي عميق
       case OkeyTileColor.yellow:
-        return const Color(0xFFD97706); // Golden Amber
+        return const Color(0xFFC2410C); // كهرمان محروق — مقروء على العاج
       case OkeyTileColor.blue:
-        return const Color(0xFF2563EB); // Royal Blue
+        return const Color(0xFF1D4ED8); // أزرق ملكي عميق
       case OkeyTileColor.black:
-        return const Color(0xFF1F2937); // Charcoal Black
+        return const Color(0xFF1C1917); // فحمي دافئ
     }
   }
 

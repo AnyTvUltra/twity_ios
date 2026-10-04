@@ -1174,7 +1174,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       // الصف العلوي قاعدته عند 0.758 من الصورة والسفلي عند أسفل المنطقة
       final zone = _mapToImg(_roomRackMineF, s);
       final slotW = ((zone.width - 24) / 14).clamp(20.0, 40.0);
-      final tileH = slotW * 1.28 * 1.18;
+      final tileH = slotW * 1.28 * 1.10;
       final x0 = zone.left + (zone.width - slotW * 14) / 2;
       final x = x0 + slotW * (slot % 14 + 0.5);
       final row0BaseY = zone.bottom - zone.height * (0.935 - 0.758) / 0.335;
@@ -1183,7 +1183,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       return Offset(x, y);
     }
     final slotW = _rackSlotW();
-    final tileH = (slotW - 2) * 1.36;
+    final tileH = (slotW - 2) * 1.28;
     final rackTop = s.height - 12 - 140 * (slotW / 40);
     // الاستكانة ممرّكة: جسمها = slotW*14 + 52 والتجويف يبدأ +26 داخله
     final x0 = (s.width - (slotW * 14 + 52)) / 2 + 26;
@@ -1846,20 +1846,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           top: _roomScene ? imgRect.top + imgRect.height * 0.105 : 2,
           left: _roomScene ? imgRect.left + imgRect.width * 0.52 - 46 : null,
           right: _roomScene ? null : 0,
-          child: SizedBox(
-            width: 92,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Center(child: _seatBadge(2)),
-                Positioned(
-                  right: 0,
-                  top: 13,
-                  child: _roleChip(widget.teamMode),
-                ),
-              ],
-            ),
-          ),
+          child: Center(child: _seatBadge(2)),
         ),
         Positioned(
           top: 7 + _safePadT,
@@ -2071,20 +2058,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     );
   }
 
-  /// شارة دور اللاعب المقابل: شريك (زوجي) أو خصم (فردي)
-  Widget _roleChip(bool partner) {
-    final c = partner ? const Color(0xFF4ADE80) : const Color(0xFFF87171);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: BoxDecoration(
-        color: c.withOpacity(0.14),
-        borderRadius: BorderRadius.circular(9),
-        border: Border.all(color: c.withOpacity(0.6)),
-      ),
-      child: Text(partner ? '🤝 شريك'.tr : '⚔️ خصم'.tr,
-          style: TextStyle(color: c, fontSize: 9, fontWeight: FontWeight.w900)),
-    );
-  }
+  /// شارة دور اللاعب المقابل أُزيلت بطلب المستخدم — اللاعب يعرف خصمه
+  /// بنفسه ولا يحتاج نصاً أحمر فوق اسمه
 
   Widget _buildOkeyOutButton() {
     return GestureDetector(
@@ -2206,10 +2181,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     if (_roomScene) {
       final zone = _mapToImg(_roomRackMineF, _sceneSize);
       final tileW = (((zone.width - 24) / 14).clamp(20.0, 40.0)) * 1.28;
-      return Offset(tileW / 2, tileW * 1.18 / 2);
+      return Offset(tileW / 2, tileW * 1.10 / 2);
     }
     final tileW = _rackSlotW() - 2;
-    return Offset(tileW / 2, tileW * 1.36 / 2);
+    return Offset(tileW / 2, tileW * 1.28 / 2);
   }
 
   /// إفلات حجر على سطح الطاولة (منطقة اللعب فوق الاستكانة) = رمي
@@ -2295,16 +2270,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     };
   }
 
-  /// اتجاه العرض لكل موضع مقعد على الشاشة — Viewer-Dependent:
-  /// بيرات اللاعب الجالس في المقعد تُدار لتوجه نحوه. لا تُعدَّل بيانات
-  /// الحجر في الـGame State — الزاوية تُحسب محلياً من موضع المقعد فقط.
-  static final _meldAngles = <int, double>{
-    0: 0, // المشاهد: باتجاهه
-    2: math.pi, // المقابل: نحوه (من منظوره أحجاره تبدو مستقيمة)
-    3: math.pi / 2, // الأيسر: نص بيره يشير يميناً (باتجاهه)
-    1: -math.pi / 2, // الأيمن: نص بيره يشير يساراً (باتجاهه)
-  };
-
+  /// كل البيرات تظهر باتجاه المشاهد على كل شاشة — كل لاعب يقرأ أحجار
+  /// الجميع مستقيمة أمامه (الزاوية محلية فقط ولا تمس حالة اللعبة)
   List<Widget> _buildTableMelds(Map<int, Rect> zones) {
     final out = <Widget>[];
     for (final entry in zones.entries) {
@@ -2317,19 +2284,12 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           if (_engine.tableMelds[i].ownerIndex == owner)
             MapEntry(i, _engine.tableMelds[i]),
       ];
-      // بيرات المقعد تُدار نحو صاحبها — نفس الحجر يظهر باتجاه مختلف
-      // لكل مشاهد حسب مقعده، بينما يبقى الـGame Object واحداً مشتركاً
-      final angle = _meldAngles[seat] ?? 0;
       final isMine = owner == 0;
       final content = melds.isEmpty
           ? (isMine && _humanHasReadyPer
               ? _myMeldHint()
               : const SizedBox.shrink())
-          : Transform.rotate(
-              angle: angle,
-              child:
-                  _meldsOnTable(melds, zone, vertical: seat == 1 || seat == 3),
-            );
+          : _meldsOnTable(melds, zone, vertical: seat == 1 || seat == 3);
       out.add(Positioned.fromRect(
         rect: zone,
         child: isMine ? _myMeldDropZone(content) : content,
@@ -2422,10 +2382,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         width: (vertical ? zone.height : zone.width) * 1.25,
         child: Transform(
           alignment: Alignment.center,
-          // ميلان للخلف: الأحجار تبدو مستلقية على الطاولة
+          // ميلان خفيف للخلف: الأحجار تبدو مستلقية بلا سحق للوجه
           transform: Matrix4.identity()
             ..setEntry(3, 2, 0.0018)
-            ..rotateX(0.62),
+            ..rotateX(0.45),
           child: Wrap(
             alignment: WrapAlignment.center,
             spacing: 6,
@@ -2530,7 +2490,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                   child: OkeyTileWidget(
                       tile: tile,
                       width: _roomScene ? 33 : 26,
-                      height: _roomScene ? 44 : 35),
+                      height: _roomScene ? 40 : 32),
                 ),
             ],
           ),
@@ -3405,7 +3365,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
 
   /// مقاس حجر الـ feedback عند السحب من الرزمة — يطابق حجر الاستكانة
   static const double _rackTileW = 38;
-  static const double _rackTileH = 38 * 1.36;
+  static const double _rackTileH = 38 * 1.28;
 
   Widget _buildTableCenter(bool isHumanTurn) {
     final canDraw =
@@ -3444,22 +3404,22 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     required bool canDiscard,
     required bool canTakeLeft,
   }) {
-    // آخر حجر رُمي على الطاولة = قمة كومة اللاعب الذي أنهى دوره للتو
-    final prevIdx = (_engine.currentTurnIndex + 3) % 4;
-    final prevPile = _engine.discardPiles[prevIdx];
-    final topTile = prevPile.isNotEmpty ? prevPile.last : null;
-    final prevIsFull = prevIdx != 0 &&
-        _engine.players[prevIdx].playStyle == OkeyPlayStyle.full;
+    // الحجر العلوي = آخر رمية فعلية على الطاولة (يتتبّعها المحرك ويمسحها
+    // عند أخذها) — لا يُشتق من قمم الكومات فلا يقفز حجر قديم مكان المأخوذ
+    final topTile = _engine.lastDiscardTile;
+    final topOwner = _engine.lastDiscardPlayer;
+    final topIsFull = topOwner > 0 &&
+        _engine.players[topOwner].playStyle == OkeyPlayStyle.full;
     final total = _engine.discardPiles.fold<int>(0, (s, p) => s + p.length);
 
     final w = _roomScene ? 200.0 : 140.0;
     final h = _roomScene ? 78.0 : 92.0;
     final tw = _roomScene ? 34.0 : 24.0;
-    final th = _roomScene ? 46.0 : 32.0;
+    final th = _roomScene ? 40.0 : 30.0;
     // مركز الكومة داخل الحيّز
     final cx = w * 0.5, cy = h * 0.52;
-    // مواضع ثابتة للأحجار المقلوبة (إزاحة X، إزاحة Y، زاوية) — لا تتبدل
-    // مع الرميات فتبقى الكومة ثابتة الشكل مهما رمى اللاعبون
+    // مواضع ثابتة للأحجار المقلوبة (إزاحة X، إزاحة Y، زاوية) — الكومة
+    // تبقى ثابتة الشكل دائماً ولا تنكمش عند أخذ حجر منها
     const backSlots = [
       (-11.0, 5.0, -0.28),
       (9.0, 1.0, 0.22),
@@ -3467,9 +3427,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       (12.0, 9.0, 0.38),
       (1.0, -1.0, 0.05),
     ];
-    // بقدر عدد المرمرات وبحد أقصى مواضعها الخمسة — من الحجر الخامس
-    // وصاعداً تثبت صورة الكومة ولا يتبدل إلا الحجر المكشوف فوقها
-    final backs = math.min(backSlots.length, math.max(0, total - 1));
+    // الكومة الزخرفية ثابتة بأحجارها الخمسة ما دام في الطاولة مرميات —
+    // لا تختفي ولا تتغير مع السحب أو الأخذ
+    final backs = total > 0 ? backSlots.length : 0;
 
     final children = <Widget>[
       // عداد الأحجار المرمية — خافت تحت الكومة
@@ -3494,10 +3454,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     }
     // آخر حجر مرمي فوق الكومة كلها — مكشوفاً (أو مقلوباً إن كان للفول)
     if (topTile != null) {
-      Widget top = prevIsFull
+      Widget top = topIsFull
           ? _tileBack(tw, th)
           : OkeyTileWidget(tile: topTile, width: tw, height: th);
-      if (!prevIsFull && canTakeLeft && prevIdx == 3) {
+      if (!topIsFull && canTakeLeft && topOwner == 3) {
         top = Draggable<int>(
           key: _leftDiscardKey,
           data: OkeyDrag.leftPile,

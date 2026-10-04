@@ -178,6 +178,84 @@ void main() {
       expect(e.gameState, isNot(OkeyGameState.win));
       e.dispose();
     });
+
+    test('زر الفوز لا يظهر للفاتح بحجر لا يصرف على أي بير', () {
+      final e = OkeyEngine();
+      e.initGame();
+      final p = e.players[0];
+      p.hasOpened = true;
+      final rack = p.rackTiles;
+      for (int i = 0; i < 28; i++) {
+        rack[i] = null;
+      }
+      // حجر وحيد لا يمدّ أي بير على الطاولة
+      rack[0] = t(1, OkeyTileColor.red, 4);
+      e.tableMelds.add(OkeyGroup(
+        tiles: [
+          t(2, OkeyTileColor.blue, 5),
+          t(3, OkeyTileColor.blue, 6),
+          t(4, OkeyTileColor.blue, 7),
+        ],
+        isRun: true,
+        ownerIndex: 1,
+      ));
+      expect(e.canDeclareOkeyOut, false,
+          reason: 'حجر لا يصرف على شيء ليس فوزاً — لا يظهر الزر');
+      e.dispose();
+    });
+
+    test('زر الفوز يظهر للفاتح عندما يصرف حجره الأخير على بير', () {
+      final e = OkeyEngine();
+      e.initGame();
+      final p = e.players[0];
+      p.hasOpened = true;
+      final rack = p.rackTiles;
+      for (int i = 0; i < 28; i++) {
+        rack[i] = null;
+      }
+      // حجر وحيد يمدّ سلسلة خصم 5-6-7 من الأسفل
+      rack[0] = t(1, OkeyTileColor.red, 4);
+      e.tableMelds.add(OkeyGroup(
+        tiles: [
+          t(2, OkeyTileColor.red, 5),
+          t(3, OkeyTileColor.red, 6),
+          t(4, OkeyTileColor.red, 7),
+        ],
+        isRun: true,
+        ownerIndex: 1,
+      ));
+      expect(e.canDeclareOkeyOut, true,
+          reason: 'صرف الحجر الأخير على بير = فوز كامل');
+      e.dispose();
+    });
+
+    test('زر الفوز يظهر للفاتح ببير جديد + صرف على بير موجود', () {
+      final e = OkeyEngine();
+      e.initGame();
+      final p = e.players[0];
+      p.hasOpened = true;
+      final rack = p.rackTiles;
+      for (int i = 0; i < 28; i++) {
+        rack[i] = null;
+      }
+      // سلسلة جديدة كاملة على الرف + حجر يُصرف على بير خصم
+      rack[0] = t(1, OkeyTileColor.yellow, 1);
+      rack[1] = t(2, OkeyTileColor.yellow, 2);
+      rack[2] = t(3, OkeyTileColor.yellow, 3);
+      rack[3] = t(4, OkeyTileColor.red, 4);
+      e.tableMelds.add(OkeyGroup(
+        tiles: [
+          t(5, OkeyTileColor.red, 5),
+          t(6, OkeyTileColor.red, 6),
+          t(7, OkeyTileColor.red, 7),
+        ],
+        isRun: true,
+        ownerIndex: 1,
+      ));
+      expect(e.canDeclareOkeyOut, true,
+          reason: 'بير جديد + صرف الأخير = إفراغ كامل للرف');
+      e.dispose();
+    });
   });
 
   group('OkeyEngine — الصرف على بيرات الطاولة', () {
