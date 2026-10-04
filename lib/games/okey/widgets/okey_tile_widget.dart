@@ -65,7 +65,7 @@ class OkeyTileWidget extends StatelessWidget {
     Color engrave(Color c) {
       final hsl = HSLColor.fromColor(c);
       return hsl
-          .withLightness((hsl.lightness * 0.68).clamp(0.0, 1.0))
+          .withLightness((hsl.lightness * 0.90).clamp(0.0, 1.0))
           .toColor();
     }
 

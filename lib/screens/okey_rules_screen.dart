@@ -14,7 +14,8 @@ class OkeyRulesScreen extends StatefulWidget {
 }
 
 class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
-  OkeyRulesVariant _selected = OkeyRulesVariant.turkish;
+  // الافتراضي = أول خيار في القائمة (سليمانية) لا الثالث
+  OkeyRulesVariant _selected = OkeyRulesVariant.sulaymaniyah;
 
   static const _bgTop = Color(0xFF0A0F24);
   static const _bgMid = Color(0xFF070B18);
@@ -72,7 +73,8 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                       children: [
                         // وصف
                         Text(
-                          'لكل مدينة قانونها الخاص في الكونكان — اختر القانون الذي تريد اللعب به، أو اضغط "؟" لقراءة شرحه الكامل'.tr,
+                          'لكل مدينة قانونها الخاص في الكونكان — اختر القانون الذي تريد اللعب به، أو اضغط "؟" لقراءة شرحه الكامل'
+                              .tr,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                               color: _textDim, fontSize: 11.5, height: 1.5),
@@ -136,8 +138,7 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
             filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 220),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -154,8 +155,7 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                 ),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color:
-                      isSelected ? accent : const Color(0x2EFFFFFF),
+                  color: isSelected ? accent : const Color(0x2EFFFFFF),
                   width: isSelected ? 1.8 : 1.0,
                 ),
                 boxShadow: [
@@ -219,7 +219,8 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            _miniTag('افتتاح {}'.trp([rules.openingPoints]), _gold),
+                            _miniTag(
+                                'افتتاح {}'.trp([rules.openingPoints]), _gold),
                             const SizedBox(width: 6),
                             _miniTag(
                                 rules.allowSevenPairs
@@ -268,9 +269,8 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: isSelected
-                                ? accent
-                                : const Color(0x55FFFFFF),
+                            color:
+                                isSelected ? accent : const Color(0x55FFFFFF),
                             width: 2,
                           ),
                           color: isSelected ? accent : Colors.transparent,
@@ -318,8 +318,7 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
       onTap: () {
         AppHaptics.medium();
         Navigator.of(context).push(
-          MaterialPageRoute(
-              builder: (_) => OkeyLobbyScreen(rules: rules)),
+          MaterialPageRoute(builder: (_) => OkeyLobbyScreen(rules: rules)),
         );
       },
       child: ClipRRect(
@@ -341,8 +340,7 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                 stops: [0.0, 0.35, 0.75, 1.0],
               ),
               borderRadius: BorderRadius.circular(24),
-              border:
-                  Border.all(color: const Color(0xFFFFE9A8), width: 1.4),
+              border: Border.all(color: const Color(0xFFFFE9A8), width: 1.4),
               boxShadow: [
                 BoxShadow(
                     color: _gold.withOpacity(0.4),
@@ -422,8 +420,7 @@ class _OkeyRulesScreenState extends State<OkeyRulesScreen> {
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(color: const Color(0x44FFFFFF), width: 1.1),
                 boxShadow: [
-                  BoxShadow(
-                      color: _neonBlue.withOpacity(0.2), blurRadius: 30),
+                  BoxShadow(color: _neonBlue.withOpacity(0.2), blurRadius: 30),
                 ],
               ),
               child: Column(
@@ -533,8 +530,7 @@ class _RulesDecorPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.2;
     for (int i = 0; i < 4; i++) {
-      arcPaint.color =
-          const Color(0xFFFFD54F).withOpacity(0.05 + i * 0.014);
+      arcPaint.color = const Color(0xFFFFD54F).withOpacity(0.05 + i * 0.014);
       canvas.drawArc(
         Rect.fromCenter(
           center: Offset(size.width * 0.5, size.height * 1.14),

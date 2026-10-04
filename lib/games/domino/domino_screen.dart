@@ -35,9 +35,10 @@ class _DominoGameScreenState extends State<DominoGameScreen> {
   /// درع "مرّر الجهاز" في وضع الصديق — رقم اللاعب المنتظر أو null
   int? _shieldFor;
 
-  static const _bgTop = Color(0xFF0C1A14);
-  static const _bgMid = Color(0xFF081209);
-  static const _bgBot = Color(0xFF040A06);
+  // خلفية بهوية التطبيق: كحلي عميق → أسود نيلي
+  static const _bgTop = Color(0xFF14204A);
+  static const _bgMid = Color(0xFF0B1330);
+  static const _bgBot = Color(0xFF060A1C);
   static const _gold = Color(0xFFFFD54F);
   static const _teal = Color(0xFF2DD4BF);
   static const _feltA = Color(0xFF175239);
@@ -454,63 +455,84 @@ class _DominoGameScreenState extends State<DominoGameScreen> {
           final u = w / _chainCellsWide;
           final rects = _layoutChain(_engine.chain.length);
 
+          // إطار خشب جوز متدرّج بتطعيم ذهبي يحيط بلبّاد أخضر عميق
           return Container(
             width: w,
             height: h,
+            padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
-              gradient: const RadialGradient(
-                center: Alignment(0, -0.2),
-                radius: 1.15,
-                colors: [_feltA, _feltB],
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF7A4A26),
+                  Color(0xFF3F220F),
+                  Color(0xFF6B3E1F)
+                ],
               ),
               borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: const Color(0xFF3A2512), width: 6),
               boxShadow: [
                 BoxShadow(
-                    color: Colors.black.withOpacity(0.5),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8)),
-                BoxShadow(
-                    color: _teal.withOpacity(0.10),
-                    blurRadius: 30,
-                    spreadRadius: -4),
+                    color: Colors.black.withOpacity(0.55),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10)),
               ],
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Stack(
-                children: [
-                  // نص توجيهي عند البداية الفارغة
-                  if (_engine.chain.isEmpty)
-                    Center(
-                      child: Text(
-                        _myTurn
-                            ? 'العب أول حجر ⚫'.tr
-                            : 'في انتظار {}…'
-                                .trp([_engine.names[_engine.currentPlayer]]),
-                        style: TextStyle(
-                            color: Colors.white.withOpacity(0.35),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                  // السلسلة
-                  for (var i = 0; i < _engine.chain.length; i++)
-                    _placedTile(i, rects[i], u),
-                  // مؤشرات الطرفين عند اختيار حجر بوجهين
-                  if (_selectedIdx != null && _engine.chain.isNotEmpty) ...[
-                    _endMarker(rects.first, u, side: 0),
-                    _endMarker(rects.last, u, side: 1),
-                  ],
-                  // البونيارد
-                  Positioned(
-                    left: 10,
-                    bottom: 10,
-                    child: _buildBoneyard(u),
-                  ),
-                  // حجر يطير للطاولة
-                  if (_engine.flyingTile != null) _flyingTile(w, h),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: const RadialGradient(
+                  center: Alignment(0, -0.2),
+                  radius: 1.15,
+                  colors: [_feltA, _feltB],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                    color: const Color(0xFFD4A64A).withOpacity(0.75),
+                    width: 1.4),
+                boxShadow: const [
+                  // ظل داخلي على حافة اللبّاد
+                  BoxShadow(
+                      color: Color(0x66000000),
+                      blurRadius: 10,
+                      spreadRadius: -2),
                 ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(15),
+                child: Stack(
+                  children: [
+                    // نص توجيهي عند البداية الفارغة
+                    if (_engine.chain.isEmpty)
+                      Center(
+                        child: Text(
+                          _myTurn
+                              ? 'العب أول حجر ⚫'.tr
+                              : 'في انتظار {}…'
+                                  .trp([_engine.names[_engine.currentPlayer]]),
+                          style: TextStyle(
+                              color: Colors.white.withOpacity(0.35),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    // السلسلة
+                    for (var i = 0; i < _engine.chain.length; i++)
+                      _placedTile(i, rects[i], u),
+                    // مؤشرات الطرفين عند اختيار حجر بوجهين
+                    if (_selectedIdx != null && _engine.chain.isNotEmpty) ...[
+                      _endMarker(rects.first, u, side: 0),
+                      _endMarker(rects.last, u, side: 1),
+                    ],
+                    // البونيارد
+                    Positioned(
+                      left: 10,
+                      bottom: 10,
+                      child: _buildBoneyard(u),
+                    ),
+                    // حجر يطير للطاولة
+                    if (_engine.flyingTile != null) _flyingTile(w, h),
+                  ],
+                ),
               ),
             ),
           );
@@ -1206,13 +1228,38 @@ class DominoTileWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final divider = Container(
-      color: const Color(0xFF9C8B6D),
-      width: horizontal ? 1.2 : null,
-      height: horizontal ? null : 1.2,
-      margin: horizontal
-          ? const EdgeInsets.symmetric(vertical: 3)
-          : const EdgeInsets.symmetric(horizontal: 3),
+    final short = math.min(width, height);
+    // خط الوسط المحفور + مسمار نحاسي في منتصفه
+    final divider = SizedBox(
+      width: horizontal ? 2.2 : null,
+      height: horizontal ? null : 2.2,
+      child: Stack(
+        alignment: Alignment.center,
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            margin: horizontal
+                ? EdgeInsets.symmetric(vertical: short * 0.12)
+                : EdgeInsets.symmetric(horizontal: short * 0.12),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF8C7A55), Color(0xFFFFFFFF)],
+              ),
+            ),
+          ),
+          Container(
+            width: short * 0.16,
+            height: short * 0.16,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                center: Alignment(-0.3, -0.3),
+                colors: [Color(0xFFFFE6A3), Color(0xFFB8862B)],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
 
     return Container(
@@ -1222,32 +1269,46 @@ class DominoTileWidget extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFFFFBEF), Color(0xFFEFE4CC), Color(0xFFDACBA6)],
+          colors: [Color(0xFFFFFFFF), Color(0xFFFAF5E9), Color(0xFFE9DEC6)],
         ),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: const Color(0xFFB7A276), width: 1.1),
+        borderRadius: BorderRadius.circular(short * 0.18),
+        border: Border.all(color: const Color(0xFFD2C4A3), width: 0.9),
         boxShadow: [
+          // سماكة الحجر العاجية
+          const BoxShadow(
+              color: Color(0xFFB8A882), offset: Offset(0, 2.4), blurRadius: 0),
+          // ظل أرضي ناعم
           BoxShadow(
-              color: Colors.black.withOpacity(0.45),
-              blurRadius: 5,
-              offset: const Offset(0, 2)),
+              color: Colors.black.withOpacity(0.42),
+              blurRadius: 6,
+              offset: const Offset(0, 4)),
         ],
       ),
-      child: horizontal
-          ? Row(
-              children: [
-                Expanded(child: _DominoFace(value: left)),
-                divider,
-                Expanded(child: _DominoFace(value: right)),
-              ],
-            )
-          : Column(
-              children: [
-                Expanded(child: _DominoFace(value: left)),
-                divider,
-                Expanded(child: _DominoFace(value: right)),
-              ],
-            ),
+      child: Container(
+        // حافة ضوء علوية ناعمة (بيفل)
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(short * 0.18),
+          border: Border(
+            top: BorderSide(color: Colors.white.withOpacity(0.9), width: 0.8),
+            left: BorderSide(color: Colors.white.withOpacity(0.6), width: 0.6),
+          ),
+        ),
+        child: horizontal
+            ? Row(
+                children: [
+                  Expanded(child: _DominoFace(value: left)),
+                  divider,
+                  Expanded(child: _DominoFace(value: right)),
+                ],
+              )
+            : Column(
+                children: [
+                  Expanded(child: _DominoFace(value: left)),
+                  divider,
+                  Expanded(child: _DominoFace(value: right)),
+                ],
+              ),
+      ),
     );
   }
 }
@@ -1270,9 +1331,19 @@ class _DominoFacePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if (value == 0) return;
-    final pip = Paint()..color = const Color(0xFF3A2E1A);
     final w = size.width, h = size.height;
-    final r = math.min(w, h) * 0.11;
+    final r = math.min(w, h) * 0.115;
+    // نقاط محفورة: لون مميز لكل رقم + ظل داخلي علوي وحافة ضوء سفلية
+    const inks = [
+      Color(0xFF1F2937),
+      Color(0xFF1D4ED8), // 1
+      Color(0xFF15803D), // 2
+      Color(0xFFB91C1C), // 3
+      Color(0xFF7E22CE), // 4
+      Color(0xFFC2410C), // 5
+      Color(0xFF0F172A), // 6
+    ];
+    final ink = inks[value.clamp(0, 6)];
 
     Offset at(double fx, double fy) => Offset(w * fx, h * fy);
     final spots = <Offset>[
@@ -1288,8 +1359,19 @@ class _DominoFacePainter extends CustomPainter {
       if (value == 5) at(0.5, 0.5),
       if (value == 6) ...[at(0.28, 0.5), at(0.72, 0.5)],
     ];
+    final rim = Paint()..color = Colors.white.withOpacity(0.85);
     for (final s in spots) {
-      canvas.drawCircle(s, r, pip);
+      canvas.drawCircle(s + Offset(0, r * 0.22), r, rim);
+      canvas.drawCircle(
+        s,
+        r,
+        Paint()
+          ..shader = RadialGradient(
+            center: const Alignment(0, 0.45),
+            radius: 0.9,
+            colors: [Color.lerp(ink, Colors.white, 0.18)!, ink],
+          ).createShader(Rect.fromCircle(center: s, radius: r)),
+      );
     }
   }
 

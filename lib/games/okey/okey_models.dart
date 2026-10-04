@@ -12,13 +12,13 @@ extension OkeyTileColorExtension on OkeyTileColor {
   Color get color {
     switch (this) {
       case OkeyTileColor.red:
-        return const Color(0xFFBE123C); // قرمزي عميق
+        return const Color(0xFFF03E3E); // أحمر زاهٍ
       case OkeyTileColor.yellow:
-        return const Color(0xFFC2410C); // كهرمان محروق — مقروء على العاج
+        return const Color(0xFFF2A900); // أصفر ذهبي واضح — لا يشبه الأحمر
       case OkeyTileColor.blue:
-        return const Color(0xFF1D4ED8); // أزرق ملكي عميق
+        return const Color(0xFF2B7FFF); // أزرق سماوي زاهٍ
       case OkeyTileColor.black:
-        return const Color(0xFF1C1917); // فحمي دافئ
+        return const Color(0xFF2D2D33); // أسود فحمي
     }
   }
 
@@ -190,9 +190,77 @@ class OkeyGroup {
     this.pending = false,
   });
 
-  int get points => tiles.fold(0, (sum, t) => sum + t.value);
+  /// النقاط بالقيمة التي يمثّلها كل حجر — الأوكي يُحتسب بقيمة موضعه
+  /// في السلسلة أو بقيمة المجموعة، لا بالرقم المطبوع عليه
+  int get points => okeyMeldPoints(tiles, isRun);
 
   @override
   String toString() =>
       '${isRun ? "Run" : "Set"}: ${tiles.map((t) => t.value).toList()}';
+}
+
+/// بداية سلسلة صحيحة موضعياً (قيمة أول خانة)، أو null إن لم تصح.
+/// كل حجر غير أوكي يجب أن يساوي البداية + موضعه بالضبط — الأوكي يملأ
+/// موضعه فقط (5-أوكي-9 مرفوضة). نفس اللون، ويُسمح بالتفاف 12-13-1
+/// كآخر حجر فقط (القيمة 14 تمثّل الواحد بعد 13).
+int? okeyRunStart(List<OkeyTile> tiles) {
+  if (tiles.length < 3) return null;
+  final firstIdx = tiles.indexWhere((t) => !t.isRealOkey);
+  if (firstIdx == -1) return 1; // كلّها أوكي
+  final color = tiles[firstIdx].color;
+  if (tiles.any((t) => !t.isRealOkey && t.color != color)) return null;
+
+  bool fits(int start) {
+    if (start < 1) return false;
+    final end = start + tiles.length - 1;
+    if (end > 14) return false;
+    for (var k = 0; k < tiles.length; k++) {
+      final t = tiles[k];
+      if (t.isRealOkey) continue;
+      final e = start + k;
+      if (e == 14) {
+        if (t.value != 1) return false;
+      } else if (t.value != e) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  final v0 = tiles[firstIdx].value;
+  final s1 = v0 - firstIdx;
+  if (fits(s1)) return s1;
+  if (v0 == 1) {
+    final s2 = 14 - firstIdx;
+    if (fits(s2)) return s2;
+  }
+  return null;
+}
+
+/// قيمة المجموعة (Set) من أول حجر غير أوكي، أو 0 إن كانت كلّها أوكي
+int okeySetValue(List<OkeyTile> tiles) {
+  for (final t in tiles) {
+    if (!t.isRealOkey) return t.value;
+  }
+  return 0;
+}
+
+/// مجموع نقاط بير بالقيم التي يمثّلها كل حجر (الأوكي بقيمة موضعه)
+int okeyMeldPoints(List<OkeyTile> tiles, bool isRun) {
+  if (tiles.isEmpty) return 0;
+  if (isRun) {
+    final start = okeyRunStart(tiles);
+    if (start != null) {
+      var sum = 0;
+      for (var k = 0; k < tiles.length; k++) {
+        final v = start + k;
+        sum += v == 14 ? 1 : v;
+      }
+      return sum;
+    }
+  } else {
+    final v = okeySetValue(tiles);
+    if (v != 0) return v * tiles.length;
+  }
+  return tiles.fold(0, (sum, t) => sum + t.value);
 }

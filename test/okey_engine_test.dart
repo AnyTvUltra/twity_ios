@@ -11,6 +11,80 @@ OkeyTile t(int id, OkeyTileColor c, int v,
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  group('صحة السلاسل والبيرات', () {
+    const r = OkeyTileColor.red;
+    test('أحمر 8-9-10 سلسلة صحيحة، و12-13-1 صحيحة', () {
+      expect(okeyRunStart([t(1, r, 8), t(2, r, 9), t(3, r, 10)]), 8);
+      expect(okeyRunStart([t(1, r, 12), t(2, r, 13), t(3, r, 1)]), 12);
+    });
+    test('الأوكي يملأ موضعه فقط: 5-أوكي-7 صحيحة و5-أوكي-9 مرفوضة', () {
+      final ok = t(9, OkeyTileColor.blue, 3, real: true);
+      expect(okeyRunStart([t(1, r, 5), ok, t(2, r, 7)]), 5);
+      expect(okeyRunStart([t(1, r, 5), ok, t(2, r, 9)]), isNull);
+    });
+    test('ألوان مختلطة أو التفاف 13-1-2 مرفوض', () {
+      expect(
+          okeyRunStart(
+              [t(1, r, 8), t(2, OkeyTileColor.yellow, 9), t(3, r, 10)]),
+          isNull);
+      expect(okeyRunStart([t(1, r, 13), t(2, r, 1), t(3, r, 2)]), isNull);
+    });
+    test('نقاط البير تحسب الأوكي بقيمة موضعه', () {
+      final ok = t(9, OkeyTileColor.blue, 3, real: true);
+      expect(okeyMeldPoints([t(1, r, 5), t(2, r, 6), ok], true), 18);
+      expect(
+          okeyMeldPoints([t(1, r, 7), t(2, OkeyTileColor.blue, 7), ok], false),
+          21);
+    });
+  });
+
+  group('أخذ الجوكر من البير', () {
+    test('الحجر الممثَّل يحلّ مكان الأوكي والأوكي ينتقل للرف', () {
+      final e = OkeyEngine();
+      e.initGame();
+      final p = e.players[0];
+      p.hasOpened = true;
+      e.turnPhase = OkeyTurnPhase.awaitingDiscard;
+      final rack = p.rackTiles;
+      for (int i = 0; i < 28; i++) {
+        rack[i] = null;
+      }
+      rack[0] = t(1, OkeyTileColor.red, 6);
+      final ok = t(9, OkeyTileColor.blue, 3, real: true);
+      e.tableMelds.add(OkeyGroup(
+        tiles: [t(2, OkeyTileColor.red, 5), ok, t(3, OkeyTileColor.red, 7)],
+        isRun: true,
+        ownerIndex: 1,
+      ));
+      expect(e.swapJokerFromMeld(0, 0), true);
+      expect(identical(rack[0], ok), true);
+      expect(e.tableMelds[0].tiles[1].value, 6);
+      e.dispose();
+    });
+    test('حجر لا يمثّل الأوكي لا يأخذه', () {
+      final e = OkeyEngine();
+      e.initGame();
+      final p = e.players[0];
+      p.hasOpened = true;
+      final rack = p.rackTiles;
+      for (int i = 0; i < 28; i++) {
+        rack[i] = null;
+      }
+      rack[0] = t(1, OkeyTileColor.red, 8);
+      e.tableMelds.add(OkeyGroup(
+        tiles: [
+          t(2, OkeyTileColor.red, 5),
+          t(9, OkeyTileColor.blue, 3, real: true),
+          t(3, OkeyTileColor.red, 7)
+        ],
+        isRun: true,
+        ownerIndex: 1,
+      ));
+      expect(e.swapJokerFromMeld(0, 0), false);
+      e.dispose();
+    });
+  });
+
   group('OkeyEngine — فجوات الرف بعد الرمي', () {
     test('رمي حجر من الصف العلوي يترك فجوة ولا يدمج المجموعات', () {
       final e = OkeyEngine();

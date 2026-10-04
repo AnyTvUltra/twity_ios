@@ -162,13 +162,14 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   static const _roomRackRightF = Rect.fromLTWH(0.670, 0.320, 0.075, 0.300);
   // مناطق نزول البيرات على السجادة — أمام حامل كل لاعب، كبيرة كفاية
   // لتظهر الأحجار بمقاس مقروء
-  static const _roomMeldMineF = Rect.fromLTWH(0.335, 0.455, 0.330, 0.095);
-  static const _roomMeldTopF = Rect.fromLTWH(0.360, 0.238, 0.280, 0.090);
-  static const _roomMeldLeftF = Rect.fromLTWH(0.298, 0.285, 0.088, 0.190);
-  static const _roomMeldRightF = Rect.fromLTWH(0.616, 0.285, 0.088, 0.190);
+  // المناطق الأربع لا تتقاطع مع مركز الرزمة/المؤشر/الكومة (_roomCenterF)
+  static const _roomMeldMineF = Rect.fromLTWH(0.320, 0.462, 0.360, 0.090);
+  static const _roomMeldTopF = Rect.fromLTWH(0.345, 0.240, 0.310, 0.062);
+  static const _roomMeldLeftF = Rect.fromLTWH(0.300, 0.305, 0.108, 0.155);
+  static const _roomMeldRightF = Rect.fromLTWH(0.592, 0.305, 0.108, 0.155);
   // مركز السجادة — الرزمة والمؤشر وكومة المرميات (ارتفاعه يكفي لتظهر
   // الأحجار بمقاس مقروء بلا أن يضغطها الـFittedBox)
-  static const _roomCenterF = Rect.fromLTWH(0.325, 0.305, 0.350, 0.165);
+  static const _roomCenterF = Rect.fromLTWH(0.410, 0.300, 0.180, 0.160);
   // حاشية التقاط هدف الرف حول منطقة الاستكانة — تلتقط الإفلات السريع
   // المتجاوز لحدودها (الإصبع يسبق الحجر المرئي) فيقع على أقرب خانة.
   // الحاشية السفلية أوسع بكثير: الحجر المرئي يطفو فوق الإصبع فيكون
@@ -1427,16 +1428,27 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         _safePadR = pad.right / s;
         _safePadT = pad.top / s;
         _safePadB = pad.bottom / s;
+        // OverflowBox: اللوحة المنطقية تُبنى بمقاسها الحقيقي sw×sh ثم تُكبَّر
+        // بمقدار s فتطابق الشاشة تماماً. بدونه كانت القيود المحكمة تفرض
+        // مقاس الشاشة على اللوحة قبل التكبير، فتخرج العناصر المثبتة يميناً
+        // وأسفل (زر السماعة، الـdock، زر الفوز) خارج الشاشة بمقدار (s-1)
         return SizedBox.expand(
-          child: Transform.scale(
-            scale: s,
+          child: OverflowBox(
             alignment: Alignment.topLeft,
-            child: SizedBox(
-              key: _sceneKey,
-              width: sw,
-              height: sh,
-              child: _buildScene(
-                  context, isHumanTurn, minutes, seconds, s, sw, sh),
+            minWidth: sw,
+            maxWidth: sw,
+            minHeight: sh,
+            maxHeight: sh,
+            child: Transform.scale(
+              scale: s,
+              alignment: Alignment.topLeft,
+              child: SizedBox(
+                key: _sceneKey,
+                width: sw,
+                height: sh,
+                child: _buildScene(
+                    context, isHumanTurn, minutes, seconds, s, sw, sh),
+              ),
             ),
           ),
         );
@@ -1850,9 +1862,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         ),
         Positioned(
           top: 7 + _safePadT,
-          // مسحوب عن حافة اليمين — أبعد قليلاً حتى لا يُقصّ آخر زر
-          // (زر السماعة) بمنحنى الشاشة أو بحواف الجهاز المدوّر
-          right: 44 + _safePadR,
+          // مسحوب عن حافة اليمين بمقدار حاشية الجهاز + هامش مريح
+          right: 16 + _safePadR,
           child: AnimatedBuilder(
             animation: Listenable.merge([VoiceService(), RadioService()]),
             builder: (context, _) => Row(
@@ -2289,7 +2300,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           ? (isMine && _humanHasReadyPer
               ? _myMeldHint()
               : const SizedBox.shrink())
-          : _meldsOnTable(melds, zone, vertical: seat == 1 || seat == 3);
+          : _meldsOnTable(melds, zone, seat: seat);
       out.add(Positioned.fromRect(
         rect: zone,
         child: isMine ? _myMeldDropZone(content) : content,
@@ -2372,40 +2383,76 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     );
   }
 
-  /// مجموعة بيرات لاعب واحد ممدّدة على السطح بمنظور ثري دي —
-  /// للمقاعد الجانبية يكون المحور الطويل هو الارتفاع (المحتوى يُدار 90°)
+  static const double _meldTileW = 30, _meldTileH = 36;
+
+  /// بيرات لاعب واحد مصفوفة بأناقة داخل منطقته فقط — لا تتجاوزها أبداً
+  /// (FittedBox يقيس الحجم الحقيقي للمحتوى ويصغّره ليتسع، فلا تغطي
+  /// الرزمة أو المؤشر أو الكومة). الجانبيان: عمود صفوف مرصوف نحو
+  /// صاحبه. المقابل وأنا: صفوف ملتفّة متوسطة.
   Widget _meldsOnTable(List<MapEntry<int, OkeyGroup>> melds, Rect zone,
-      {required bool vertical}) {
+      {required int seat}) {
+    final side = seat == 1 || seat == 3;
+    final rows = [for (final m in melds) _meld3D(m.key, m.value)];
+    final Widget body;
+    final Alignment align;
+    if (side) {
+      body = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment:
+            seat == 3 ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+        children: [
+          for (var i = 0; i < rows.length; i++) ...[
+            if (i > 0) const SizedBox(height: 6),
+            rows[i],
+          ],
+        ],
+      );
+      align = seat == 3 ? Alignment.centerLeft : Alignment.centerRight;
+    } else {
+      // عرض الالتفاف = أعرض بير أو عرض المنطقة بنسبتها — أيهما أكبر،
+      // فلا يتجاوز بير واحد حدود الـWrap ويفيض فوق ما حوله
+      final widest = melds.fold<double>(
+          0,
+          (w, m) =>
+              math.max(w, m.value.tiles.length * (_meldTileW + 1.4) + 10));
+      final wrapW = math.max(widest, zone.width * 1.3);
+      body = SizedBox(
+        width: wrapW,
+        child: Wrap(
+          alignment: WrapAlignment.center,
+          runAlignment: WrapAlignment.center,
+          spacing: 10,
+          runSpacing: 6,
+          children: rows,
+        ),
+      );
+      align = seat == 2 ? Alignment.bottomCenter : Alignment.topCenter;
+    }
     return FittedBox(
       fit: BoxFit.scaleDown,
-      child: SizedBox(
-        width: (vertical ? zone.height : zone.width) * 1.25,
-        child: Transform(
-          alignment: Alignment.center,
-          // ميلان خفيف للخلف: الأحجار تبدو مستلقية بلا سحق للوجه
-          transform: Matrix4.identity()
-            ..setEntry(3, 2, 0.0018)
-            ..rotateX(0.45),
-          child: Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 6,
-            runSpacing: 5,
-            children: [for (final m in melds) _meld3D(m.key, m.value)],
-          ),
-        ),
+      alignment: align,
+      child: Transform(
+        alignment: Alignment.center,
+        // ميلان خفيف للخلف: الأحجار تبدو مستلقية على الطاولة
+        transform: Matrix4.identity()
+          ..setEntry(3, 2, 0.0015)
+          ..rotateX(0.32),
+        child: body,
       ),
     );
   }
 
   /// بير واحد: أحجار متلاصقة بسماكة وظل، وتقبل صرف حجر عليها
   Widget _meld3D(int meldIndex, OkeyGroup meld) {
-    final isMine = meld.ownerIndex == 0;
-    final ownerColor =
-        isMine ? const Color(0xFF4ADE80) : const Color(0xFF38BDF8);
     return DragTarget<int>(
       onWillAcceptWithDetails: (details) => OkeyDrag.isRackTile(details.data),
       onAcceptWithDetails: (details) {
-        // جرّب الصرف على البير أولاً (المحرك يتحقق: الفتح/الدور/صحة الحجر)
+        // الحجر يمثّل الجوكر في هذا البير؟ ضعه مكانه وخذ الجوكر لرفّك
+        if (_engine.swapJokerFromMeld(details.data, meldIndex)) {
+          AppHaptics.medium();
+          return;
+        }
+        // وإلا جرّب الصرف على البير (المحرك يتحقق: الفتح/الدور/صحة الحجر)
         if (_engine.layTileOnMeld(details.data, meldIndex)) {
           AppHaptics.light();
           return;
@@ -2424,75 +2471,58 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       },
       builder: (context, candidateData, rejectedData) {
         final hovering = candidateData.isNotEmpty;
-        final glow = hovering
+        // الأحجار مستلقية على الطاولة مباشرة بلا صندوق داكن — إطار خفيف
+        // يظهر فقط عند التحويم (أخضر) أو للبير المعلّق (ذهبي)
+        final outline = hovering
             ? const Color(0xFF6EE7B7)
             : meld.pending
                 ? const Color(0xFFFBBF24)
-                : ownerColor;
+                : null;
         return AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.fromLTRB(2, 2, 2, 4),
+          padding: const EdgeInsets.all(2),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(hovering ? 0.10 : 0.22),
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(5),
+            color: hovering ? const Color(0x2234D399) : Colors.transparent,
             border: Border.all(
-                color: glow.withOpacity(hovering || meld.pending ? 0.9 : 0.35),
-                width: hovering ? 1.4 : 0.8),
-            boxShadow: [
-              // ظل الأحجار على سطح الطاولة
-              BoxShadow(
-                color: Colors.black.withOpacity(0.55),
-                blurRadius: 6,
-                offset: const Offset(0, 4),
-              ),
-              if (hovering || meld.pending)
-                BoxShadow(color: glow.withOpacity(0.35), blurRadius: 10),
-            ],
+                color: outline?.withOpacity(0.85) ?? Colors.transparent,
+                width: 1.2),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // شارة مالك البير — تبيّن لمن يتبع البير النازل
-              Container(
-                margin: const EdgeInsets.only(right: 3),
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                decoration: BoxDecoration(
-                  color: ownerColor.withOpacity(0.22),
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(
-                      color: ownerColor.withOpacity(0.5), width: 0.7),
+          child: Container(
+            // ظل مشترك ناعم تحت صف الأحجار كأنها قطعة واحدة على القماش
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(4),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.38),
+                  blurRadius: 5,
+                  offset: const Offset(0, 3),
                 ),
-                child: Text(
-                  isMine ? 'أنت'.tr : _engine.players[meld.ownerIndex].name,
-                  style: TextStyle(
-                      color: ownerColor,
-                      fontSize: 7.5,
-                      fontWeight: FontWeight.w900),
-                ),
-              ),
-              for (final tile in meld.tiles)
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 0.7),
-                  // سماكة الحجر: حافة سفلية داكنة تحت الوجه
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(3),
-                    boxShadow: const [
-                      BoxShadow(
-                          color: Color(0xFF8C7A55),
-                          offset: Offset(0, 2.4),
-                          blurRadius: 0),
-                      BoxShadow(
-                          color: Color(0x88000000),
-                          offset: Offset(0, 3.4),
-                          blurRadius: 2),
-                    ],
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final tile in meld.tiles)
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 0.7),
+                    // سماكة الحجر: حافة سفلية عاجية داكنة تحت الوجه
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(4),
+                      boxShadow: const [
+                        BoxShadow(
+                            color: Color(0xFFB9A57A),
+                            offset: Offset(0, 2.2),
+                            blurRadius: 0),
+                      ],
+                    ),
+                    child: OkeyTileWidget(
+                        tile: tile,
+                        width: _roomScene ? _meldTileW : 26,
+                        height: _roomScene ? _meldTileH : 32),
                   ),
-                  child: OkeyTileWidget(
-                      tile: tile,
-                      width: _roomScene ? 33 : 26,
-                      height: _roomScene ? 40 : 32),
-                ),
-            ],
+              ],
+            ),
           ),
         );
       },
@@ -3412,7 +3442,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         _engine.players[topOwner].playStyle == OkeyPlayStyle.full;
     final total = _engine.discardPiles.fold<int>(0, (s, p) => s + p.length);
 
-    final w = _roomScene ? 200.0 : 140.0;
+    final w = _roomScene ? 96.0 : 140.0;
     final h = _roomScene ? 78.0 : 92.0;
     final tw = _roomScene ? 34.0 : 24.0;
     final th = _roomScene ? 40.0 : 30.0;

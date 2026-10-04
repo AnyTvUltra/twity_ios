@@ -1141,18 +1141,13 @@ class OkeyEngine extends ChangeNotifier {
     final first = rem.first;
     final rest = rem.sublist(1);
 
-    // ١) صرفه على بير موجود على الطاولة
-    if (first.isRealOkey) {
-      // الأوكي يمثّل أي حجر — يُصرف على أي بير بلا تغيير حدوده
-      if (sim.isNotEmpty && _searchPlaceAll(rest, sim)) return true;
-    } else {
-      for (final m in sim) {
-        final snap = m.snapshot();
-        if (m.fits(first)) {
-          m.apply(first);
-          if (_searchPlaceAll(rest, sim)) return true;
-          m.restore(snap);
-        }
+    // ١) صرفه على بير موجود على الطاولة (الأوكي يمدّ أي طرف متاح)
+    for (final m in sim) {
+      final snap = m.snapshot();
+      if (m.fits(first)) {
+        m.apply(first);
+        if (_searchPlaceAll(rest, sim)) return true;
+        m.restore(snap);
       }
     }
 
@@ -1197,7 +1192,7 @@ class OkeyEngine extends ChangeNotifier {
   int get livePoints =>
       meldPointsFor(0) +
       rackReadyGroups.fold(
-          0, (sum, g) => sum + g.fold(0, (s, t) => s + t.value));
+          0, (sum, g) => sum + okeyMeldPoints(g, _isValidRun(g)));
 
   /// عدد البيرات: المنزولة + الجاهزة على الرف
   int get liveGroupCount =>
@@ -1242,18 +1237,12 @@ class OkeyEngine extends ChangeNotifier {
     if (tile.isRealOkey) return true; // الأوكي يمثّل أي حجر
 
     if (meld.isRun) {
-      // سلسلة: نفس اللون ويمدّ الطرف الأدنى أو الأعلى
+      // سلسلة: نفس اللون ويمدّ الطرف الأدنى أو الأعلى — الحدود الفعلية
+      // تُحسب بمواضع الأوكي داخلها (5-6-أوكي تنتهي عند 7 لا 6)
       final nonOkey = meld.tiles.where((t) => !t.isRealOkey).toList();
       if (nonOkey.isEmpty) return true;
       if (tile.color != nonOkey.first.color) return false;
-      final values = nonOkey.map((t) => t.value).toList()..sort();
-      final lo = values.first;
-      final hi = values.last;
-      if (tile.value == lo - 1) return true;
-      if (tile.value == hi + 1) return true;
-      // التفاف 12-13-1: الواحد يمدّ سلسلة تنتهي بـ13
-      if (hi == 13 && tile.value == 1 && !values.contains(1)) return true;
-      return false;
+      return _runLayoffSide(meld.tiles, tile.value) != 0;
     }
 
     // مجموعة (Set): نفس القيمة، لون غير مكرر، وبحد أقصى 4 أحجار
@@ -1261,6 +1250,98 @@ class OkeyEngine extends ChangeNotifier {
     final nonOkey = meld.tiles.where((t) => !t.isRealOkey).toList();
     if (nonOkey.isNotEmpty && tile.value != nonOkey.first.value) return false;
     return !nonOkey.any((t) => t.color == tile.color);
+  }
+
+  /// في أي طرف يُصرف الرقم على السلسلة: -1 = قبل البداية، 1 = بعد
+  /// النهاية، 0 = لا يصرف. الحدود محسوبة بمواضع الأوكي الفعلية
+  int _runLayoffSide(List<OkeyTile> tiles, int value) {
+    final start = okeyRunStart(tiles);
+    if (start == null) return 0;
+    final end = start + tiles.length - 1;
+    if (start > 1 && value == start - 1) return -1;
+    if (end < 13 && value == end + 1) return 1;
+    if (end == 13 && value == 1) return 1; // التفاف 12-13-1
+    return 0;
+  }
+
+  /// إدراج حجر مصروف في موضعه الصحيح داخل البير — السلاسل تبقى
+  /// مرتبة (الطرف الأدنى أولاً) فلا يظهر حجر 4 بعد 8 كما كان عند البوت
+  void _insertIntoMeld(OkeyGroup meld, OkeyTile tile) {
+    if (!meld.isRun) {
+      meld.tiles.add(tile);
+      return;
+    }
+    if (tile.isRealOkey) {
+      // الأوكي يمدّ النهاية إن أمكن وإلا البداية
+      final start = okeyRunStart(meld.tiles) ?? 1;
+      final end = start + meld.tiles.length - 1;
+      if (end < 14) {
+        meld.tiles.add(tile);
+      } else {
+        meld.tiles.insert(0, tile);
+      }
+      return;
+    }
+    if (_runLayoffSide(meld.tiles, tile.value) == -1) {
+      meld.tiles.insert(0, tile);
+    } else {
+      meld.tiles.add(tile);
+    }
+  }
+
+  /// موضع الأوكي في البير الذي يمثّله هذا الحجر بالضبط، أو -1.
+  /// سلسلة: الأوكي في موضع قيمته = رقم الحجر وبنفس اللون.
+  /// مجموعة: الحجر بقيمة المجموعة ولون غير موجود فيها.
+  int jokerSlotFor(OkeyGroup meld, OkeyTile tile) {
+    if (tile.isRealOkey) return -1;
+    if (!meld.tiles.any((t) => t.isRealOkey)) return -1;
+    if (meld.isRun) {
+      final start = okeyRunStart(meld.tiles);
+      if (start == null) return -1;
+      final color =
+          meld.tiles.firstWhere((t) => !t.isRealOkey, orElse: () => tile).color;
+      if (tile.color != color) return -1;
+      for (var k = 0; k < meld.tiles.length; k++) {
+        if (!meld.tiles[k].isRealOkey) continue;
+        final v = start + k;
+        if ((v == 14 ? 1 : v) == tile.value) return k;
+      }
+      return -1;
+    }
+    final value = okeySetValue(meld.tiles);
+    if (value != 0 && tile.value != value) return -1;
+    if (meld.tiles.any((t) => !t.isRealOkey && t.color == tile.color)) {
+      return -1;
+    }
+    return meld.tiles.indexWhere((t) => t.isRealOkey);
+  }
+
+  /// أخذ الجوكر من بير على الطاولة: تضع الحجر الحقيقي الذي يمثّله الأوكي
+  /// مكانه وتأخذ الأوكي إلى رفّك. يشترط دورك وأن تكون فاتحاً (أو البير
+  /// بيرك المعلّق) — مثل الصرف تماماً
+  bool swapJokerFromMeld(int slotIndex, int meldIndex) {
+    final human = players[0];
+    if (currentTurnIndex != 0 || !humanCanLayMelds) return false;
+    if (slotIndex < 0 ||
+        slotIndex >= 28 ||
+        meldIndex < 0 ||
+        meldIndex >= tableMelds.length) return false;
+    final tile = human.rackTiles[slotIndex];
+    if (tile == null) return false;
+    final meld = tableMelds[meldIndex];
+    final myPending = meld.ownerIndex == 0 && meld.pending;
+    if (!human.hasOpened && !myPending) return false;
+    final k = jokerSlotFor(meld, tile);
+    if (k == -1) return false;
+
+    final joker = meld.tiles[k];
+    meld.tiles[k] = tile;
+    human.rackTiles[slotIndex] = joker;
+    selectedTileIndex = slotIndex;
+    OkeyAudio.playTilePickup();
+    onNotice?.call('🃏 أخذت الجوكر ووضعت حجرك مكانه'.tr);
+    notifyListeners();
+    return true;
   }
 
   /// صرف حجر من رف اللاعب البشري على بير نازل على الطاولة
@@ -1283,30 +1364,7 @@ class OkeyEngine extends ChangeNotifier {
     if (!canLayOffTile(tile, meld)) return false;
 
     human.rackTiles[slotIndex] = null;
-
-    // الإدراج في الموضع الصحيح للعرض المرتب
-    if (meld.isRun && !tile.isRealOkey) {
-      final values = meld.tiles
-          .where((t) => !t.isRealOkey)
-          .map((t) => t.value)
-          .toList()
-        ..sort();
-      if (tile.value == 1 && values.isNotEmpty && values.last == 13) {
-        meld.tiles.add(tile); // التفاف 12-13-1
-      } else {
-        int pos = meld.tiles.length;
-        for (int i = 0; i < meld.tiles.length; i++) {
-          final t2 = meld.tiles[i];
-          if (!t2.isRealOkey && t2.value > tile.value) {
-            pos = i;
-            break;
-          }
-        }
-        meld.tiles.insert(pos, tile);
-      }
-    } else {
-      meld.tiles.add(tile);
-    }
+    _insertIntoMeld(meld, tile);
 
     selectedTileIndex = null;
     OkeyAudio.playTileDiscard();
@@ -1455,12 +1513,21 @@ class OkeyEngine extends ChangeNotifier {
         jokersUsed++;
       }
     }
-    return melds;
+    // حارس أخير: لا ينزل البوت إلا بيراً صحيحاً بنفس قواعد اللاعب
+    return melds.where((m) {
+      final test = [
+        ...m.tiles,
+        for (var j = 0; j < m.jokers; j++) realOkeySample,
+      ];
+      return m.isRun ? _isValidRun(test) : _isValidSet(test);
+    }).toList();
   }
 
   /// نقاط مجموعة بوت للافتتاح (الأوكي المستخدم يُحتسب 10)
-  int _botMeldPoints(_BotMeld m) =>
-      m.tiles.fold(0, (s, t) => s + t.value) + m.jokers * 10;
+  int _botMeldPoints(_BotMeld m) => okeyMeldPoints([
+        ...m.tiles,
+        for (var j = 0; j < m.jokers; j++) realOkeySample,
+      ], m.isRun);
 
   /// إنزال مجموعة بوت واحدة على الطاولة (يُرفق أوكي حقيقي إن استُخدم)
   void _layBotMeld(int playerIndex, _BotMeld meld) {
@@ -1528,7 +1595,7 @@ class OkeyEngine extends ChangeNotifier {
       for (final meld in tableMelds) {
         if (canLayOffTile(tile, meld)) {
           bot.rackTiles[s] = null;
-          meld.tiles.add(tile);
+          _insertIntoMeld(meld, tile);
           laidOff++;
           laid = true;
           break;
@@ -1780,29 +1847,10 @@ class OkeyEngine extends ChangeNotifier {
     return highlighted;
   }
 
-  bool _isValidRun(List<OkeyTile> tiles) {
-    if (tiles.length < 3) return false;
-    // التحقق أن جميع الأحجار من نفس اللون ومتتالية
-    final nonJokers = tiles.where((t) => !t.isRealOkey).toList();
-    if (nonJokers.isEmpty) return true;
-
-    final color = nonJokers.first.color;
-    for (final t in nonJokers) {
-      if (t.color != color) return false;
-    }
-
-    for (int k = 0; k < tiles.length - 1; k++) {
-      final current = tiles[k];
-      final next = tiles[k + 1];
-      if (!current.isRealOkey && !next.isRealOkey) {
-        if (next.value != current.value + 1 &&
-            !(current.value == 13 && next.value == 1)) {
-          return false;
-        }
-      }
-    }
-    return true;
-  }
+  /// سلسلة صحيحة: نفس اللون وكل حجر في موضعه الصحيح بالضبط — الأوكي
+  /// يملأ فجوة واحدة بموضعه فقط (كانت 5-أوكي-9 تُقبل خطأً لأن الفحص
+  /// كان بين الجيران غير الأوكي فقط)
+  bool _isValidRun(List<OkeyTile> tiles) => okeyRunStart(tiles) != null;
 
   bool _isValidSet(List<OkeyTile> tiles) {
     if (tiles.length < 3 || tiles.length > 4) return false;
@@ -1851,33 +1899,40 @@ class _MeldBound {
 
   factory _MeldBound.of(OkeyGroup g) {
     final b = _MeldBound._(isRun: g.isRun, count: g.tiles.length);
+    if (g.isRun) {
+      // الحدود الفعلية بمواضع الأوكي — hi=14 تعني انتهت بالتفاف 13-1
+      final start = okeyRunStart(g.tiles) ?? 1;
+      b.lo = start;
+      b.hi = start + g.tiles.length - 1;
+      b.hasOne = b.hi == 14;
+      for (final t in g.tiles) {
+        if (!t.isRealOkey) {
+          b.color = t.color;
+          break;
+        }
+      }
+      return b;
+    }
     for (final t in g.tiles) {
       if (t.isRealOkey) continue;
-      if (g.isRun) {
-        b.color ??= t.color;
-        if (t.value < b.lo) b.lo = t.value;
-        if (t.value > b.hi) b.hi = t.value;
-        if (t.value == 1) b.hasOne = true;
-      } else {
-        b.value = t.value;
-        b.colors.add(t.color);
-      }
+      b.value = t.value;
+      b.colors.add(t.color);
     }
-    if (b.lo == 14) b.lo = 0; // بير كلّه أوكي — لا حدود فعلية
     return b;
   }
 
   /// هل يصرف الحجر على هذا البير — مرآة canLayOffTile (فحص فقط بلا تعديل)
   bool fits(OkeyTile t) {
-    if (t.isRealOkey) return true;
     if (isRun) {
-      if (color == null) return true; // بير كلّه أوكي — يقبل أي لون
-      if (t.color != color) return false;
-      if (t.value == lo - 1 || t.value == hi + 1) return true;
-      if (hi == 13 && t.value == 1 && !hasOne) return true;
+      if (t.isRealOkey) return lo > 1 || hi < 14;
+      if (color != null && t.color != color) return false;
+      if (lo > 1 && t.value == lo - 1) return true;
+      if (hi < 13 && t.value == hi + 1) return true;
+      if (hi == 13 && t.value == 1) return true;
       return false;
     }
     if (count >= 4) return false;
+    if (t.isRealOkey) return true;
     if (value != 0 && t.value != value) return false;
     return !colors.contains(t.color);
   }
@@ -1886,16 +1941,30 @@ class _MeldBound {
       (lo, hi, hasOne, value, count, color, Set.of(colors));
 
   void apply(OkeyTile t) {
+    if (isRun) {
+      if (t.isRealOkey) {
+        if (hi < 14) {
+          hi++;
+        } else {
+          lo--;
+        }
+      } else {
+        color ??= t.color;
+        if (lo > 1 && t.value == lo - 1) {
+          lo--;
+        } else {
+          hi++; // يمدّ النهاية (بما فيها 13→1 فتصبح 14)
+        }
+      }
+      hasOne = hi == 14;
+      count++;
+      return;
+    }
     if (t.isRealOkey) {
       count++;
       return;
     }
-    if (isRun) {
-      color ??= t.color;
-      if (t.value < lo) lo = t.value;
-      if (t.value > hi) hi = t.value;
-      if (t.value == 1) hasOne = true;
-    } else {
+    {
       if (value == 0) value = t.value;
       colors.add(t.color);
     }
