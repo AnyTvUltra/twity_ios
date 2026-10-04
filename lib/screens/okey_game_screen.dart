@@ -164,13 +164,14 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   // لتظهر الأحجار بمقاس مقروء
   // المناطق الأربع لا تتقاطع مع مركز الرزمة/المؤشر/الكومة (_roomCenterF)
   // مناطق أوسع تستغل سطح الطاولة كله حول المركز — الأحجار تبقى مقروءة
-  static const _roomMeldMineF = Rect.fromLTWH(0.285, 0.460, 0.430, 0.100);
-  static const _roomMeldTopF = Rect.fromLTWH(0.408, 0.245, 0.184, 0.085);
-  static const _roomMeldLeftF = Rect.fromLTWH(0.278, 0.255, 0.126, 0.200);
-  static const _roomMeldRightF = Rect.fromLTWH(0.596, 0.255, 0.126, 0.200);
+  // وحوافها الجانبية مُبعدة عن إطارات صور اللاعبين فلا تُغطّى
+  static const _roomMeldMineF = Rect.fromLTWH(0.270, 0.478, 0.460, 0.112);
+  static const _roomMeldTopF = Rect.fromLTWH(0.395, 0.230, 0.210, 0.098);
+  static const _roomMeldLeftF = Rect.fromLTWH(0.290, 0.250, 0.100, 0.205);
+  static const _roomMeldRightF = Rect.fromLTWH(0.610, 0.250, 0.100, 0.205);
   // مركز السجادة — الرزمة والمؤشر وكومة المرميات (ارتفاعه يكفي لتظهر
   // الأحجار بمقاس مقروء بلا أن يضغطها الـFittedBox)
-  static const _roomCenterF = Rect.fromLTWH(0.408, 0.335, 0.184, 0.120);
+  static const _roomCenterF = Rect.fromLTWH(0.395, 0.335, 0.210, 0.140);
   // حاشية التقاط هدف الرف حول منطقة الاستكانة — تلتقط الإفلات السريع
   // المتجاوز لحدودها (الإصبع يسبق الحجر المرئي) فيقع على أقرب خانة.
   // الحاشية السفلية أوسع بكثير: الحجر المرئي يطفو فوق الإصبع فيكون
@@ -1924,7 +1925,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         // صورة الخصم الأيسر + اسمه — على مسند كنبته الداخلي المواجه
         // للطاولة حيث يجلس اللاعب ويطل على اللعب
         Positioned(
-          left: _roomScene ? imgRect.left + imgRect.width * 0.263 - 25 : 10,
+          left: _roomScene ? imgRect.left + imgRect.width * 0.252 - 25 : 10,
           top: _roomScene
               ? imgRect.top + imgRect.height * 0.370 - 22
               : tbl.center.dy - 24,
@@ -1932,7 +1933,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         ),
         // صورة الخصم الأيمن + اسمه — على مسند كنبته الداخلي المواجه للطاولة
         Positioned(
-          left: _roomScene ? imgRect.left + imgRect.width * 0.737 - 25 : null,
+          left: _roomScene ? imgRect.left + imgRect.width * 0.748 - 25 : null,
           right: _roomScene ? null : 10,
           top: _roomScene
               ? imgRect.top + imgRect.height * 0.355 - 22
@@ -2384,7 +2385,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     );
   }
 
-  static const double _meldTileW = 30, _meldTileH = 35;
+  static const double _meldTileW = 34, _meldTileH = 40;
 
   /// كل حجر يظهر منه 72% ويغطّيه التالي — مثل طاولات الأوكي الحقيقية؛
   /// الرقم والنقطة في الجزء الظاهر فيبقى مقروءاً والبير أقصر بكثير
@@ -3473,19 +3474,19 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         _engine.players[topOwner].playStyle == OkeyPlayStyle.full;
     final total = _engine.discardPiles.fold<int>(0, (s, p) => s + p.length);
 
-    final w = _roomScene ? 96.0 : 140.0;
-    final h = _roomScene ? 78.0 : 92.0;
-    final tw = _roomScene ? 34.0 : 24.0;
-    final th = _roomScene ? 40.0 : 30.0;
+    final w = _roomScene ? 100.0 : 140.0;
+    final h = _roomScene ? 76.0 : 92.0;
+    final tw = _roomScene ? 36.0 : 24.0;
+    final th = _roomScene ? 43.0 : 30.0;
     // مركز الكومة داخل الحيّز
     final cx = w * 0.5, cy = h * 0.52;
     // مواضع ثابتة للأحجار المقلوبة (إزاحة X، إزاحة Y، زاوية) — الكومة
     // تبقى ثابتة الشكل دائماً ولا تنكمش عند أخذ حجر منها
     const backSlots = [
-      (-11.0, 5.0, -0.28),
-      (9.0, 1.0, 0.22),
+      (-12.0, 5.0, -0.28),
+      (10.0, 1.0, 0.22),
       (-4.0, -4.0, -0.12),
-      (12.0, 9.0, 0.38),
+      (13.0, 9.0, 0.38),
       (1.0, -1.0, 0.05),
     ];
     // الكومة الزخرفية ثابتة بأحجارها الخمسة ما دام في الطاولة مرميات —
@@ -3750,8 +3751,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             ),
             child: OkeyTileWidget(
                 tile: _engine.indicatorTile,
-                width: _roomScene ? 34 : 24,
-                height: _roomScene ? 46 : 33),
+                width: _roomScene ? 36 : 24,
+                height: _roomScene ? 48 : 33),
           ),
           const SizedBox(height: 3),
           Text('مؤشر'.tr,
@@ -3855,10 +3856,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     // رزمة فارغة لكن المرميات تكفي لإعادة الخلط → السحب يبقى ممكناً
     final refillable = remaining == 0 && _engine.canRefillDeck;
     final drawable = canDraw && (remaining > 0 || refillable);
-    final layers = (remaining / 6).ceil().clamp(1, 8);
-    final w = _roomScene ? 46.0 : 30.0;
-    final h = _roomScene ? 62.0 : 41.0;
-    final step = _roomScene ? 5.0 : 3.8;
+    final layers = (remaining / 6).ceil().clamp(1, 5);
+    final w = _roomScene ? 44.0 : 30.0;
+    final h = _roomScene ? 58.0 : 41.0;
+    final step = _roomScene ? 4.5 : 3.8;
     final tower = SizedBox(
       width: w + 2,
       height: h + step * (layers - 1),

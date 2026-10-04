@@ -362,6 +362,33 @@ void main() {
       e.dispose();
     });
 
+    test('صرف آخر حجر على بير = فوز فوري بلا رمية أخيرة', () {
+      final e = OkeyEngine();
+      e.initGame();
+      final p = e.players[0];
+      p.hasOpened = true;
+      final rack = p.rackTiles;
+      for (int i = 0; i < 28; i++) {
+        rack[i] = null;
+      }
+      // حجر وحيد يمدّ سلسلة خصم — صرفه يفرغ الرف = فوز بهذا الحجر
+      rack[0] = t(1, OkeyTileColor.red, 4);
+      e.tableMelds.add(OkeyGroup(
+        tiles: [
+          t(2, OkeyTileColor.red, 5),
+          t(3, OkeyTileColor.red, 6),
+          t(4, OkeyTileColor.red, 7),
+        ],
+        isRun: true,
+        ownerIndex: 1,
+      ));
+      expect(e.layTileOnMeld(0, 0), true);
+      expect(e.gameState, OkeyGameState.win,
+          reason: 'الفوز بالحجر المصروف على البير — لا رمية أخيرة');
+      expect(e.winner, p);
+      e.dispose();
+    });
+
     test('لاعب غير فاتح لا يستطيع الصرف', () {
       final e = OkeyEngine();
       e.initGame();

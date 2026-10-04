@@ -855,7 +855,7 @@ class OkeyEngine extends ChangeNotifier {
 
       // Check if bot has winning 15 tiles (discard one to win)
       Timer(const Duration(milliseconds: 900), () {
-        if (isDisposed || currentTurnIndex == 0) return;
+        if (isDisposed || currentTurnIndex == 0 || winner != null) return;
 
         final active = bot.activeTiles;
         // Check winning hand
@@ -1384,6 +1384,13 @@ class OkeyEngine extends ChangeNotifier {
       }
     }
 
+    // الحجر المصروف أفرغ الرف كاملاً على الطاولة = فوز فوري به —
+    // الفوز يتم بآخر حجر يُصرف على بير، لا برمي حجر أخير
+    if (human.activeTiles.isEmpty) {
+      _checkEmptyRackWin(0);
+      return true;
+    }
+
     final ownerName = meld.ownerIndex == 0
         ? 'بيرك'.tr
         : 'بير {}'.trp([players[meld.ownerIndex].name]);
@@ -1396,6 +1403,30 @@ class OkeyEngine extends ChangeNotifier {
   int get remainingOpeningPoints => players[0].hasOpened
       ? 0
       : math.max(0, rules.openingPoints - meldPointsFor(0));
+
+  /// إذا أفرغ اللاعب رفّه كاملاً على الطاولة فهو فائز — الحجر الأخير
+  /// الذي نزل (مصروفاً على بير أو ضمن بير جديد) هو حجر الفوز، ولا
+  /// حاجة لرمي حجر إضافي. البيرات المعلّقة دون نقاط الافتتاح تُعاد
+  /// إلى الرف بدل إعلان الفوز
+  void _checkEmptyRackWin(int playerIndex) {
+    final p = players[playerIndex];
+    if (p.activeTiles.isNotEmpty || winner != null) return;
+    if (!p.hasOpened) {
+      final total = meldPointsFor(playerIndex);
+      if (total >= rules.openingPoints) {
+        p.hasOpened = true;
+        p.openedPoints = total;
+        for (final m in tableMelds.where((m) => m.ownerIndex == playerIndex)) {
+          m.pending = false;
+        }
+      } else {
+        _retractPendingMelds(playerIndex);
+        notifyListeners();
+        return;
+      }
+    }
+    _declareWinner(p, WinType.normal);
+  }
 
   /// إعادة الأحجار المعلّقة إلى رف اللاعب عند عدم اكتمال الافتتاح
   void _retractPendingMelds(int playerIndex) {
@@ -1575,6 +1606,7 @@ class OkeyEngine extends ChangeNotifier {
       bot.hasOpened = true;
       bot.openedPoints = total;
       onNotice?.call('🎉 {} فتح اللعب بـ {} نقطة!'.trp([bot.name, total]));
+      _checkEmptyRackWin(playerIndex); // أنزل يده كاملة = فاز بالحجر الأخير
       notifyListeners();
       return;
     }
@@ -1602,6 +1634,7 @@ class OkeyEngine extends ChangeNotifier {
         }
       }
     }
+    _checkEmptyRackWin(playerIndex); // صرف آخر حجر على بير = فوز فوري
     if (laid) notifyListeners();
   }
 
@@ -1666,6 +1699,12 @@ class OkeyEngine extends ChangeNotifier {
             'مجموعتك {} نقطة — المجموع {}/{}. أنزل المزيد قبل الرمي وإلا ستُعاد الأحجار'
                 .trp([group.points, total, rules.openingPoints]));
       }
+    }
+
+    // نزل آخر أحجار يده كاملة على الطاولة = فوز بالحجر الأخير
+    if (human.activeTiles.isEmpty) {
+      _checkEmptyRackWin(0);
+      return true;
     }
 
     notifyListeners();
