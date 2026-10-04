@@ -275,33 +275,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       cardHeight: cardHeight,
                                     ),
                                   );
+                              // صفوف من بطاقتين تُبنى من عدد الألعاب الفعلي —
+                              // بطاقة وحيدة أخيرة تتوسط. (كان مثبتاً على 7
+                              // بطاقات فانهار عند حذف لعبة: فهرس خارج القائمة)
+                              final n = GamesData.games.length;
                               return Column(
                                 children: [
-                                  Row(
-                                    children: [
-                                      card(0),
-                                      SizedBox(width: gap),
-                                      card(1),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 18),
-                                  Row(
-                                    children: [
-                                      card(2),
-                                      SizedBox(width: gap),
-                                      card(3),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 18),
-                                  Row(
-                                    children: [
-                                      card(4),
-                                      SizedBox(width: gap),
-                                      card(5),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 18),
-                                  Center(child: card(6)),
+                                  for (var i = 0; i < n; i += 2) ...[
+                                    if (i > 0) const SizedBox(height: 18),
+                                    if (i + 1 < n)
+                                      Row(
+                                        children: [
+                                          card(i),
+                                          SizedBox(width: gap),
+                                          card(i + 1),
+                                        ],
+                                      )
+                                    else
+                                      Center(child: card(i)),
+                                  ],
                                 ],
                               );
                             },
