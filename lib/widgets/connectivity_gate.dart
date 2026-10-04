@@ -32,8 +32,7 @@ class _ConnectivityGateState extends State<ConnectivityGate> {
       // المنصّة لا تدعم الإضافة (اختبارات) — نفترض الاتصال
     }
     // فحص دوري حقيقي كل 10 ثوانٍ (الواجهة قد تكون متصلة بلا إنترنت فعلي)
-    _probeTimer =
-        Timer.periodic(const Duration(seconds: 10), (_) => _check());
+    _probeTimer = Timer.periodic(const Duration(seconds: 10), (_) => _check());
   }
 
   Future<void> _check() async {

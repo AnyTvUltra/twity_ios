@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/widgets.dart';
 import 'package:game_hub/utils/haptics.dart';
@@ -66,32 +68,42 @@ class OkeyAudio {
     } catch (_) {}
   }
 
+  // أصوات حقيقية مسجّلة (Kenney Casino Audio — CC0): طقطقة قطع بلاستيكية
+  // صلبة قريبة جداً من أحجار الأوكي. عدة نسخ لكل حركة تُختار بالتناوب
+  // حتى لا تتكرر الحركات المتتالية بنفس الصوت حرفياً
+  static final _rng = math.Random();
+  static String _pick(List<String> files) => files[_rng.nextInt(files.length)];
+
+  static const _pickFiles = ['pick_1.m4a', 'pick_2.m4a', 'pick_3.m4a'];
+  static const _placeFiles = ['place_1.m4a', 'place_2.m4a', 'place_3.m4a'];
+  static const _sortFiles = ['sort_2.m4a', 'sort_3.m4a'];
+
   /// صوت رفع الحجر
   static void playTilePickup() {
     if (!soundEnabled) return;
     AppHaptics.selection();
-    _play('pick.wav', 0.55);
+    _play(_pick(_pickFiles), 0.6);
   }
 
-  /// صوت رمي الحجر
+  /// صوت رمي الحجر على الطاولة
   static void playTileDiscard() {
     if (!soundEnabled) return;
     AppHaptics.medium();
-    _play('place.wav', 0.7);
+    _play(_pick(_placeFiles), 0.85);
   }
 
-  /// صوت سحب حجر جديد
+  /// صوت سحب حجر جديد من الرزمة
   static void playTileDraw() {
     if (!soundEnabled) return;
     AppHaptics.light();
-    _play('pick.wav', 0.5);
+    _play('draw_1.m4a', 0.7);
   }
 
   /// صوت ضغط زر
   static void playButtonClick() {
     if (!soundEnabled) return;
     AppHaptics.light();
-    _play('pick.wav', 0.45);
+    _play('click_1.m4a', 0.45);
   }
 
   /// صوت تنبيه الدور
@@ -112,6 +124,6 @@ class OkeyAudio {
   static void playSort() {
     if (!soundEnabled) return;
     AppHaptics.selection();
-    _play('pick.wav', 0.45);
+    _play(_pick(_sortFiles), 0.6);
   }
 }

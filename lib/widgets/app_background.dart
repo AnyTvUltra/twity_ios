@@ -148,9 +148,8 @@ class _AmbiancePainter extends CustomPainter {
       ).createShader(Rect.fromCircle(
           center: Offset(size.width * 0.15, size.height * 0.10),
           radius: size.width * 0.55));
-    canvas.drawCircle(
-        Offset(size.width * 0.15, size.height * 0.10), size.width * 0.55,
-        glowPaint);
+    canvas.drawCircle(Offset(size.width * 0.15, size.height * 0.10),
+        size.width * 0.55, glowPaint);
 
     // 2. توهج بنفسجي خافت أسفل اليمين
     final skyPaint = Paint()
@@ -164,9 +163,8 @@ class _AmbiancePainter extends CustomPainter {
       ).createShader(Rect.fromCircle(
           center: Offset(size.width * 0.9, size.height * 0.9),
           radius: size.width * 0.6));
-    canvas.drawCircle(
-        Offset(size.width * 0.9, size.height * 0.9), size.width * 0.6,
-        skyPaint);
+    canvas.drawCircle(Offset(size.width * 0.9, size.height * 0.9),
+        size.width * 0.6, skyPaint);
 
     // 3. خطوط زجاجية خافتة
     final streakPaint = Paint()

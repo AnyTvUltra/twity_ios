@@ -45,7 +45,7 @@ class _DominoGameScreenState extends State<DominoGameScreen> {
   static const _feltB = Color(0xFF0D2F20);
 
   /// عدد خلايا النصف-حجر في عرض الطاولة (كل حجر = خليتان)
-  static const _chainCellsWide = 14;
+  static const _chainCellsWide = 12;
 
   @override
   void initState() {
@@ -452,8 +452,6 @@ class _DominoGameScreenState extends State<DominoGameScreen> {
         builder: (context, constraints) {
           final w = constraints.maxWidth;
           final h = constraints.maxHeight;
-          final u = w / _chainCellsWide;
-          final rects = _layoutChain(_engine.chain.length);
 
           // إطار خشب جوز متدرّج بتطعيم ذهبي يحيط بلبّاد أخضر عميق
           return Container(
@@ -499,40 +497,58 @@ class _DominoGameScreenState extends State<DominoGameScreen> {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(15),
-                child: Stack(
-                  children: [
-                    // نص توجيهي عند البداية الفارغة
-                    if (_engine.chain.isEmpty)
-                      Center(
-                        child: Text(
-                          _myTurn
-                              ? 'العب أول حجر ⚫'.tr
-                              : 'في انتظار {}…'
-                                  .trp([_engine.names[_engine.currentPlayer]]),
-                          style: TextStyle(
-                              color: Colors.white.withOpacity(0.35),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700),
+                child: LayoutBuilder(builder: (context, inner) {
+                  final iw = inner.maxWidth, ih = inner.maxHeight;
+                  // وحدة الخلية من العرض الداخلي (هامش جانبي ثابت)
+                  final u = (iw - 24) / _chainCellsWide;
+                  final layout = _layoutChain(_engine.chain.length);
+                  final rects = layout.rects;
+                  final pitch = u * _rowPitch;
+                  final rows = rects.isEmpty ? 1 : rects.last.top.toInt() + 1;
+                  final cols = rows == 1 ? rects.length * 2 : _chainCellsWide;
+                  // السلسلة متوسّطة في الطاولة أفقياً وعمودياً
+                  final origin = Offset(
+                    (iw - cols * u) / 2,
+                    math.max(8, (ih - ((rows - 1) * pitch + u)) / 2 - u * 0.4),
+                  );
+                  return Stack(
+                    children: [
+                      // نص توجيهي عند البداية الفارغة
+                      if (_engine.chain.isEmpty)
+                        Center(
+                          child: Text(
+                            _myTurn
+                                ? 'العب أول حجر ⚫'.tr
+                                : 'في انتظار {}…'.trp(
+                                    [_engine.names[_engine.currentPlayer]]),
+                            style: TextStyle(
+                                color: Colors.white.withOpacity(0.35),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700),
+                          ),
                         ),
+                      // السلسلة
+                      for (var i = 0; i < _engine.chain.length; i++)
+                        _placedTile(i, rects[i], u, pitch, origin,
+                            reversed: layout.reversed[i]),
+                      // مؤشرات الطرفين عند اختيار حجر بوجهين
+                      if (_selectedIdx != null && _engine.chain.isNotEmpty) ...[
+                        _endMarker(rects.first, u, pitch, origin,
+                            side: 0, atRight: layout.reversed.first),
+                        _endMarker(rects.last, u, pitch, origin,
+                            side: 1, atRight: !layout.reversed.last),
+                      ],
+                      // البونيارد
+                      Positioned(
+                        left: 10,
+                        bottom: 10,
+                        child: _buildBoneyard(u),
                       ),
-                    // السلسلة
-                    for (var i = 0; i < _engine.chain.length; i++)
-                      _placedTile(i, rects[i], u),
-                    // مؤشرات الطرفين عند اختيار حجر بوجهين
-                    if (_selectedIdx != null && _engine.chain.isNotEmpty) ...[
-                      _endMarker(rects.first, u, side: 0),
-                      _endMarker(rects.last, u, side: 1),
+                      // حجر يطير للطاولة
+                      if (_engine.flyingTile != null) _flyingTile(iw, ih),
                     ],
-                    // البونيارد
-                    Positioned(
-                      left: 10,
-                      bottom: 10,
-                      child: _buildBoneyard(u),
-                    ),
-                    // حجر يطير للطاولة
-                    if (_engine.flyingTile != null) _flyingTile(w, h),
-                  ],
-                ),
+                  );
+                }),
               ),
             ),
           );
@@ -541,13 +557,20 @@ class _DominoGameScreenState extends State<DominoGameScreen> {
     );
   }
 
-  /// تخطيط متعرج: كل حجر خليتان أفقيتان، الصفوف بالتناوب يمين/يسار
-  List<Rect> _layoutChain(int n) {
+  /// المسافة بين الصفوف بوحدات الخلية — تكفي لدبل واقف بلا تداخل
+  static const double _rowPitch = 2.15;
+
+  /// تخطيط متعرج: كل حجر خليتان أفقيتان، الصفوف بالتناوب يمين/يسار.
+  /// reversed[i] = الحجر في صف يسير يميناً←يساراً (تُقلب قيمتاه بصرياً
+  /// حتى يلتقي الرقمان المتطابقان وجهاً لوجه)
+  ({List<Rect> rects, List<bool> reversed}) _layoutChain(int n) {
     const w = _chainCellsWide;
     final rects = <Rect>[];
+    final reversed = <bool>[];
     var x = 0, y = 0, dir = 1;
     for (var i = 0; i < n; i++) {
       rects.add(Rect.fromLTWH(x.toDouble(), y.toDouble(), 2, 1));
+      reversed.add(dir == -1);
       if (dir == 1) {
         x += 2;
         if (x + 2 > w) {
@@ -564,18 +587,20 @@ class _DominoGameScreenState extends State<DominoGameScreen> {
         }
       }
     }
-    return rects;
+    return (rects: rects, reversed: reversed);
   }
 
-  Widget _placedTile(int i, Rect cellRect, double u) {
+  Widget _placedTile(
+      int i, Rect cellRect, double u, double pitch, Offset origin,
+      {required bool reversed}) {
     final p = _engine.chain[i];
     final isDouble = p.tile.isDouble;
-    final left = cellRect.left * u + 1.5;
-    final top = cellRect.top * u + 16;
+    final left = origin.dx + cellRect.left * u + 1.5;
+    final top = origin.dy + cellRect.top * pitch + u * 0.5;
 
     Widget tile = DominoTileWidget(
-      left: p.left,
-      right: p.right,
+      left: reversed ? p.right : p.left,
+      right: reversed ? p.left : p.right,
       width: u * 2 - 3,
       height: u - 3,
       horizontal: true,
@@ -614,10 +639,13 @@ class _DominoGameScreenState extends State<DominoGameScreen> {
   }
 
   /// مؤشر طرف مفتوح متوهج — لمسه يختار هذا الجانب
-  Widget _endMarker(Rect cellRect, double u, {required int side}) {
+  Widget _endMarker(Rect cellRect, double u, double pitch, Offset origin,
+      {required int side, required bool atRight}) {
     final endValue = side == 0 ? _engine.leftEnd : _engine.rightEnd;
-    final cx = (side == 0 ? cellRect.left + 0.5 : cellRect.right - 0.5) * u;
-    final cy = cellRect.top * u + 16 + (u - 3) / 2;
+    // الطرف المفتوح فعلياً: يمين الخانة أو يسارها حسب اتجاه صفّه
+    final cx =
+        origin.dx + (atRight ? cellRect.right - 0.5 : cellRect.left + 0.5) * u;
+    final cy = origin.dy + cellRect.top * pitch + u * 0.5 + (u - 3) / 2;
     return Positioned(
       left: cx - u * 0.55,
       top: cy - u * 0.55,
@@ -712,7 +740,7 @@ class _DominoGameScreenState extends State<DominoGameScreen> {
       curve: Curves.easeInOut,
       builder: (_, v, __) {
         final from = Offset(w / 2, h + 30);
-        final to = Offset(w / 2, h * 0.28);
+        final to = Offset(w / 2, h * 0.45);
         final lin = Offset.lerp(from, to, v)!;
         final arc = Offset(0, -math.sin(v * math.pi) * 60);
         return Positioned(
@@ -840,7 +868,7 @@ class _DominoGameScreenState extends State<DominoGameScreen> {
   // ─────────────────────────────────────────────
   Widget _buildMyHand() {
     final hand = _engine.hands[_visibleHandPlayer];
-    const tw = 30.0, th = 54.0;
+    const tw = 36.0, th = 66.0;
     return SizedBox(
       height: th + 14,
       child: Center(
@@ -1320,7 +1348,10 @@ class _DominoFace extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(painter: _DominoFacePainter(value));
+    // SizedBox.expand: بدونه يأخذ CustomPaint ارتفاعاً صفرياً داخل Row
+    // فلا تُرسم أي نقطة — وهذا سبب الأحجار الفارغة
+    return SizedBox.expand(
+        child: CustomPaint(painter: _DominoFacePainter(value)));
   }
 }
 

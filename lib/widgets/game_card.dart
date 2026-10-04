@@ -244,8 +244,7 @@ class _GameCardState extends State<GameCard>
                         color: Colors.black.withOpacity(0.55),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                            color:
-                                const Color(0xFFFFD54F).withOpacity(0.7),
+                            color: const Color(0xFFFFD54F).withOpacity(0.7),
                             width: 1),
                       ),
                       child: Text(

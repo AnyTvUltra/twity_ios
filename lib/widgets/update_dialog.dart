@@ -120,8 +120,7 @@ class _UpdateDialogState extends State<UpdateDialog>
                       ]),
                       boxShadow: [
                         BoxShadow(
-                            color:
-                                const Color(0xFFFFD54F).withOpacity(0.45),
+                            color: const Color(0xFFFFD54F).withOpacity(0.45),
                             blurRadius: 16),
                       ],
                     ),
@@ -163,15 +162,14 @@ class _UpdateDialogState extends State<UpdateDialog>
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.08),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                            color: Colors.white.withOpacity(0.12)),
+                        border:
+                            Border.all(color: Colors.white.withOpacity(0.12)),
                       ),
                       child: AnimatedBuilder(
                         animation: _c,
                         builder: (_, __) => FractionallySizedBox(
                           alignment: Alignment.centerRight,
-                          widthFactor:
-                              _downloading ? _c.value : 0.0,
+                          widthFactor: _downloading ? _c.value : 0.0,
                           child: Container(
                             decoration: const BoxDecoration(
                               gradient: LinearGradient(colors: [
@@ -193,8 +191,7 @@ class _UpdateDialogState extends State<UpdateDialog>
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFFD54F),
                         foregroundColor: const Color(0xFF1B0B30),
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 13),
+                        padding: const EdgeInsets.symmetric(vertical: 13),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14)),
                       ),

@@ -85,8 +85,8 @@ class _WeeklyStrip extends StatelessWidget {
     final now = DateTime.now();
     final rewards = RewardsService.currentWeekRewards;
 
-    bool claimable = lastClaim == null ||
-        now.difference(lastClaim).inHours >= 24;
+    bool claimable =
+        lastClaim == null || now.difference(lastClaim).inHours >= 24;
     int remH = 0, remM = 0;
     if (!claimable) {
       final diff = now.difference(lastClaim);
@@ -95,8 +95,7 @@ class _WeeklyStrip extends StatelessWidget {
     }
 
     final streak = user?.dailyGiftStreak ?? 0;
-    final targetIndex =
-        claimable ? (streak % 7) : ((streak - 1).clamp(0, 6));
+    final targetIndex = claimable ? (streak % 7) : ((streak - 1).clamp(0, 6));
     final isVip = user?.isVip ?? false;
     final weekNames = [
       'الأسبوع الذهبي ✨'.tr,
@@ -132,8 +131,7 @@ class _WeeklyStrip extends StatelessWidget {
               boxShadow: claimable
                   ? [
                       BoxShadow(
-                          color:
-                              DailyRewardsPanel._gold.withOpacity(0.13),
+                          color: DailyRewardsPanel._gold.withOpacity(0.13),
                           blurRadius: 22,
                           spreadRadius: -4),
                     ]
@@ -152,8 +150,7 @@ class _WeeklyStrip extends StatelessWidget {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   'الهدايا اليومية'.tr,
@@ -166,7 +163,8 @@ class _WeeklyStrip extends StatelessWidget {
                                   ),
                                 ),
                                 Text(
-                                  '{} — جوائز جديدة كل أسبوع'.trp([weekNames[RewardsService.weekIndex]]),
+                                  '{} — جوائز جديدة كل أسبوع'.trp(
+                                      [weekNames[RewardsService.weekIndex]]),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
@@ -232,12 +230,14 @@ class _WeeklyStrip extends StatelessWidget {
                               if (isPast) {
                                 TopNotification.show(
                                     context,
-                                    'تم استلام هدية اليوم {} بالفعل!'.trp([index + 1]),
+                                    'تم استلام هدية اليوم {} بالفعل!'
+                                        .trp([index + 1]),
                                     icon: Icons.check_circle_rounded);
                               } else {
                                 TopNotification.show(
                                     context,
-                                    'هذه الهدية مقفلة! تفتح بعد إتمام الأيام السابقة'.tr,
+                                    'هذه الهدية مقفلة! تفتح بعد إتمام الأيام السابقة'
+                                        .tr,
                                     icon: Icons.lock_rounded);
                               }
                             },
@@ -259,9 +259,7 @@ class _WeeklyStrip extends StatelessWidget {
                               : null,
                           color: isPast
                               ? DailyRewardsPanel._emerald.withOpacity(0.18)
-                              : (isCurrent
-                                  ? null
-                                  : const Color(0x2E141C3C)),
+                              : (isCurrent ? null : const Color(0x2E141C3C)),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isCurrent
@@ -300,9 +298,8 @@ class _WeeklyStrip extends StatelessWidget {
                               isPast ? '✔' : (isCurrent ? '🎁' : emoji),
                               style: TextStyle(
                                 fontSize: 14,
-                                color: isPast
-                                    ? DailyRewardsPanel._emerald
-                                    : null,
+                                color:
+                                    isPast ? DailyRewardsPanel._emerald : null,
                               ),
                             ),
                             const SizedBox(height: 3),
@@ -348,8 +345,7 @@ class _WeeklyStrip extends StatelessWidget {
                   GestureDetector(
                     onTap: () async {
                       AppHaptics.medium();
-                      final res =
-                          await AuthService().buyStreakProtection();
+                      final res = await AuthService().buyStreakProtection();
                       if (context.mounted) {
                         TopNotification.show(
                           context,
@@ -370,18 +366,15 @@ class _WeeklyStrip extends StatelessWidget {
                         ]),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                            color: const Color(0xFFFB923C)
-                                .withOpacity(0.6)),
+                            color: const Color(0xFFFB923C).withOpacity(0.6)),
                         boxShadow: [
                           BoxShadow(
-                              color: const Color(0xFFFB923C)
-                                  .withOpacity(0.25),
+                              color: const Color(0xFFFB923C).withOpacity(0.25),
                               blurRadius: 10),
                         ],
                       ),
                       child: Row(
-                        mainAxisAlignment:
-                            MainAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text('🔥', style: TextStyle(fontSize: 14)),
                           SizedBox(width: 6),
@@ -422,8 +415,8 @@ class _VipStrip extends StatelessWidget {
           backgroundColor: const Color(0xFF141C34),
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
-              side: BorderSide(
-                  color: DailyRewardsPanel._gold.withOpacity(0.5))),
+              side:
+                  BorderSide(color: DailyRewardsPanel._gold.withOpacity(0.5))),
           title: Row(
             children: [
               Text('👑', style: TextStyle(fontSize: 24)),
@@ -461,8 +454,8 @@ class _VipStrip extends StatelessWidget {
               SizedBox(height: 10),
               Text(
                 'سيتم التفعيل خلال 24 ساعة بعد تأكيد الدفع من الإدارة.'.tr,
-                style: TextStyle(
-                    color: DailyRewardsPanel._textDim, fontSize: 11),
+                style:
+                    TextStyle(color: DailyRewardsPanel._textDim, fontSize: 11),
               ),
             ],
           ),
@@ -477,8 +470,7 @@ class _VipStrip extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: DailyRewardsPanel._gold,
                 foregroundColor: const Color(0xFF1B0B30),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10)),
               ),
@@ -490,8 +482,7 @@ class _VipStrip extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFC084FC),
                 foregroundColor: const Color(0xFF2E1065),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10)),
               ),
@@ -507,8 +498,8 @@ class _VipStrip extends StatelessWidget {
     if (confirm == null || confirm == false || !context.mounted) {
       return;
     }
-    final res = await AuthService().submitVipRequest(
-        plan: confirm == 'plus' ? 'vipPlus' : 'vip');
+    final res = await AuthService()
+        .submitVipRequest(plan: confirm == 'plus' ? 'vipPlus' : 'vip');
     if (context.mounted) {
       TopNotification.show(
         context,
@@ -551,8 +542,7 @@ class _VipStrip extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                  color: DailyRewardsPanel._gold.withOpacity(0.55),
-                  width: 1.2),
+                  color: DailyRewardsPanel._gold.withOpacity(0.55), width: 1.2),
               boxShadow: [
                 BoxShadow(
                     color: DailyRewardsPanel._gold.withOpacity(0.15),
@@ -578,8 +568,7 @@ class _VipStrip extends StatelessWidget {
                     ),
                     boxShadow: [
                       BoxShadow(
-                          color:
-                              DailyRewardsPanel._gold.withOpacity(0.45),
+                          color: DailyRewardsPanel._gold.withOpacity(0.45),
                           blurRadius: 10),
                     ],
                   ),
@@ -605,8 +594,10 @@ class _VipStrip extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         isVip && vipUntil != null
-                            ? 'عضويتك فعّالة حتى {}/{} — لفتان يومياً + مكافآت +25% 👑'.trp([vipUntil.day, vipUntil.month])
-                            : 'لفّتان يومياً + مكافآت +25% + شارة ملكية — 10\$ فقط'.tr,
+                            ? 'عضويتك فعّالة حتى {}/{} — لفتان يومياً + مكافآت +25% 👑'
+                                .trp([vipUntil.day, vipUntil.month])
+                            : 'لفّتان يومياً + مكافآت +25% + شارة ملكية — 10\$ فقط'
+                                .tr,
                         maxLines: 2,
                         style: TextStyle(
                           color: isVip
@@ -622,14 +613,13 @@ class _VipStrip extends StatelessWidget {
                 const SizedBox(width: 8),
                 if (isVip)
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
                       color: DailyRewardsPanel._emerald.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                          color: DailyRewardsPanel._emerald
-                              .withOpacity(0.6)),
+                          color: DailyRewardsPanel._emerald.withOpacity(0.6)),
                     ),
                     child: Text(
                       'مُفعّل ✓'.tr,
@@ -654,8 +644,7 @@ class _VipStrip extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                              color: DailyRewardsPanel._gold
-                                  .withOpacity(0.4),
+                              color: DailyRewardsPanel._gold.withOpacity(0.4),
                               blurRadius: 10),
                         ],
                       ),
@@ -726,8 +715,7 @@ class _WheelCard extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                  color: const Color(0xFF38BDF8).withOpacity(0.45),
-                  width: 1.1),
+                  color: const Color(0xFF38BDF8).withOpacity(0.45), width: 1.1),
               boxShadow: [
                 BoxShadow(
                     color: const Color(0xFF38BDF8).withOpacity(0.12),
@@ -749,8 +737,7 @@ class _WheelCard extends StatelessWidget {
                     ]),
                     boxShadow: [
                       BoxShadow(
-                          color:
-                              const Color(0xFF38BDF8).withOpacity(0.4),
+                          color: const Color(0xFF38BDF8).withOpacity(0.4),
                           blurRadius: 10),
                     ],
                   ),
@@ -774,8 +761,13 @@ class _WheelCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         spinsLeft > 0
-                            ? 'عندك {} {} — أموال 🪙 وجواهر 💎 وسكن نادر 🎨'.trp([spinsLeft, spinsLeft == 1 ? 'لفة' : 'لفات'])
-                            : 'استخدمت لفات اليوم — عُد غداً!{}'.trp([isVip ? '' : ' VIP = لفتان إضافيتان']),
+                            ? 'عندك {} {} — أموال 🪙 وجواهر 💎 وسكن نادر 🎨'
+                                .trp([
+                                spinsLeft,
+                                spinsLeft == 1 ? 'لفة' : 'لفات'
+                              ])
+                            : 'استخدمت لفات اليوم — عُد غداً!{}'
+                                .trp([isVip ? '' : ' VIP = لفتان إضافيتان']),
                         maxLines: 2,
                         style: const TextStyle(
                           color: DailyRewardsPanel._textDim,
@@ -797,8 +789,7 @@ class _WheelCard extends StatelessWidget {
                     }
                     if (spinsLeft <= 0) {
                       TopNotification.show(
-                          context,
-                          'استخدمت لفات اليوم! عُد غداً 🎡'.tr,
+                          context, 'استخدمت لفات اليوم! عُد غداً 🎡'.tr,
                           icon: Icons.lock_clock_rounded);
                       return;
                     }
@@ -809,8 +800,8 @@ class _WheelCard extends StatelessWidget {
                     );
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
                       gradient: spinsLeft > 0
                           ? const LinearGradient(colors: [
@@ -824,8 +815,8 @@ class _WheelCard extends StatelessWidget {
                       boxShadow: spinsLeft > 0
                           ? [
                               BoxShadow(
-                                  color: const Color(0xFF38BDF8)
-                                      .withOpacity(0.4),
+                                  color:
+                                      const Color(0xFF38BDF8).withOpacity(0.4),
                                   blurRadius: 10),
                             ]
                           : null,
@@ -886,8 +877,7 @@ class _LootBoxCard extends StatelessWidget {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
           child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -899,8 +889,7 @@ class _LootBoxCard extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                  color: const Color(0xFFC084FC).withOpacity(0.45),
-                  width: 1.1),
+                  color: const Color(0xFFC084FC).withOpacity(0.45), width: 1.1),
               boxShadow: [
                 BoxShadow(
                     color: const Color(0xFFC084FC).withOpacity(0.12),
@@ -922,8 +911,7 @@ class _LootBoxCard extends StatelessWidget {
                     ]),
                     boxShadow: [
                       BoxShadow(
-                          color:
-                              const Color(0xFFC084FC).withOpacity(0.4),
+                          color: const Color(0xFFC084FC).withOpacity(0.4),
                           blurRadius: 10),
                     ],
                   ),
@@ -963,8 +951,8 @@ class _LootBoxCard extends StatelessWidget {
                 GestureDetector(
                   onTap: () => _open(context),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
                       gradient: canOpen
                           ? const LinearGradient(colors: [
@@ -978,8 +966,8 @@ class _LootBoxCard extends StatelessWidget {
                       boxShadow: canOpen
                           ? [
                               BoxShadow(
-                                  color: const Color(0xFFC084FC)
-                                      .withOpacity(0.4),
+                                  color:
+                                      const Color(0xFFC084FC).withOpacity(0.4),
                                   blurRadius: 10),
                             ]
                           : null,
@@ -1154,8 +1142,7 @@ class _DailyWheelDialogState extends State<DailyWheelDialog>
                                 Color(0xFF8B5E00),
                               ]),
                               border: Border.all(
-                                  color: const Color(0xFF3E2C00),
-                                  width: 2),
+                                  color: const Color(0xFF3E2C00), width: 2),
                               boxShadow: [
                                 BoxShadow(
                                     color: Colors.black.withOpacity(0.4),
@@ -1163,8 +1150,7 @@ class _DailyWheelDialogState extends State<DailyWheelDialog>
                               ],
                             ),
                             child: const Center(
-                              child: Text('🎡',
-                                  style: TextStyle(fontSize: 17)),
+                              child: Text('🎡', style: TextStyle(fontSize: 17)),
                             ),
                           ),
                         ],
@@ -1201,9 +1187,7 @@ class _DailyWheelDialogState extends State<DailyWheelDialog>
                             ),
                           )
                         : Text(
-                            _error != null
-                                ? ''
-                                : 'العجلة تدور...'.tr,
+                            _error != null ? '' : 'العجلة تدور...'.tr,
                             key: const ValueKey('spin'),
                             style: const TextStyle(
                                 color: DailyRewardsPanel._textDim,
@@ -1219,8 +1203,7 @@ class _DailyWheelDialogState extends State<DailyWheelDialog>
                           : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: DailyRewardsPanel._gold,
-                        disabledBackgroundColor:
-                            Colors.white.withOpacity(0.08),
+                        disabledBackgroundColor: Colors.white.withOpacity(0.08),
                         foregroundColor: const Color(0xFF1B0B30),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
@@ -1312,14 +1295,13 @@ class _WheelPainter extends CustomPainter {
             Color(seg.color).withOpacity(0.55),
           ],
         ).createShader(Rect.fromCircle(center: c, radius: r));
-      canvas.drawArc(
-          Rect.fromCircle(center: c, radius: r - 6), start, step - 0.02,
-          true, paint);
+      canvas.drawArc(Rect.fromCircle(center: c, radius: r - 6), start,
+          step - 0.02, true, paint);
 
       // فاصل بين المقاطع
       canvas.drawLine(
-        Offset(c.dx + math.cos(start) * (r - 6),
-            c.dy + math.sin(start) * (r - 6)),
+        Offset(
+            c.dx + math.cos(start) * (r - 6), c.dy + math.sin(start) * (r - 6)),
         c,
         Paint()
           ..color = const Color(0xFF0A0F24)
@@ -1460,11 +1442,9 @@ class _LootBoxDialogState extends State<LootBoxDialog>
                   ],
                 ),
                 borderRadius: BorderRadius.circular(26),
-                border: Border.all(
-                    color: purple.withOpacity(0.55), width: 1.4),
+                border: Border.all(color: purple.withOpacity(0.55), width: 1.4),
                 boxShadow: [
-                  BoxShadow(
-                      color: purple.withOpacity(0.2), blurRadius: 32),
+                  BoxShadow(color: purple.withOpacity(0.2), blurRadius: 32),
                 ],
               ),
               child: Column(
@@ -1483,30 +1463,26 @@ class _LootBoxDialogState extends State<LootBoxDialog>
                       final t = _c.value;
                       final shake = _opened
                           ? 0.0
-                          : math.sin(t * math.pi * 14) *
-                              (1 - t) *
-                              0.16;
-                      final scale = _opened
-                          ? 1.25
-                          : 1.0 + math.sin(t * math.pi) * 0.12;
+                          : math.sin(t * math.pi * 14) * (1 - t) * 0.16;
+                      final scale =
+                          _opened ? 1.25 : 1.0 + math.sin(t * math.pi) * 0.12;
                       return Transform.rotate(
                         angle: shake,
-                        child: Transform.scale(
-                            scale: scale, child: child),
+                        child: Transform.scale(scale: scale, child: child),
                       );
                     },
                     child: AnimatedSwitcher(
                       duration: const Duration(milliseconds: 500),
-                      transitionBuilder: (child, anim) =>
-                          ScaleTransition(
-                              scale: CurvedAnimation(
-                                  parent: anim,
-                                  curve: Curves.elasticOut),
-                              child: child),
+                      transitionBuilder: (child, anim) => ScaleTransition(
+                          scale: CurvedAnimation(
+                              parent: anim, curve: Curves.elasticOut),
+                          child: child),
                       child: _opened
-                          ? const Text('✨', key: ValueKey('open'),
+                          ? const Text('✨',
+                              key: ValueKey('open'),
                               style: TextStyle(fontSize: 72))
-                          : const Text('🎁', key: ValueKey('closed'),
+                          : const Text('🎁',
+                              key: ValueKey('closed'),
                               style: TextStyle(fontSize: 72)),
                     ),
                   ),
@@ -1518,25 +1494,21 @@ class _LootBoxDialogState extends State<LootBoxDialog>
                             key: const ValueKey('err'),
                             textAlign: TextAlign.center,
                             style: const TextStyle(
-                                color: Color(0xFFFCA5A5),
-                                fontSize: 13))
+                                color: Color(0xFFFCA5A5), fontSize: 13))
                         : _opened && _result != null
                             ? Container(
                                 key: const ValueKey('win'),
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 20, vertical: 12),
                                 decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                      colors: [
-                                        Color(0xFFE9D5FF),
-                                        purple,
-                                      ]),
-                                  borderRadius:
-                                      BorderRadius.circular(14),
+                                  gradient: const LinearGradient(colors: [
+                                    Color(0xFFE9D5FF),
+                                    purple,
+                                  ]),
+                                  borderRadius: BorderRadius.circular(14),
                                   boxShadow: [
                                     BoxShadow(
-                                        color:
-                                            purple.withOpacity(0.5),
+                                        color: purple.withOpacity(0.5),
                                         blurRadius: 18),
                                   ],
                                 ),
@@ -1553,8 +1525,7 @@ class _LootBoxDialogState extends State<LootBoxDialog>
                             : Text('الصندوق يُفتح...'.tr,
                                 key: ValueKey('wait'),
                                 style: TextStyle(
-                                    color: Color(0xFF8EA3C8),
-                                    fontSize: 12)),
+                                    color: Color(0xFF8EA3C8), fontSize: 12)),
                   ),
                   const SizedBox(height: 20),
                   SizedBox(
@@ -1565,8 +1536,7 @@ class _LootBoxDialogState extends State<LootBoxDialog>
                           : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: purple,
-                        disabledBackgroundColor:
-                            Colors.white.withOpacity(0.08),
+                        disabledBackgroundColor: Colors.white.withOpacity(0.08),
                         foregroundColor: const Color(0xFF2E1065),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),

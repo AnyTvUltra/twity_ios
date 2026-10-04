@@ -402,47 +402,48 @@ class _NotificationBellWidget extends StatelessWidget {
         return StreamBuilder<List<ConversationSummary>>(
           stream: SocialService().getConversationsStream(myUid),
           builder: (context, convSnap) {
-            final unread = (convSnap.data ?? [])
-                .fold<int>(0, (s, c) => s + c.unreadCount);
+            final unread =
+                (convSnap.data ?? []).fold<int>(0, (s, c) => s + c.unreadCount);
             return ValueListenableBuilder<int>(
               valueListenable: BroadcastService.instance.unreadCount,
               builder: (context, broadcastUnread, _) {
-            final total = reqCount + unread + broadcastUnread;
-            return Stack(
-              clipBehavior: Clip.none,
-              alignment: Alignment.center,
-              children: [
-                const Icon(Icons.notifications_rounded,
-                    color: Colors.white, size: 20),
-                if (total > 0)
-                  Positioned(
-                    top: -4,
-                    right: -5,
-                    child: Container(
-                      padding: const EdgeInsets.all(3),
-                      constraints:
-                          const BoxConstraints(minWidth: 16, minHeight: 16),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: const Color(0xFFFF1744),
-                        border: Border.all(color: Colors.white, width: 1.2),
-                        boxShadow: const [
-                          BoxShadow(color: Color(0xFFFF1744), blurRadius: 4),
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          total > 9 ? '9+' : '$total',
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 8,
-                              fontWeight: FontWeight.w900),
+                final total = reqCount + unread + broadcastUnread;
+                return Stack(
+                  clipBehavior: Clip.none,
+                  alignment: Alignment.center,
+                  children: [
+                    const Icon(Icons.notifications_rounded,
+                        color: Colors.white, size: 20),
+                    if (total > 0)
+                      Positioned(
+                        top: -4,
+                        right: -5,
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          constraints:
+                              const BoxConstraints(minWidth: 16, minHeight: 16),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFFFF1744),
+                            border: Border.all(color: Colors.white, width: 1.2),
+                            boxShadow: const [
+                              BoxShadow(
+                                  color: Color(0xFFFF1744), blurRadius: 4),
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              total > 9 ? '9+' : '$total',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w900),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-              ],
-            );
+                  ],
+                );
               },
             );
           },
@@ -451,4 +452,3 @@ class _NotificationBellWidget extends StatelessWidget {
     );
   }
 }
-

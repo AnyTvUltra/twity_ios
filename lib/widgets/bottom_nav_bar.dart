@@ -70,7 +70,8 @@ class BottomNavBar extends StatelessWidget {
                     ],
                   ),
                   borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+                  border:
+                      Border.all(color: Colors.white.withValues(alpha: 0.14)),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.42),
@@ -80,7 +81,8 @@ class BottomNavBar extends StatelessWidget {
                   ],
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 8),
                   child: Row(
                     children: [
                       for (final entry in _entries)
@@ -155,9 +157,7 @@ class BottomNavBar extends StatelessWidget {
               ),
               child: Icon(
                 isSelected ? entry.activeIcon : entry.icon,
-                color: isSelected
-                    ? entry.accent
-                    : const Color(0xFF94A3B8),
+                color: isSelected ? entry.accent : const Color(0xFF94A3B8),
                 size: isSelected ? 19 : 18,
               ),
             ),

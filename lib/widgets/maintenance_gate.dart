@@ -28,7 +28,11 @@ class _MaintenanceGateState extends State<MaintenanceGate> {
 
   Future<void> _checkAdmin() async {
     if (widget.isAdmin) {
-      if (mounted) setState(() { _isAdmin = true; _checkedAdmin = true; });
+      if (mounted)
+        setState(() {
+          _isAdmin = true;
+          _checkedAdmin = true;
+        });
       return;
     }
     try {
@@ -40,7 +44,10 @@ class _MaintenanceGateState extends State<MaintenanceGate> {
       }
       final doc = await fb.firestore.collection('admins').doc(uid).get();
       if (mounted) {
-        setState(() { _isAdmin = doc.exists; _checkedAdmin = true; });
+        setState(() {
+          _isAdmin = doc.exists;
+          _checkedAdmin = true;
+        });
       }
     } catch (_) {
       if (mounted) setState(() => _checkedAdmin = true);

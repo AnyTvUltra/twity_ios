@@ -163,13 +163,14 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   // مناطق نزول البيرات على السجادة — أمام حامل كل لاعب، كبيرة كفاية
   // لتظهر الأحجار بمقاس مقروء
   // المناطق الأربع لا تتقاطع مع مركز الرزمة/المؤشر/الكومة (_roomCenterF)
-  static const _roomMeldMineF = Rect.fromLTWH(0.320, 0.462, 0.360, 0.090);
-  static const _roomMeldTopF = Rect.fromLTWH(0.345, 0.240, 0.310, 0.062);
-  static const _roomMeldLeftF = Rect.fromLTWH(0.300, 0.305, 0.108, 0.155);
-  static const _roomMeldRightF = Rect.fromLTWH(0.592, 0.305, 0.108, 0.155);
+  // مناطق أوسع تستغل سطح الطاولة كله حول المركز — الأحجار تبقى مقروءة
+  static const _roomMeldMineF = Rect.fromLTWH(0.285, 0.460, 0.430, 0.100);
+  static const _roomMeldTopF = Rect.fromLTWH(0.408, 0.245, 0.184, 0.085);
+  static const _roomMeldLeftF = Rect.fromLTWH(0.278, 0.255, 0.126, 0.200);
+  static const _roomMeldRightF = Rect.fromLTWH(0.596, 0.255, 0.126, 0.200);
   // مركز السجادة — الرزمة والمؤشر وكومة المرميات (ارتفاعه يكفي لتظهر
   // الأحجار بمقاس مقروء بلا أن يضغطها الـFittedBox)
-  static const _roomCenterF = Rect.fromLTWH(0.410, 0.300, 0.180, 0.160);
+  static const _roomCenterF = Rect.fromLTWH(0.408, 0.335, 0.184, 0.120);
   // حاشية التقاط هدف الرف حول منطقة الاستكانة — تلتقط الإفلات السريع
   // المتجاوز لحدودها (الإصبع يسبق الحجر المرئي) فيقع على أقرب خانة.
   // الحاشية السفلية أوسع بكثير: الحجر المرئي يطفو فوق الإصبع فيكون
@@ -2383,7 +2384,15 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     );
   }
 
-  static const double _meldTileW = 30, _meldTileH = 36;
+  static const double _meldTileW = 30, _meldTileH = 35;
+
+  /// كل حجر يظهر منه 72% ويغطّيه التالي — مثل طاولات الأوكي الحقيقية؛
+  /// الرقم والنقطة في الجزء الظاهر فيبقى مقروءاً والبير أقصر بكثير
+  static const double _meldOverlap = 0.76;
+
+  // OkeyTileWidget يضيف هامش 1px من كل جانب ⇒ عرض الحجر الفعلي +2
+  static double _meldWidth(int n) =>
+      (n - 1) * (_meldTileW + 2) * _meldOverlap + _meldTileW + 2 + 4;
 
   /// بيرات لاعب واحد مصفوفة بأناقة داخل منطقته فقط — لا تتجاوزها أبداً
   /// (FittedBox يقيس الحجم الحقيقي للمحتوى ويصغّره ليتسع، فلا تغطي
@@ -2391,53 +2400,64 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   /// صاحبه. المقابل وأنا: صفوف ملتفّة متوسطة.
   Widget _meldsOnTable(List<MapEntry<int, OkeyGroup>> melds, Rect zone,
       {required int seat}) {
-    final side = seat == 1 || seat == 3;
     final rows = [for (final m in melds) _meld3D(m.key, m.value)];
-    final Widget body;
-    final Alignment align;
-    if (side) {
-      body = Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment:
-            seat == 3 ? CrossAxisAlignment.start : CrossAxisAlignment.end,
-        children: [
-          for (var i = 0; i < rows.length; i++) ...[
-            if (i > 0) const SizedBox(height: 6),
-            rows[i],
-          ],
-        ],
-      );
-      align = seat == 3 ? Alignment.centerLeft : Alignment.centerRight;
-    } else {
-      // عرض الالتفاف = أعرض بير أو عرض المنطقة بنسبتها — أيهما أكبر،
-      // فلا يتجاوز بير واحد حدود الـWrap ويفيض فوق ما حوله
-      final widest = melds.fold<double>(
-          0,
-          (w, m) =>
-              math.max(w, m.value.tiles.length * (_meldTileW + 1.4) + 10));
-      final wrapW = math.max(widest, zone.width * 1.3);
-      body = SizedBox(
-        width: wrapW,
-        child: Wrap(
-          alignment: WrapAlignment.center,
-          runAlignment: WrapAlignment.center,
-          spacing: 10,
-          runSpacing: 6,
-          children: rows,
-        ),
-      );
-      align = seat == 2 ? Alignment.bottomCenter : Alignment.topCenter;
+    // عرض كل بير الحقيقي (أحجار + هوامش) وارتفاع الصف
+    const spacing = 6.0, runSpacing = 4.0;
+    const rowH = _meldTileH + 4 + 2.4;
+    final widths = [for (final m in melds) _meldWidth(m.value.tiles.length)];
+    // نبحث عن عرض الالتفاف الذي يعطي أكبر مقياس ممكن داخل المنطقة —
+    // فتبقى الأحجار بأكبر حجم مقروء مهما كثرت البيرات (بدل تصغير ثابت)
+    final widest = widths.reduce(math.max);
+    final total =
+        widths.fold<double>(0, (s, w) => s + w) + spacing * (widths.length - 1);
+    var bestW = total, bestScale = 0.0;
+    for (var wrapW = widest; wrapW <= total + 0.5; wrapW += 6) {
+      var lines = 1;
+      var lineW = 0.0;
+      var usedW = 0.0;
+      for (final w in widths) {
+        final next = lineW == 0 ? w : lineW + spacing + w;
+        if (next > wrapW + 0.01 && lineW > 0) {
+          usedW = math.max(usedW, lineW);
+          lines++;
+          lineW = w;
+        } else {
+          lineW = next;
+        }
+      }
+      usedW = math.max(usedW, lineW);
+      final h = lines * rowH + (lines - 1) * runSpacing;
+      final scale =
+          math.min(1.0, math.min(zone.width / usedW, zone.height / h));
+      if (scale > bestScale + 0.001) {
+        bestScale = scale;
+        bestW = usedW;
+      }
     }
+
+    final wrapAlign = seat == 3
+        ? WrapAlignment.start
+        : seat == 1
+            ? WrapAlignment.end
+            : WrapAlignment.center;
+    final align = switch (seat) {
+      3 => Alignment.centerLeft,
+      1 => Alignment.centerRight,
+      2 => Alignment.bottomCenter,
+      _ => Alignment.topCenter,
+    };
     return FittedBox(
       fit: BoxFit.scaleDown,
       alignment: align,
-      child: Transform(
-        alignment: Alignment.center,
-        // ميلان خفيف للخلف: الأحجار تبدو مستلقية على الطاولة
-        transform: Matrix4.identity()
-          ..setEntry(3, 2, 0.0015)
-          ..rotateX(0.32),
-        child: body,
+      child: SizedBox(
+        width: bestW + 0.5,
+        child: Wrap(
+          alignment: wrapAlign,
+          runAlignment: WrapAlignment.center,
+          spacing: spacing,
+          runSpacing: runSpacing,
+          children: rows,
+        ),
       ),
     );
   }
@@ -2503,23 +2523,34 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                for (final tile in meld.tiles)
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 0.7),
-                    // سماكة الحجر: حافة سفلية عاجية داكنة تحت الوجه
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(4),
-                      boxShadow: const [
-                        BoxShadow(
-                            color: Color(0xFFB9A57A),
-                            offset: Offset(0, 2.2),
-                            blurRadius: 0),
-                      ],
+                for (var k = 0; k < meld.tiles.length; k++)
+                  Align(
+                    // تراكب: كل حجر يحجز 72% من عرضه والتالي يغطي حافته
+                    alignment: Alignment.centerLeft,
+                    widthFactor:
+                        k == meld.tiles.length - 1 ? 1.0 : _meldOverlap,
+                    child: Container(
+                      // سماكة الحجر: حافة سفلية عاجية داكنة + ظل جانبي
+                      // خفيف يفصل الحجر عن الذي تحته
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(4),
+                        boxShadow: [
+                          const BoxShadow(
+                              color: Color(0xFFB9A57A),
+                              offset: Offset(0, 2.2),
+                              blurRadius: 0),
+                          if (k > 0)
+                            BoxShadow(
+                                color: Colors.black.withOpacity(0.22),
+                                offset: const Offset(-1.5, 0),
+                                blurRadius: 2),
+                        ],
+                      ),
+                      child: OkeyTileWidget(
+                          tile: meld.tiles[k],
+                          width: _roomScene ? _meldTileW : 26,
+                          height: _roomScene ? _meldTileH : 32),
                     ),
-                    child: OkeyTileWidget(
-                        tile: tile,
-                        width: _roomScene ? _meldTileW : 26,
-                        height: _roomScene ? _meldTileH : 32),
                   ),
               ],
             ),
