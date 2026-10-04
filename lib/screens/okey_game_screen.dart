@@ -149,6 +149,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   // سجادة اللعب الوسطى — تنتهي فوق حافة الاستكانة حتى لا يُحسب
   // الإفلات على أحجاري رمياً على "الطاولة"
   static const _roomCarpetF = Rect.fromLTWH(0.300, 0.255, 0.405, 0.240);
+  // سطح الطاولة الخشبي الأمامي كاملاً — الإفلات أي مكان فوقه (وليس
+  // السجادة فقط) يُحسب رمياً للحجر على الطاولة
+  static const _roomTableF = Rect.fromLTWH(0.235, 0.235, 0.545, 0.355);
   // استكانتي: الاتحاد العمودي لمنطقتي الأحجار — اللوح الغائر (الصف
   // العلوي قاعدته 0.758) والشريط المزخرف الأمامي (الصف السفلي حتى 0.950)
   static const _roomRackMineF = Rect.fromLTWH(0.235, 0.600, 0.540, 0.335);
@@ -1837,33 +1840,32 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           left: 60 + _safePadL,
           child: _buildStyleButtons(),
         ),
-        // صورة الخصم الأمامي + اسمه — متوسّطة على وسادته الخلفية،
-        // وشريحة الدور تتراكب جانباً فلا تُزيح الأفاتار عن المركز
+        // صورة الخصم الأمامي + اسمه — على ظهر الكنبة العليا حيث يجلس
+        // اللاعب فعلياً (أمام حامله قليلاً)، وشريحة الدور تتراكب جانباً
         Positioned(
-          top: _roomScene ? imgRect.top + imgRect.height * 0.022 : 2,
-          left: 0,
-          right: 0,
-          child: Center(
-            child: SizedBox(
-              width: 92,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Center(child: _seatBadge(2)),
-                  Positioned(
-                    right: 0,
-                    top: 13,
-                    child: _roleChip(widget.teamMode),
-                  ),
-                ],
-              ),
+          top: _roomScene ? imgRect.top + imgRect.height * 0.105 : 2,
+          left: _roomScene ? imgRect.left + imgRect.width * 0.52 - 46 : null,
+          right: _roomScene ? null : 0,
+          child: SizedBox(
+            width: 92,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Center(child: _seatBadge(2)),
+                Positioned(
+                  right: 0,
+                  top: 13,
+                  child: _roleChip(widget.teamMode),
+                ),
+              ],
             ),
           ),
         ),
         Positioned(
           top: 7 + _safePadT,
-          // مسحوب قليلاً عن حافة اليمين ليظهر صف أزرار الصوت كاملاً
-          right: 30 + _safePadR,
+          // مسحوب عن حافة اليمين — أبعد قليلاً حتى لا يُقصّ آخر زر
+          // (زر السماعة) بمنحنى الشاشة أو بحواف الجهاز المدوّر
+          right: 44 + _safePadR,
           child: AnimatedBuilder(
             animation: Listenable.merge([VoiceService(), RadioService()]),
             builder: (context, _) => Row(
@@ -1891,11 +1893,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                   },
                 ),
                 const SizedBox(width: 6),
-                // الراديو داخل اللعبة — الضغط يفتح قائمة المحطات لتغيير الأغنية
+                // الراديو داخل اللعبة — أيقونة راديو واضحة دائماً
+                // (وليس نقطة مستهدفة)، واللون يدل على التشغيل
                 _landscapeCircleButton(
-                  icon: RadioService().isPlaying
-                      ? Icons.radio_rounded
-                      : Icons.radio_button_checked_rounded,
+                  icon: Icons.radio_rounded,
                   color: RadioService().isPlaying
                       ? const Color(0xFFFBBF24)
                       : Colors.white54,
@@ -1921,22 +1922,21 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           ),
         ),
 
-        // صورة الخصم الأيسر + اسمه — باتجاهي أنا، فوق مقعده على
-        // ظهر الكنبة اليسرى في الصورة حيث يجلس اللاعب فعلياً
+        // صورة الخصم الأيسر + اسمه — على مسند كنبته الداخلي المواجه
+        // للطاولة حيث يجلس اللاعب ويطل على اللعب
         Positioned(
-          left: _roomScene ? imgRect.left + imgRect.width * 0.105 - 25 : 10,
+          left: _roomScene ? imgRect.left + imgRect.width * 0.263 - 25 : 10,
           top: _roomScene
-              ? imgRect.top + imgRect.height * 0.300
+              ? imgRect.top + imgRect.height * 0.370 - 22
               : tbl.center.dy - 24,
           child: _seatBadge(3),
         ),
-        // صورة الخصم الأيمن + اسمه — باتجاهي أنا، فوق مقعده على
-        // ظهر الكنبة اليمنى في الصورة حيث يجلس اللاعب فعلياً
+        // صورة الخصم الأيمن + اسمه — على مسند كنبته الداخلي المواجه للطاولة
         Positioned(
-          left: _roomScene ? imgRect.left + imgRect.width * 0.895 - 25 : null,
+          left: _roomScene ? imgRect.left + imgRect.width * 0.737 - 25 : null,
           right: _roomScene ? null : 10,
           top: _roomScene
-              ? imgRect.top + imgRect.height * 0.300
+              ? imgRect.top + imgRect.height * 0.355 - 22
               : tbl.center.dy - 24,
           child: _seatBadge(1),
         ),
@@ -2191,10 +2191,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     // details.offset = زاوية صندوق الـfeedback لا الإصبع ولا المركز —
     // نضيف نصف حجم الحجر فيصل التقييم لمركزه الظاهر الفعلي
     final local = scene.globalToLocal(dropGlobal + _dropTileHalfScene);
-    // وضع الغرفة: "الطاولة" = سطح السجادة في الصورة (بهامش بسيط) —
-    // إفلات الحجر على الوسائد أو خارج السجادة لا يُحتسب رمياً
+    // وضع الغرفة: "الطاولة" = سطح الطاولة الخشبي الأمامي كاملاً —
+    // إفلات الحجر على الوسائد أو خارج الطاولة لا يُحتسب رمياً
     if (_roomScene) {
-      return _mapToImg(_roomCarpetF, _sceneSize).inflate(14).contains(local);
+      return _mapToImg(_roomTableF, _sceneSize).inflate(6).contains(local);
     }
     final rackTop = _sceneSize.height - 12 - 140 * (_rackSlotW() / 40);
     return local.dy < rackTop - 8;
@@ -2730,17 +2730,17 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // حلقة الوقت المتبقي — تدور حول الصورة وتنقص
+              // حلقة الوقت المتبقي — ملتصقة بالصورة، رفيعة وخافتة
               if (isTurn)
                 SizedBox(
-                  width: 44,
-                  height: 44,
+                  width: 38,
+                  height: 38,
                   child: CircularProgressIndicator(
                     value: (_engine.turnTimeRemaining / _engine.turnDuration)
                         .clamp(0.0, 1.0),
-                    strokeWidth: 3,
+                    strokeWidth: 1.8,
                     strokeCap: StrokeCap.round,
-                    backgroundColor: Colors.white12,
+                    backgroundColor: Colors.white10,
                     valueColor: AlwaysStoppedAnimation<Color>(ringColor),
                   ),
                 ),
@@ -3435,130 +3435,70 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     );
   }
 
-  /// كومات مرميات اللاعبين الأربعة: لكل لاعب كومة مكدّسة — كل رمية جديدة
-  /// تظهر فوق ما قبلها، والأحجار القديمة مقلوبة على ظهرها ولا يظهر إلا
-  /// آخر حجر مرمي من كل كومة. حجر اليسار الأخير وحده قابل للأخذ
-  /// (توهّج أخضر + لمس أو سحب)، ومرميات الفول تبقى مقلوبة كلها.
+  /// كومة المرميات: أحجار مقلوبة مبعثرة بمواضع ثابتة (صورة كومة ثابتة
+  /// لا تتبدل مع كل رمية)، وفوقها يظهر آخر حجر رُمي على الطاولة من أي
+  /// لاعب. حجر اليسار الأخير وحده قابل للأخذ (توهّج أخضر + لمس أو سحب)،
+  /// ومرميات الفول تبقى مقلوبة. بلا خلفية — الأحجار على السجادة مباشرة.
   Widget _buildScatterPile({
     required bool canDraw,
     required bool canDiscard,
     required bool canTakeLeft,
   }) {
-    // الحجر الوحيد القابل للأخذ = آخر رمية للاعب اليسار
-    final leftTopTile = _engine.discardPiles[3].isNotEmpty
-        ? _engine.discardPiles[3].last
-        : null;
+    // آخر حجر رُمي على الطاولة = قمة كومة اللاعب الذي أنهى دوره للتو
+    final prevIdx = (_engine.currentTurnIndex + 3) % 4;
+    final prevPile = _engine.discardPiles[prevIdx];
+    final topTile = prevPile.isNotEmpty ? prevPile.last : null;
+    final prevIsFull = prevIdx != 0 &&
+        _engine.players[prevIdx].playStyle == OkeyPlayStyle.full;
     final total = _engine.discardPiles.fold<int>(0, (s, p) => s + p.length);
 
     final w = _roomScene ? 200.0 : 140.0;
     final h = _roomScene ? 78.0 : 92.0;
-    final tw = _roomScene ? 32.0 : 22.0;
-    final th = _roomScene ? 44.0 : 30.0;
-    final step = _roomScene ? 3.0 : 2.4;
-    // كم حجراً يظهر من كل كومة (الأقدم يُدفن تحت الأحدث)
-    const maxShown = 7;
-    // ترتيب الكومات يسار→يمين يطابق مقاعد اللاعبين حول الطاولة
-    const laneOrder = [3, 2, 1, 0];
-    final laneW = w / 4;
+    final tw = _roomScene ? 34.0 : 24.0;
+    final th = _roomScene ? 46.0 : 32.0;
+    // مركز الكومة داخل الحيّز
+    final cx = w * 0.5, cy = h * 0.52;
+    // مواضع ثابتة للأحجار المقلوبة (إزاحة X، إزاحة Y، زاوية) — لا تتبدل
+    // مع الرميات فتبقى الكومة ثابتة الشكل مهما رمى اللاعبون
+    const backSlots = [
+      (-11.0, 5.0, -0.28),
+      (9.0, 1.0, 0.22),
+      (-4.0, -4.0, -0.12),
+      (12.0, 9.0, 0.38),
+      (1.0, -1.0, 0.05),
+    ];
+    // بقدر عدد المرمرات وبحد أقصى مواضعها الخمسة — من الحجر الخامس
+    // وصاعداً تثبت صورة الكومة ولا يتبدل إلا الحجر المكشوف فوقها
+    final backs = math.min(backSlots.length, math.max(0, total - 1));
 
-    final stacks = <Widget>[];
-    for (var lane = 0; lane < 4; lane++) {
-      stacks.addAll(_pileLane(
-        player: laneOrder[lane],
-        laneCenter: laneW * lane + laneW / 2,
-        h: h,
-        tw: tw,
-        th: th,
-        step: step,
-        maxShown: maxShown,
-        canTakeLeft: canTakeLeft,
-        leftTopTile: leftTopTile,
+    final children = <Widget>[
+      // عداد الأحجار المرمية — خافت تحت الكومة
+      Positioned(
+        left: 2,
+        bottom: 1,
+        child: Text('$total',
+            style: TextStyle(
+                color: Colors.white.withOpacity(0.30),
+                fontSize: 8,
+                fontWeight: FontWeight.w900)),
+      ),
+    ];
+    // الأحجار المقلوبة بمواضعها الثابتة
+    for (var i = 0; i < backs; i++) {
+      final s = backSlots[i];
+      children.add(Positioned(
+        left: cx - tw / 2 + s.$1,
+        top: cy - th / 2 + s.$2,
+        child: Transform.rotate(angle: s.$3, child: _tileBack(tw, th)),
       ));
     }
-
-    return GestureDetector(
-      onTap: () {
-        if (canDiscard && _engine.selectedTileIndex != null) {
-          _executeDiscard(_engine.selectedTileIndex!);
-        } else {
-          _showDiscardViewer();
-        }
-      },
-      onLongPress: _showDiscardViewer,
-      child: Container(
-        key: _discardKey,
-        width: w,
-        height: h,
-        decoration: BoxDecoration(
-          color: const Color(0x8C142040),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: canDiscard
-                ? const Color(0xFFEF4444).withOpacity(0.7)
-                : Colors.white.withOpacity(0.10),
-            width: canDiscard ? 1.4 : 0.8,
-          ),
-        ),
-        child: total == 0
-            ? Center(
-                child: Icon(Icons.layers_clear_rounded,
-                    color: Colors.white.withOpacity(0.18), size: 22))
-            : Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  // عداد الأحجار المرمية
-                  Positioned(
-                    left: 4,
-                    bottom: 2,
-                    child: Text('$total',
-                        style: TextStyle(
-                            color: Colors.white.withOpacity(0.35),
-                            fontSize: 8,
-                            fontWeight: FontWeight.w900)),
-                  ),
-                  ...stacks,
-                ],
-              ),
-      ),
-    );
-  }
-
-  /// كومة لاعب واحد داخل حيّزه: الأحجار القديمة مقلوبة على ظهرها
-  /// والأحدث مكشوفة فوق القمة. يُرجع ويدجات Positioned للكومة الأم.
-  List<Widget> _pileLane({
-    required int player,
-    required double laneCenter,
-    required double h,
-    required double tw,
-    required double th,
-    required double step,
-    required int maxShown,
-    required bool canTakeLeft,
-    required OkeyTile? leftTopTile,
-  }) {
-    final pile = _engine.discardPiles[player];
-    if (pile.isEmpty) return const [];
-    final isFull =
-        player != 0 && _engine.players[player].playStyle == OkeyPlayStyle.full;
-    final shown =
-        pile.length > maxShown ? pile.sublist(pile.length - maxShown) : pile;
-    final laneColors = [
-      const Color(0xFF4ADE80),
-      const Color(0xFF38BDF8),
-      const Color(0xFFF472B6),
-      const Color(0xFFFBBF24),
-    ];
-    final base = h - th - 8;
-    final out = <Widget>[];
-    for (var i = 0; i < shown.length; i++) {
-      final t = shown[i];
-      final isTop = i == shown.length - 1;
-      final faceDown = isFull || !isTop;
-      Widget tile = faceDown
+    // آخر حجر مرمي فوق الكومة كلها — مكشوفاً (أو مقلوباً إن كان للفول)
+    if (topTile != null) {
+      Widget top = prevIsFull
           ? _tileBack(tw, th)
-          : OkeyTileWidget(tile: t, width: tw, height: th);
-      if (isTop && canTakeLeft && player == 3 && identical(t, leftTopTile)) {
-        tile = Draggable<int>(
+          : OkeyTileWidget(tile: topTile, width: tw, height: th);
+      if (!prevIsFull && canTakeLeft && prevIdx == 3) {
+        top = Draggable<int>(
           key: _leftDiscardKey,
           data: OkeyDrag.leftPile,
           maxSimultaneousDrags: 1,
@@ -3569,12 +3509,12 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             color: Colors.transparent,
             elevation: 10,
             child: OkeyTileWidget(
-                tile: t,
+                tile: topTile,
                 isDragging: true,
                 width: _rackTileW,
                 height: _rackTileH),
           ),
-          childWhenDragging: Opacity(opacity: 0.25, child: tile),
+          childWhenDragging: Opacity(opacity: 0.25, child: top),
           child: GestureDetector(
             onTap: _executeDrawFromLeft,
             child: Container(
@@ -3587,28 +3527,41 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                       spreadRadius: 1.5),
                 ],
               ),
-              child: tile,
+              child: top,
             ),
           ),
         );
       }
-      out.add(Positioned(
-          left: laneCenter - tw / 2, top: base - i * step, child: tile));
+      children.add(Positioned(
+        left: cx - tw / 2 + 1,
+        top: cy - th / 2 - 3,
+        child: top,
+      ));
     }
-    // شريط بلون مقعد اللاعب أسفل كومته لتمييز صاحبها
-    out.add(Positioned(
-      left: laneCenter - 10,
-      bottom: 0.5,
-      child: Container(
-        width: 20,
-        height: 2.5,
-        decoration: BoxDecoration(
-          color: laneColors[player].withOpacity(0.65),
-          borderRadius: BorderRadius.circular(2),
-        ),
+
+    return GestureDetector(
+      onTap: () {
+        if (canDiscard && _engine.selectedTileIndex != null) {
+          _executeDiscard(_engine.selectedTileIndex!);
+        } else {
+          _showDiscardViewer();
+        }
+      },
+      onLongPress: _showDiscardViewer,
+      child: SizedBox(
+        key: _discardKey,
+        width: w,
+        height: h,
+        child: total == 0
+            ? Center(
+                child: Icon(Icons.layers_clear_rounded,
+                    color: Colors.white.withOpacity(0.14), size: 22))
+            : Stack(
+                clipBehavior: Clip.none,
+                children: children,
+              ),
       ),
-    ));
-    return out;
+    );
   }
 
   /// نافذة عرض مرميات كل لاعب — للاطلاع فقط، لا يمكن أخذ أي حجر منها

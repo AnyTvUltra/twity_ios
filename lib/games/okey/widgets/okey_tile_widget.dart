@@ -61,6 +61,17 @@ class OkeyTileWidget extends StatelessWidget {
     final hasAnimatedSkin =
         skinItem != null && skinEffectOf(skinItem) != SkinEffect.none;
 
+    // لون الحفر: درجة أغمق من لون الحجر — تبدو منحوتة لا مطبوعة
+    Color engrave(Color c) {
+      final hsl = HSLColor.fromColor(c);
+      return hsl
+          .withLightness((hsl.lightness * 0.68).clamp(0.0, 1.0))
+          .toColor();
+    }
+
+    final ink = t.color.color;
+    final carved = engrave(ink);
+
     Widget tileWidget = AnimatedContainer(
       duration: const Duration(milliseconds: 140),
       curve: Curves.easeOutCubic,
@@ -85,7 +96,7 @@ class OkeyTileWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(4.5),
         border: Border.all(
           color: isSelected
-              ? const Color(0xFFFFD54F)
+              ? const Color(0xFFFFD54F).withOpacity(0.85)
               : isDragging
                   ? const Color(0xFF60A5FA)
                   : (isHighlighted
@@ -94,22 +105,32 @@ class OkeyTileWidget extends StatelessWidget {
                           ? const Color(0xFFFFB300)
                           : const Color(0xFFCFC4A4))),
           width:
-              isSelected ? 2.0 : (isHighlighted ? 1.6 : (isOkey ? 1.6 : 0.8)),
+              isSelected ? 1.6 : (isHighlighted ? 1.4 : (isOkey ? 1.4 : 0.8)),
         ),
         boxShadow: [
-          // ظل عمق ثلاثي الأبعاد
+          // ظل أرضي ناعم تحت الحجر — إحساس ارتفاع واقعي بلا حِدّة
           BoxShadow(
-            color: isSelected
-                ? const Color(0xFFFFD54F).withOpacity(0.55)
-                : isDragging
-                    ? const Color(0xFF3B82F6).withOpacity(0.5)
-                    : (isHighlighted
-                        ? const Color(0xFF10B981).withOpacity(0.5)
-                        : Colors.black.withOpacity(0.38)),
-            blurRadius:
-                isSelected ? 8 : (isDragging ? 10 : (isHighlighted ? 6 : 3.5)),
-            offset: Offset(0, isSelected ? 4 : (isDragging ? 5 : 2)),
+            color: Colors.black.withOpacity(0.28),
+            blurRadius: 5,
+            offset: const Offset(0, 2.5),
           ),
+          // توهّج التحديد/السحب — خافت وهادئ لا يبتلع الحجر
+          if (isSelected)
+            BoxShadow(
+              color: const Color(0xFFFFD54F).withOpacity(0.38),
+              blurRadius: 10,
+              spreadRadius: -1,
+            )
+          else if (isDragging)
+            BoxShadow(
+              color: const Color(0xFF3B82F6).withOpacity(0.45),
+              blurRadius: 11,
+            )
+          else if (isHighlighted)
+            BoxShadow(
+              color: const Color(0xFF10B981).withOpacity(0.38),
+              blurRadius: 7,
+            ),
         ],
       ),
       child: ClipRRect(
@@ -143,6 +164,26 @@ class OkeyTileWidget extends StatelessWidget {
                       Colors.white.withOpacity(0.6),
                       Colors.transparent,
                     ],
+                  ),
+                ),
+              ),
+            ),
+
+            // حواف مائلة ثلاثية الأبعاد: ضوء يصطف أعلى ويسار، ظل
+            // يصطف أسفل ويمين — يعطي سماكة حجر حقيقي بلا خطوط قاسية
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border(
+                    top: BorderSide(
+                        color: Colors.white.withOpacity(0.65), width: 0.9),
+                    left: BorderSide(
+                        color: Colors.white.withOpacity(0.40), width: 0.7),
+                    bottom: BorderSide(
+                        color: Colors.black.withOpacity(0.16), width: 1.0),
+                    right: BorderSide(
+                        color: Colors.black.withOpacity(0.10), width: 0.7),
                   ),
                 ),
               ),
@@ -183,10 +224,10 @@ class OkeyTileWidget extends StatelessWidget {
                     style: TextStyle(
                       fontSize: width * (t.value >= 10 ? 0.45 : 0.52),
                       fontWeight: FontWeight.w900,
-                      // على السكنات المتحركة: بأليت ألوان مضيئة تحافظ على
-                      // تمييز لون الحجر (الأسود→فضّي أبيض)
-                      color:
-                          hasAnimatedSkin ? t.color.brightColor : t.color.color,
+                      // محفور: درجة أغمق من لون الحجر + حافة ضوء سفلية
+                      // وحافة ظل علوية = الرقم منحوت في العاج لا مطبوع.
+                      // على السكنات المتحركة يبقى اللون المضيء للوضوح.
+                      color: hasAnimatedSkin ? t.color.brightColor : carved,
                       height: 1.0,
                       shadows: hasAnimatedSkin
                           ? [
@@ -201,28 +242,44 @@ class OkeyTileWidget extends StatelessWidget {
                                 offset: Offset(0.6, 0.6),
                               ),
                             ]
-                          : [
+                          : const [
+                              // ضوء يلتقطه قاع النقش (حافة مضيئة تحت الحرف)
                               Shadow(
-                                color: t.color.color.withOpacity(0.2),
-                                blurRadius: 1,
-                                offset: const Offset(0.5, 0.5),
+                                color: Color(0xBFFFFFFF),
+                                blurRadius: 0,
+                                offset: Offset(0, 1.1),
+                              ),
+                              // ظل داخل أعلى النقش
+                              Shadow(
+                                color: Color(0x33000000),
+                                blurRadius: 0.6,
+                                offset: Offset(0, -0.7),
                               ),
                             ],
                     ),
                   ),
                   const SizedBox(height: 2),
-                  // نقطة لون الحجر — أكبر وأوضح على السكنات الداكنة
+                  // نقطة لون الحجر — محفورة: أعمق من الأعلى ويلتقط
+                  // شفاها ضوءً من الأسفل كالحُفرة الحقيقية
                   Container(
                     width: width * (hasAnimatedSkin ? 0.20 : 0.14),
                     height: width * (hasAnimatedSkin ? 0.20 : 0.14),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color:
-                          hasAnimatedSkin ? t.color.brightColor : t.color.color,
+                      color: hasAnimatedSkin ? t.color.brightColor : null,
+                      gradient: hasAnimatedSkin
+                          ? null
+                          : LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [carved, ink, ink],
+                              stops: const [0.0, 0.55, 1.0],
+                            ),
                       border: hasAnimatedSkin
                           ? Border.all(
                               color: Colors.black.withOpacity(0.55), width: 0.8)
-                          : null,
+                          : Border.all(
+                              color: carved.withOpacity(0.55), width: 0.6),
                       boxShadow: hasAnimatedSkin
                           ? [
                               BoxShadow(
@@ -230,7 +287,14 @@ class OkeyTileWidget extends StatelessWidget {
                                 blurRadius: 4,
                               ),
                             ]
-                          : null,
+                          : const [
+                              // حافة الضوء أسفل الحُفرة
+                              BoxShadow(
+                                color: Color(0x99FFFFFF),
+                                blurRadius: 0,
+                                offset: Offset(0, 0.8),
+                              ),
+                            ],
                     ),
                   ),
                 ],

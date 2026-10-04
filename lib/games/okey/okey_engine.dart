@@ -575,16 +575,6 @@ class OkeyEngine extends ChangeNotifier {
   /// النزول على الطاولة مسموح للأسلوب العادي فقط
   bool get humanCanLayMelds => players[0].playStyle == OkeyPlayStyle.normal;
 
-  void _convertToKonkanIfNormal(int idx) {
-    if (rules.isRummy) return; // في رامي أخذ المرميات طبيعي — لا تحويل أسلوب
-    final p = players[idx];
-    if (p.playStyle != OkeyPlayStyle.normal) return;
-    p.playStyle = OkeyPlayStyle.konkan;
-    onNotice?.call(idx == 0
-        ? '🔄 أخذت حجر غيرك — تحوّلت تلقائياً إلى كونكان'.tr
-        : '🔄 {} أخذ حجراً من غيره — صار يلعب كونكان'.trp([p.name]));
-  }
-
   /// فوز اليد (بعد الرمي) حسب أسلوب اللاعب
   bool _styleWins(OkeyPlayer p, List<OkeyTile> tiles) {
     switch (p.playStyle) {
@@ -817,7 +807,6 @@ class OkeyEngine extends ChangeNotifier {
 
       if (takeDiscard && prevDiscards.isNotEmpty) {
         drawnTile = prevDiscards.removeLast();
-        _convertToKonkanIfNormal(currentTurnIndex);
       } else {
         // رزمة فارغة؟ أعد خلط المرميات أولاً
         if (drawDeck.isEmpty) _refillDeckFromDiscards();
