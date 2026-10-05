@@ -165,13 +165,13 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   // المناطق الأربع لا تتقاطع مع مركز الرزمة/المؤشر/الكومة (_roomCenterF)
   // مناطق أوسع تستغل سطح الطاولة كله حول المركز — الأحجار تبقى مقروءة
   // وحوافها الجانبية مُبعدة عن إطارات صور اللاعبين فلا تُغطّى
-  static const _roomMeldMineF = Rect.fromLTWH(0.270, 0.478, 0.460, 0.112);
-  static const _roomMeldTopF = Rect.fromLTWH(0.395, 0.230, 0.210, 0.098);
-  static const _roomMeldLeftF = Rect.fromLTWH(0.290, 0.250, 0.100, 0.205);
-  static const _roomMeldRightF = Rect.fromLTWH(0.610, 0.250, 0.100, 0.205);
+  static const _roomMeldMineF = Rect.fromLTWH(0.258, 0.455, 0.484, 0.140);
+  static const _roomMeldTopF = Rect.fromLTWH(0.395, 0.205, 0.210, 0.120);
+  static const _roomMeldLeftF = Rect.fromLTWH(0.290, 0.240, 0.100, 0.215);
+  static const _roomMeldRightF = Rect.fromLTWH(0.610, 0.240, 0.100, 0.215);
   // مركز السجادة — الرزمة والمؤشر وكومة المرميات (ارتفاعه يكفي لتظهر
   // الأحجار بمقاس مقروء بلا أن يضغطها الـFittedBox)
-  static const _roomCenterF = Rect.fromLTWH(0.395, 0.335, 0.210, 0.140);
+  static const _roomCenterF = Rect.fromLTWH(0.395, 0.330, 0.210, 0.120);
   // حاشية التقاط هدف الرف حول منطقة الاستكانة — تلتقط الإفلات السريع
   // المتجاوز لحدودها (الإصبع يسبق الحجر المرئي) فيقع على أقرب خانة.
   // الحاشية السفلية أوسع بكثير: الحجر المرئي يطفو فوق الإصبع فيكون
@@ -1711,13 +1711,11 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                   ),
                   if (_engine.canDeclareOkeyOut && !_dealing)
                     Positioned(
-                      left: 0,
-                      right: 0,
-                      // فوق استكانتي مباشرة — على حافة حامل الصورة العلوية
-                      bottom: _roomScene
-                          ? sh - _mapToImg(_roomRackMineF, Size(sw, sh)).top + 6
-                          : 140 * (_rackSlotW() / 40) + 12,
-                      child: Center(child: _buildOkeyOutButton()),
+                      // زر جانبي صغير أسفل اليمين فوق زر الإعدادات —
+                      // كان شريطاً ذهبياً طويلاً يغطي بيراتك على الطاولة
+                      right: 10 + _safePadR,
+                      bottom: 62 + _safePadB,
+                      child: _buildOkeyOutButton(),
                     ),
                   Positioned(
                     left: 0,
@@ -2082,17 +2080,18 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         _engine.declareHumanWin();
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
+        // زر جانبي مدمج — كان شريطاً عريضاً يغطي بيرات اللاعب على الطاولة
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             colors: [Color(0xFFFFD54F), Color(0xFFFF8F00)],
           ),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white, width: 1.6),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white, width: 1.4),
           boxShadow: [
             BoxShadow(
               color: const Color(0xFFFFD54F).withOpacity(0.8),
-              blurRadius: 14,
+              blurRadius: 12,
               spreadRadius: 1,
             ),
           ],
@@ -2100,16 +2099,14 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('🏆', style: TextStyle(fontSize: 15)),
-            SizedBox(width: 7),
+            Text('🏆', style: TextStyle(fontSize: 13)),
+            SizedBox(width: 4),
             Text(
-              widget.rummyMode
-                  ? 'رامي! (Rummy Out!)'.tr
-                  : 'إعلان الفوز بالأوكي (Okey Out!)'.tr,
+              widget.rummyMode ? 'رامي!'.tr : 'فوز!'.tr,
               style: TextStyle(
                 color: Color(0xFF1B0B30),
                 fontWeight: FontWeight.w900,
-                fontSize: 11.5,
+                fontSize: 11,
               ),
             ),
           ],
@@ -2385,7 +2382,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     );
   }
 
-  static const double _meldTileW = 34, _meldTileH = 40;
+  static const double _meldTileW = 36, _meldTileH = 42;
 
   /// كل حجر يظهر منه 72% ويغطّيه التالي — مثل طاولات الأوكي الحقيقية؛
   /// الرقم والنقطة في الجزء الظاهر فيبقى مقروءاً والبير أقصر بكثير
@@ -2395,16 +2392,20 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   static double _meldWidth(int n) =>
       (n - 1) * (_meldTileW + 2) * _meldOverlap + _meldTileW + 2 + 4;
 
-  /// بيرات لاعب واحد مصفوفة بأناقة داخل منطقته فقط — لا تتجاوزها أبداً
-  /// (FittedBox يقيس الحجم الحقيقي للمحتوى ويصغّره ليتسع، فلا تغطي
-  /// الرزمة أو المؤشر أو الكومة). الجانبيان: عمود صفوف مرصوف نحو
-  /// صاحبه. المقابل وأنا: صفوف ملتفّة متوسطة.
+  /// بيرات لاعب واحد مصفوفة بأناقة داخل منطقته فقط — لا تتجاوزها أبداً.
+  /// الصفوف تتداخل قليلاً عمودياً (الرقم في النصف العلوي فيبقى مقروءاً)
+  /// والمقياس يجوز تجاوز ×1 للبيرات القليلة فتظهر أكبر — مثل طاولة
+  /// حقيقية تكبّر فيها الأحجار كلما قلّ عددها. الجانبيان: صفوف مرصوفة
+  /// نحو صاحبه. المقابل وأنا: صفوف متوسطة.
+  static const double _meldRowPitch = 0.82; // نسبة التقارب بين الصفوف
+  static const double _meldMaxScale = 1.25; // سقف التكبير للبيرات القليلة
+
   Widget _meldsOnTable(List<MapEntry<int, OkeyGroup>> melds, Rect zone,
       {required int seat}) {
     final rows = [for (final m in melds) _meld3D(m.key, m.value)];
-    // عرض كل بير الحقيقي (أحجار + هوامش) وارتفاع الصف
-    const spacing = 6.0, runSpacing = 4.0;
+    const spacing = 6.0;
     const rowH = _meldTileH + 4 + 2.4;
+    const pitch = rowH * _meldRowPitch;
     final widths = [for (final m in melds) _meldWidth(m.value.tiles.length)];
     // نبحث عن عرض الالتفاف الذي يعطي أكبر مقياس ممكن داخل المنطقة —
     // فتبقى الأحجار بأكبر حجم مقروء مهما كثرت البيرات (بدل تصغير ثابت)
@@ -2427,37 +2428,71 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         }
       }
       usedW = math.max(usedW, lineW);
-      final h = lines * rowH + (lines - 1) * runSpacing;
-      final scale =
-          math.min(1.0, math.min(zone.width / usedW, zone.height / h));
+      final h = rowH + (lines - 1) * pitch;
+      final scale = math.min(
+          _meldMaxScale, math.min(zone.width / usedW, zone.height / h));
       if (scale > bestScale + 0.001) {
         bestScale = scale;
-        bestW = usedW;
+        bestW = wrapW;
       }
     }
 
-    final wrapAlign = seat == 3
-        ? WrapAlignment.start
-        : seat == 1
-            ? WrapAlignment.end
-            : WrapAlignment.center;
+    // تقسيم البيرات إلى صفوف على العرض الفائز
+    final lines = <List<int>>[[]];
+    final lineWidths = <double>[];
+    var lineW = 0.0;
+    for (var i = 0; i < widths.length; i++) {
+      final w = widths[i];
+      final next = lineW == 0 ? w : lineW + spacing + w;
+      if (next > bestW + 0.01 && lineW > 0) {
+        lineWidths.add(lineW);
+        lines.add([i]);
+        lineW = w;
+      } else {
+        lines.last.add(i);
+        lineW = next;
+      }
+    }
+    lineWidths.add(lineW);
+    final usedW = lineWidths.reduce(math.max);
+    final contentH = rowH + (lines.length - 1) * pitch;
+
     final align = switch (seat) {
       3 => Alignment.centerLeft,
       1 => Alignment.centerRight,
       2 => Alignment.bottomCenter,
       _ => Alignment.topCenter,
     };
-    return FittedBox(
-      fit: BoxFit.scaleDown,
+    return Align(
       alignment: align,
-      child: SizedBox(
-        width: bestW + 0.5,
-        child: Wrap(
-          alignment: wrapAlign,
-          runAlignment: WrapAlignment.center,
-          spacing: spacing,
-          runSpacing: runSpacing,
-          children: rows,
+      child: Transform.scale(
+        scale: bestScale,
+        alignment: align,
+        child: SizedBox(
+          width: usedW,
+          height: contentH,
+          child: Stack(
+            children: [
+              for (var r = 0; r < lines.length; r++)
+                Positioned(
+                  top: r * pitch,
+                  left: seat == 3
+                      ? 0
+                      : seat == 1
+                          ? usedW - lineWidths[r]
+                          : (usedW - lineWidths[r]) / 2,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (var c = 0; c < lines[r].length; c++) ...[
+                        if (c > 0) const SizedBox(width: spacing),
+                        rows[lines[r][c]],
+                      ],
+                    ],
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -3189,55 +3224,13 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         ),
 
         // ══════════════════════════════════════════════
-        // 4.5. زر إعلان الفوز بالأوكي (Okey Out!) عند اكتمال 14 حجراً متناسقة
+        // 4.5. زر إعلان الفوز بالأوكي — جانبي صغير مثل مشهد الغرفة
         // ══════════════════════════════════════════════
         if (_engine.canDeclareOkeyOut)
           Positioned(
-            left: 0,
-            right: 0,
-            bottom: 128,
-            child: Center(
-              child: GestureDetector(
-                onTap: () {
-                  AppHaptics.heavy();
-                  OkeyAudio.playWin();
-                  _engine.declareHumanWin();
-                },
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFFFD54F), Color(0xFFFF8F00)],
-                    ),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.white, width: 2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFFFD54F).withOpacity(0.85),
-                        blurRadius: 18,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('🏆', style: TextStyle(fontSize: 20)),
-                      SizedBox(width: 8),
-                      Text(
-                        'إعلان الفوز بالأوكي (Okey Out!) 🎯'.tr,
-                        style: TextStyle(
-                          color: Color(0xFF1B0B30),
-                          fontWeight: FontWeight.w900,
-                          fontSize: 14.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+            right: 10 + _safePadR,
+            bottom: 62 + _safePadB,
+            child: _buildOkeyOutButton(),
           ),
 
         // ══════════════════════════════════════════════

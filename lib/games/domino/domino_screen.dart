@@ -1323,6 +1323,9 @@ class DominoTileWidget extends StatelessWidget {
         ),
         child: horizontal
             ? Row(
+                // ترتيب النصفين مكاني لا لغوي — في RTL يعكس الـRow
+                // الأبناء فيظهر الحجر مقلوباً والسلسلة تبدو مكسورة
+                textDirection: TextDirection.ltr,
                 children: [
                   Expanded(child: _DominoFace(value: left)),
                   divider,
