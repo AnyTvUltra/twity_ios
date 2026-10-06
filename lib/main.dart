@@ -72,7 +72,6 @@ class _GameHubAppState extends State<GameHubApp> {
     super.dispose();
   }
 
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -86,7 +85,8 @@ class _GameHubAppState extends State<GameHubApp> {
           PointerDeviceKind.trackpad,
           PointerDeviceKind.stylus,
         },
-        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+        physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics()),
       ),
       theme: ThemeData(
         brightness: Brightness.dark,
@@ -122,9 +122,9 @@ class _GameHubAppState extends State<GameHubApp> {
         '/home': (context) => HomeScreen(),
         '/games/chess': (context) => GameScreen(gameId: 'chess'),
         '/games/solitaire': (context) => GameScreen(gameId: 'solitaire'),
-        '/games/ludo': (context) => GameScreen(gameId: 'ludo'),
         '/games/okey': (context) => OkeyLobbyScreen(),
-        '/games/backgammon': (context) => const GameScreen(gameId: 'backgammon'),
+        '/games/backgammon': (context) =>
+            const GameScreen(gameId: 'backgammon'),
         '/admin': (context) => const AdminPanelScreen(),
       },
     );

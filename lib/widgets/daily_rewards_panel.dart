@@ -22,16 +22,26 @@ class DailyRewardsPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: AuthService(),
-      builder: (context, _) => Column(
+      builder: (context, _) => const Column(
         mainAxisSize: MainAxisSize.min,
-        children: const [
+        children: [
           _WeeklyStrip(),
           SizedBox(height: 12),
           _VipStrip(),
           SizedBox(height: 12),
-          _LootBoxCard(),
-          SizedBox(height: 12),
-          _WheelCard(),
+          // صندوق الغنائم وعجلة الحظ جنباً إلى جنب — بطاقتا
+          // استعراض برسم مخصص بدل أيقونة إيموجي
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: _LootBoxCard()),
+                SizedBox(width: 12),
+                Expanded(child: _WheelCard()),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -686,7 +696,7 @@ class _VipPerk extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════════
-// 3) بطاقة عجلة الحظ اليومية
+// 3) بطاقة عجلة الحظ اليومية — بطاقة استعراض عمودية برسم مخصص
 // ══════════════════════════════════════════════════════════════
 class _WheelCard extends StatelessWidget {
   const _WheelCard();
@@ -696,131 +706,113 @@ class _WheelCard extends StatelessWidget {
     final spinsLeft = AuthService().wheelSpinsRemaining;
     final isVip = AuthService().currentUser?.isVip ?? false;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  const Color(0xFF1E3A5F).withOpacity(0.6),
-                  const Color(0xFF101C38).withOpacity(0.5),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                  color: const Color(0xFF38BDF8).withOpacity(0.45), width: 1.1),
-              boxShadow: [
-                BoxShadow(
-                    color: const Color(0xFF38BDF8).withOpacity(0.12),
-                    blurRadius: 16,
-                    spreadRadius: -4),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(22),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                const Color(0xFF16436B).withOpacity(0.55),
+                const Color(0xFF0B1B33).withOpacity(0.6),
               ],
             ),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+                color: const Color(0xFF38BDF8).withOpacity(0.5), width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                  color: const Color(0xFF38BDF8).withOpacity(0.15),
+                  blurRadius: 18,
+                  spreadRadius: -4),
+            ],
+          ),
+          child: Column(
+            children: [
+              // عجلة مرسومة بحافة ذهبية ومقاطع ملوّنة
+              SizedBox(
+                height: 74,
+                child: CustomPaint(
+                  size: const Size(74, 74),
+                  painter: const _MiniWheelPainter(),
+                ),
+              ),
+              const SizedBox(height: 9),
+              Text(
+                'عجلة الحظ اليومية'.tr,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: DailyRewardsPanel._textWhite,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 12.5,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                spinsLeft > 0
+                    ? 'عندك {} {}'
+                        .trp([spinsLeft, spinsLeft == 1 ? 'لفة' : 'لفات'])
+                    : 'عُد غداً!{}'.trp([isVip ? '' : ' VIP = لفتان']),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: DailyRewardsPanel._textDim,
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 10),
+              GestureDetector(
+                onTap: () async {
+                  AppHaptics.medium();
+                  if (AuthService().currentUser == null) {
+                    TopNotification.show(context, 'سجّل الدخول أولاً!'.tr,
+                        icon: Icons.warning_rounded);
+                    return;
+                  }
+                  if (spinsLeft <= 0) {
+                    TopNotification.show(
+                        context, 'استخدمت لفات اليوم! عُد غداً 🎡'.tr,
+                        icon: Icons.lock_clock_rounded);
+                    return;
+                  }
+                  await showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (_) => const DailyWheelDialog(),
+                  );
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 9),
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: const RadialGradient(colors: [
-                      Color(0xFFBAE6FD),
-                      Color(0xFF38BDF8),
-                      Color(0xFF075985),
-                    ]),
-                    boxShadow: [
-                      BoxShadow(
-                          color: const Color(0xFF38BDF8).withOpacity(0.4),
-                          blurRadius: 10),
-                    ],
+                    gradient: spinsLeft > 0
+                        ? const LinearGradient(colors: [
+                            Color(0xFF7DD3FC),
+                            Color(0xFF38BDF8),
+                            Color(0xFF0284C7),
+                          ])
+                        : null,
+                    color: spinsLeft > 0 ? null : const Color(0x2EFFFFFF),
+                    borderRadius: BorderRadius.circular(13),
+                    border: spinsLeft > 0
+                        ? Border.all(color: const Color(0xFFBAE6FD), width: 0.8)
+                        : null,
+                    boxShadow: spinsLeft > 0
+                        ? [
+                            BoxShadow(
+                                color:
+                                    const Color(0xFF38BDF8).withOpacity(0.45),
+                                blurRadius: 12),
+                          ]
+                        : null,
                   ),
-                  child: const Center(
-                    child: Text('🎡', style: TextStyle(fontSize: 21)),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'عجلة الحظ اليومية'.tr,
-                        style: TextStyle(
-                          color: DailyRewardsPanel._textWhite,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 13.5,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        spinsLeft > 0
-                            ? 'عندك {} {} — أموال 🪙 وجواهر 💎 وسكن نادر 🎨'
-                                .trp([
-                                spinsLeft,
-                                spinsLeft == 1 ? 'لفة' : 'لفات'
-                              ])
-                            : 'استخدمت لفات اليوم — عُد غداً!{}'
-                                .trp([isVip ? '' : ' VIP = لفتان إضافيتان']),
-                        maxLines: 2,
-                        style: const TextStyle(
-                          color: DailyRewardsPanel._textDim,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: () async {
-                    AppHaptics.medium();
-                    if (AuthService().currentUser == null) {
-                      TopNotification.show(context, 'سجّل الدخول أولاً!'.tr,
-                          icon: Icons.warning_rounded);
-                      return;
-                    }
-                    if (spinsLeft <= 0) {
-                      TopNotification.show(
-                          context, 'استخدمت لفات اليوم! عُد غداً 🎡'.tr,
-                          icon: Icons.lock_clock_rounded);
-                      return;
-                    }
-                    await showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (_) => const DailyWheelDialog(),
-                    );
-                  },
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      gradient: spinsLeft > 0
-                          ? const LinearGradient(colors: [
-                              Color(0xFF7DD3FC),
-                              Color(0xFF38BDF8),
-                              Color(0xFF0284C7),
-                            ])
-                          : null,
-                      color: spinsLeft > 0 ? null : const Color(0x2EFFFFFF),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: spinsLeft > 0
-                          ? [
-                              BoxShadow(
-                                  color:
-                                      const Color(0xFF38BDF8).withOpacity(0.4),
-                                  blurRadius: 10),
-                            ]
-                          : null,
-                    ),
+                  child: Center(
                     child: Text(
                       spinsLeft > 0 ? 'أدر الآن'.tr : 'انتهت'.tr,
                       style: TextStyle(
@@ -832,8 +824,8 @@ class _WheelCard extends StatelessWidget {
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -842,7 +834,7 @@ class _WheelCard extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════════
-// 3b) بطاقة صندوق الغنائم اليومي 📦 — مجاني كل 24 ساعة
+// 3b) بطاقة صندوق الغنائم اليومي — بطاقة استعراض عمودية بصندوق مرسوم
 // ══════════════════════════════════════════════════════════════
 class _LootBoxCard extends StatelessWidget {
   const _LootBoxCard();
@@ -869,109 +861,92 @@ class _LootBoxCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final canOpen = AuthService().canClaimLootBox;
+    const purple = Color(0xFFC084FC);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  const Color(0xFF4A1D5F).withOpacity(0.6),
-                  const Color(0xFF1E0F38).withOpacity(0.5),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                  color: const Color(0xFFC084FC).withOpacity(0.45), width: 1.1),
-              boxShadow: [
-                BoxShadow(
-                    color: const Color(0xFFC084FC).withOpacity(0.12),
-                    blurRadius: 16,
-                    spreadRadius: -4),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(22),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                const Color(0xFF4A1D6B).withOpacity(0.55),
+                const Color(0xFF1A0B33).withOpacity(0.6),
               ],
             ),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: purple.withOpacity(0.5), width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                  color: purple.withOpacity(0.15),
+                  blurRadius: 18,
+                  spreadRadius: -4),
+            ],
+          ),
+          child: Column(
+            children: [
+              // صندوق كنز خشبي بأحزمة ذهبية — يتوهج عندما يُتاح فتحه
+              SizedBox(
+                height: 74,
+                child: CustomPaint(
+                  size: const Size(84, 74),
+                  painter: _ChestPainter(glow: canOpen),
+                ),
+              ),
+              const SizedBox(height: 9),
+              Text(
+                'صندوق الغنائم اليومي'.tr,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: DailyRewardsPanel._textWhite,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 12.5,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                canOpen ? 'مجاني — افتحه الآن!'.tr : 'يتجدد كل 24 ساعة ⏳'.tr,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: DailyRewardsPanel._textDim,
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 10),
+              GestureDetector(
+                onTap: () => _open(context),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 9),
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: const RadialGradient(colors: [
-                      Color(0xFFE9D5FF),
-                      Color(0xFFC084FC),
-                      Color(0xFF6B21A8),
-                    ]),
-                    boxShadow: [
-                      BoxShadow(
-                          color: const Color(0xFFC084FC).withOpacity(0.4),
-                          blurRadius: 10),
-                    ],
+                    gradient: canOpen
+                        ? const LinearGradient(colors: [
+                            Color(0xFFE9D5FF),
+                            purple,
+                            Color(0xFF9333EA),
+                          ])
+                        : null,
+                    color: canOpen ? null : const Color(0x2EFFFFFF),
+                    borderRadius: BorderRadius.circular(13),
+                    border: canOpen
+                        ? Border.all(color: const Color(0xFFE9D5FF), width: 0.8)
+                        : null,
+                    boxShadow: canOpen
+                        ? [
+                            BoxShadow(
+                                color: purple.withOpacity(0.45),
+                                blurRadius: 12),
+                          ]
+                        : null,
                   ),
-                  child: const Center(
-                    child: Text('📦', style: TextStyle(fontSize: 21)),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'صندوق الغنائم اليومي'.tr,
-                        style: TextStyle(
-                          color: DailyRewardsPanel._textWhite,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 13.5,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        canOpen
-                            ? 'مجاني! أموال 🪙 وجواهر 💎 وسكن نادر 🎨'.tr
-                            : 'افتُتح — يتجدد كل 24 ساعة ⏳'.tr,
-                        maxLines: 2,
-                        style: const TextStyle(
-                          color: DailyRewardsPanel._textDim,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: () => _open(context),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      gradient: canOpen
-                          ? const LinearGradient(colors: [
-                              Color(0xFFE9D5FF),
-                              Color(0xFFC084FC),
-                              Color(0xFF9333EA),
-                            ])
-                          : null,
-                      color: canOpen ? null : const Color(0x2EFFFFFF),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: canOpen
-                          ? [
-                              BoxShadow(
-                                  color:
-                                      const Color(0xFFC084FC).withOpacity(0.4),
-                                  blurRadius: 10),
-                            ]
-                          : null,
-                    ),
+                  child: Center(
                     child: Text(
                       canOpen ? 'افتح مجاناً'.tr : 'غداً'.tr,
                       style: TextStyle(
@@ -983,13 +958,263 @@ class _LootBoxCard extends StatelessWidget {
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
+}
+
+// ══════════════════════════════════════════════════════════════
+// رسّامات البطاقات
+// ══════════════════════════════════════════════════════════════
+
+/// صندوق كنز خشبي بأحزمة ذهبية وقفل — يتوهج إذا كان فتحه متاحاً،
+/// وعند [openT]>0 يدور الغطاء للخلف ويتصاعد شعاع ضوء من الداخل
+class _ChestPainter extends CustomPainter {
+  final bool glow;
+  final double openT;
+  const _ChestPainter({this.glow = false, this.openT = 0});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.scale(size.width / 84, size.height / 74);
+
+    final wood = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0xFF9C6A34), Color(0xFF7A4E22), Color(0xFF54300F)],
+      ).createShader(const Rect.fromLTWH(0, 0, 84, 74));
+    final lidWood = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0xFF8A5A2A), Color(0xFF6B401C), Color(0xFF4A2A10)],
+      ).createShader(const Rect.fromLTWH(0, 0, 84, 74));
+    final gold = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0xFFFFE9A8), Color(0xFFFFB300), Color(0xFF8B5E00)],
+      ).createShader(const Rect.fromLTWH(0, 0, 84, 74));
+
+    // ظل أرضي
+    canvas.drawOval(
+      Rect.fromCenter(center: const Offset(42, 66), width: 66, height: 8),
+      Paint()..color = Colors.black.withOpacity(0.42),
+    );
+
+    // توهج خلف الصندوق عندما يكون فتحه متاحاً
+    if (glow) {
+      canvas.drawCircle(
+        const Offset(42, 34),
+        36,
+        Paint()
+          ..shader = RadialGradient(colors: [
+            const Color(0xFFC084FC).withOpacity(0.34),
+            Colors.transparent,
+          ]).createShader(
+              Rect.fromCircle(center: const Offset(42, 34), radius: 36)),
+      );
+    }
+
+    // شعاع الضوء المتصاعد عند الفتح
+    if (openT > 0) {
+      final beam = Path()
+        ..moveTo(26, 30)
+        ..lineTo(58, 30)
+        ..lineTo(70, 2)
+        ..lineTo(14, 2)
+        ..close();
+      canvas.drawPath(
+        beam,
+        Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.bottomCenter,
+            end: Alignment.topCenter,
+            colors: [
+              const Color(0xFFFFE9A8).withOpacity(0.65 * openT),
+              const Color(0xFFFFE9A8).withOpacity(0.0),
+            ],
+          ).createShader(const Rect.fromLTWH(0, 2, 84, 30)),
+      );
+      // بريقان جانبيان
+      for (final s in [
+        const Offset(20, 12),
+        const Offset(62, 8),
+        const Offset(46, 4),
+      ]) {
+        canvas.drawCircle(s, 1.6 * openT,
+            Paint()..color = const Color(0xFFFFF3C4).withOpacity(openT));
+      }
+    }
+
+    // جسم الصندوق
+    final body = RRect.fromRectAndRadius(
+        const Rect.fromLTWH(20, 32, 44, 32), const Radius.circular(5));
+    canvas.drawRRect(body, wood);
+    // تظليل جانبي + حافة ضوء علوية
+    canvas.drawRect(const Rect.fromLTWH(58, 33, 5, 30),
+        Paint()..color = Colors.black.withOpacity(0.22));
+    canvas.drawRect(const Rect.fromLTWH(21, 33, 42, 2),
+        Paint()..color = Colors.white.withOpacity(0.18));
+    // الأحزمة الذهبية
+    canvas.drawRect(const Rect.fromLTWH(29, 32, 5, 32), gold);
+    canvas.drawRect(const Rect.fromLTWH(50, 32, 5, 32), gold);
+    // خط أسفل داكن
+    canvas.drawRect(const Rect.fromLTWH(20, 60, 44, 4),
+        Paint()..color = Colors.black.withOpacity(0.25));
+
+    // القفل الذهبي
+    final lock = RRect.fromRectAndRadius(
+        const Rect.fromLTWH(36.5, 34, 11, 12), const Radius.circular(3));
+    canvas.drawRRect(lock, gold);
+    canvas.drawRRect(
+        lock,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 0.9
+          ..color = const Color(0xFF3E2C00));
+    canvas.drawCircle(
+        const Offset(42, 39), 1.7, Paint()..color = const Color(0xFF3E2C00));
+
+    // الغطاء — مغلق أو يدور للخلف حول مفصلته اليسرى
+    final lidT = Curves.easeOutBack.transform(openT.clamp(0.0, 1.0));
+    canvas.save();
+    if (lidT > 0) {
+      canvas.translate(20, 32);
+      canvas.rotate(-1.05 * lidT);
+      canvas.translate(-20, -32);
+    }
+    final lid = RRect.fromRectAndRadius(
+        const Rect.fromLTWH(16, 16, 52, 17), const Radius.circular(7));
+    canvas.drawRRect(lid, lidWood);
+    // أحزمة الغطاء
+    canvas.drawRect(const Rect.fromLTWH(29, 16, 5, 17), gold);
+    canvas.drawRect(const Rect.fromLTWH(50, 16, 5, 17), gold);
+    // حافة ضوء على الغطاء
+    canvas.drawRect(const Rect.fromLTWH(18, 17, 48, 2.4),
+        Paint()..color = Colors.white.withOpacity(0.22));
+    canvas.drawRRect(
+        lid,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 0.8
+          ..color = Colors.black.withOpacity(0.35));
+    canvas.restore();
+
+    // داخل الصندوق متوهج عند الفتح
+    if (openT > 0) {
+      canvas.drawRect(const Rect.fromLTWH(22, 32, 40, 8),
+          Paint()..color = const Color(0xFFFFE9A8).withOpacity(0.7 * openT));
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_ChestPainter old) =>
+      old.glow != glow || old.openT != openT;
+}
+
+/// عجلة حظ مصغّرة — مقاطع ملوّنة وإطار ذهبي بمصابيح صغيرة
+class _MiniWheelPainter extends CustomPainter {
+  const _MiniWheelPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.scale(size.width / 74, size.height / 74);
+    const c = Offset(37, 37);
+    const r = 33.0;
+    const segColors = [
+      Color(0xFFF59E0B),
+      Color(0xFF38BDF8),
+      Color(0xFFA855F7),
+      Color(0xFF34D399),
+      Color(0xFFEF4444),
+      Color(0xFF38BDF8),
+      Color(0xFFF59E0B),
+      Color(0xFF818CF8),
+    ];
+
+    // ظل
+    canvas.drawCircle(
+        c.translate(0, 2.5), r, Paint()..color = Colors.black.withOpacity(0.4));
+
+    // المقاطع
+    const step = math.pi * 2 / 8;
+    for (int i = 0; i < 8; i++) {
+      canvas.drawArc(
+        Rect.fromCircle(center: c, radius: r - 4),
+        -math.pi / 2 + i * step,
+        step - 0.04,
+        true,
+        Paint()..color = segColors[i].withOpacity(0.92),
+      );
+    }
+    // فواصل داكنة
+    for (int i = 0; i < 8; i++) {
+      final a = -math.pi / 2 + i * step;
+      canvas.drawLine(
+        Offset(c.dx + math.cos(a) * (r - 4), c.dy + math.sin(a) * (r - 4)),
+        c,
+        Paint()
+          ..color = const Color(0xFF0A0F24)
+          ..strokeWidth = 1.4,
+      );
+    }
+
+    // الإطار الذهبي
+    canvas.drawCircle(
+      c,
+      r - 2,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 4
+        ..shader = const SweepGradient(colors: [
+          Color(0xFFFFE082),
+          Color(0xFFFFD54F),
+          Color(0xFF8B5E00),
+          Color(0xFFFFD54F),
+          Color(0xFFFFE082),
+        ]).createShader(Rect.fromCircle(center: c, radius: r)),
+    );
+    // مصابيح الإطار
+    for (int i = 0; i < 12; i++) {
+      final a = i * math.pi / 6;
+      canvas.drawCircle(
+        Offset(c.dx + math.cos(a) * (r - 2), c.dy + math.sin(a) * (r - 2)),
+        1.6,
+        Paint()..color = const Color(0xFFFFF8DC),
+      );
+    }
+
+    // المحور
+    canvas.drawCircle(c, 7, Paint()..color = const Color(0xFF0A0F24));
+    canvas.drawCircle(c, 5.5, Paint()..color = const Color(0xFFFFD54F));
+
+    // المؤشر الذهبي العلوي
+    final p = Path()
+      ..moveTo(c.dx, 1.5)
+      ..lineTo(c.dx - 5, 12)
+      ..lineTo(c.dx + 5, 12)
+      ..close();
+    canvas.drawPath(p, Paint()..color = const Color(0xFFFFD54F));
+    canvas.drawPath(
+        p,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 0.9
+          ..color = const Color(0xFF3E2C00));
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter old) => false;
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1109,11 +1334,20 @@ class _DailyWheelDialogState extends State<DailyWheelDialog>
                     )
                   else
                     SizedBox(
-                      width: 250,
-                      height: 250,
+                      width: 264,
+                      height: 264,
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
+                          // أشعة النصر الذهبية تدور خلف العجلة عند الفوز
+                          AnimatedOpacity(
+                            opacity: _done ? 1 : 0,
+                            duration: const Duration(milliseconds: 600),
+                            child: CustomPaint(
+                              size: const Size(264, 264),
+                              painter: const _WinBurstPainter(),
+                            ),
+                          ),
                           AnimatedBuilder(
                             animation: _angle,
                             builder: (_, child) => Transform.rotate(
@@ -1121,7 +1355,7 @@ class _DailyWheelDialogState extends State<DailyWheelDialog>
                               child: child,
                             ),
                             child: CustomPaint(
-                              size: const Size(240, 240),
+                              size: const Size(244, 244),
                               painter: const _WheelPainter(),
                             ),
                           ),
@@ -1233,6 +1467,39 @@ class _WheelPointer extends StatelessWidget {
       painter: _PointerPainter(),
     );
   }
+}
+
+/// أشعة نصر ذهبية خلف العجلة عند الفوز
+class _WinBurstPainter extends CustomPainter {
+  const _WinBurstPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final c = size.center(Offset.zero);
+    final r = size.shortestSide / 2;
+    final paint = Paint()
+      ..shader = RadialGradient(colors: [
+        const Color(0xFFFFD54F).withOpacity(0.35),
+        const Color(0xFFFFD54F).withOpacity(0.10),
+        Colors.transparent,
+      ]).createShader(Rect.fromCircle(center: c, radius: r));
+    // أشعة مثلثة رفيعة متباعدة
+    for (int i = 0; i < 12; i++) {
+      final a = i * math.pi / 6;
+      final p = Path()
+        ..moveTo(c.dx + math.cos(a - 0.045) * r * 0.44,
+            c.dy + math.sin(a - 0.045) * r * 0.44)
+        ..lineTo(c.dx + math.cos(a) * r, c.dy + math.sin(a) * r)
+        ..lineTo(c.dx + math.cos(a + 0.045) * r * 0.44,
+            c.dy + math.sin(a + 0.045) * r * 0.44)
+        ..close();
+      canvas.drawPath(p, paint);
+    }
+    canvas.drawCircle(c, r * 0.42, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter old) => false;
 }
 
 class _PointerPainter extends CustomPainter {
@@ -1380,8 +1647,10 @@ class LootBoxDialog extends StatefulWidget {
 }
 
 class _LootBoxDialogState extends State<LootBoxDialog>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _c;
+  // متحكم ثانٍ لدوران الغطاء وتصاعد الضوء عند الفتح
+  late final AnimationController _lidC;
   Map<String, dynamic>? _result;
   String? _error;
   bool _opened = false;
@@ -1391,6 +1660,8 @@ class _LootBoxDialogState extends State<LootBoxDialog>
     super.initState();
     _c = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1400));
+    _lidC = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 700));
     _claim();
   }
 
@@ -1411,11 +1682,13 @@ class _LootBoxDialogState extends State<LootBoxDialog>
       _result = res;
       _opened = true;
     });
+    _lidC.forward();
   }
 
   @override
   void dispose() {
     _c.dispose();
+    _lidC.dispose();
     super.dispose();
   }
 
@@ -1455,38 +1728,34 @@ class _LootBoxDialogState extends State<LootBoxDialog>
                           color: Color(0xFFF1F5FF),
                           fontSize: 17,
                           fontWeight: FontWeight.w900)),
-                  const SizedBox(height: 24),
-                  // الصندوق — يهتز ثم يتبدل بالجائزة
+                  const SizedBox(height: 20),
+                  // الصندوق المرسوم — يهتز ثم ينفتح غطاؤه بشعاع ضوء
                   AnimatedBuilder(
-                    animation: _c,
-                    builder: (_, child) {
+                    animation: Listenable.merge([_c, _lidC]),
+                    builder: (_, __) {
                       final t = _c.value;
                       final shake = _opened
                           ? 0.0
                           : math.sin(t * math.pi * 14) * (1 - t) * 0.16;
                       final scale =
-                          _opened ? 1.25 : 1.0 + math.sin(t * math.pi) * 0.12;
+                          _opened ? 1.18 : 1.0 + math.sin(t * math.pi) * 0.12;
                       return Transform.rotate(
                         angle: shake,
-                        child: Transform.scale(scale: scale, child: child),
+                        child: Transform.scale(
+                          scale: scale,
+                          child: SizedBox(
+                            width: 150,
+                            height: 132,
+                            child: CustomPaint(
+                              painter:
+                                  _ChestPainter(glow: true, openT: _lidC.value),
+                            ),
+                          ),
+                        ),
                       );
                     },
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 500),
-                      transitionBuilder: (child, anim) => ScaleTransition(
-                          scale: CurvedAnimation(
-                              parent: anim, curve: Curves.elasticOut),
-                          child: child),
-                      child: _opened
-                          ? const Text('✨',
-                              key: ValueKey('open'),
-                              style: TextStyle(fontSize: 72))
-                          : const Text('🎁',
-                              key: ValueKey('closed'),
-                              style: TextStyle(fontSize: 72)),
-                    ),
                   ),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 18),
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 400),
                     child: _error != null

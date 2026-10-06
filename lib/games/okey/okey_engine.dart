@@ -233,7 +233,6 @@ class OkeyEngine extends ChangeNotifier {
         : OkeyTurnPhase.awaitingDiscard;
     gameState = OkeyGameState.yourTurn;
     selectedTileIndex = null;
-    _lastDrawn = null;
     _takenLeftTile = null;
     lastDiscardTile = null;
     lastDiscardPlayer = -1;
@@ -455,13 +454,10 @@ class OkeyEngine extends ChangeNotifier {
       return;
     }
     insertTile(placedSlot, toSlot);
-    final rack = players[0].rackTiles;
-    // حدّد الحجر الجديد بعد النقل
-    final tileIdx = rack.indexWhere((t) => identical(t, _lastDrawn));
-    selectedTileIndex = tileIdx >= 0 ? tileIdx : null;
+    // لا تحديد تلقائي بعد إعادة ترتيب الحجر المسحوب — التحديد ضغطة
+    // صريحة فقط حتى لا يُنقل أو يُرمى لاحقاً عن غير قصد
+    selectedTileIndex = null;
   }
-
-  OkeyTile? _lastDrawn;
 
   /// الحجر المأخوذ من مرميات اليسار هذا الدور — يُتتبَّع لقاعدة الإعادة:
   /// من أخذه ولم يفتح اللعب ولم ينزل يُعاده للكومة ويسحب بديلاً من الرزمة
@@ -522,10 +518,11 @@ class OkeyEngine extends ChangeNotifier {
 
     final tile = drawDeck.removeAt(0);
     players[0].rackTiles[emptySlot] = tile;
-    selectedTileIndex = emptySlot;
+    // لا تحديد تلقائي للحجر المسحوب — التحديد يتم بضغطة صريحة فقط،
+    // حتى لا تبدّل ضغطةٌ لاحقة مكانه أو ترميه عن غير قصد
+    selectedTileIndex = null;
     turnPhase = OkeyTurnPhase.awaitingDiscard;
     gameState = OkeyGameState.discardPhase;
-    _lastDrawn = tile;
     _placeDrawnAt(emptySlot, toSlot);
     OkeyAudio.playTilePickup();
     notifyListeners();
@@ -551,10 +548,10 @@ class OkeyEngine extends ChangeNotifier {
       lastDiscardPlayer = -1;
     }
     players[0].rackTiles[emptySlot] = tile;
-    selectedTileIndex = emptySlot;
+    // لا تحديد تلقائي للحجر المسحوب — التحديد يتم بضغطة صريحة فقط
+    selectedTileIndex = null;
     turnPhase = OkeyTurnPhase.awaitingDiscard;
     gameState = OkeyGameState.discardPhase;
-    _lastDrawn = tile;
     _takenLeftTile = tile;
     _placeDrawnAt(emptySlot, toSlot);
     // أخذ حجر غيره لا يحوّل اللاعب كونكان — الأسلوب يُختار يدوياً فقط.
@@ -1471,8 +1468,7 @@ class OkeyEngine extends ChangeNotifier {
       if (empty != -1) {
         final drawn = drawDeck.removeAt(0);
         rack[empty] = drawn;
-        _lastDrawn = drawn;
-        selectedTileIndex = empty;
+        selectedTileIndex = null;
       }
     }
     onNotice?.call(

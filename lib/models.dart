@@ -63,19 +63,6 @@ class GamesData {
           hasCrown: false,
         ),
         GameModel(
-          id: 'ludo',
-          title: 'لودو'.tr,
-          subtitle: 'Ludo',
-          description: 'تحدّى أصدقاءك'.tr,
-          route: '/games/ludo',
-          gradient: AppGradients.ludoCard,
-          primaryColor: AppColors.ludoBg,
-          borderColor: AppColors.ludoBorder,
-          borderLightColor: AppColors.ludoBorderLight,
-          glowColor: AppColors.ludoGlow,
-          hasCrown: true, // Golden crown on top as in the reference image
-        ),
-        GameModel(
           id: 'okey',
           title: 'كونكان'.tr,
           subtitle: 'Okey',
@@ -120,12 +107,12 @@ class GamesData {
     return games.firstWhere((g) => g.id == id, orElse: () => games.first);
   }
 
-  // Row 1: First 2 games
-  static List<GameModel> get row1 => [games[0], games[1]];
+  // صفوف الشبكة — مبنية على طول القائمة الفعلي حتى لا ينكسر المؤشر
+  // إذا حُذفت لعبة أو أُضيفت
+  static List<GameModel> get row1 => games.take(2).toList();
 
-  // Row 2: Next 2 games
-  static List<GameModel> get row2 => [games[2], games[3]];
+  static List<GameModel> get row2 =>
+      games.length > 3 ? games.sublist(2, 4) : games.sublist(2);
 
-  // Row 3: 5th game alone centered
-  static GameModel get row3Game => games[4];
+  static GameModel? get row3Game => games.length > 4 ? games[4] : null;
 }

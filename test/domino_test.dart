@@ -1,47 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:game_hub/games/ludo/ludo_engine.dart';
-import 'package:game_hub/games/ludo/ludo_audio.dart';
 import 'package:game_hub/games/domino/domino_engine.dart';
 import 'package:game_hub/games/domino/domino_audio.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   // بلا إضافات صوتية في بيئة الاختبار
-  LudoAudio.soundEnabled = false;
   DominoAudio.soundEnabled = false;
-
-  group('LudoEngine —', () {
-    test('البداية: كل الأحجار في القاعدة والخروج يتطلب 6', () {
-      final e = LudoEngine(vsAI: false);
-      e.dice = 3;
-      expect(e.legalTokens(0), isEmpty);
-      e.dice = 6;
-      expect(e.legalTokens(0).length, 4);
-      e.dispose();
-    });
-
-    test('globalOf يلف المسار ويحسب الانطلاق صحيحاً', () {
-      // الأزرق (لاعب 0) ينطلق من الخانة العالمية 39
-      expect(LudoEngine.globalOf(0, 0), 39);
-      expect(LudoEngine.globalOf(0, 13), 0); // يلف 52
-      // الأخضر (لاعب 1) ينطلق من 13
-      expect(LudoEngine.globalOf(1, 0), 13);
-    });
-
-    test('الأحجار الناهية والمتجاوزة ليست قانونية', () {
-      final e = LudoEngine(vsAI: false);
-      e.tokens[0][0] = 57; // وصل
-      e.tokens[0][1] = 54; // قرب النهاية
-      e.dice = 6;
-      // حجر 0 انتهى؛ حجر 1 يتجاوز 57 بستة → غير قانوني
-      final legal = e.legalTokens(0);
-      expect(legal.contains(0), isFalse);
-      expect(legal.contains(1), isFalse);
-      e.dice = 2;
-      expect(e.legalTokens(0).contains(1), isTrue);
-      e.dispose();
-    });
-  });
 
   group('DominoEngine —', () {
     test('التوزيع: 7+7 أحجار و14 في البونيارد وسلسلة فارغة', () {

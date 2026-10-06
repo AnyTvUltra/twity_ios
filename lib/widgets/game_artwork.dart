@@ -13,8 +13,6 @@ class GameArtwork extends StatelessWidget {
         return const _Chess3DArtwork();
       case 'solitaire':
         return const _Solitaire3DArtwork();
-      case 'ludo':
-        return const _Ludo3DArtwork();
       case 'okey':
         return const _Okey3DArtwork();
       case 'backgammon':
@@ -405,52 +403,6 @@ class _Solitaire3DArtwork extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-// ----------------------------------------------------
-// 3. LUDO 3D ARTWORK (User Provided High-Res Pawns Artwork)
-// ----------------------------------------------------
-class _Ludo3DArtwork extends StatelessWidget {
-  const _Ludo3DArtwork();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Soft Ground Contact Shadow
-          Positioned(
-            bottom: 2,
-            child: Container(
-              width: 86,
-              height: 18,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.45),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // High-Res Ludo Pawns Artwork
-          Padding(
-            padding: const EdgeInsets.only(bottom: 2),
-            child: Image.asset(
-              'assets/images/ludo_art.png',
-              fit: BoxFit.contain,
-              filterQuality: FilterQuality.high,
-            ),
-          ),
-        ],
       ),
     );
   }

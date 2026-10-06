@@ -32,7 +32,18 @@ class ProfileScreen extends StatelessWidget {
   void _showAvatarPicker(BuildContext context) {
     AppHaptics.selection();
     final avatars = [
-      '🧑‍💼', '👑', '🦁', '🦅', '🥷', '🧙‍♂️', '🚀', '🎯', '🌟', '💎', '🔥', '🀄'
+      '🧑‍💼',
+      '👑',
+      '🦁',
+      '🦅',
+      '🥷',
+      '🧙‍♂️',
+      '🚀',
+      '🎯',
+      '🌟',
+      '💎',
+      '🔥',
+      '🀄'
     ];
 
     showModalBottomSheet(
@@ -52,8 +63,7 @@ class ProfileScreen extends StatelessWidget {
               ),
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(26)),
-              border:
-                  Border.all(color: const Color(0x33FFFFFF), width: 1),
+              border: Border.all(color: const Color(0x33FFFFFF), width: 1),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -115,8 +125,7 @@ class ProfileScreen extends StatelessWidget {
                             color: const Color(0xFFFFE9A8), width: 1.2),
                         boxShadow: [
                           BoxShadow(
-                              color: _gold.withOpacity(0.35),
-                              blurRadius: 14),
+                              color: _gold.withOpacity(0.35), blurRadius: 14),
                         ],
                       ),
                       child: Row(
@@ -136,9 +145,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Container(
-                    height: 1,
-                    color: const Color(0x1FFFFFFF)),
+                Container(height: 1, color: const Color(0x1FFFFFFF)),
                 const SizedBox(height: 16),
                 Wrap(
                   spacing: 16,
@@ -167,8 +174,7 @@ class ProfileScreen extends StatelessWidget {
                               color: _gold.withOpacity(0.6), width: 1.4),
                           boxShadow: [
                             BoxShadow(
-                                color: _gold.withOpacity(0.2),
-                                blurRadius: 10),
+                                color: _gold.withOpacity(0.2), blurRadius: 10),
                           ],
                         ),
                         child: Center(
@@ -198,22 +204,23 @@ class ProfileScreen extends StatelessWidget {
           backgroundColor: const Color(0xFF141C34),
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
-              side: BorderSide(
-                  color: const Color(0xFFF87171).withOpacity(0.5))),
+              side:
+                  BorderSide(color: const Color(0xFFF87171).withOpacity(0.5))),
           title: Text('حذف الحساب نهائياً؟'.tr,
               style: TextStyle(
                   color: Color(0xFFF1F5FF),
                   fontWeight: FontWeight.w900,
                   fontSize: 16)),
           content: Text(
-              'سيتم حذف حسابك وكل بياناتك: الرصيد، الجواهر، السكنات، الإحصائيات والأصدقاء. لا يمكن التراجع عن هذا.'.tr,
+              'سيتم حذف حسابك وكل بياناتك: الرصيد، الجواهر، السكنات، الإحصائيات والأصدقاء. لا يمكن التراجع عن هذا.'
+                  .tr,
               style: TextStyle(
                   color: Color(0xFFB8C4DC), fontSize: 13, height: 1.5)),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: Text('إلغاء'.tr,
-                  style: TextStyle(color: Color(0xFF8EA3C8))),
+              child:
+                  Text('إلغاء'.tr, style: TextStyle(color: Color(0xFF8EA3C8))),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -249,8 +256,8 @@ class ProfileScreen extends StatelessWidget {
           backgroundColor: const Color(0xFF141C34),
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
-              side: BorderSide(
-                  color: const Color(0xFFA78BFA).withOpacity(0.5))),
+              side:
+                  BorderSide(color: const Color(0xFFA78BFA).withOpacity(0.5))),
           title: Text('اللغة — زمان'.tr,
               style: const TextStyle(
                   color: Color(0xFFF1F5FF),
@@ -325,8 +332,7 @@ class ProfileScreen extends StatelessWidget {
           ),
           title: Row(
             children: [
-              Icon(Icons.support_agent_rounded,
-                  color: _gold, size: 24),
+              Icon(Icons.support_agent_rounded, color: _gold, size: 24),
               SizedBox(width: 8),
               Text('المساعدة والاقتراحات 🎫'.tr,
                   style: TextStyle(
@@ -347,8 +353,7 @@ class ProfileScreen extends StatelessWidget {
                 DropdownButtonFormField<String>(
                   value: category,
                   dropdownColor: LightGlass.cardStrong,
-                  style: const TextStyle(
-                      color: LightGlass.text, fontSize: 13),
+                  style: const TextStyle(color: LightGlass.text, fontSize: 13),
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: LightGlass.inputFill,
@@ -362,8 +367,7 @@ class ProfileScreen extends StatelessWidget {
                     'استفسار عن العملات'.tr,
                     'أخرى'.tr
                   ]
-                      .map((s) =>
-                          DropdownMenuItem(value: s, child: Text(s)))
+                      .map((s) => DropdownMenuItem(value: s, child: Text(s)))
                       .toList(),
                   onChanged: (val) {
                     if (val != null) setDialogState(() => category = val);
@@ -376,8 +380,7 @@ class ProfileScreen extends StatelessWidget {
                 const SizedBox(height: 6),
                 TextField(
                   controller: subjectController,
-                  style: const TextStyle(
-                      color: LightGlass.text, fontSize: 13),
+                  style: const TextStyle(color: LightGlass.text, fontSize: 13),
                   decoration: InputDecoration(
                     hintText: 'مثال: اقتراح إضافة وضع لعب جديد...'.tr,
                     hintStyle: const TextStyle(
@@ -397,11 +400,12 @@ class ProfileScreen extends StatelessWidget {
                 TextField(
                   controller: messageController,
                   maxLines: 4,
-                  style: const TextStyle(
-                      color: LightGlass.text, fontSize: 12.5),
+                  style:
+                      const TextStyle(color: LightGlass.text, fontSize: 12.5),
                   decoration: InputDecoration(
                     hintText:
-                        'اشرح تفاصيل اقتراحك أو المشكلة التي واجهتك بالتفصيل...'.tr,
+                        'اشرح تفاصيل اقتراحك أو المشكلة التي واجهتك بالتفصيل...'
+                            .tr,
                     hintStyle: const TextStyle(
                         color: LightGlass.textFaint, fontSize: 12),
                     filled: true,
@@ -445,7 +449,8 @@ class ProfileScreen extends StatelessWidget {
                   Navigator.of(ctx).pop();
                   TopNotification.show(
                     context,
-                    'تم إرسال تذكرتك بنجاح! سيتم الرد عليك من قبل فريق الدعم.'.tr,
+                    'تم إرسال تذكرتك بنجاح! سيتم الرد عليك من قبل فريق الدعم.'
+                        .tr,
                     icon: Icons.check_circle_rounded,
                   );
                 }
@@ -461,8 +466,8 @@ class ProfileScreen extends StatelessWidget {
 
   void _showEditUsernameDialog(BuildContext context) {
     AppHaptics.selection();
-    final controller = TextEditingController(
-        text: AuthService().currentUser?.username ?? '');
+    final controller =
+        TextEditingController(text: AuthService().currentUser?.username ?? '');
     String? error;
 
     showDialog(
@@ -470,8 +475,8 @@ class ProfileScreen extends StatelessWidget {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: LightGlass.cardStrong,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Text('تغيير اسم المستخدم الفريد'.tr,
               style: TextStyle(
                   color: LightGlass.text,
@@ -484,8 +489,8 @@ class ProfileScreen extends StatelessWidget {
                 controller: controller,
                 style: const TextStyle(color: LightGlass.text),
                 decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.alternate_email_rounded,
-                      color: _gold),
+                  prefixIcon:
+                      const Icon(Icons.alternate_email_rounded, color: _gold),
                   hintText: 'اسم المستخدم الجديد'.tr,
                   errorText: error,
                   filled: true,
@@ -520,8 +525,8 @@ class ProfileScreen extends StatelessWidget {
                       () => error = 'الاسم غير متوفر أو قصير جداً'.tr);
                 }
               },
-              child: Text('حفظ'.tr,
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+              child:
+                  Text('حفظ'.tr, style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -542,7 +547,8 @@ class ProfileScreen extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          const RepaintBoundary(child: CustomPaint(painter: _ProfileDecorPainter())),
+          const RepaintBoundary(
+              child: CustomPaint(painter: _ProfileDecorPainter())),
           SafeArea(
             bottom: false,
             child: AnimatedBuilder(
@@ -582,11 +588,11 @@ class ProfileScreen extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            _glassIcon(
-                                Icons.help_outline_rounded, _gold,
+                            _glassIcon(Icons.help_outline_rounded, _gold,
                                 () => _showSupportTicketDialog(context)),
                             const SizedBox(width: 8),
-                            _glassIcon(Icons.person_remove_rounded,
+                            _glassIcon(
+                                Icons.person_remove_rounded,
                                 const Color(0xFFF87171),
                                 () => _confirmDeleteAccount(context)),
                             const SizedBox(width: 8),
@@ -599,362 +605,324 @@ class ProfileScreen extends StatelessWidget {
                         ),
                       ),
 
-                      // ═══ بطاقة اللاعب الرئيسية ═══
+                      // ═══ بطاقة اللاعب — تصميم بطل مركزي ═══
                       Padding(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(30),
                           child: BackdropFilter(
-                            filter: ImageFilter.blur(
-                                sigmaX: 18, sigmaY: 18),
+                            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
                             child: Container(
-                              padding: const EdgeInsets.all(18),
+                              padding:
+                                  const EdgeInsets.fromLTRB(18, 22, 18, 18),
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                   colors: [
-                                    const Color(0xFF1B2A5E)
-                                        .withOpacity(0.55),
-                                    const Color(0xFF101838)
-                                        .withOpacity(0.45),
+                                    const Color(0xFF1B2A5E).withOpacity(0.55),
+                                    const Color(0xFF101838).withOpacity(0.45),
                                   ],
                                 ),
-                                borderRadius:
-                                    BorderRadius.circular(30),
+                                borderRadius: BorderRadius.circular(30),
                                 border: Border.all(
-                                    color: _gold.withOpacity(0.45),
-                                    width: 1.3),
+                                    color: _gold.withOpacity(0.45), width: 1.3),
                                 boxShadow: [
                                   BoxShadow(
                                       color: _gold.withOpacity(0.14),
                                       blurRadius: 26,
                                       spreadRadius: -4),
                                   BoxShadow(
-                                      color:
-                                          Colors.black.withOpacity(0.35),
+                                      color: Colors.black.withOpacity(0.35),
                                       blurRadius: 18,
                                       offset: const Offset(0, 8)),
                                 ],
                               ),
-                              child: Stack(
+                              child: Column(
                                 children: [
-                                  // انعكاس ضوئي علوي
-                                  Positioned(
-                                    top: 0,
-                                    left: 30,
-                                    right: 30,
-                                    height: 1.5,
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: [
-                                            Colors.transparent,
-                                            Colors.white
-                                                .withOpacity(0.35),
-                                            Colors.transparent,
+                                  // الصورة في المنتصف بحلقة ذهبية
+                                  // مزدوجة وهالة متوهجة
+                                  GestureDetector(
+                                    onTap: () => _showAvatarPicker(context),
+                                    child: Stack(
+                                      alignment: Alignment.center,
+                                      clipBehavior: Clip.none,
+                                      children: [
+                                        // هالة متوهجة خلف الصورة
+                                        Container(
+                                          width: 118,
+                                          height: 118,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: _gold.withOpacity(0.30),
+                                                blurRadius: 34,
+                                                spreadRadius: 2,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        // الحلقة الخارجية المنقّطة
+                                        Container(
+                                          width: 112,
+                                          height: 112,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: _gold.withOpacity(0.35),
+                                              width: 1,
+                                            ),
+                                          ),
+                                        ),
+                                        // الحلقة الذهبية + الصورة
+                                        Container(
+                                          padding: const EdgeInsets.all(3.5),
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            gradient: const LinearGradient(
+                                              begin: Alignment.topLeft,
+                                              end: Alignment.bottomRight,
+                                              colors: [
+                                                Color(0xFFFFE9A8),
+                                                _gold,
+                                                Color(0xFFB8860B),
+                                              ],
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: _gold.withOpacity(0.45),
+                                                blurRadius: 16,
+                                                spreadRadius: -2,
+                                              ),
+                                            ],
+                                          ),
+                                          child: UserAvatar(
+                                            photoUrl: user?.photoUrl ?? '',
+                                            name: user?.displayName ?? '',
+                                            size: 88,
+                                            showEquippedFrame: true,
+                                          ),
+                                        ),
+                                        // زر تعديل الصورة
+                                        Positioned(
+                                          bottom: 2,
+                                          right: 2,
+                                          child: Container(
+                                            width: 27,
+                                            height: 27,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              gradient:
+                                                  const LinearGradient(colors: [
+                                                Color(0xFFFFE082),
+                                                _gold,
+                                              ]),
+                                              border: Border.all(
+                                                  color:
+                                                      const Color(0xFF0A0F24),
+                                                  width: 2),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                    color:
+                                                        _gold.withOpacity(0.5),
+                                                    blurRadius: 8),
+                                              ],
+                                            ),
+                                            child: const Icon(
+                                                Icons.edit_rounded,
+                                                size: 13,
+                                                color: Color(0xFF1B0B30)),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 14),
+
+                                  // الاسم
+                                  Text(
+                                    user?.displayName ?? 'لاعب'.tr,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                        color: _textWhite,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w900),
+                                  ),
+                                  const SizedBox(height: 4),
+
+                                  // اسم المستخدم القابل للتعديل
+                                  GestureDetector(
+                                    onTap: () =>
+                                        _showEditUsernameDialog(context),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Flexible(
+                                          child: Text(
+                                            '@${user?.username ?? ''}',
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                                color: _gold,
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w800),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 5),
+                                        const Icon(Icons.edit_rounded,
+                                            color: _textDim, size: 13),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+
+                                  // الشارات: التوثيق + الرتبة
+                                  Wrap(
+                                    alignment: WrapAlignment.center,
+                                    spacing: 8,
+                                    runSpacing: 6,
+                                    children: [
+                                      // شارة التوثيق الزجاجية
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 10, vertical: 4.5),
+                                        decoration: BoxDecoration(
+                                          color: _emerald.withOpacity(0.12),
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                          border: Border.all(
+                                              color: _emerald.withOpacity(0.55),
+                                              width: 1),
+                                          boxShadow: [
+                                            BoxShadow(
+                                                color:
+                                                    _emerald.withOpacity(0.15),
+                                                blurRadius: 8),
+                                          ],
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                                isGuest
+                                                    ? Icons
+                                                        .person_outline_rounded
+                                                    : Icons.verified_rounded,
+                                                color: _emerald,
+                                                size: 12),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              isGuest
+                                                  ? 'حساب ضيف'.tr
+                                                  : 'حساب Google موثق ✓'.tr,
+                                              style: const TextStyle(
+                                                  color: _emerald,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w800),
+                                            ),
                                           ],
                                         ),
                                       ),
-                                    ),
-                                  ),
-                                  Column(
-                                    children: [
-                                      Row(
-                                        children: [
-                                          // الصورة الرمزية الذهبية
-                                          GestureDetector(
-                                            onTap: () =>
-                                                _showAvatarPicker(
-                                                    context),
-                                            child: Stack(
-                                              clipBehavior: Clip.none,
-                                              children: [
-                                                Container(
-                                                  decoration:
-                                                      BoxDecoration(
-                                                    shape:
-                                                        BoxShape.circle,
-                                                    boxShadow: [
-                                                      BoxShadow(
-                                                        color: _gold
-                                                            .withOpacity(
-                                                                0.45),
-                                                        blurRadius: 20,
-                                                        spreadRadius:
-                                                            -2,
-                                                      ),
-                                                    ],
-                                                  ),
-                                                  child: Container(
-                                                    padding:
-                                                        const EdgeInsets
-                                                            .all(3),
-                                                    decoration:
-                                                        BoxDecoration(
-                                                      shape: BoxShape
-                                                          .circle,
-                                                      border: Border.all(
-                                                          color: _gold,
-                                                          width: 2),
-                                                    ),
-                                                    child: UserAvatar(
-                                                      photoUrl: user
-                                                              ?.photoUrl ??
-                                                          '',
-                                                      name: user
-                                                              ?.displayName ??
-                                                          '',
-                                                      size: 72,
-                                                      showEquippedFrame:
-                                                          true,
-                                                    ),
-                                                  ),
-                                                ),
-                                                Positioned(
-                                                  bottom: -2,
-                                                  right: -2,
-                                                  child: Container(
-                                                    width: 24,
-                                                    height: 24,
-                                                    decoration:
-                                                        BoxDecoration(
-                                                      shape: BoxShape
-                                                          .circle,
-                                                      gradient:
-                                                          const LinearGradient(
-                                                              colors: [
-                                                            Color(
-                                                                0xFFFFE082),
-                                                            _gold,
-                                                          ]),
-                                                      border: Border.all(
-                                                          color: const Color(
-                                                              0xFF0A0F24),
-                                                          width: 2),
-                                                      boxShadow: [
-                                                        BoxShadow(
-                                                            color: _gold
-                                                                .withOpacity(
-                                                                    0.5),
-                                                            blurRadius:
-                                                                8),
-                                                      ],
-                                                    ),
-                                                    child: const Icon(
-                                                        Icons
-                                                            .edit_rounded,
-                                                        size: 12,
-                                                        color: Color(
-                                                            0xFF1B0B30)),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          const SizedBox(width: 16),
-
-                                          // المعلومات
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment
-                                                      .start,
-                                              children: [
-                                                Text(
-                                                  user?.displayName ??
-                                                      'لاعب'.tr,
-                                                  style: const TextStyle(
-                                                      color: _textWhite,
-                                                      fontSize: 18,
-                                                      fontWeight:
-                                                          FontWeight
-                                                              .w900),
-                                                ),
-                                                const SizedBox(
-                                                    height: 2),
-                                                GestureDetector(
-                                                  onTap: () =>
-                                                      _showEditUsernameDialog(
-                                                          context),
-                                                  child: Row(
-                                                    mainAxisSize:
-                                                        MainAxisSize
-                                                            .min,
-                                                    children: [
-                                                      Flexible(
-                                                        child: Text(
-                                                          '@${user?.username ?? ''}',
-                                                          overflow:
-                                                              TextOverflow
-                                                                  .ellipsis,
-                                                          style: const TextStyle(
-                                                              color:
-                                                                  _gold,
-                                                              fontSize:
-                                                                  12.5,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w800),
-                                                        ),
-                                                      ),
-                                                      const SizedBox(
-                                                          width: 4),
-                                                      const Icon(
-                                                          Icons
-                                                              .edit_rounded,
-                                                          color:
-                                                              _textDim,
-                                                          size: 13),
-                                                    ],
-                                                  ),
-                                                ),
-                                                const SizedBox(
-                                                    height: 7),
-                                                // شارة التوثيق الزجاجية
-                                                Container(
-                                                  padding:
-                                                      const EdgeInsets
-                                                          .symmetric(
-                                                          horizontal:
-                                                              9,
-                                                          vertical:
-                                                              3.5),
-                                                  decoration:
-                                                      BoxDecoration(
-                                                    color: _emerald
-                                                        .withOpacity(
-                                                            0.12),
-                                                    borderRadius:
-                                                        BorderRadius
-                                                            .circular(
-                                                                10),
-                                                    border: Border.all(
-                                                        color: _emerald
-                                                            .withOpacity(
-                                                                0.55),
-                                                        width: 1),
-                                                    boxShadow: [
-                                                      BoxShadow(
-                                                          color: _emerald
-                                                              .withOpacity(
-                                                                  0.15),
-                                                          blurRadius:
-                                                              8),
-                                                    ],
-                                                  ),
-                                                  child: Row(
-                                                    mainAxisSize:
-                                                        MainAxisSize
-                                                            .min,
-                                                    children: [
-                                                      Icon(
-                                                          isGuest
-                                                              ? Icons
-                                                                  .person_outline_rounded
-                                                              : Icons
-                                                                  .verified_rounded,
-                                                          color:
-                                                              _emerald,
-                                                          size: 12),
-                                                      const SizedBox(
-                                                          width: 4),
-                                                      Text(
-                                                        isGuest
-                                                            ? 'حساب ضيف'.tr
-                                                            : 'حساب Google موثق ✓'.tr,
-                                                        style: const TextStyle(
-                                                            color:
-                                                                _emerald,
-                                                            fontSize:
-                                                                10,
-                                                            fontWeight:
-                                                                FontWeight
-                                                                    .w800),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-
-                                      const SizedBox(height: 16),
+                                      // شارة الرتبة
                                       Container(
-                                          height: 1,
-                                          color: const Color(
-                                              0x1FFFFFFF)),
-                                      const SizedBox(height: 14),
-
-                                      // ═══ الإحصائيات المصغرة ═══
-                                      Row(
-                                        children: [
-                                          _miniStat(
-                                              'العملات'.tr,
-                                              formatBalance(
-                                                  user?.chips ?? 0),
-                                              _gold,
-                                              icon: const Icon(
-                                                  Icons
-                                                      .paid_rounded,
-                                                  color: _gold,
-                                                  size: 17)),
-                                          _miniStat(
-                                              'الجواهر'.tr,
-                                              formatBalance(
-                                                  user?.gems ?? 0),
-                                              _cyan,
-                                              icon: const GemIcon(
-                                                  size: 15)),
-                                          _miniStat(
-                                              'التقييم'.tr,
-                                              '${user?.rating ?? 1200}',
-                                              const Color(
-                                                  0xFF60A5FA),
-                                              icon: const Icon(
-                                                  Icons
-                                                      .star_rounded,
-                                                  color: Color(
-                                                      0xFF60A5FA),
-                                                  size: 17)),
-                                          _miniStat(
-                                              'المستوى'.tr,
-                                              '${user?.level ?? 1}',
-                                              _gold,
-                                              icon: const Icon(
-                                                  Icons
-                                                      .emoji_events_rounded,
-                                                  color: _gold,
-                                                  size: 17)),
-                                          _miniStat(
-                                              'نسبة الفوز'.tr,
-                                              '$winRate%',
-                                              _pink,
-                                              icon: const Icon(
-                                                  Icons
-                                                      .local_fire_department_rounded,
-                                                  color: _pink,
-                                                  size: 17)),
-                                          _miniStat(
-                                              'الرتبة'.tr,
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 10, vertical: 4.5),
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(colors: [
+                                            Color(Ranks.of(user?.rating ?? 1200)
+                                                    .color)
+                                                .withOpacity(0.25),
+                                            const Color(0xFF141C3C)
+                                                .withOpacity(0.6),
+                                          ]),
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                          border: Border.all(
+                                              color: Color(Ranks.of(
+                                                          user?.rating ?? 1200)
+                                                      .color)
+                                                  .withOpacity(0.6),
+                                              width: 1),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.military_tech_rounded,
+                                                color: Color(Ranks.of(
+                                                        user?.rating ?? 1200)
+                                                    .color),
+                                                size: 12),
+                                            const SizedBox(width: 4),
+                                            Text(
                                               '${Ranks.of(user?.rating ?? 1200).emoji} ${Ranks.of(user?.rating ?? 1200).name}',
-                                              Color(Ranks.of(
-                                                      user?.rating ??
-                                                          1200)
-                                                  .color),
-                                              icon: Icon(
-                                                  Icons
-                                                      .military_tech_rounded,
-                                                  color: Color(Ranks
-                                                          .of(user?.rating ??
-                                                              1200)
+                                              style: TextStyle(
+                                                  color: Color(Ranks.of(
+                                                          user?.rating ?? 1200)
                                                       .color),
-                                                  size: 17)),
-                                        ],
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w800),
+                                            ),
+                                          ],
+                                        ),
                                       ),
+                                    ],
+                                  ),
+
+                                  const SizedBox(height: 18),
+                                  Container(
+                                      height: 1,
+                                      color: const Color(0x1FFFFFFF)),
+                                  const SizedBox(height: 14),
+
+                                  // ═══ الإحصائيات — شبكة 3×2 ═══
+                                  Row(
+                                    children: [
+                                      _statTile(
+                                          'العملات'.tr,
+                                          formatBalance(user?.chips ?? 0),
+                                          _gold,
+                                          const Icon(Icons.paid_rounded,
+                                              color: _gold, size: 16)),
+                                      _statTile(
+                                          'الجواهر'.tr,
+                                          formatBalance(user?.gems ?? 0),
+                                          _cyan,
+                                          const GemIcon(size: 14)),
+                                      _statTile(
+                                          'التقييم'.tr,
+                                          '${user?.rating ?? 1200}',
+                                          const Color(0xFF60A5FA),
+                                          const Icon(Icons.star_rounded,
+                                              color: Color(0xFF60A5FA),
+                                              size: 16)),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      _statTile(
+                                          'المستوى'.tr,
+                                          '${user?.level ?? 1}',
+                                          _gold,
+                                          const Icon(Icons.emoji_events_rounded,
+                                              color: _gold, size: 16)),
+                                      _statTile(
+                                          'نسبة الفوز'.tr,
+                                          '$winRate%',
+                                          _pink,
+                                          const Icon(
+                                              Icons
+                                                  .local_fire_department_rounded,
+                                              color: _pink,
+                                              size: 16)),
+                                      _statTile(
+                                          'المباريات'.tr,
+                                          formatBalance(totalMatches),
+                                          const Color(0xFFA78BFA),
+                                          const Icon(
+                                              Icons.sports_esports_rounded,
+                                              color: Color(0xFFA78BFA),
+                                              size: 16)),
                                     ],
                                   ),
                                 ],
@@ -969,127 +937,167 @@ class ProfileScreen extends StatelessWidget {
                       const _SocialRewardsCard(),
                       const SizedBox(height: 18),
 
-                      // ═══ قائمة الإعدادات الزجاجية ═══
-                      Padding(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 16),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(26),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(
-                                sigmaX: 14, sigmaY: 14),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: const Color(0x2E141C3C),
-                                borderRadius:
-                                    BorderRadius.circular(26),
-                                border: Border.all(
-                                    color: const Color(0x26FFFFFF),
-                                    width: 1),
-                              ),
-                              child: Column(
-                                children: [
-                                  _SettingsTile(
-                                    icon:
-                                        Icons.headset_mic_rounded,
-                                    iconColor: _gold,
-                                    title:
-                                        'المساعدة والاقتراحات (فتح تذكرة دعم)'.tr,
-                                    subtitle:
-                                        'تواصل مباشرة مع إدارة التطبيق للاقتراحات والمشاكل'.tr,
-                                    onTap: () =>
-                                        _showSupportTicketDialog(
-                                            context),
-                                  ),
-                                  _glassDivider(),
-                                  _SettingsTile(
-                                    icon: Icons.badge_rounded,
-                                    iconColor: _neonBlue,
-                                    title:
-                                        'تغيير اسم المستخدم الفريد'.tr,
-                                    subtitle:
-                                        'اختر اسماً فريداً ليجدك أصدقاؤك بسهولة'.tr,
-                                    onTap: () =>
-                                        _showEditUsernameDialog(
-                                            context),
-                                  ),
-                                  _glassDivider(),
-                                  _SettingsTile(
-                                    icon: Icons
-                                        .photo_library_rounded,
-                                    iconColor: _pink,
-                                    title: 'اختيار صورة شخصية'.tr,
-                                    subtitle:
-                                        'رمز تعبيري مميز يظهر للجميع على طاولات اللعب'.tr,
-                                    onTap: () =>
-                                        _showAvatarPicker(context),
-                                  ),
-                                  _glassDivider(),
-                                  _SettingsTile(
-                                    icon: Icons
-                                        .language_rounded,
-                                    iconColor: const Color(
-                                        0xFFA78BFA),
-                                    title:
-                                        'اللغة — زمان',
-                                    subtitle:
-                                        'العربية / کوردی سورانی',
-                                    onTap: () =>
-                                        _showLanguageDialog(
-                                            context),
-                                  ),
-                                  _glassDivider(),
-                                  _SettingsTile(
-                                    icon: Icons
-                                        .privacy_tip_rounded,
-                                    iconColor: _emerald,
-                                    title: 'سياسة الخصوصية'.tr,
-                                    subtitle:
-                                        'البيانات التي نجمعها وكيف نحميها'.tr,
-                                    onTap: () =>
-                                        Navigator.of(context).push(
-                                            MaterialPageRoute(
-                                                builder: (_) =>
-                                                    const LegalScreen())),
-                                  ),
-                                  _glassDivider(),
-                                  _SettingsTile(
-                                    icon: Icons
-                                        .description_rounded,
-                                    iconColor: _cyan,
-                                    title: 'شروط الاستخدام'.tr,
-                                    subtitle:
-                                        'قواعد اللعب والعملات الافتراضية'.tr,
-                                    onTap: () =>
-                                        Navigator.of(context).push(
-                                            MaterialPageRoute(
-                                                builder: (_) =>
-                                                    const LegalScreen(
-                                                        initialTab: 1))),
-                                  ),
-                                  _glassDivider(),
-                                  _SettingsTile(
-                                    icon: Icons
-                                        .person_remove_rounded,
-                                    iconColor: const Color(
-                                        0xFFF87171),
-                                    title: 'حذف الحساب'.tr,
-                                    subtitle:
-                                        'حذف حسابك وجميع بياناتك نهائياً'.tr,
-                                    onTap: () =>
-                                        _confirmDeleteAccount(
-                                            context),
-                                  ),
-                                ],
-                              ),
-                            ),
+                      // ═══ الإعدادات — أقسام مجمّعة ═══
+                      _settingsSection(
+                        title: 'الحساب والتخصيص'.tr,
+                        icon: Icons.manage_accounts_rounded,
+                        iconColor: _neonBlue,
+                        children: [
+                          _SettingsTile(
+                            icon: Icons.badge_rounded,
+                            iconColor: _neonBlue,
+                            title: 'تغيير اسم المستخدم الفريد'.tr,
+                            subtitle:
+                                'اختر اسماً فريداً ليجدك أصدقاؤك بسهولة'.tr,
+                            onTap: () => _showEditUsernameDialog(context),
                           ),
-                        ),
+                          _glassDivider(),
+                          _SettingsTile(
+                            icon: Icons.photo_library_rounded,
+                            iconColor: _pink,
+                            title: 'اختيار صورة شخصية'.tr,
+                            subtitle:
+                                'رمز تعبيري مميز يظهر للجميع على طاولات اللعب'
+                                    .tr,
+                            onTap: () => _showAvatarPicker(context),
+                          ),
+                          _glassDivider(),
+                          _SettingsTile(
+                            icon: Icons.language_rounded,
+                            iconColor: const Color(0xFFA78BFA),
+                            title: 'اللغة — زمان',
+                            subtitle: 'العربية / کوردی سورانی',
+                            onTap: () => _showLanguageDialog(context),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      _settingsSection(
+                        title: 'الدعم والقوانين'.tr,
+                        icon: Icons.shield_rounded,
+                        iconColor: _emerald,
+                        children: [
+                          _SettingsTile(
+                            icon: Icons.headset_mic_rounded,
+                            iconColor: _gold,
+                            title: 'المساعدة والاقتراحات (فتح تذكرة دعم)'.tr,
+                            subtitle:
+                                'تواصل مباشرة مع إدارة التطبيق للاقتراحات والمشاكل'
+                                    .tr,
+                            onTap: () => _showSupportTicketDialog(context),
+                          ),
+                          _glassDivider(),
+                          _SettingsTile(
+                            icon: Icons.privacy_tip_rounded,
+                            iconColor: _emerald,
+                            title: 'سياسة الخصوصية'.tr,
+                            subtitle: 'البيانات التي نجمعها وكيف نحميها'.tr,
+                            onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                    builder: (_) => const LegalScreen())),
+                          ),
+                          _glassDivider(),
+                          _SettingsTile(
+                            icon: Icons.description_rounded,
+                            iconColor: _cyan,
+                            title: 'شروط الاستخدام'.tr,
+                            subtitle: 'قواعد اللعب والعملات الافتراضية'.tr,
+                            onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                        const LegalScreen(initialTab: 1))),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      _settingsSection(
+                        title: 'منطقة الخطر'.tr,
+                        icon: Icons.warning_amber_rounded,
+                        iconColor: const Color(0xFFF87171),
+                        danger: true,
+                        children: [
+                          _SettingsTile(
+                            icon: Icons.person_remove_rounded,
+                            iconColor: const Color(0xFFF87171),
+                            title: 'حذف الحساب'.tr,
+                            subtitle: 'حذف حسابك وجميع بياناتك نهائياً'.tr,
+                            onTap: () => _confirmDeleteAccount(context),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 );
               },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// قسم إعدادات مُعنون — بطاقة زجاجية بعنوان صغير وأيقونة
+  Widget _settingsSection({
+    required String title,
+    required IconData icon,
+    required Color iconColor,
+    required List<Widget> children,
+    bool danger = false,
+  }) {
+    final accent = danger ? const Color(0xFFF87171) : iconColor;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 6, bottom: 8),
+            child: Row(
+              children: [
+                Icon(icon, color: accent, size: 14),
+                const SizedBox(width: 6),
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: accent,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Container(
+                    height: 1,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: [
+                        accent.withOpacity(0.35),
+                        Colors.transparent,
+                      ]),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: danger
+                      ? const Color(0x33FF4444)
+                      : const Color(0x2E141C3C),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                      color: danger
+                          ? const Color(0x55F87171)
+                          : const Color(0x26FFFFFF),
+                      width: 1),
+                ),
+                child: Column(children: children),
+              ),
             ),
           ),
         ],
@@ -1110,8 +1118,7 @@ class ProfileScreen extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0x2E16204A),
               borderRadius: BorderRadius.circular(14),
-              border:
-                  Border.all(color: const Color(0x26FFFFFF), width: 1),
+              border: Border.all(color: const Color(0x26FFFFFF), width: 1),
             ),
             child: Icon(icon, color: color, size: 17),
           ),
@@ -1120,17 +1127,20 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _miniStat(String label, String value, Color color,
-      {required Widget icon}) {
+  /// بلاطة إحصائية في شبكة البطاقة — تدرّج لوني خفيف + أيقونة ملوّنة
+  Widget _statTile(String label, String value, Color color, Widget icon) {
     return Expanded(
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 3),
-        padding: const EdgeInsets.symmetric(vertical: 9),
+        padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: const Color(0x1FFFFFFF),
-          borderRadius: BorderRadius.circular(14),
-          border:
-              Border.all(color: color.withOpacity(0.3), width: 1),
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [color.withOpacity(0.13), const Color(0x0EFFFFFF)],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.32), width: 1),
           boxShadow: [
             BoxShadow(color: color.withOpacity(0.10), blurRadius: 8),
           ],
@@ -1139,24 +1149,21 @@ class ProfileScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             icon,
-            const SizedBox(height: 4),
+            const SizedBox(height: 5),
             FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
                 value,
                 style: TextStyle(
-                    color: color,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900),
+                    color: color, fontSize: 13.5, fontWeight: FontWeight.w900),
               ),
             ),
-            const SizedBox(height: 1),
+            const SizedBox(height: 2),
             FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
                 label,
-                style:
-                    const TextStyle(color: _textDim, fontSize: 9.5),
+                style: const TextStyle(color: _textDim, fontSize: 9.5),
               ),
             ),
           ],
@@ -1213,8 +1220,7 @@ class _SettingsTileState extends State<_SettingsTile> {
           duration: const Duration(milliseconds: 150),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(
-                horizontal: 16, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               boxShadow: _pressed
                   ? [
@@ -1233,17 +1239,14 @@ class _SettingsTileState extends State<_SettingsTile> {
                     color: widget.iconColor.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(13),
                     border: Border.all(
-                        color: widget.iconColor.withOpacity(0.4),
-                        width: 1),
+                        color: widget.iconColor.withOpacity(0.4), width: 1),
                     boxShadow: [
                       BoxShadow(
-                          color:
-                              widget.iconColor.withOpacity(0.15),
+                          color: widget.iconColor.withOpacity(0.15),
                           blurRadius: 8),
                     ],
                   ),
-                  child: Icon(widget.icon,
-                      color: widget.iconColor, size: 20),
+                  child: Icon(widget.icon, color: widget.iconColor, size: 20),
                 ),
                 const SizedBox(width: 13),
                 Expanded(
@@ -1261,16 +1264,14 @@ class _SettingsTileState extends State<_SettingsTile> {
                       Text(
                         widget.subtitle,
                         style: const TextStyle(
-                            color: Color(0xFF8EA3C8),
-                            fontSize: 10.5),
+                            color: Color(0xFF8EA3C8), fontSize: 10.5),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(width: 8),
                 Icon(Icons.arrow_forward_ios_rounded,
-                    color: widget.iconColor.withOpacity(0.6),
-                    size: 14),
+                    color: widget.iconColor.withOpacity(0.6), size: 14),
               ],
             ),
           ),
@@ -1295,20 +1296,19 @@ class _ProfileDecorPainter extends CustomPainter {
             ).createShader(Rect.fromCircle(center: c, radius: r)));
     }
 
-    glow(Offset(size.width * 0.85, size.height * 0.05),
-        size.width * 0.55, const Color(0xFF2540A0), 0.30);
-    glow(Offset(size.width * 0.05, size.height * 0.35),
-        size.width * 0.45, const Color(0xFF7C5CFF), 0.14);
-    glow(Offset(size.width * 0.5, size.height * 1.05),
-        size.width * 0.65, const Color(0xFF8A6400), 0.14);
+    glow(Offset(size.width * 0.85, size.height * 0.05), size.width * 0.55,
+        const Color(0xFF2540A0), 0.30);
+    glow(Offset(size.width * 0.05, size.height * 0.35), size.width * 0.45,
+        const Color(0xFF7C5CFF), 0.14);
+    glow(Offset(size.width * 0.5, size.height * 1.05), size.width * 0.65,
+        const Color(0xFF8A6400), 0.14);
 
     // أقواس هندسية ذهبية شفافة في الأسفل
     final arcPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.2;
     for (int i = 0; i < 4; i++) {
-      arcPaint.color =
-          const Color(0xFFFFD54F).withOpacity(0.04 + i * 0.013);
+      arcPaint.color = const Color(0xFFFFD54F).withOpacity(0.04 + i * 0.013);
       canvas.drawArc(
         Rect.fromCenter(
           center: Offset(size.width * 0.5, size.height * 1.15),
@@ -1329,8 +1329,7 @@ class _ProfileDecorPainter extends CustomPainter {
     for (double y = size.height * 0.12;
         y < size.height * 0.4;
         y += size.height * 0.09) {
-      canvas.drawLine(
-          Offset(0, y), Offset(size.width, y), linePaint);
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), linePaint);
     }
   }
 
@@ -1539,8 +1538,7 @@ class _SocialRewardsCard extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: _cyan.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
-                            border:
-                                Border.all(color: _cyan.withOpacity(0.4)),
+                            border: Border.all(color: _cyan.withOpacity(0.4)),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -1568,8 +1566,8 @@ class _SocialRewardsCard extends StatelessWidget {
                     GestureDetector(
                       onTap: alreadyReferred
                           ? () {
-                              TopNotification.show(context,
-                                  'استخدمت كود إحالة مسبقاً ✅'.tr);
+                              TopNotification.show(
+                                  context, 'استخدمت كود إحالة مسبقاً ✅'.tr);
                             }
                           : () => _redeemReferral(context),
                       child: Container(
@@ -1588,8 +1586,7 @@ class _SocialRewardsCard extends StatelessWidget {
                         child: Text(
                           alreadyReferred ? 'مفعّل ✓'.tr : 'عندي كود صديق'.tr,
                           style: TextStyle(
-                              color:
-                                  alreadyReferred ? _textDim : _gold,
+                              color: alreadyReferred ? _textDim : _gold,
                               fontSize: 11.5,
                               fontWeight: FontWeight.w900),
                         ),
@@ -1611,8 +1608,7 @@ class _SocialRewardsCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                            color: _gold.withOpacity(0.3),
-                            blurRadius: 10),
+                            color: _gold.withOpacity(0.3), blurRadius: 10),
                       ],
                     ),
                     child: Center(

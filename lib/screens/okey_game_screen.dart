@@ -160,18 +160,16 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   // حاملا الجانبين (المسندان الخشبيان المائلان بين الوسائد والطاولة)
   static const _roomRackLeftF = Rect.fromLTWH(0.255, 0.320, 0.075, 0.300);
   static const _roomRackRightF = Rect.fromLTWH(0.670, 0.320, 0.075, 0.300);
-  // مناطق نزول البيرات على السجادة — أمام حامل كل لاعب، كبيرة كفاية
-  // لتظهر الأحجار بمقاس مقروء
-  // المناطق الأربع لا تتقاطع مع مركز الرزمة/المؤشر/الكومة (_roomCenterF)
-  // مناطق أوسع تستغل سطح الطاولة كله حول المركز — الأحجار تبقى مقروءة
-  // وحوافها الجانبية مُبعدة عن إطارات صور اللاعبين فلا تُغطّى
-  static const _roomMeldMineF = Rect.fromLTWH(0.258, 0.455, 0.484, 0.140);
-  static const _roomMeldTopF = Rect.fromLTWH(0.395, 0.205, 0.210, 0.120);
-  static const _roomMeldLeftF = Rect.fromLTWH(0.290, 0.240, 0.100, 0.215);
-  static const _roomMeldRightF = Rect.fromLTWH(0.610, 0.240, 0.100, 0.215);
-  // مركز السجادة — الرزمة والمؤشر وكومة المرميات (ارتفاعه يكفي لتظهر
-  // الأحجار بمقاس مقروء بلا أن يضغطها الـFittedBox)
-  static const _roomCenterF = Rect.fromLTWH(0.395, 0.330, 0.210, 0.120);
+  // مناطق نزول البيرات — كلها فوق سطح السجادة فقط (سجادة الصورة تمتد
+  // تقريباً x:0.30-0.71 وy:0.265-0.555) فلا تستقر الأحجار على الخشب
+  // الداكن للحوامل المرسومة فتبدو مخفية. حواف الجانبين مُبعدة عن
+  // إطارات صور اللاعبين، ولا منطقة تتقاطع مع مركز الرزمة (_roomCenterF)
+  static const _roomMeldMineF = Rect.fromLTWH(0.265, 0.455, 0.470, 0.135);
+  static const _roomMeldTopF = Rect.fromLTWH(0.360, 0.262, 0.280, 0.112);
+  static const _roomMeldLeftF = Rect.fromLTWH(0.318, 0.295, 0.108, 0.200);
+  static const _roomMeldRightF = Rect.fromLTWH(0.574, 0.295, 0.108, 0.200);
+  // مركز السجادة — الرزمة والمؤشر وكومة المرميات
+  static const _roomCenterF = Rect.fromLTWH(0.418, 0.352, 0.164, 0.115);
   // حاشية التقاط هدف الرف حول منطقة الاستكانة — تلتقط الإفلات السريع
   // المتجاوز لحدودها (الإصبع يسبق الحجر المرئي) فيقع على أقرب خانة.
   // الحاشية السفلية أوسع بكثير: الحجر المرئي يطفو فوق الإصبع فيكون
@@ -1002,64 +1000,87 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     showOkeyLandscapeDialog(
       context,
       barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E112E),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
-        ),
-        title: Row(
-          children: [
-            Icon(Icons.warning_amber_rounded,
-                color: Color(0xFFEF4444), size: 28),
-            SizedBox(width: 10),
-            Text(
-              'تأكيد الانسحاب'.tr,
-              style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '⚠️ تحذير: إذا قمت بالانسحاب الآن ستفقد رسوم الجولة (35 عملة ذهبية) وتُسجل لك خسارة رسمية في تقييمك السحابي!'
-                  .tr,
-              style: TextStyle(
-                  color: Color(0xFFFCA5A5), fontSize: 13, height: 1.5),
-            ),
-            SizedBox(height: 12),
-            Text(
-              'هل أنت متأكد من رغبتك في الاستسلام ومغادرة الطاولة؟'.tr,
-              style: TextStyle(color: Colors.white70, fontSize: 12),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text('متابعة اللعب'.tr,
-                style: TextStyle(
-                    color: Colors.white70, fontWeight: FontWeight.bold)),
+      // مربع مدمج قريب من الشكل المربّع بدل مستطيل عريض يغطي الطاولة
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        child: Container(
+          width: 265,
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E112E),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFEF4444), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                  color: const Color(0xFFEF4444).withOpacity(0.25),
+                  blurRadius: 22),
+            ],
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFDC2626),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
-            ),
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              _executeSurrender();
-            },
-            child: Text('نعم، تأكيد الانسحاب'.tr),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.warning_amber_rounded,
+                  color: Color(0xFFEF4444), size: 34),
+              const SizedBox(height: 8),
+              Text(
+                'تأكيد الانسحاب'.tr,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                '⚠️ تحذير: إذا قمت بالانسحاب الآن ستفقد رسوم الجولة (35 عملة ذهبية) وتُسجل لك خسارة رسمية في تقييمك السحابي!'
+                    .tr,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    color: Color(0xFFFCA5A5), fontSize: 11.5, height: 1.5),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'هل أنت متأكد من رغبتك في الاستسلام ومغادرة الطاولة؟'.tr,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white70, fontSize: 11.5),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: Text('متابعة اللعب'.tr,
+                          style: const TextStyle(
+                              color: Colors.white70,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12.5)),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFDC2626),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: () {
+                        Navigator.of(ctx).pop();
+                        _executeSurrender();
+                      },
+                      child: Text('نعم، انسحاب'.tr,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 12.5)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -2382,11 +2403,11 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     );
   }
 
-  static const double _meldTileW = 36, _meldTileH = 42;
+  static const double _meldTileW = 40, _meldTileH = 46;
 
-  /// كل حجر يظهر منه 72% ويغطّيه التالي — مثل طاولات الأوكي الحقيقية؛
+  /// كل حجر يظهر منه 70% ويغطّيه التالي — مثل طاولات الأوكي الحقيقية؛
   /// الرقم والنقطة في الجزء الظاهر فيبقى مقروءاً والبير أقصر بكثير
-  static const double _meldOverlap = 0.76;
+  static const double _meldOverlap = 0.72;
 
   // OkeyTileWidget يضيف هامش 1px من كل جانب ⇒ عرض الحجر الفعلي +2
   static double _meldWidth(int n) =>
@@ -2397,8 +2418,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   /// والمقياس يجوز تجاوز ×1 للبيرات القليلة فتظهر أكبر — مثل طاولة
   /// حقيقية تكبّر فيها الأحجار كلما قلّ عددها. الجانبيان: صفوف مرصوفة
   /// نحو صاحبه. المقابل وأنا: صفوف متوسطة.
-  static const double _meldRowPitch = 0.82; // نسبة التقارب بين الصفوف
-  static const double _meldMaxScale = 1.25; // سقف التكبير للبيرات القليلة
+  static const double _meldRowPitch = 0.80; // نسبة التقارب بين الصفوف
+  static const double _meldMaxScale = 1.4; // سقف التكبير للبيرات القليلة
 
   Widget _meldsOnTable(List<MapEntry<int, OkeyGroup>> melds, Rect zone,
       {required int seat}) {

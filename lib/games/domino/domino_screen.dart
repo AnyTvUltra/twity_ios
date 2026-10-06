@@ -45,7 +45,9 @@ class _DominoGameScreenState extends State<DominoGameScreen> {
   static const _feltB = Color(0xFF0D2F20);
 
   /// عدد خلايا النصف-حجر في عرض الطاولة (كل حجر = خليتان)
-  static const _chainCellsWide = 12;
+  // خلايا السلسلة عرضاً — كل حجر خليتان، فعشر خلايا = خمسة أحجار
+  // بالصف الواحد. أقل = أحجار أكبر وأوضح على الشاشة
+  static const _chainCellsWide = 10;
 
   @override
   void initState() {
@@ -557,8 +559,9 @@ class _DominoGameScreenState extends State<DominoGameScreen> {
     );
   }
 
-  /// المسافة بين الصفوف بوحدات الخلية — تكفي لدبل واقف بلا تداخل
-  static const double _rowPitch = 2.15;
+  /// المسافة بين الصفوف بوحدات الخلية — متلاصقة كطاولة دومينو
+  /// حقيقية مع فراغ يكفي لدبل واقف (يمتد ±0.4u فوق خليته) بلا تداخل
+  static const double _rowPitch = 1.62;
 
   /// تخطيط متعرج: كل حجر خليتان أفقيتان، الصفوف بالتناوب يمين/يسار.
   /// reversed[i] = الحجر في صف يسير يميناً←يساراً (تُقلب قيمتاه بصرياً

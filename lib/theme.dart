@@ -26,12 +26,6 @@ class AppColors {
   static const Color solitaireBorderLight = Color(0xFF48D383);
   static const Color solitaireGlow = Color(0xFF33C76F);
 
-  // Card 3: Ludo (لودو) - Crimson Ruby Red
-  static const Color ludoBg = Color(0xFF991B1B);
-  static const Color ludoBorder = Color(0xFFDC2626);
-  static const Color ludoBorderLight = Color(0xFFF87171);
-  static const Color ludoGlow = Color(0xFFEF4444);
-
   // Card 4: Okey (كونكان) - Golden Amber
   static const Color okeyBg = Color(0xFF9E6508);
   static const Color okeyBorder = Color(0xFFD98E04);
@@ -145,16 +139,6 @@ class AppGradients {
     ],
   );
 
-  static const LinearGradient ludoCard = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [
-      Color(0xFFD62828),
-      Color(0xFFA61C1C),
-      Color(0xFF781111),
-    ],
-  );
-
   static const LinearGradient okeyCard = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
@@ -222,8 +206,6 @@ class AppGradients {
         return chessCard;
       case 'solitaire':
         return solitaireCard;
-      case 'ludo':
-        return ludoCard;
       case 'okey':
         return okeyCard;
       case 'backgammon':

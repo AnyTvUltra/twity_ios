@@ -405,6 +405,21 @@ class OkeyIstakaWidget extends StatelessWidget {
   /// الخانة المستهدفة أثناء السحب (لمعاينة مكان النزول)
   static final ValueNotifier<int?> _hoverSlot = ValueNotifier<int?>(null);
 
+  /// آخر لحظة انتهى فيها سحب — تُكبت الضغطات خلال 300ms بعده حتى لا
+  /// يُفسَّر رفع الإصبع كضغطة تُحدِّد الحجر المُفلت للتوّ (فكان يبدو
+  /// كأن السحب يحدّد الحجر تلقائياً وتبديل مكانه أو رميه يتم بالخطأ)
+  static DateTime _lastDragEnd = DateTime.fromMillisecondsSinceEpoch(0);
+
+  static void _noteDragEnd() => _lastDragEnd = DateTime.now();
+
+  void _handleTap(int slotIndex) {
+    if (DateTime.now().difference(_lastDragEnd) <
+        const Duration(milliseconds: 300)) {
+      return;
+    }
+    onTileTap(slotIndex);
+  }
+
   /// صندوق محتوى الرف الداخلي (داخل حاشية الالتقاط) — إحداثيات
   /// الخانات محسوبة من حدوده، بينما هدف السحب أكبر منه بحاشية hitPad
   static final GlobalKey _rackInnerKey = GlobalKey();
@@ -538,7 +553,10 @@ class OkeyIstakaWidget extends StatelessWidget {
       data: OkeyDrag.groupBase + slotIndex,
       delay: const Duration(milliseconds: 320),
       hapticFeedbackOnStart: true,
-      onDragEnd: (_) => _hoverSlot.value = null,
+      onDragEnd: (_) {
+        _hoverSlot.value = null;
+        _noteDragEnd();
+      },
       // الحجر المضغوط يبقى تحت الإصبع، والكتلة ممتدة حوله
       dragAnchorStrategy: (d, c, p) => Offset(
           pad + gap + indexInGroup * (tileW + gap * 2) + tileW / 2,
@@ -651,6 +669,7 @@ class OkeyIstakaWidget extends StatelessWidget {
                       },
                       onDragEnd: (_) {
                         _hoverSlot.value = null;
+                        _noteDragEnd();
                       },
                       // الحجر يتوسط الإصبع ويرتفع فوقه قليلاً ليبقى ظاهراً
                       dragAnchorStrategy: (Draggable<Object> draggable,
@@ -701,7 +720,7 @@ class OkeyIstakaWidget extends StatelessWidget {
                                   highlightedIndices.contains(slotIndex),
                               width: tileW,
                               height: tileH,
-                              onTap: () => onTileTap(slotIndex),
+                              onTap: () => _handleTap(slotIndex),
                             )
                           : OkeyTileWidget(
                               tile: tile,
@@ -710,7 +729,7 @@ class OkeyIstakaWidget extends StatelessWidget {
                                   highlightedIndices.contains(slotIndex),
                               width: tileW,
                               height: tileH,
-                              onTap: () => onTileTap(slotIndex),
+                              onTap: () => _handleTap(slotIndex),
                             ),
                     ),
                   ),
