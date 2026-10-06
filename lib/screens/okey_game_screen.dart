@@ -164,10 +164,12 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   // تقريباً x:0.30-0.71 وy:0.265-0.555) فلا تستقر الأحجار على الخشب
   // الداكن للحوامل المرسومة فتبدو مخفية. حواف الجانبين مُبعدة عن
   // إطارات صور اللاعبين، ولا منطقة تتقاطع مع مركز الرزمة (_roomCenterF)
-  static const _roomMeldMineF = Rect.fromLTWH(0.265, 0.455, 0.470, 0.135);
-  static const _roomMeldTopF = Rect.fromLTWH(0.360, 0.262, 0.280, 0.112);
-  static const _roomMeldLeftF = Rect.fromLTWH(0.318, 0.295, 0.108, 0.200);
-  static const _roomMeldRightF = Rect.fromLTWH(0.574, 0.295, 0.108, 0.200);
+  // كل منطقة منفصلة تماماً عن مركز الرزمة (0.418-0.582 × 0.352-0.467)
+  // فلا يغطي حجر المؤشر أو الكومة أي حجر من البيرات
+  static const _roomMeldMineF = Rect.fromLTWH(0.265, 0.472, 0.470, 0.118);
+  static const _roomMeldTopF = Rect.fromLTWH(0.345, 0.258, 0.310, 0.090);
+  static const _roomMeldLeftF = Rect.fromLTWH(0.305, 0.290, 0.108, 0.180);
+  static const _roomMeldRightF = Rect.fromLTWH(0.587, 0.290, 0.108, 0.180);
   // مركز السجادة — الرزمة والمؤشر وكومة المرميات
   static const _roomCenterF = Rect.fromLTWH(0.418, 0.352, 0.164, 0.115);
   // حاشية التقاط هدف الرف حول منطقة الاستكانة — تلتقط الإفلات السريع
@@ -2405,9 +2407,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
 
   static const double _meldTileW = 40, _meldTileH = 46;
 
-  /// كل حجر يظهر منه 70% ويغطّيه التالي — مثل طاولات الأوكي الحقيقية؛
-  /// الرقم والنقطة في الجزء الظاهر فيبقى مقروءاً والبير أقصر بكثير
-  static const double _meldOverlap = 0.72;
+  /// بلا تراكب — كل حجر ظاهر كاملاً (الرقم والنقطة)؛ التراكب السابق
+  /// كان يخفي جزءاً من كل حجر
+  static const double _meldOverlap = 1.0;
 
   // OkeyTileWidget يضيف هامش 1px من كل جانب ⇒ عرض الحجر الفعلي +2
   static double _meldWidth(int n) =>
@@ -2418,7 +2420,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   /// والمقياس يجوز تجاوز ×1 للبيرات القليلة فتظهر أكبر — مثل طاولة
   /// حقيقية تكبّر فيها الأحجار كلما قلّ عددها. الجانبيان: صفوف مرصوفة
   /// نحو صاحبه. المقابل وأنا: صفوف متوسطة.
-  static const double _meldRowPitch = 0.80; // نسبة التقارب بين الصفوف
+  // صفوف منفصلة بفراغ صغير — الصف التالي لا يغطي نقاط الصف الذي فوقه
+  static const double _meldRowPitch = 1.06;
   static const double _meldMaxScale = 1.4; // سقف التكبير للبيرات القليلة
 
   Widget _meldsOnTable(List<MapEntry<int, OkeyGroup>> melds, Rect zone,
@@ -2484,35 +2487,42 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       2 => Alignment.bottomCenter,
       _ => Alignment.topCenter,
     };
+    // FittedBox يمرّر للمحتوى قيوداً حرّة فيُرسم بكامل عرضه ثم يُصغَّر —
+    // Transform.scale السابق كان يضغط الـSizedBox لعرض المنطقة أولاً
+    // فيقصّ الـStack أطراف البيرات قبل التصغير فيختفي جزء منها
     return Align(
       alignment: align,
-      child: Transform.scale(
-        scale: bestScale,
-        alignment: align,
-        child: SizedBox(
-          width: usedW,
-          height: contentH,
-          child: Stack(
-            children: [
-              for (var r = 0; r < lines.length; r++)
-                Positioned(
-                  top: r * pitch,
-                  left: seat == 3
-                      ? 0
-                      : seat == 1
-                          ? usedW - lineWidths[r]
-                          : (usedW - lineWidths[r]) / 2,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      for (var c = 0; c < lines[r].length; c++) ...[
-                        if (c > 0) const SizedBox(width: spacing),
-                        rows[lines[r][c]],
+      child: SizedBox(
+        width: usedW * bestScale,
+        height: contentH * bestScale,
+        child: FittedBox(
+          fit: BoxFit.fill,
+          child: SizedBox(
+            width: usedW,
+            height: contentH,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                for (var r = 0; r < lines.length; r++)
+                  Positioned(
+                    top: r * pitch,
+                    left: seat == 3
+                        ? 0
+                        : seat == 1
+                            ? usedW - lineWidths[r]
+                            : (usedW - lineWidths[r]) / 2,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (var c = 0; c < lines[r].length; c++) ...[
+                          if (c > 0) const SizedBox(width: spacing),
+                          rows[lines[r][c]],
+                        ],
                       ],
-                    ],
+                    ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
