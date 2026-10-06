@@ -112,8 +112,31 @@ class RewardsService {
   ];
 
   /// جوائز الأسبوع الحالي (7 أيام)
-  static List<DailyReward> get currentWeekRewards =>
-      _weeklyPlans[weekIndex];
+  static List<DailyReward> get currentWeekRewards => _weeklyPlans[weekIndex];
+
+  /// عدد أيام الشهر الحالي (28..31)
+  static int get daysInCurrentMonth {
+    final n = DateTime.now();
+    return DateTime(n.year, n.month + 1, 0).day;
+  }
+
+  /// تقويم المكافأة اليومية للشهر الحالي — جائزة لكل يوم من أيامه:
+  /// عملات متصاعدة، جواهر كل 5 أيام، سكن كل 7 أيام (يتبدل كل شهر)،
+  /// وجائزة كبرى في آخر يوم من الشهر
+  static List<DailyReward> get currentMonthRewards {
+    final month = DateTime.now().month;
+    final len = daysInCurrentMonth;
+    return List.generate(len, (i) {
+      final d = i + 1;
+      if (d == len) return const DailyReward.chips(5000);
+      if (d % 7 == 0) {
+        return DailyReward.skin(
+            rewardSkinPool[(month * 4 + d ~/ 7) % rewardSkinPool.length]);
+      }
+      if (d % 5 == 0) return DailyReward.gems(3 + (d ~/ 5) * 2);
+      return DailyReward.chips(((300 + (d - 1) * 40) / 50).round() * 50);
+    });
+  }
 
   /// سكن العجلة لهذا الأسبوع — يدور مع الأسابيع
   static String get wheelSkinThisWeek =>

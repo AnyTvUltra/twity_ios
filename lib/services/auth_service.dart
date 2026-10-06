@@ -109,11 +109,10 @@ class AppUser {
       ownedSkins:
           (data['ownedSkins'] as List?)?.map((e) => e.toString()).toList() ??
               const [],
-      equippedSkins:
-          (data['equippedSkins'] as Map?)?.map(
-                (k, v) => MapEntry(k.toString(), v.toString()),
-              ) ??
-              const {},
+      equippedSkins: (data['equippedSkins'] as Map?)?.map(
+            (k, v) => MapEntry(k.toString(), v.toString()),
+          ) ??
+          const {},
     );
   }
 
@@ -284,8 +283,7 @@ class AuthService extends ChangeNotifier {
         level: (d['level'] as num?)?.toInt() ?? 1,
         wins: (d['wins'] as num?)?.toInt() ?? 0,
         losses: (d['losses'] as num?)?.toInt() ?? 0,
-        lastDailyGiftClaim:
-            DateTime.tryParse(d['lastDailyGiftClaim'] ?? ''),
+        lastDailyGiftClaim: DateTime.tryParse(d['lastDailyGiftClaim'] ?? ''),
         dailyGiftStreak: (d['dailyGiftStreak'] as num?)?.toInt() ?? 0,
         lastWheelSpin: DateTime.tryParse(d['lastWheelSpin'] ?? ''),
         wheelSpinCount: (d['wheelSpinCount'] as num?)?.toInt() ?? 0,
@@ -294,12 +292,11 @@ class AuthService extends ChangeNotifier {
         lastLootBox: DateTime.tryParse(d['lastLootBox'] ?? ''),
         referredBy: d['referredBy'],
         isOnline: d['isOnline'] ?? true,
-        ownedSkins: (d['ownedSkins'] as List?)
-                ?.map((e) => e.toString())
-                .toList() ??
-            const [],
-        equippedSkins: (d['equippedSkins'] as Map?)?.map(
-                (k, v) => MapEntry(k.toString(), v.toString())) ??
+        ownedSkins:
+            (d['ownedSkins'] as List?)?.map((e) => e.toString()).toList() ??
+                const [],
+        equippedSkins: (d['equippedSkins'] as Map?)
+                ?.map((k, v) => MapEntry(k.toString(), v.toString())) ??
             const {},
       );
 
@@ -416,8 +413,7 @@ class AuthService extends ChangeNotifier {
         'equippedSkins': equipped,
         'ownedSkins': owned,
       });
-      _currentUser = user.copyWith(
-          equippedSkins: equipped, ownedSkins: owned);
+      _currentUser = user.copyWith(equippedSkins: equipped, ownedSkins: owned);
       notifyListeners();
     } catch (e) {
       debugPrint('Error applying VIP perks: $e');
@@ -772,6 +768,28 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  /// هل آخر استلام للهدية في الشهر الحالي؟
+  bool get _dailyGiftThisMonth {
+    final last = _currentUser?.lastDailyGiftClaim;
+    final now = DateTime.now();
+    return last != null && last.year == now.year && last.month == now.month;
+  }
+
+  /// أيام التقويم الشهري المستلمة حتى الآن ضمن السلسلة الحالية
+  int get dailyGiftDaysClaimed {
+    final u = _currentUser;
+    if (u == null || !_dailyGiftThisMonth) return 0;
+    if (DateTime.now().difference(u.lastDailyGiftClaim!).inHours > 48) {
+      return 0; // انقطعت السلسلة — يبدأ التقويم من اليوم الأول
+    }
+    return u.dailyGiftStreak.clamp(0, RewardsService.daysInCurrentMonth);
+  }
+
+  /// اليوم التالي في تقويم الشهر (1..أيام الشهر) — شهر جديد أو سلسلة
+  /// منقطعة يبدأ من اليوم الأول
+  int get nextDailyGiftDay =>
+      (dailyGiftDaysClaimed % RewardsService.daysInCurrentMonth) + 1;
+
   /// استلام الهدية اليومية (هدية واحدة كل 24 ساعة بالضبط)
   Future<Map<String, dynamic>> claimDailyGift() async {
     if (_currentUser == null) {
@@ -788,22 +806,17 @@ class AuthService extends ChangeNotifier {
         final remainingMinutes = 60 - (difference.inMinutes % 60);
         return {
           'success': false,
-          'message':
-              'لقد استلمت هديتك اليومية بالفعل! متبقي {} ساعة و {} دقيقة'.trp([remainingHours, remainingMinutes]),
+          'message': 'لقد استلمت هديتك اليومية بالفعل! متبقي {} ساعة و {} دقيقة'
+              .trp([remainingHours, remainingMinutes]),
           'remainingHours': remainingHours,
           'remainingMinutes': remainingMinutes,
         };
       }
     }
 
-    // Determine streak day (1 to 7)
-    int nextStreak = 1;
-    if (lastClaim != null && now.difference(lastClaim).inHours <= 48) {
-      nextStreak = (_currentUser!.dailyGiftStreak % 7) + 1;
-    }
-
-    // جائزة اليوم من خطة الأسبوع الدوّارة (عملات/جواهر/سكن — تتبدل أسبوعياً)
-    final def = RewardsService.currentWeekRewards[nextStreak - 1];
+    // يوم التقويم الشهري (1..أيام الشهر) — جائزته من تقويم الشهر الحالي
+    final nextStreak = nextDailyGiftDay;
+    final def = RewardsService.currentMonthRewards[nextStreak - 1];
     final isVip = _currentUser!.isVip;
     final isVipPlus = _currentUser!.isVipPlus;
 
@@ -853,8 +866,8 @@ class AuthService extends ChangeNotifier {
       'skinId': grantedSkinId,
       'skinName': skinName,
       'streakDay': nextStreak,
-      'message':
-          'مبروك! استلمت هدية اليوم {}: {}{} 🎉'.trp([nextStreak, rewardLabel, vipNote]),
+      'message': 'مبروك! استلمت هدية اليوم {}: {}{} 🎉'
+          .trp([nextStreak, rewardLabel, vipNote]),
     };
 
     if (_currentUser!.uid.startsWith('guest_')) {
@@ -920,7 +933,8 @@ class AuthService extends ChangeNotifier {
     if (wheelSpinsRemaining <= 0) {
       return {
         'success': false,
-        'message': 'استخدمت لفات اليوم! عُد غداً أو اشترك بـVIP للفة إضافية 👑'.tr,
+        'message':
+            'استخدمت لفات اليوم! عُد غداً أو اشترك بـVIP للفة إضافية 👑'.tr,
       };
     }
 
@@ -1014,8 +1028,7 @@ class AuthService extends ChangeNotifier {
   // ══════════════════════════════════════════════════════
   // اشتراك VIP — 10$ شهرياً / VIP+ بـ20$ (تفعيل من الإدارة)
   // ══════════════════════════════════════════════════════
-  Future<Map<String, dynamic>> submitVipRequest(
-      {String plan = 'vip'}) async {
+  Future<Map<String, dynamic>> submitVipRequest({String plan = 'vip'}) async {
     final user = _currentUser;
     if (user == null) {
       return {'success': false, 'message': 'يرجى تسجيل الدخول أولاً!'.tr};
@@ -1044,8 +1057,8 @@ class AuthService extends ChangeNotifier {
       });
       return {
         'success': true,
-        'message':
-            'تم إرسال طلب {} ✅ سيُفعَّل خلال 24 ساعة بعد تأكيد الدفع'.trp([isPlus ? 'VIP+' : 'VIP']),
+        'message': 'تم إرسال طلب {} ✅ سيُفعَّل خلال 24 ساعة بعد تأكيد الدفع'
+            .trp([isPlus ? 'VIP+' : 'VIP']),
       };
     } catch (e) {
       debugPrint('Error submitting VIP request: $e');
@@ -1074,7 +1087,10 @@ class AuthService extends ChangeNotifier {
     if (!canClaimLootBox) {
       final diff = DateTime.now().difference(user.lastLootBox!);
       final h = 23 - diff.inHours;
-      return {'success': false, 'message': 'الصندوق يتجدد بعد {}س ⏳'.trp([h])};
+      return {
+        'success': false,
+        'message': 'الصندوق يتجدد بعد {}س ⏳'.trp([h])
+      };
     }
 
     final now = DateTime.now();
@@ -1171,7 +1187,8 @@ class AuthService extends ChangeNotifier {
     if (user.gems < cost) {
       return {
         'success': false,
-        'message': 'تحتاج {} 💎 لحماية السلسلة — رصيدك {} 💎'.trp([cost, user.gems]),
+        'message':
+            'تحتاج {} 💎 لحماية السلسلة — رصيدك {} 💎'.trp([cost, user.gems]),
       };
     }
     if (!canRestoreStreak) {
@@ -1190,7 +1207,10 @@ class AuthService extends ChangeNotifier {
         lastDailyGiftClaim: restored,
       );
       notifyListeners();
-      return {'success': true, 'message': 'تم حماية سلسلتك! 🔥 استلم هديتك الآن'.tr};
+      return {
+        'success': true,
+        'message': 'تم حماية سلسلتك! 🔥 استلم هديتك الآن'.tr
+      };
     }
 
     try {
@@ -1203,7 +1223,10 @@ class AuthService extends ChangeNotifier {
         lastDailyGiftClaim: restored,
       );
       notifyListeners();
-      return {'success': true, 'message': 'تم حماية سلسلتك! 🔥 استلم هديتك الآن'.tr};
+      return {
+        'success': true,
+        'message': 'تم حماية سلسلتك! 🔥 استلم هديتك الآن'.tr
+      };
     } catch (e) {
       debugPrint('Error buying streak protection: $e');
       return {'success': false, 'message': 'تعذر تنفيذ الحماية'.tr};
@@ -1264,8 +1287,7 @@ class AuthService extends ChangeNotifier {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      _currentUser = user.copyWith(
-          chips: user.chips + 300, referredBy: clean);
+      _currentUser = user.copyWith(chips: user.chips + 300, referredBy: clean);
       notifyListeners();
       return {
         'success': true,
@@ -1280,8 +1302,7 @@ class AuthService extends ChangeNotifier {
   // ══════════════════════════════════════════════════════
   // إهداء العملات لصديق 🎁 — يستلمها عند فتحه التطبيق
   // ══════════════════════════════════════════════════════
-  Future<Map<String, dynamic>> sendGift(
-      String username, int chips) async {
+  Future<Map<String, dynamic>> sendGift(String username, int chips) async {
     final user = _currentUser;
     if (user == null) {
       return {'success': false, 'message': 'يرجى تسجيل الدخول أولاً!'.tr};
@@ -1335,7 +1356,8 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
       return {
         'success': true,
-        'message': 'أُرسلت {} 🪙 هدية إلى @{} 🎁 تصله عند دخوله'.trp([chips, clean]),
+        'message':
+            'أُرسلت {} 🪙 هدية إلى @{} 🎁 تصله عند دخوله'.trp([chips, clean]),
       };
     } catch (e) {
       debugPrint('Error sending gift: $e');

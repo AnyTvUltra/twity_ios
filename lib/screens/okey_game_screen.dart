@@ -167,9 +167,11 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   // كل منطقة منفصلة تماماً عن مركز الرزمة (0.418-0.582 × 0.352-0.467)
   // فلا يغطي حجر المؤشر أو الكومة أي حجر من البيرات
   static const _roomMeldMineF = Rect.fromLTWH(0.265, 0.472, 0.470, 0.118);
-  static const _roomMeldTopF = Rect.fromLTWH(0.345, 0.258, 0.310, 0.090);
-  static const _roomMeldLeftF = Rect.fromLTWH(0.305, 0.290, 0.108, 0.180);
-  static const _roomMeldRightF = Rect.fromLTWH(0.587, 0.290, 0.108, 0.180);
+  // الجانبيان أطول (من أعلى السجادة حتى منطقتي) ولا يتقاطعان مع منطقة
+  // المقابل — مساحة أكبر يعاد ترتيب البيرات فيها بدل تصغيرها
+  static const _roomMeldTopF = Rect.fromLTWH(0.398, 0.258, 0.204, 0.090);
+  static const _roomMeldLeftF = Rect.fromLTWH(0.292, 0.262, 0.102, 0.206);
+  static const _roomMeldRightF = Rect.fromLTWH(0.606, 0.262, 0.102, 0.206);
   // مركز السجادة — الرزمة والمؤشر وكومة المرميات
   static const _roomCenterF = Rect.fromLTWH(0.418, 0.352, 0.164, 0.115);
   // حاشية التقاط هدف الرف حول منطقة الاستكانة — تلتقط الإفلات السريع
@@ -2420,66 +2422,104 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   /// والمقياس يجوز تجاوز ×1 للبيرات القليلة فتظهر أكبر — مثل طاولة
   /// حقيقية تكبّر فيها الأحجار كلما قلّ عددها. الجانبيان: صفوف مرصوفة
   /// نحو صاحبه. المقابل وأنا: صفوف متوسطة.
-  // صفوف منفصلة بفراغ صغير — الصف التالي لا يغطي نقاط الصف الذي فوقه
-  static const double _meldRowPitch = 1.06;
   static const double _meldMaxScale = 1.4; // سقف التكبير للبيرات القليلة
+
+  /// ارتفاع بير ملفوف على [chunks] أسطر (حجر + سماكة لكل سطر + حاشية)
+  static double _meldHeight(int chunks) =>
+      chunks * (_meldTileH + 2.4) + (chunks - 1) * 3 + 4;
+
+  /// تخطيط بيرات لاعب: صفوف من البيرات، وكل بير طويل يمكن لفّه على
+  /// أسطر قصيرة (perLine حجر في السطر). يُعيد المقياس والتوزيع.
+  ({
+    double scale,
+    List<List<int>> lines,
+    List<double> lineW,
+    List<double> lineH,
+    double usedW,
+    double contentH
+  }) _packMelds(List<int> lens, int perLine, double wrapW, Size zone) {
+    const spacing = 6.0, rowGap = 5.0;
+    final ws = [for (final n in lens) _meldWidth(math.min(n, perLine))];
+    final hs = [
+      for (final n in lens) _meldHeight((n + perLine - 1) ~/ perLine)
+    ];
+    final lines = <List<int>>[[]];
+    final lineW = <double>[0];
+    final lineH = <double>[0];
+    for (var i = 0; i < ws.length; i++) {
+      final cur = lineW.last;
+      final next = cur == 0 ? ws[i] : cur + spacing + ws[i];
+      if (next > wrapW + 0.01 && cur > 0) {
+        lines.add([i]);
+        lineW.add(ws[i]);
+        lineH.add(hs[i]);
+      } else {
+        lines.last.add(i);
+        lineW[lineW.length - 1] = next;
+        lineH[lineH.length - 1] = math.max(lineH.last, hs[i]);
+      }
+    }
+    final usedW = lineW.reduce(math.max);
+    final contentH =
+        lineH.fold<double>(0, (s, h) => s + h) + rowGap * (lines.length - 1);
+    final scale = math.min(
+        _meldMaxScale, math.min(zone.width / usedW, zone.height / contentH));
+    return (
+      scale: scale,
+      lines: lines,
+      lineW: lineW,
+      lineH: lineH,
+      usedW: usedW,
+      contentH: contentH
+    );
+  }
 
   Widget _meldsOnTable(List<MapEntry<int, OkeyGroup>> melds, Rect zone,
       {required int seat}) {
-    final rows = [for (final m in melds) _meld3D(m.key, m.value)];
-    const spacing = 6.0;
-    const rowH = _meldTileH + 4 + 2.4;
-    const pitch = rowH * _meldRowPitch;
-    final widths = [for (final m in melds) _meldWidth(m.value.tiles.length)];
-    // نبحث عن عرض الالتفاف الذي يعطي أكبر مقياس ممكن داخل المنطقة —
-    // فتبقى الأحجار بأكبر حجم مقروء مهما كثرت البيرات (بدل تصغير ثابت)
-    final widest = widths.reduce(math.max);
-    final total =
-        widths.fold<double>(0, (s, w) => s + w) + spacing * (widths.length - 1);
-    var bestW = total, bestScale = 0.0;
-    for (var wrapW = widest; wrapW <= total + 0.5; wrapW += 6) {
-      var lines = 1;
-      var lineW = 0.0;
-      var usedW = 0.0;
-      for (final w in widths) {
-        final next = lineW == 0 ? w : lineW + spacing + w;
-        if (next > wrapW + 0.01 && lineW > 0) {
-          usedW = math.max(usedW, lineW);
-          lines++;
-          lineW = w;
-        } else {
-          lineW = next;
+    const spacing = 6.0, rowGap = 5.0;
+    final lens = [for (final m in melds) m.value.tiles.length];
+    final maxLen = lens.reduce(math.max);
+    // عند الصرف يطول البير — بدل تصغير كل شيء نجرّب إعادة الترتيب أولاً:
+    // كل توزيعات الصفوف × لفّ البيرات الطويلة على أسطر قصيرة (≥3 أحجار
+    // بالسطر)، ونختار التوزيع الذي يُبقي الأحجار بأكبر حجم ممكن. اللفّ
+    // يُعتمد فقط إن كسب حجماً ملحوظاً (8%) حتى لا تتقطع البيرات بلا داع
+    ({
+      double scale,
+      List<List<int>> lines,
+      List<double> lineW,
+      List<double> lineH,
+      double usedW,
+      double contentH
+    })? best;
+    var bestPer = maxLen;
+    for (var per = maxLen; per >= math.min(3, maxLen); per--) {
+      final ws = [for (final n in lens) _meldWidth(math.min(n, per))];
+      final widest = ws.reduce(math.max);
+      final total =
+          ws.fold<double>(0, (s, w) => s + w) + spacing * (ws.length - 1);
+      for (var wrapW = widest; wrapW <= total + 6; wrapW += 6) {
+        final p = _packMelds(lens, per, wrapW, zone.size);
+        final need = per == bestPer ? 1.001 : 1.08;
+        if (best == null || p.scale > best.scale * need) {
+          best = p;
+          bestPer = per;
         }
       }
-      usedW = math.max(usedW, lineW);
-      final h = rowH + (lines - 1) * pitch;
-      final scale = math.min(
-          _meldMaxScale, math.min(zone.width / usedW, zone.height / h));
-      if (scale > bestScale + 0.001) {
-        bestScale = scale;
-        bestW = wrapW;
-      }
     }
-
-    // تقسيم البيرات إلى صفوف على العرض الفائز
-    final lines = <List<int>>[[]];
-    final lineWidths = <double>[];
-    var lineW = 0.0;
-    for (var i = 0; i < widths.length; i++) {
-      final w = widths[i];
-      final next = lineW == 0 ? w : lineW + spacing + w;
-      if (next > bestW + 0.01 && lineW > 0) {
-        lineWidths.add(lineW);
-        lines.add([i]);
-        lineW = w;
-      } else {
-        lines.last.add(i);
-        lineW = next;
-      }
+    final b = best!;
+    final lines = b.lines;
+    final usedW = b.usedW;
+    final contentH = b.contentH;
+    final bestScale = b.scale;
+    final rows = [
+      for (final m in melds) _meld3D(m.key, m.value, perLine: bestPer)
+    ];
+    final tops = <double>[];
+    var y = 0.0;
+    for (final h in b.lineH) {
+      tops.add(y);
+      y += h + rowGap;
     }
-    lineWidths.add(lineW);
-    final usedW = lineWidths.reduce(math.max);
-    final contentH = rowH + (lines.length - 1) * pitch;
 
     final align = switch (seat) {
       3 => Alignment.centerLeft,
@@ -2505,14 +2545,15 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
               children: [
                 for (var r = 0; r < lines.length; r++)
                   Positioned(
-                    top: r * pitch,
+                    top: tops[r],
                     left: seat == 3
                         ? 0
                         : seat == 1
-                            ? usedW - lineWidths[r]
-                            : (usedW - lineWidths[r]) / 2,
+                            ? usedW - b.lineW[r]
+                            : (usedW - b.lineW[r]) / 2,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         for (var c = 0; c < lines[r].length; c++) ...[
                           if (c > 0) const SizedBox(width: spacing),
@@ -2530,7 +2571,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   }
 
   /// بير واحد: أحجار متلاصقة بسماكة وظل، وتقبل صرف حجر عليها
-  Widget _meld3D(int meldIndex, OkeyGroup meld) {
+  Widget _meld3D(int meldIndex, OkeyGroup meld, {int perLine = 99}) {
     return DragTarget<int>(
       onWillAcceptWithDetails: (details) => OkeyDrag.isRackTile(details.data),
       onAcceptWithDetails: (details) {
@@ -2587,36 +2628,48 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                 ),
               ],
             ),
-            child: Row(
+            // البير الطويل يُلفّ على أسطر من perLine حجر بنفس ترتيبه
+            child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                for (var k = 0; k < meld.tiles.length; k++)
-                  Align(
-                    // تراكب: كل حجر يحجز 72% من عرضه والتالي يغطي حافته
-                    alignment: Alignment.centerLeft,
-                    widthFactor:
-                        k == meld.tiles.length - 1 ? 1.0 : _meldOverlap,
-                    child: Container(
-                      // سماكة الحجر: حافة سفلية عاجية داكنة + ظل جانبي
-                      // خفيف يفصل الحجر عن الذي تحته
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(4),
-                        boxShadow: [
-                          const BoxShadow(
-                              color: Color(0xFFB9A57A),
-                              offset: Offset(0, 2.2),
-                              blurRadius: 0),
-                          if (k > 0)
-                            BoxShadow(
-                                color: Colors.black.withOpacity(0.22),
-                                offset: const Offset(-1.5, 0),
-                                blurRadius: 2),
-                        ],
-                      ),
-                      child: OkeyTileWidget(
-                          tile: meld.tiles[k],
-                          width: _roomScene ? _meldTileW : 26,
-                          height: _roomScene ? _meldTileH : 32),
+                for (var s = 0; s < meld.tiles.length; s += perLine)
+                  Padding(
+                    padding: EdgeInsets.only(top: s == 0 ? 0 : 3),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (var k = s;
+                            k < math.min(s + perLine, meld.tiles.length);
+                            k++)
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            widthFactor:
+                                k == meld.tiles.length - 1 ? 1.0 : _meldOverlap,
+                            child: Container(
+                              // سماكة الحجر: حافة سفلية عاجية داكنة + ظل جانبي
+                              // خفيف يفصل الحجر عن الذي تحته
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(4),
+                                boxShadow: [
+                                  const BoxShadow(
+                                      color: Color(0xFFB9A57A),
+                                      offset: Offset(0, 2.2),
+                                      blurRadius: 0),
+                                  if (k > 0)
+                                    BoxShadow(
+                                        color: Colors.black.withOpacity(0.22),
+                                        offset: const Offset(-1.5, 0),
+                                        blurRadius: 2),
+                                ],
+                              ),
+                              child: OkeyTileWidget(
+                                  tile: meld.tiles[k],
+                                  width: _roomScene ? _meldTileW : 26,
+                                  height: _roomScene ? _meldTileH : 32),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
               ],
