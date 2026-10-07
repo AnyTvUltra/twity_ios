@@ -166,14 +166,15 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   // إطارات صور اللاعبين، ولا منطقة تتقاطع مع مركز الرزمة (_roomCenterF)
   // كل منطقة منفصلة تماماً عن مركز الرزمة (0.418-0.582 × 0.352-0.467)
   // فلا يغطي حجر المؤشر أو الكومة أي حجر من البيرات
-  static const _roomMeldMineF = Rect.fromLTWH(0.265, 0.472, 0.470, 0.118);
+  static const _roomMeldMineF = Rect.fromLTWH(0.265, 0.484, 0.470, 0.106);
   // الجانبيان أطول (من أعلى السجادة حتى منطقتي) ولا يتقاطعان مع منطقة
   // المقابل — مساحة أكبر يعاد ترتيب البيرات فيها بدل تصغيرها
-  static const _roomMeldTopF = Rect.fromLTWH(0.398, 0.258, 0.204, 0.090);
+  static const _roomMeldTopF = Rect.fromLTWH(0.398, 0.256, 0.204, 0.080);
   static const _roomMeldLeftF = Rect.fromLTWH(0.292, 0.262, 0.102, 0.206);
   static const _roomMeldRightF = Rect.fromLTWH(0.606, 0.262, 0.102, 0.206);
-  // مركز السجادة — الرزمة والمؤشر وكومة المرميات
-  static const _roomCenterF = Rect.fromLTWH(0.418, 0.352, 0.164, 0.115);
+  // مركز السجادة — المؤشر + رزمة السحب + كومة الرمي المفصولة. أوسع وأعلى
+  // قليلاً حتى تظهر الأحجار بمقاس أوضح (المناطق الجانبية لا تلمسها)
+  static const _roomCenterF = Rect.fromLTWH(0.396, 0.340, 0.208, 0.142);
   // حاشية التقاط هدف الرف حول منطقة الاستكانة — تلتقط الإفلات السريع
   // المتجاوز لحدودها (الإصبع يسبق الحجر المرئي) فيقع على أقرب خانة.
   // الحاشية السفلية أوسع بكثير: الحجر المرئي يطفو فوق الإصبع فيكون
@@ -1648,9 +1649,23 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                     ),
                   ),
                   // ═══ حوامل الخصوم ═══
-                  // وضع الغرفة: الحوامل مرسومة في الصورة وأحجار الخصوم
-                  // مخفية بطلب المستخدم — لا يُرسم شيء فوقها
-                  if (!_roomScene)
+                  // وضع الغرفة: الحوامل مرسومة في الصورة — فوق كل حامل
+                  // صف ظهور أحجار مرتّب يحاكي يد الخصم المخفية (العدد
+                  // الحقيقي لأحجاره ويقل مع اللعب) بلا كشف أي وجه
+                  if (_roomScene)
+                    for (final seat in [2, 3, 1])
+                      Positioned.fromRect(
+                        rect: _mapToImg(_oppBacksZone(seat), Size(sw, sh)),
+                        child: IgnorePointer(
+                          child: _oppBacksRow(
+                              seat,
+                              _dealing
+                                  ? _dealtCount[seat]
+                                  : _engine
+                                      .players[_playerAtSeat(seat)].tileCount),
+                        ),
+                      )
+                  else
                     // نفس تصميم استكانة اللاعب الحالي (خامة/شريط زجاجي/رفّان/
                     // فاصل معدني) بمقياس أصغر، وكل حامل مستلقٍ على سطح الطاولة
                     // موجّهاً وجهه نحو مقعد صاحبه — منظور 3D محسوب من موضع
@@ -1963,10 +1978,11 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
               : tbl.center.dy - 24,
           child: _seatBadge(1),
         ),
-        // إحصائيات الجولة — تحت صف الأزرار اليسرى حتى لا تغطي زر الخروج
+        // عدّاد الفتح أسفل يمين الشاشة — دائرة فيها العدد المطلوب
+        // بجانب شريط الأزرار العمودي (قرب استكانة اللاعب)
         Positioned(
-          left: 12 + _safePadL,
-          top: _roomScene ? _imgRect(Size(sw, sh)).top + 50 : tbl.top + 4,
+          right: 64 + _safePadR,
+          bottom: 10 + _safePadB,
           child: _buildRoundStats(),
         ),
         // شريط الوقت الرفيع فوق استكانتي — يظهر أثناء دوري وينقص مع الوقت
@@ -2140,54 +2156,87 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     );
   }
 
+  /// عدّاد الفتح أسفل يمين الشاشة — دائرة في وسطها العدد المطلوب
+  /// للنزول، ويُملأ قوسها بالأخضر كلما اقتربت نقاطك منه حتى يكتمل
+  /// بعلامة ✓ عند الفتح. بجانبها قرصان صغيران: نقاطك الحالية وعدد
+  /// البيرات على الطاولة
   Widget _buildRoundStats() {
-    Widget stat(String value, String label, Color color) => Column(
+    final need = _engine.rules.openingPoints;
+    final pts = _engine.livePoints;
+    final opened = widget.rummyMode || _engine.players[0].hasOpened;
+    final prog = opened || need <= 0 ? 1.0 : (pts / need).clamp(0.0, 1.0);
+    Widget chip(String value, String label, Color color) => Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+          decoration: BoxDecoration(
+            color: const Color(0xCC12192E),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.white.withOpacity(0.12)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(value,
+                  style: TextStyle(
+                      color: color,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w900,
+                      height: 1)),
+              const SizedBox(height: 1.5),
+              Text(label,
+                  style: const TextStyle(
+                      color: Colors.white60,
+                      fontSize: 6.5,
+                      fontWeight: FontWeight.w700)),
+            ],
+          ),
+        );
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(value,
-                style: TextStyle(
-                    color: color,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                    height: 1)),
-            const SizedBox(height: 3),
-            Text(label,
-                style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 7.5,
-                    fontWeight: FontWeight.w700)),
+            chip('${_engine.livePoints}', 'نقاطي'.tr, const Color(0xFFFFD46B)),
+            const SizedBox(height: 4),
+            chip(
+                '${_engine.liveGroupCount}', 'Per'.tr, const Color(0xFF86EFAC)),
           ],
-        );
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
-      decoration: BoxDecoration(
-        color: const Color(0xCC241107),
-        borderRadius: BorderRadius.circular(9),
-        border: Border.all(color: const Color(0x665F3A24)),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(.45),
-              blurRadius: 8,
-              offset: const Offset(0, 4))
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          stat('${_engine.livePoints}', 'نقاطي'.tr, const Color(0xFFFFD46B)),
-          const SizedBox(width: 10),
-          stat('${_engine.liveGroupCount}', 'Per', const Color(0xFF86EFAC)),
-          const SizedBox(width: 10),
-          stat(
-              widget.rummyMode || _engine.players[0].hasOpened
-                  ? 'مفتوح ✓'.tr
-                  : '${_engine.remainingOpeningPoints}',
-              'المطلوب'.tr,
-              widget.rummyMode || _engine.players[0].hasOpened
-                  ? const Color(0xFF86EFAC)
-                  : const Color(0xFFFCA5A5)),
-        ],
-      ),
+        ),
+        const SizedBox(width: 6),
+        // دائرة التقدّم نحو نقاط الفتح
+        SizedBox(
+          width: 52,
+          height: 52,
+          child: CustomPaint(
+            painter: _OpeningRingPainter(prog),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (opened)
+                    const Icon(Icons.check_rounded,
+                        color: Color(0xFF4ADE80), size: 16)
+                  else
+                    Text('${_engine.remainingOpeningPoints}',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                            height: 1)),
+                  const SizedBox(height: 1),
+                  Text('المطلوب'.tr,
+                      style: const TextStyle(
+                          color: Colors.white60,
+                          fontSize: 6.5,
+                          fontWeight: FontWeight.w700,
+                          height: 1)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -2333,6 +2382,45 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     return out;
   }
 
+  /// منطقة حامل الخصم المرسوم في صورة الغرفة — يُرسم فوقها صف الظهور
+  Rect _oppBacksZone(int seat) => switch (seat) {
+        2 => _roomRackTopF,
+        3 => _roomRackLeftF,
+        _ => _roomRackRightF,
+      };
+
+  /// صف أحجار مقلوبة مرتّب فوق حامل الخصم المرسوم — يد الخصم تبقى
+  /// "مخفية بشكل صحيح": ظهور فقط، لا يُكشف أي وجه. حامل المقابل أفقي
+  /// في أخدوده، والجانبان يميلان مع ميل القطعتين الخشبيتين في الصورة
+  /// (~55°)، والعدد يساوي أحجار الخصم الفعلية فيقل مع اللعب
+  Widget _oppBacksRow(int seat, int count) {
+    final n = count.clamp(0, 15);
+    if (n <= 0) return const SizedBox.shrink();
+    final side = seat != 2;
+    final tw = side ? 13.0 : 15.0;
+    final th = side ? 19.0 : 21.0;
+    final pitch = side ? 8.2 : 12.0;
+    final row = SizedBox(
+      width: tw + (n - 1) * pitch,
+      height: th,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          for (var i = 0; i < n; i++)
+            Positioned(left: i * pitch, top: 0, child: _tileBack(tw, th)),
+        ],
+      ),
+    );
+    if (!side) {
+      // حامل المقابل الأفقي — الصف مستقيم قرب قاع أخدوده
+      return Align(alignment: const Alignment(0, 0.3), child: row);
+    }
+    final angle = seat == 3 ? 0.95 : -0.95;
+    return Center(
+      child: Transform.rotate(angle: angle, child: row),
+    );
+  }
+
   /// خانة الرف من قيمة السحب (حجر مفرد أو كتلة)، أو -1
   int _rackSlotOf(int data) => OkeyDrag.isRackTile(data)
       ? data
@@ -2438,7 +2526,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     double usedW,
     double contentH
   }) _packMelds(List<int> lens, int perLine, double wrapW, Size zone) {
-    const spacing = 6.0, rowGap = 5.0;
+    const spacing = 8.0, rowGap = 7.0;
     final ws = [for (final n in lens) _meldWidth(math.min(n, perLine))];
     final hs = [
       for (final n in lens) _meldHeight((n + perLine - 1) ~/ perLine)
@@ -2476,7 +2564,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
 
   Widget _meldsOnTable(List<MapEntry<int, OkeyGroup>> melds, Rect zone,
       {required int seat}) {
-    const spacing = 6.0, rowGap = 5.0;
+    const spacing = 8.0, rowGap = 7.0;
     final lens = [for (final m in melds) m.value.tiles.length];
     final maxLen = lens.reduce(math.max);
     // عند الصرف يطول البير — بدل تصغير كل شيء نجرّب إعادة الترتيب أولاً:
@@ -3523,11 +3611,12 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         // رامي: لا يوجد مؤشر — الورقة المكشوفة ضمن كومة الرمي
         if (!widget.rummyMode) ...[
           _buildIndicator(),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
         ],
         _buildDrawTower(canDraw),
-        const SizedBox(width: 10),
-        // كومة رمي موحّدة مبعثرة لكل اللاعبين — مثل طاولة حقيقية
+        const SizedBox(width: 18),
+        // كومة رمي موحّدة لكل اللاعبين — منطقة مستقلة بإطار خفيف يفصلها
+        // بصرياً عن الرزمة والمؤشر فلا تتداخل معهما
         _buildScatterPile(
             canDraw: canDraw, canDiscard: canDiscard, canTakeLeft: canTakeLeft),
       ],
@@ -3551,20 +3640,23 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         _engine.players[topOwner].playStyle == OkeyPlayStyle.full;
     final total = _engine.discardPiles.fold<int>(0, (s, p) => s + p.length);
 
-    final w = _roomScene ? 100.0 : 140.0;
-    final h = _roomScene ? 76.0 : 92.0;
-    final tw = _roomScene ? 36.0 : 24.0;
-    final th = _roomScene ? 43.0 : 30.0;
+    final w = _roomScene ? 76.0 : 140.0;
+    final h = _roomScene ? 58.0 : 92.0;
+    final tw = _roomScene ? 36.0 : 26.0;
+    final th = _roomScene ? 44.0 : 32.0;
+    // آخر حجر مرمي أكبر من أحجار الكومة — يبرز بوضوح فوقها
+    final topW = _roomScene ? 40.0 : 30.0;
+    final topH = _roomScene ? 50.0 : 36.0;
     // مركز الكومة داخل الحيّز
-    final cx = w * 0.5, cy = h * 0.52;
+    final cx = w * 0.5, cy = h * 0.5;
     // مواضع ثابتة للأحجار المقلوبة (إزاحة X، إزاحة Y، زاوية) — الكومة
     // تبقى ثابتة الشكل دائماً ولا تنكمش عند أخذ حجر منها
     const backSlots = [
-      (-12.0, 5.0, -0.28),
-      (10.0, 1.0, 0.22),
-      (-4.0, -4.0, -0.12),
-      (13.0, 9.0, 0.38),
-      (1.0, -1.0, 0.05),
+      (-14.0, 6.0, -0.28),
+      (12.0, 2.0, 0.22),
+      (-5.0, -5.0, -0.12),
+      (15.0, 9.0, 0.38),
+      (2.0, -1.0, 0.05),
     ];
     // الكومة الزخرفية ثابتة بأحجارها الخمسة ما دام في الطاولة مرميات —
     // لا تختفي ولا تتغير مع السحب أو الأخذ
@@ -3573,8 +3665,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     final children = <Widget>[
       // عداد الأحجار المرمية — خافت تحت الكومة
       Positioned(
-        left: 2,
-        bottom: 1,
+        left: 3,
+        bottom: 0,
         child: Text('$total',
             style: TextStyle(
                 color: Colors.white.withOpacity(0.30),
@@ -3591,11 +3683,12 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         child: Transform.rotate(angle: s.$3, child: _tileBack(tw, th)),
       ));
     }
-    // آخر حجر مرمي فوق الكومة كلها — مكشوفاً (أو مقلوباً إن كان للفول)
+    // آخر حجر مرمي فوق الكومة كلها — مكشوفاً وأكبر بإطار مميز (أو
+    // مقلوباً إن كان للفول). التوهّج الأخضر فقط حين يكون قابلاً للأخذ
     if (topTile != null) {
       Widget top = topIsFull
-          ? _tileBack(tw, th)
-          : OkeyTileWidget(tile: topTile, width: tw, height: th);
+          ? _tileBack(topW, topH)
+          : OkeyTileWidget(tile: topTile, width: topW, height: topH);
       if (!topIsFull && canTakeLeft && topOwner == 3) {
         top = Draggable<int>(
           key: _leftDiscardKey,
@@ -3630,10 +3723,25 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             ),
           ),
         );
+      } else {
+        // حلقة ذهبية خفيفة تميّز آخر رمية حتى حين لا تكون قابلة للأخذ
+        top = Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+                color: const Color(0xFFFFD54F).withOpacity(0.85), width: 1.3),
+            boxShadow: [
+              BoxShadow(
+                  color: const Color(0xFFFFD54F).withOpacity(0.35),
+                  blurRadius: 8),
+            ],
+          ),
+          child: top,
+        );
       }
       children.add(Positioned(
-        left: cx - tw / 2 + 1,
-        top: cy - th / 2 - 3,
+        left: cx - topW / 2 + 1,
+        top: cy - topH / 2 - 2,
         child: top,
       ));
     }
@@ -3647,10 +3755,17 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         }
       },
       onLongPress: _showDiscardViewer,
-      child: SizedBox(
+      child: Container(
         key: _discardKey,
         width: w,
         height: h,
+        // إطار منطقة الرمي — حدّ زجاجي خفيف يفصلها بصرياً عن الرزمة
+        // والمؤشر فيبدو مكاناً محدداً للرمي لا جزءاً من السحب
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.16),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.white.withOpacity(0.16), width: 1.0),
+        ),
         child: total == 0
             ? Center(
                 child: Icon(Icons.layers_clear_rounded,
@@ -3828,8 +3943,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             ),
             child: OkeyTileWidget(
                 tile: _engine.indicatorTile,
-                width: _roomScene ? 36 : 24,
-                height: _roomScene ? 48 : 33),
+                width: _roomScene ? 38 : 24,
+                height: _roomScene ? 50 : 33),
           ),
           const SizedBox(height: 3),
           Text('مؤشر'.tr,
@@ -3927,20 +4042,23 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     );
   }
 
-  /// رزمة السحب: برج طولي من الأحجار المتراصة — المس للسحب أو اسحب إلى رفّك
+  /// رزمة السحب: برج طولي من الأحجار المتراصة — المس للسحب أو اسحب إلى
+  /// رفّك. عداد الأحجار المتبقية شارة على زاوية الرزمة نفسها (لا يضيف
+  /// ارتفاعاً للعنقود) ومنطقة اللمس موسّعة حوله
   Widget _buildDrawTower(bool canDraw) {
     final remaining = _engine.drawDeck.length;
     // رزمة فارغة لكن المرميات تكفي لإعادة الخلط → السحب يبقى ممكناً
     final refillable = remaining == 0 && _engine.canRefillDeck;
     final drawable = canDraw && (remaining > 0 || refillable);
-    final layers = (remaining / 6).ceil().clamp(1, 5);
+    final layers = (remaining / 6).ceil().clamp(1, 4);
     final w = _roomScene ? 44.0 : 30.0;
-    final h = _roomScene ? 58.0 : 41.0;
-    final step = _roomScene ? 4.5 : 3.8;
+    final h = _roomScene ? 52.0 : 41.0;
+    final step = _roomScene ? 4.2 : 3.8;
     final tower = SizedBox(
       width: w + 2,
       height: h + step * (layers - 1),
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
           for (var i = 0; i < layers; i++)
             Positioned(
@@ -3955,34 +4073,51 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                     color: Color(0xFFFFD54F), size: 18),
               ),
             ),
+          // شارة العدد المتبقي على زاوية الحجر العلوي
+          Positioned(
+            right: -4,
+            bottom: -4,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
+              decoration: BoxDecoration(
+                color: const Color(0xF20D1420),
+                borderRadius: BorderRadius.circular(7),
+                border: Border.all(
+                    color: drawable
+                        ? const Color(0xFF86EFAC).withOpacity(0.7)
+                        : Colors.white24,
+                    width: 0.8),
+              ),
+              child: Text(refillable ? '↻' : '$remaining',
+                  style: TextStyle(
+                      color:
+                          drawable ? const Color(0xFF86EFAC) : Colors.white70,
+                      fontSize: 8,
+                      fontWeight: FontWeight.w900,
+                      height: 1)),
+            ),
+          ),
         ],
       ),
     );
     return GestureDetector(
       onTap: _executeDraw,
-      child: Draggable<int>(
-        key: _deckKey,
-        data: OkeyDrag.deck,
-        maxSimultaneousDrags: drawable ? 1 : 0,
-        onDragStarted: () => AppHaptics.selection(),
-        dragAnchorStrategy: (d, c, p) => const Offset(_rackTileW / 2,
-            _rackTileH / 2 + _rackTileH * OkeyIstakaWidget.dragLiftFactor),
-        feedback: Material(
-          color: Colors.transparent,
-          elevation: 10,
-          child: _tileBack(_rackTileW, _rackTileH),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            tower,
-            const SizedBox(height: 3),
-            Text(refillable ? '↻' : '$remaining',
-                style: TextStyle(
-                    color: drawable ? const Color(0xFF86EFAC) : Colors.white60,
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w900)),
-          ],
+      // حاشية لمس أوسع حول البرج — أسهل للإصبع
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        child: Draggable<int>(
+          key: _deckKey,
+          data: OkeyDrag.deck,
+          maxSimultaneousDrags: drawable ? 1 : 0,
+          onDragStarted: () => AppHaptics.selection(),
+          dragAnchorStrategy: (d, c, p) => const Offset(_rackTileW / 2,
+              _rackTileH / 2 + _rackTileH * OkeyIstakaWidget.dragLiftFactor),
+          feedback: Material(
+            color: Colors.transparent,
+            elevation: 10,
+            child: _tileBack(_rackTileW, _rackTileH),
+          ),
+          child: tower,
         ),
       ),
     );
@@ -4150,6 +4285,86 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       ),
     );
   }
+}
+
+/// قوس تقدّم نقاط الفتح — حلقة داكنة زجاجية يُملأ منها قوس أخضر
+/// متوهج بدءاً من الأعلى (12 عند اليمين على القرص) مع كل نقطة
+/// تقترب بها من العدد المطلوب للنزول
+class _OpeningRingPainter extends CustomPainter {
+  const _OpeningRingPainter(this.progress);
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final c = size.center(Offset.zero);
+    final r = size.shortestSide / 2;
+    // قرص خلفي زجاجي
+    canvas.drawCircle(
+        c,
+        r,
+        Paint()
+          ..color = const Color(0xD812192E)
+          ..isAntiAlias = true);
+    canvas.drawCircle(
+        c,
+        r - 1.5,
+        Paint()
+          ..color = Colors.white.withOpacity(0.04)
+          ..isAntiAlias = true);
+    // سكة الحلقة الأساسية
+    const sw = 5.0;
+    final ringRect = Rect.fromCircle(center: c, radius: r - sw / 2 - 2);
+    canvas.drawArc(
+        ringRect,
+        -math.pi / 2,
+        math.pi * 2,
+        false,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = sw
+          ..strokeCap = StrokeCap.round
+          ..color = Colors.white.withOpacity(0.10));
+    // قوس التقدّم الأخضر + توهّج حوله
+    if (progress > 0) {
+      final grad = SweepGradient(
+        startAngle: -math.pi / 2,
+        endAngle: -math.pi / 2 + math.pi * 2 * progress.clamp(0.02, 1.0),
+        colors: const [Color(0xFF22C55E), Color(0xFF86EFAC)],
+      );
+      canvas.drawArc(
+          ringRect,
+          -math.pi / 2,
+          math.pi * 2 * progress,
+          false,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = sw + 3.5
+            ..strokeCap = StrokeCap.round
+            ..color = const Color(0xFF22C55E).withOpacity(0.25)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4));
+      canvas.drawArc(
+          ringRect,
+          -math.pi / 2,
+          math.pi * 2 * progress,
+          false,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = sw
+            ..strokeCap = StrokeCap.round
+            ..shader = grad.createShader(ringRect));
+    }
+    // إطار خارجي رفيع
+    canvas.drawCircle(
+        c,
+        r,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.2
+          ..color = Colors.white.withOpacity(0.22));
+  }
+
+  @override
+  bool shouldRepaint(_OpeningRingPainter o) => o.progress != progress;
 }
 
 /// رسام تمديد حواف صورة الغرفة: يملأ أي فراغ فوق/تحت الصورة بشرائح
