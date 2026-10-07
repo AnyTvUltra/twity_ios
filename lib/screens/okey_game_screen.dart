@@ -160,18 +160,15 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   // حاملا الجانبين (المسندان الخشبيان المائلان بين الوسائد والطاولة)
   static const _roomRackLeftF = Rect.fromLTWH(0.255, 0.320, 0.075, 0.300);
   static const _roomRackRightF = Rect.fromLTWH(0.670, 0.320, 0.075, 0.300);
-  // مناطق نزول البيرات — كلها فوق سطح السجادة فقط (سجادة الصورة تمتد
-  // تقريباً x:0.30-0.71 وy:0.265-0.555) فلا تستقر الأحجار على الخشب
-  // الداكن للحوامل المرسومة فتبدو مخفية. حواف الجانبين مُبعدة عن
-  // إطارات صور اللاعبين، ولا منطقة تتقاطع مع مركز الرزمة (_roomCenterF)
-  // كل منطقة منفصلة تماماً عن مركز الرزمة (0.418-0.582 × 0.352-0.467)
-  // فلا يغطي حجر المؤشر أو الكومة أي حجر من البيرات
-  static const _roomMeldMineF = Rect.fromLTWH(0.265, 0.484, 0.470, 0.106);
-  // الجانبيان أطول (من أعلى السجادة حتى منطقتي) ولا يتقاطعان مع منطقة
-  // المقابل — مساحة أكبر يعاد ترتيب البيرات فيها بدل تصغيرها
-  static const _roomMeldTopF = Rect.fromLTWH(0.398, 0.256, 0.204, 0.080);
-  static const _roomMeldLeftF = Rect.fromLTWH(0.292, 0.262, 0.102, 0.206);
-  static const _roomMeldRightF = Rect.fromLTWH(0.606, 0.262, 0.102, 0.206);
+  // مناطق نزول البيرات — كل لاعب ينزل بيراته أمام حامله مباشرة حتى
+  // تبقى سجادة المنتصف للسحب والرمي فقط: بيراتي ملاصقة لحافة
+  // استكانتي العليا، وبيرات المقابل تحت حامله الأفقي، وبيرات
+  // الجانبين على السجادة ملاصقة للحافة الداخلية لحامليهما المائلين.
+  // الأحجار تبقى على السجادة الفاتحة لا فوق الخشب الداكن فلا تختفي
+  static const _roomMeldMineF = Rect.fromLTWH(0.265, 0.490, 0.470, 0.105);
+  static const _roomMeldTopF = Rect.fromLTWH(0.375, 0.258, 0.250, 0.075);
+  static const _roomMeldLeftF = Rect.fromLTWH(0.305, 0.415, 0.105, 0.150);
+  static const _roomMeldRightF = Rect.fromLTWH(0.590, 0.415, 0.105, 0.150);
   // مركز السجادة — المؤشر + رزمة السحب + كومة الرمي المفصولة. أوسع وأعلى
   // قليلاً حتى تظهر الأحجار بمقاس أوضح (المناطق الجانبية لا تلمسها)
   static const _roomCenterF = Rect.fromLTWH(0.396, 0.340, 0.208, 0.142);
@@ -1649,23 +1646,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                     ),
                   ),
                   // ═══ حوامل الخصوم ═══
-                  // وضع الغرفة: الحوامل مرسومة في الصورة — فوق كل حامل
-                  // صف ظهور أحجار مرتّب يحاكي يد الخصم المخفية (العدد
-                  // الحقيقي لأحجاره ويقل مع اللعب) بلا كشف أي وجه
-                  if (_roomScene)
-                    for (final seat in [2, 3, 1])
-                      Positioned.fromRect(
-                        rect: _mapToImg(_oppBacksZone(seat), Size(sw, sh)),
-                        child: IgnorePointer(
-                          child: _oppBacksRow(
-                              seat,
-                              _dealing
-                                  ? _dealtCount[seat]
-                                  : _engine
-                                      .players[_playerAtSeat(seat)].tileCount),
-                        ),
-                      )
-                  else
+                  // وضع الغرفة: أحجار الخصوم لا تُرسم إطلاقاً — يدهم
+                  // مخفية تماماً والحوامل مرسومة في الصورة نفسها
+                  if (!_roomScene)
                     // نفس تصميم استكانة اللاعب الحالي (خامة/شريط زجاجي/رفّان/
                     // فاصل معدني) بمقياس أصغر، وكل حامل مستلقٍ على سطح الطاولة
                     // موجّهاً وجهه نحو مقعد صاحبه — منظور 3D محسوب من موضع
@@ -1751,10 +1734,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                   ),
                   if (_engine.canDeclareOkeyOut && !_dealing)
                     Positioned(
-                      // زر جانبي صغير أسفل اليمين فوق زر الإعدادات —
+                      // زر جانبي صغير أسفل اليمين يسار زر الإعدادات —
                       // كان شريطاً ذهبياً طويلاً يغطي بيراتك على الطاولة
-                      right: 10 + _safePadR,
-                      bottom: 62 + _safePadB,
+                      right: 62 + _safePadR,
+                      bottom: 8 + _safePadB,
                       child: _buildOkeyOutButton(),
                     ),
                   Positioned(
@@ -1892,12 +1875,13 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           left: 60 + _safePadL,
           child: _buildStyleButtons(),
         ),
-        // صورة الخصم الأمامي + اسمه — على ظهر الكنبة العليا حيث يجلس
-        // اللاعب فعلياً (أمام حامله قليلاً)، وشريحة الدور تتراكب جانباً
+        // صورة الخصم الأمامي + اسمه — فوق حامله الخشبي المرسوم في
+        // الصورة مباشرة، وشريحة الدور تتراكب جانباً
         Positioned(
-          top: _roomScene ? imgRect.top + imgRect.height * 0.105 : 2,
-          left: _roomScene ? imgRect.left + imgRect.width * 0.52 - 46 : null,
+          top: _roomScene ? imgRect.top + imgRect.height * 0.175 - 30 : 2,
+          left: _roomScene ? imgRect.left + imgRect.width * 0.5 - 40 : null,
           right: _roomScene ? null : 0,
+          width: _roomScene ? 80 : null,
           child: Center(child: _seatBadge(2)),
         ),
         Positioned(
@@ -1960,31 +1944,42 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           ),
         ),
 
-        // صورة الخصم الأيسر + اسمه — على مسند كنبته الداخلي المواجه
-        // للطاولة حيث يجلس اللاعب ويطل على اللعب
+        // صورة الخصم الأيسر + اسمه — فوق حامله الخشبي المائل المرسوم
+        // في الصورة (الجزء العلوي منه، بعيداً عن منطقة بيراته أسفله)
         Positioned(
-          left: _roomScene ? imgRect.left + imgRect.width * 0.252 - 25 : 10,
+          left: _roomScene ? imgRect.left + imgRect.width * 0.265 - 40 : 10,
           top: _roomScene
-              ? imgRect.top + imgRect.height * 0.370 - 22
+              ? imgRect.top + imgRect.height * 0.32 - 30
               : tbl.center.dy - 24,
-          child: _seatBadge(3),
+          width: _roomScene ? 80 : null,
+          child: Center(child: _seatBadge(3)),
         ),
-        // صورة الخصم الأيمن + اسمه — على مسند كنبته الداخلي المواجه للطاولة
+        // صورة الخصم الأيمن + اسمه — فوق حامله الخشبي المائل المرسوم
         Positioned(
-          left: _roomScene ? imgRect.left + imgRect.width * 0.748 - 25 : null,
+          left: _roomScene ? imgRect.left + imgRect.width * 0.745 - 40 : null,
           right: _roomScene ? null : 10,
           top: _roomScene
-              ? imgRect.top + imgRect.height * 0.355 - 22
+              ? imgRect.top + imgRect.height * 0.32 - 30
               : tbl.center.dy - 24,
-          child: _seatBadge(1),
+          width: _roomScene ? 80 : null,
+          child: Center(child: _seatBadge(1)),
         ),
-        // عدّاد الفتح أسفل يمين الشاشة — دائرة فيها العدد المطلوب
-        // بجانب شريط الأزرار العمودي (قرب استكانة اللاعب)
-        Positioned(
-          right: 64 + _safePadR,
-          bottom: 10 + _safePadB,
-          child: _buildRoundStats(),
-        ),
+        // صورتي + اسمي — على الطرف الخشبي الأيسر من استكانتي
+        if (_roomScene)
+          Positioned(
+            left: imgRect.left + imgRect.width * 0.212 - 40,
+            top: _mapToImg(_roomRackMineF, Size(sw, sh)).center.dy - 30,
+            width: 80,
+            child: Center(child: _seatBadge(0)),
+          ),
+        // عدّاد الفتح — دائرة فوق زر الإعدادات أسفل اليمين مباشرة،
+        // وتختفي مؤقتاً عندما ينبثق عمود الأدوات فوق الزر نفسه
+        if (!_dockExpanded)
+          Positioned(
+            right: 5 + _safePadR,
+            bottom: 60 + _safePadB,
+            child: _buildRoundStats(),
+          ),
         // شريط الوقت الرفيع فوق استكانتي — يظهر أثناء دوري وينقص مع الوقت
         Positioned(
           left: _roomScene ? _mapToImg(_roomRackMineF, Size(sw, sh)).left : 210,
@@ -2156,87 +2151,44 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     );
   }
 
-  /// عدّاد الفتح أسفل يمين الشاشة — دائرة في وسطها العدد المطلوب
-  /// للنزول، ويُملأ قوسها بالأخضر كلما اقتربت نقاطك منه حتى يكتمل
-  /// بعلامة ✓ عند الفتح. بجانبها قرصان صغيران: نقاطك الحالية وعدد
-  /// البيرات على الطاولة
+  /// عدّاد الفتح — دائرة زجاجية فوق زر الإعدادات أسفل اليمين، في
+  /// وسطها العدد المتبقي للنزول ويُملأ قوسها بالأخضر كلما اقتربت
+  /// نقاطك منه حتى يكتمل بعلامة ✓ عند الفتح
   Widget _buildRoundStats() {
     final need = _engine.rules.openingPoints;
     final pts = _engine.livePoints;
     final opened = widget.rummyMode || _engine.players[0].hasOpened;
     final prog = opened || need <= 0 ? 1.0 : (pts / need).clamp(0.0, 1.0);
-    Widget chip(String value, String label, Color color) => Container(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-          decoration: BoxDecoration(
-            color: const Color(0xCC12192E),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.white.withOpacity(0.12)),
-          ),
+    return SizedBox(
+      width: 52,
+      height: 52,
+      child: CustomPaint(
+        painter: _OpeningRingPainter(prog),
+        child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(value,
-                  style: TextStyle(
-                      color: color,
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w900,
-                      height: 1)),
-              const SizedBox(height: 1.5),
-              Text(label,
+              if (opened)
+                const Icon(Icons.check_rounded,
+                    color: Color(0xFF4ADE80), size: 16)
+              else
+                Text('${_engine.remainingOpeningPoints}',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                        height: 1)),
+              const SizedBox(height: 1),
+              Text('المطلوب'.tr,
                   style: const TextStyle(
                       color: Colors.white60,
                       fontSize: 6.5,
-                      fontWeight: FontWeight.w700)),
+                      fontWeight: FontWeight.w700,
+                      height: 1)),
             ],
           ),
-        );
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            chip('${_engine.livePoints}', 'نقاطي'.tr, const Color(0xFFFFD46B)),
-            const SizedBox(height: 4),
-            chip(
-                '${_engine.liveGroupCount}', 'Per'.tr, const Color(0xFF86EFAC)),
-          ],
         ),
-        const SizedBox(width: 6),
-        // دائرة التقدّم نحو نقاط الفتح
-        SizedBox(
-          width: 52,
-          height: 52,
-          child: CustomPaint(
-            painter: _OpeningRingPainter(prog),
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (opened)
-                    const Icon(Icons.check_rounded,
-                        color: Color(0xFF4ADE80), size: 16)
-                  else
-                    Text('${_engine.remainingOpeningPoints}',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w900,
-                            height: 1)),
-                  const SizedBox(height: 1),
-                  Text('المطلوب'.tr,
-                      style: const TextStyle(
-                          color: Colors.white60,
-                          fontSize: 6.5,
-                          fontWeight: FontWeight.w700,
-                          height: 1)),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -2380,45 +2332,6 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       ));
     }
     return out;
-  }
-
-  /// منطقة حامل الخصم المرسوم في صورة الغرفة — يُرسم فوقها صف الظهور
-  Rect _oppBacksZone(int seat) => switch (seat) {
-        2 => _roomRackTopF,
-        3 => _roomRackLeftF,
-        _ => _roomRackRightF,
-      };
-
-  /// صف أحجار مقلوبة مرتّب فوق حامل الخصم المرسوم — يد الخصم تبقى
-  /// "مخفية بشكل صحيح": ظهور فقط، لا يُكشف أي وجه. حامل المقابل أفقي
-  /// في أخدوده، والجانبان يميلان مع ميل القطعتين الخشبيتين في الصورة
-  /// (~55°)، والعدد يساوي أحجار الخصم الفعلية فيقل مع اللعب
-  Widget _oppBacksRow(int seat, int count) {
-    final n = count.clamp(0, 15);
-    if (n <= 0) return const SizedBox.shrink();
-    final side = seat != 2;
-    final tw = side ? 13.0 : 15.0;
-    final th = side ? 19.0 : 21.0;
-    final pitch = side ? 8.2 : 12.0;
-    final row = SizedBox(
-      width: tw + (n - 1) * pitch,
-      height: th,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          for (var i = 0; i < n; i++)
-            Positioned(left: i * pitch, top: 0, child: _tileBack(tw, th)),
-        ],
-      ),
-    );
-    if (!side) {
-      // حامل المقابل الأفقي — الصف مستقيم قرب قاع أخدوده
-      return Align(alignment: const Alignment(0, 0.3), child: row);
-    }
-    final angle = seat == 3 ? 0.95 : -0.95;
-    return Center(
-      child: Transform.rotate(angle: angle, child: row),
-    );
   }
 
   /// خانة الرف من قيمة السحب (حجر مفرد أو كتلة)، أو -1
@@ -2609,11 +2522,13 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       y += h + rowGap;
     }
 
+    // كل بير يلتصق بحافة منطقته الملاصقة لحامل صاحبه: المقابل أعلى
+    // منطقته (حامله فوقه)، وأنا أسفل منطقتي (استكانتي تحتي)
     final align = switch (seat) {
       3 => Alignment.centerLeft,
       1 => Alignment.centerRight,
-      2 => Alignment.bottomCenter,
-      _ => Alignment.topCenter,
+      2 => Alignment.topCenter,
+      _ => Alignment.bottomCenter,
     };
     // FittedBox يمرّر للمحتوى قيوداً حرّة فيُرسم بكامل عرضه ثم يُصغَّر —
     // Transform.scale السابق كان يضغط الـSizedBox لعرض المنطقة أولاً
