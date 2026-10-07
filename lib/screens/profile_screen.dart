@@ -11,6 +11,7 @@ import '../utils/haptics.dart';
 import '../utils/format.dart';
 import 'legal_screen.dart';
 import '../widgets/gem_icon.dart';
+import '../widgets/coin_icon.dart';
 import '../utils/top_notification.dart';
 import '../widgets/user_avatar.dart';
 import '../l10n/app_lang.dart';
@@ -315,150 +316,310 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+  /// المساعدة والاقتراحات — ورقة سفلية زجاجية: نوع التذكرة كبطاقات
+  /// أيقونات، حقلا العنوان والتفاصيل، وزر إرسال بحالة تحميل
   void _showSupportTicketDialog(BuildContext context) {
     AppHaptics.medium();
-    String category = 'اقتراح تحسين'.tr;
+    final cats = [
+      ('اقتراح تحسين'.tr, Icons.lightbulb_rounded, const Color(0xFFFBBF24)),
+      (
+        'مشكلة تقنية في اللعبة'.tr,
+        Icons.bug_report_rounded,
+        const Color(0xFFF87171)
+      ),
+      ('استفسار عن العملات'.tr, Icons.paid_rounded, const Color(0xFF34D399)),
+      ('أخرى'.tr, Icons.more_horiz_rounded, const Color(0xFF60A5FA)),
+    ];
+    var category = cats.first.$1;
+    var sending = false;
+    String? error;
     final subjectController = TextEditingController();
     final messageController = TextEditingController();
 
-    showDialog(
+    InputDecoration deco(String hint, IconData icon) => InputDecoration(
+          hintText: hint,
+          hintStyle: const TextStyle(color: Color(0xFF5B6B8E), fontSize: 12),
+          prefixIcon: Icon(icon, color: _gold, size: 19),
+          filled: true,
+          fillColor: Colors.white.withOpacity(0.05),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: Colors.white.withOpacity(0.10))),
+          focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: _gold, width: 1.3)),
+        );
+
+    Future<void> submit(BuildContext ctx, StateSetter setSheet) async {
+      final user = AuthService().currentUser;
+      if (user == null) return;
+      if (subjectController.text.trim().isEmpty ||
+          messageController.text.trim().isEmpty) {
+        setSheet(() => error = 'اكتب العنوان والتفاصيل أولاً'.tr);
+        return;
+      }
+      setSheet(() {
+        error = null;
+        sending = true;
+      });
+      await SocialService().submitSupportTicket(
+        uid: user.uid,
+        username: user.username,
+        subject: subjectController.text.trim(),
+        message: messageController.text.trim(),
+        category: category,
+      );
+      if (ctx.mounted) Navigator.of(ctx).pop();
+      if (context.mounted) {
+        TopNotification.show(
+          context,
+          'تم إرسال تذكرتك بنجاح! سيتم الرد عليك من قبل فريق الدعم.'.tr,
+          icon: Icons.check_circle_rounded,
+        );
+      }
+    }
+
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withOpacity(0.55),
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: LightGlass.cardStrong,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(22),
-            side: const BorderSide(color: Color(0xFFFFD54F), width: 1.2),
-          ),
-          title: Row(
-            children: [
-              Icon(Icons.support_agent_rounded, color: _gold, size: 24),
-              SizedBox(width: 8),
-              Text('المساعدة والاقتراحات 🎫'.tr,
-                  style: TextStyle(
-                      color: LightGlass.text,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold)),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('نوع التذكرة:'.tr,
-                    style:
-                        TextStyle(color: LightGlass.textMuted, fontSize: 12)),
-                const SizedBox(height: 6),
-                DropdownButtonFormField<String>(
-                  value: category,
-                  dropdownColor: LightGlass.cardStrong,
-                  style: const TextStyle(color: LightGlass.text, fontSize: 13),
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: LightGlass.inputFill,
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none),
+        builder: (sheetCtx, setSheet) => Padding(
+          padding:
+              EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: Container(
+                constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(ctx).size.height * 0.88),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      const Color(0xFF1B2350).withOpacity(0.97),
+                      const Color(0xFF090D20).withOpacity(0.98),
+                    ],
                   ),
-                  items: [
-                    'اقتراح تحسين'.tr,
-                    'مشكلة تقنية في اللعبة'.tr,
-                    'استفسار عن العملات'.tr,
-                    'أخرى'.tr
-                  ]
-                      .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                      .toList(),
-                  onChanged: (val) {
-                    if (val != null) setDialogState(() => category = val);
-                  },
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(30)),
+                  border: Border.all(color: _gold.withOpacity(0.3)),
                 ),
-                const SizedBox(height: 12),
-                Text('عنوان الموضوع:'.tr,
-                    style:
-                        TextStyle(color: LightGlass.textMuted, fontSize: 12)),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: subjectController,
-                  style: const TextStyle(color: LightGlass.text, fontSize: 13),
-                  decoration: InputDecoration(
-                    hintText: 'مثال: اقتراح إضافة وضع لعب جديد...'.tr,
-                    hintStyle: const TextStyle(
-                        color: LightGlass.textFaint, fontSize: 12),
-                    filled: true,
-                    fillColor: LightGlass.inputFill,
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 22),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 44,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Container(
+                            width: 54,
+                            height: 54,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Color(0xFFFFE9A8),
+                                  _gold,
+                                  Color(0xFFD97706)
+                                ],
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                    color: _gold.withOpacity(0.45),
+                                    blurRadius: 18),
+                              ],
+                            ),
+                            child: const Icon(Icons.support_agent_rounded,
+                                color: Color(0xFF3A2500), size: 28),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('المساعدة والاقتراحات'.tr,
+                                    style: const TextStyle(
+                                        color: _textWhite,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w900)),
+                                const SizedBox(height: 2),
+                                Text('فريق الدعم يقرأ كل رسالة ويرد عليك'.tr,
+                                    style: const TextStyle(
+                                        color: _textDim, fontSize: 11.5)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      Text('نوع التذكرة:'.tr,
+                          style: const TextStyle(
+                              color: _textDim,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800)),
+                      const SizedBox(height: 8),
+                      GridView.count(
+                        crossAxisCount: 2,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        mainAxisSpacing: 8,
+                        crossAxisSpacing: 8,
+                        childAspectRatio: 3.0,
+                        children: [
+                          for (final c in cats)
+                            GestureDetector(
+                              onTap: () {
+                                AppHaptics.selection();
+                                setSheet(() => category = c.$1);
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 10),
+                                decoration: BoxDecoration(
+                                  color: category == c.$1
+                                      ? c.$3.withOpacity(0.18)
+                                      : Colors.white.withOpacity(0.04),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: category == c.$1
+                                        ? c.$3
+                                        : Colors.white.withOpacity(0.10),
+                                    width: category == c.$1 ? 1.4 : 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(c.$2, color: c.$3, size: 18),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(c.$1,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                              color: category == c.$1
+                                                  ? _textWhite
+                                                  : _textDim,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w800)),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: subjectController,
+                        style: const TextStyle(color: _textWhite, fontSize: 13),
+                        cursorColor: _gold,
+                        decoration: deco(
+                            'مثال: اقتراح إضافة وضع لعب جديد...'.tr,
+                            Icons.title_rounded),
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: messageController,
+                        maxLines: 5,
+                        maxLength: 600,
+                        style:
+                            const TextStyle(color: _textWhite, fontSize: 12.5),
+                        cursorColor: _gold,
+                        decoration: deco(
+                                'اشرح تفاصيل اقتراحك أو المشكلة التي واجهتك بالتفصيل...'
+                                    .tr,
+                                Icons.notes_rounded)
+                            .copyWith(
+                                counterStyle: const TextStyle(
+                                    color: _textDim, fontSize: 10)),
+                      ),
+                      if (error != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.error_outline_rounded,
+                                  color: Color(0xFFF87171), size: 16),
+                              const SizedBox(width: 6),
+                              Text(error!,
+                                  style: const TextStyle(
+                                      color: Color(0xFFFCA5A5),
+                                      fontSize: 11.5)),
+                            ],
+                          ),
+                        ),
+                      const SizedBox(height: 4),
+                      GestureDetector(
+                        onTap: sending ? null : () => submit(ctx, setSheet),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(colors: [
+                              Color(0xFFFFE08A),
+                              _gold,
+                              Color(0xFFE8A820),
+                            ]),
+                            borderRadius: BorderRadius.circular(18),
+                            boxShadow: [
+                              BoxShadow(
+                                  color: _gold.withOpacity(0.4),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 4)),
+                            ],
+                          ),
+                          child: Center(
+                            child: sending
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2.4,
+                                        color: Color(0xFF3A2500)),
+                                  )
+                                : Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.send_rounded,
+                                          color: Color(0xFF3A2500), size: 19),
+                                      const SizedBox(width: 8),
+                                      Text('إرسال التذكرة'.tr,
+                                          style: const TextStyle(
+                                              color: Color(0xFF3A2500),
+                                              fontSize: 14.5,
+                                              fontWeight: FontWeight.w900)),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 12),
-                Text('التفاصيل:'.tr,
-                    style:
-                        TextStyle(color: LightGlass.textMuted, fontSize: 12)),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: messageController,
-                  maxLines: 4,
-                  style:
-                      const TextStyle(color: LightGlass.text, fontSize: 12.5),
-                  decoration: InputDecoration(
-                    hintText:
-                        'اشرح تفاصيل اقتراحك أو المشكلة التي واجهتك بالتفصيل...'
-                            .tr,
-                    hintStyle: const TextStyle(
-                        color: LightGlass.textFaint, fontSize: 12),
-                    filled: true,
-                    fillColor: LightGlass.inputFill,
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: Text('إلغاء'.tr,
-                  style: TextStyle(color: LightGlass.textMuted)),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _gold,
-                foregroundColor: const Color(0xFF1B0B30),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
               ),
-              onPressed: () async {
-                final user = AuthService().currentUser;
-                if (user == null ||
-                    subjectController.text.trim().isEmpty ||
-                    messageController.text.trim().isEmpty) {
-                  return;
-                }
-                await SocialService().submitSupportTicket(
-                  uid: user.uid,
-                  username: user.username,
-                  subject: subjectController.text.trim(),
-                  message: messageController.text.trim(),
-                  category: category,
-                );
-                if (context.mounted) {
-                  Navigator.of(ctx).pop();
-                  TopNotification.show(
-                    context,
-                    'تم إرسال تذكرتك بنجاح! سيتم الرد عليك من قبل فريق الدعم.'
-                        .tr,
-                    icon: Icons.check_circle_rounded,
-                  );
-                }
-              },
-              child: Text('إرسال التذكرة 🚀'.tr,
-                  style: TextStyle(fontWeight: FontWeight.bold)),
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -590,11 +751,6 @@ class ProfileScreen extends StatelessWidget {
                             ),
                             _glassIcon(Icons.help_outline_rounded, _gold,
                                 () => _showSupportTicketDialog(context)),
-                            const SizedBox(width: 8),
-                            _glassIcon(
-                                Icons.person_remove_rounded,
-                                const Color(0xFFF87171),
-                                () => _confirmDeleteAccount(context)),
                             const SizedBox(width: 8),
                             _glassIcon(Icons.logout_rounded, _textDim,
                                 () async {
@@ -881,8 +1037,7 @@ class ProfileScreen extends StatelessWidget {
                                           'العملات'.tr,
                                           formatBalance(user?.chips ?? 0),
                                           _gold,
-                                          const Icon(Icons.paid_rounded,
-                                              color: _gold, size: 16)),
+                                          const CoinIcon(size: 16)),
                                       _statTile(
                                           'الجواهر'.tr,
                                           formatBalance(user?.gems ?? 0),
@@ -1443,8 +1598,12 @@ class _SocialRewardsCard extends StatelessWidget {
                 keyboardType: TextInputType.number,
                 style: const TextStyle(color: _textWhite),
                 decoration: InputDecoration(
-                  labelText: 'العملات 🪙 (50 — 10000)'.tr,
-                  labelStyle: const TextStyle(color: _textDim, fontSize: 12),
+                  label: coinText('العملات 🪙 (50 — 10000)'.tr,
+                      style: const TextStyle(color: _textDim, fontSize: 12)),
+                  prefixIcon: const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: CoinIcon(size: 18),
+                  ),
                   filled: true,
                   fillColor: const Color(0x2E141C3C),
                   border: OutlineInputBorder(
@@ -1515,9 +1674,9 @@ class _SocialRewardsCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 6),
-                Text(
+                coinText(
                   'صديقك يُدخل كودك ← هو +300🪙 وأنت +500🪙 تصلك عند دخوله'.tr,
-                  style: TextStyle(color: _textDim, fontSize: 10.5),
+                  style: const TextStyle(color: _textDim, fontSize: 10.5),
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -1611,14 +1770,19 @@ class _SocialRewardsCard extends StatelessWidget {
                             color: _gold.withOpacity(0.3), blurRadius: 10),
                       ],
                     ),
-                    child: Center(
-                      child: Text(
-                        '🎁 أرسل عملات هدية لصديق'.tr,
-                        style: TextStyle(
-                            color: Color(0xFF1B0B30),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w900),
-                      ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const CoinIcon(size: 18),
+                        const SizedBox(width: 6),
+                        Text(
+                          '🎁 أرسل عملات هدية لصديق'.tr,
+                          style: TextStyle(
+                              color: Color(0xFF1B0B30),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900),
+                        ),
+                      ],
                     ),
                   ),
                 ),

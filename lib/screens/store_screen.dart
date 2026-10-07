@@ -10,12 +10,16 @@ import '../utils/top_notification.dart';
 import '../widgets/app_background.dart';
 import '../widgets/skin_mockup.dart';
 import '../widgets/gem_icon.dart';
+import '../widgets/coin_icon.dart';
 import '../utils/format.dart';
 import '../l10n/app_lang.dart';
 
 /// متجر الكسنات: أحجار، طاولة، استكانة، خلفية
 class StoreScreen extends StatefulWidget {
-  const StoreScreen({super.key});
+  /// يفتح المتجر مباشرة على تبويب شحن الرصيد (من زر + في الترويسة)
+  final bool openTopup;
+
+  const StoreScreen({super.key, this.openTopup = false});
 
   @override
   State<StoreScreen> createState() => _StoreScreenState();
@@ -34,8 +38,10 @@ class _StoreScreenState extends State<StoreScreen>
   void initState() {
     super.initState();
     _store.initialize();
-    _tabController =
-        TabController(length: _categories.length + 1, vsync: this);
+    _tabController = TabController(
+        length: _categories.length + 1,
+        vsync: this,
+        initialIndex: widget.openTopup ? _categories.length : 0);
     _store.addListener(_onStoreChanged);
   }
 
@@ -118,8 +124,7 @@ class _StoreScreenState extends State<StoreScreen>
                       ClipRRect(
                         borderRadius: BorderRadius.circular(14),
                         child: BackdropFilter(
-                          filter:
-                              ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 6),
@@ -133,8 +138,7 @@ class _StoreScreenState extends State<StoreScreen>
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Text('🪙',
-                                    style: TextStyle(fontSize: 13)),
+                                const CoinIcon(size: 15),
                                 const SizedBox(width: 4),
                                 Text(
                                   formatBalance(user?.chips ?? 0),
@@ -147,8 +151,8 @@ class _StoreScreenState extends State<StoreScreen>
                                 Container(
                                   width: 1,
                                   height: 12,
-                                  margin: const EdgeInsets.symmetric(
-                                      horizontal: 6),
+                                  margin:
+                                      const EdgeInsets.symmetric(horizontal: 6),
                                   color: Colors.white.withOpacity(0.18),
                                 ),
                                 const GemIcon(size: 15),
@@ -259,19 +263,14 @@ class _StoreScreenState extends State<StoreScreen>
               children: [
                 Icon(icon,
                     size: 17,
-                    color: selected
-                        ? Colors.white
-                        : const Color(0xFF94A3B8)),
+                    color: selected ? Colors.white : const Color(0xFF94A3B8)),
                 const SizedBox(width: 6),
                 Text(
                   label,
                   style: TextStyle(
-                    color: selected
-                        ? Colors.white
-                        : const Color(0xFF94A3B8),
+                    color: selected ? Colors.white : const Color(0xFF94A3B8),
                     fontSize: 11.5,
-                    fontWeight:
-                        selected ? FontWeight.w900 : FontWeight.w600,
+                    fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
                   ),
                 ),
               ],
@@ -283,9 +282,8 @@ class _StoreScreenState extends State<StoreScreen>
   }
 
   Widget _buildCategoryGrid(String category) {
-    final categoryItems = _store.items
-        .where((e) => e.category == category && !e.hidden)
-        .toList();
+    final categoryItems =
+        _store.items.where((e) => e.category == category && !e.hidden).toList();
 
     if (categoryItems.isEmpty) {
       return Center(
@@ -312,6 +310,7 @@ class _StoreScreenState extends State<StoreScreen>
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
       physics: const BouncingScrollPhysics(),
+      cacheExtent: 600,
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 240,
         mainAxisSpacing: 14,
@@ -319,8 +318,7 @@ class _StoreScreenState extends State<StoreScreen>
         childAspectRatio: 0.78,
       ),
       itemCount: categoryItems.length,
-      itemBuilder: (context, index) =>
-          _buildItemCard(categoryItems[index]),
+      itemBuilder: (context, index) => _buildItemCard(categoryItems[index]),
     );
   }
 
@@ -328,210 +326,208 @@ class _StoreScreenState extends State<StoreScreen>
     final owned = _store.isOwned(item.id);
     final equipped = _store.isEquipped(item);
     final user = AuthService().currentUser;
-    final locked = item.requiredWins > 0 &&
-        (user?.wins ?? 0) < item.requiredWins;
+    final locked =
+        item.requiredWins > 0 && (user?.wins ?? 0) < item.requiredWins;
 
-    return GestureDetector(
-      onTap: () => _showSkinPreview(item),
-      child: ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: equipped
-                  ? [
-                      const Color(0xFF1E3A5F).withOpacity(0.95),
-                      const Color(0xFF152A4A).withOpacity(0.9),
-                    ]
-                  : [
-                      const Color(0xFF1B2438).withOpacity(0.85),
-                      const Color(0xFF141C30).withOpacity(0.7),
-                    ],
+    // بلا BackdropFilter لكل بطاقة: كان يعيد التمويه كل إطار خلف السكنات
+    // المتحركة فيتقطع التمرير — RepaintBoundary يعزل كل بطاقة
+    return RepaintBoundary(
+      child: GestureDetector(
+        onTap: () => _showSkinPreview(item),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: equipped
+                    ? [
+                        const Color(0xFF1E3A5F).withOpacity(0.95),
+                        const Color(0xFF152A4A).withOpacity(0.9),
+                      ]
+                    : [
+                        const Color(0xFF1B2438).withOpacity(0.85),
+                        const Color(0xFF141C30).withOpacity(0.7),
+                      ],
+              ),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: equipped ? const Color(0xFF3B82F6) : LightGlass.border,
+                width: equipped ? 1.6 : 1,
+              ),
             ),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: equipped
-                  ? const Color(0xFF3B82F6)
-                  : LightGlass.border,
-              width: equipped ? 1.6 : 1,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // معاينة الموك اب + شارة "محدود"
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 12, 10, 4),
-                  child: Stack(
-                    fit: StackFit.expand,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // معاينة الموك اب + شارة "محدود"
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(10, 12, 10, 4),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        SkinMockup(
+                          category: item.category,
+                          image: item.imageBase64.isNotEmpty
+                              ? item.provider
+                              : null,
+                          width: double.infinity,
+                          height: double.infinity,
+                          zoom: item.zoom,
+                          offsetX: item.offsetX,
+                          offsetY: item.offsetY,
+                          effect: item.effect,
+                          item: item,
+                        ),
+                        if (item.limited)
+                          Positioned(
+                            top: 4,
+                            left: 4,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 7, vertical: 3),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(colors: [
+                                  Color(0xFFF472B6),
+                                  Color(0xFFA855F7),
+                                ]),
+                                borderRadius: BorderRadius.circular(9),
+                                boxShadow: [
+                                  BoxShadow(
+                                      color: const Color(0xFFA855F7)
+                                          .withOpacity(0.4),
+                                      blurRadius: 8),
+                                ],
+                              ),
+                              child: Text(
+                                'محدود ⏳'.tr,
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 8.5,
+                                    fontWeight: FontWeight.w900),
+                              ),
+                            ),
+                          ),
+                        if (item.requiredWins > 0)
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 7, vertical: 3),
+                              decoration: BoxDecoration(
+                                color:
+                                    const Color(0xFF0A1122).withOpacity(0.75),
+                                borderRadius: BorderRadius.circular(9),
+                                border: Border.all(
+                                    color: const Color(0xFFFFD54F)
+                                        .withOpacity(0.6)),
+                              ),
+                              child: Text(
+                                '🏆 {} فوزاً'.trp([item.requiredWins]),
+                                style: const TextStyle(
+                                    color: Color(0xFFFFD54F),
+                                    fontSize: 8.5,
+                                    fontWeight: FontWeight.w900),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // الاسم والسعر
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Row(
                     children: [
-                      SkinMockup(
-                        category: item.category,
-                        image: item.imageBase64.isNotEmpty
-                            ? item.provider
-                            : null,
-                        width: double.infinity,
-                        height: double.infinity,
-                        zoom: item.zoom,
-                        offsetX: item.offsetX,
-                        offsetY: item.offsetY,
-                        effect: item.effect,
-                        item: item,
-                      ),
-                      if (item.limited)
-                        Positioned(
-                          top: 4,
-                          left: 4,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 7, vertical: 3),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(colors: [
-                                Color(0xFFF472B6),
-                                Color(0xFFA855F7),
-                              ]),
-                              borderRadius: BorderRadius.circular(9),
-                              boxShadow: [
-                                BoxShadow(
-                                    color: const Color(0xFFA855F7)
-                                        .withOpacity(0.4),
-                                    blurRadius: 8),
-                              ],
-                            ),
-                            child: Text(
-                              'محدود ⏳'.tr,
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 8.5,
-                                  fontWeight: FontWeight.w900),
-                            ),
+                      Expanded(
+                        child: Text(
+                          item.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: LightGlass.text,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12.5,
                           ),
                         ),
-                      if (item.requiredWins > 0)
-                        Positioned(
-                          top: 4,
-                          right: 4,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 7, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF0A1122)
-                                  .withOpacity(0.75),
-                              borderRadius: BorderRadius.circular(9),
-                              border: Border.all(
-                                  color: const Color(0xFFFFD54F)
-                                      .withOpacity(0.6)),
+                      ),
+                      if (!owned)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (item.currency == StoreCurrency.gems)
+                              const GemIcon(size: 13)
+                            else
+                              const CoinIcon(size: 13),
+                            const SizedBox(width: 3),
+                            Text(
+                              formatBalance(item.price),
+                              style: TextStyle(
+                                color: item.currency == StoreCurrency.gems
+                                    ? const Color(0xFF7DD3FC)
+                                    : LightGlass.gold,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 11.5,
+                              ),
                             ),
-                            child: Text(
-                              '🏆 {} فوزاً'.trp([item.requiredWins]),
-                              style: const TextStyle(
-                                  color: Color(0xFFFFD54F),
-                                  fontSize: 8.5,
-                                  fontWeight: FontWeight.w900),
-                            ),
-                          ),
+                          ],
                         ),
                     ],
                   ),
                 ),
-              ),
+                const SizedBox(height: 8),
 
-              // الاسم والسعر
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Row(
-                  children: [
-                    Expanded(
+                // زر الإجراء
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+                  child: SizedBox(
+                    height: 34,
+                    child: ElevatedButton(
+                      onPressed: (_processing || locked)
+                          ? null
+                          : () => _handleItemAction(item),
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        backgroundColor: locked
+                            ? const Color(0xFF1E293B)
+                            : equipped
+                                ? const Color(0xFF334155)
+                                : owned
+                                    ? const Color(0xFF10B981)
+                                    : const Color(0xFFFFD54F),
+                        disabledBackgroundColor:
+                            locked ? const Color(0xFF1E293B) : null,
+                        foregroundColor: equipped || owned
+                            ? Colors.white
+                            : const Color(0xFF1B0B30),
+                        disabledForegroundColor: const Color(0xFF64748B),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
                       child: Text(
-                        item.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        locked
+                            ? '🔒 يتطلب {} فوزاً'.trp([item.requiredWins])
+                            : equipped
+                                ? 'مُجهَّزة ✓ — إلغاء'.tr
+                                : owned
+                                    ? 'تجهيز الكسنة'.tr
+                                    : item.price == 0
+                                        ? 'مجانية — تجهيز'.tr
+                                        : 'شراء وتجهيز'.tr,
                         style: const TextStyle(
-                          color: LightGlass.text,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12.5,
-                        ),
+                            fontWeight: FontWeight.w900, fontSize: 11.5),
                       ),
-                    ),
-                    if (!owned)
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (item.currency == StoreCurrency.gems)
-                            const GemIcon(size: 13)
-                          else
-                            const Text('🪙', style: TextStyle(fontSize: 11)),
-                          const SizedBox(width: 3),
-                          Text(
-                            formatBalance(item.price),
-                            style: TextStyle(
-                              color: item.currency == StoreCurrency.gems
-                                  ? const Color(0xFF7DD3FC)
-                                  : LightGlass.gold,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 11.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              // زر الإجراء
-              Padding(
-                padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
-                child: SizedBox(
-                  height: 34,
-                  child: ElevatedButton(
-                    onPressed: (_processing || locked)
-                        ? null
-                        : () => _handleItemAction(item),
-                    style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      backgroundColor: locked
-                          ? const Color(0xFF1E293B)
-                          : equipped
-                              ? const Color(0xFF334155)
-                              : owned
-                                  ? const Color(0xFF10B981)
-                                  : const Color(0xFFFFD54F),
-                      disabledBackgroundColor: locked
-                          ? const Color(0xFF1E293B)
-                          : null,
-                      foregroundColor: equipped || owned
-                          ? Colors.white
-                          : const Color(0xFF1B0B30),
-                      disabledForegroundColor: const Color(0xFF64748B),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
-                    child: Text(
-                      locked
-                          ? '🔒 يتطلب {} فوزاً'.trp([item.requiredWins])
-                          : equipped
-                              ? 'مُجهَّزة ✓ — إلغاء'.tr
-                              : owned
-                                  ? 'تجهيز الكسنة'.tr
-                                  : item.price == 0
-                                      ? 'مجانية — تجهيز'.tr
-                                      : 'شراء وتجهيز'.tr,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w900, fontSize: 11.5),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -542,8 +538,8 @@ class _StoreScreenState extends State<StoreScreen>
     final owned = _store.isOwned(item.id);
     final equipped = _store.isEquipped(item);
     final user = AuthService().currentUser;
-    final locked = item.requiredWins > 0 &&
-        (user?.wins ?? 0) < item.requiredWins;
+    final locked =
+        item.requiredWins > 0 && (user?.wins ?? 0) < item.requiredWins;
     AppHaptics.selection();
     showModalBottomSheet(
       context: context,
@@ -552,21 +548,21 @@ class _StoreScreenState extends State<StoreScreen>
       builder: (ctx) => Directionality(
         textDirection: AppLangController.instance.direction,
         child: Container(
-          constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(ctx).size.height * 0.72),
+          constraints:
+              BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.72),
           decoration: BoxDecoration(
             color: const Color(0xFF10172E),
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border.all(
-                color: const Color(0xFF8B5CF6).withOpacity(0.35)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border:
+                Border.all(color: const Color(0xFF8B5CF6).withOpacity(0.35)),
           ),
           padding: const EdgeInsets.fromLTRB(18, 12, 18, 22),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 40, height: 4,
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
                     color: Colors.white24,
                     borderRadius: BorderRadius.circular(4)),
@@ -583,11 +579,11 @@ class _StoreScreenState extends State<StoreScreen>
                 ),
                 if (item.limited)
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: [
-                        Color(0xFFF472B6), Color(0xFFA855F7)]),
+                      gradient: const LinearGradient(
+                          colors: [Color(0xFFF472B6), Color(0xFFA855F7)]),
                       borderRadius: BorderRadius.circular(9),
                     ),
                     child: Text('محدود ⏳'.tr,
@@ -602,8 +598,7 @@ class _StoreScreenState extends State<StoreScreen>
                 alignment: AlignmentDirectional.centerStart,
                 child: Text(
                   'هكذا ستبدو على أدواتك داخل اللعبة'.tr,
-                  style: const TextStyle(
-                      color: Colors.white54, fontSize: 11),
+                  style: const TextStyle(color: Colors.white54, fontSize: 11),
                 ),
               ),
               const SizedBox(height: 14),
@@ -622,9 +617,7 @@ class _StoreScreenState extends State<StoreScreen>
                   child: Center(
                     child: SkinMockup(
                       category: item.category,
-                      image: item.imageBase64.isNotEmpty
-                          ? item.provider
-                          : null,
+                      image: item.imageBase64.isNotEmpty ? item.provider : null,
                       width: double.infinity,
                       height: 190,
                       zoom: item.zoom,
@@ -641,8 +634,8 @@ class _StoreScreenState extends State<StoreScreen>
                 // السعر
                 if (!owned)
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 9),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.06),
                       borderRadius: BorderRadius.circular(12),
@@ -652,7 +645,7 @@ class _StoreScreenState extends State<StoreScreen>
                       if (item.currency == StoreCurrency.gems)
                         const GemIcon(size: 16)
                       else
-                        const Text('🪙', style: TextStyle(fontSize: 14)),
+                        const CoinIcon(size: 16),
                       const SizedBox(width: 5),
                       Text(formatBalance(item.price),
                           style: const TextStyle(
@@ -718,190 +711,380 @@ class _StoreScreenState extends State<StoreScreen>
   // تبويب شحن الرصيد بالمال الحقيقي (باقات + طلبات)
   // ══════════════════════════════════════════════════════════
 
+  /// باقات الشحن الافتراضية — تُعرض عندما لا تنشر الإدارة باقات خاصة
+  static const List<_Pack> _defaultPacks = [
+    _Pack('builtin_coins_1', 'حفنة عملات', false, 5000, 0, 0.99),
+    _Pack('builtin_coins_2', 'كيس عملات', false, 15000, 10, 2.99),
+    _Pack('builtin_coins_3', 'صندوق عملات', false, 30000, 20, 4.99,
+        badge: 'الأكثر شعبية'),
+    _Pack('builtin_coins_4', 'خزنة عملات', false, 70000, 30, 9.99),
+    _Pack('builtin_coins_5', 'كنز العملات', false, 160000, 40, 19.99,
+        badge: 'أفضل قيمة'),
+    _Pack('builtin_coins_6', 'ثروة ملكية', false, 450000, 60, 49.99),
+    _Pack('builtin_gems_1', 'حفنة جواهر', true, 50, 0, 0.99),
+    _Pack('builtin_gems_2', 'كيس جواهر', true, 160, 10, 2.99),
+    _Pack('builtin_gems_3', 'صندوق جواهر', true, 300, 20, 4.99,
+        badge: 'الأكثر شعبية'),
+    _Pack('builtin_gems_4', 'خزنة جواهر', true, 650, 30, 9.99),
+    _Pack('builtin_gems_5', 'كنز الجواهر', true, 1400, 40, 19.99,
+        badge: 'أفضل قيمة'),
+    _Pack('builtin_gems_6', 'تاج الجواهر', true, 3800, 60, 49.99),
+  ];
+
+  bool _topupGems = false;
+
   Widget _buildTopupTab() {
-    if (!_firebase.isInitialized) {
-      return Center(
-        child: Text('قاعدة البيانات غير متصلة حالياً'.tr,
-            style: TextStyle(color: LightGlass.textMuted)),
-      );
-    }
+    final stream = _firebase.isInitialized
+        ? _firebase.firestore
+            .collection('coin_packs')
+            .where('active', isEqualTo: true)
+            .snapshots()
+        : const Stream<QuerySnapshot>.empty();
     return StreamBuilder<QuerySnapshot>(
-      stream: _firebase.firestore
-          .collection('coin_packs')
-          .where('active', isEqualTo: true)
-          .snapshots(),
+      stream: stream,
       builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting) {
-          return const Center(
-              child: CircularProgressIndicator(color: Color(0xFF38BDF8)));
-        }
-        final packs = snap.data?.docs ?? [];
-        if (packs.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.payments_outlined,
-                    color: LightGlass.textFaint, size: 48),
-                SizedBox(height: 12),
-                Text('لا توجد باقات شحن متاحة حالياً'.tr,
-                    style:
-                        TextStyle(color: LightGlass.textMuted, fontSize: 13)),
-                SizedBox(height: 4),
-                Text('ترقّب عروض الشحن قريباً!'.tr,
-                    style:
-                        TextStyle(color: LightGlass.textFaint, fontSize: 11)),
-              ],
-            ),
-          );
-        }
-        return GridView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+        final remote = [
+          for (final d in snap.data?.docs ?? <QueryDocumentSnapshot>[])
+            _Pack.fromDoc(d),
+        ];
+        // باقات الإدارة إن وُجدت، وإلا الباقات الافتراضية الكاملة
+        final all = remote.isNotEmpty ? remote : _defaultPacks;
+        final packs = all.where((p) => p.gems == _topupGems).toList();
+        final user = AuthService().currentUser;
+
+        return CustomScrollView(
           physics: const BouncingScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: 260,
-            mainAxisSpacing: 14,
-            crossAxisSpacing: 14,
-            childAspectRatio: 1.05,
-          ),
-          itemCount: packs.length,
-          itemBuilder: (context, i) => _buildPackCard(packs[i]),
+          slivers: [
+            // ═══ بطاقة الرصيد ═══
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 2, 16, 12),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF2A1F5C), Color(0xFF12224A)],
+                    ),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: Colors.white.withOpacity(0.14)),
+                    boxShadow: [
+                      BoxShadow(
+                          color: const Color(0xFF8B5CF6).withOpacity(0.25),
+                          blurRadius: 24,
+                          spreadRadius: -6),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _balanceTile(
+                          const CoinIcon(size: 30),
+                          formatBalance(user?.chips ?? 0),
+                          'عملات'.tr,
+                          const Color(0xFFFFD54F),
+                        ),
+                      ),
+                      Container(
+                          width: 1,
+                          height: 44,
+                          color: Colors.white.withOpacity(0.12)),
+                      Expanded(
+                        child: _balanceTile(
+                          const GemIcon(size: 30),
+                          formatBalance(user?.gems ?? 0),
+                          'جواهر'.tr,
+                          const Color(0xFF7DD3FC),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // ═══ مبدّل العملات / الجواهر ═══
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                child: Container(
+                  height: 46,
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF141C34),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withOpacity(0.08)),
+                  ),
+                  child: Row(
+                    children: [
+                      _segment(false, 'عملات'.tr, const CoinIcon(size: 18)),
+                      _segment(true, 'جواهر'.tr, const GemIcon(size: 18)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // ═══ الباقات ═══
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 220,
+                  mainAxisSpacing: 14,
+                  crossAxisSpacing: 14,
+                  childAspectRatio: 0.74,
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  (context, i) => _packCard(packs[i], i),
+                  childCount: packs.length,
+                ),
+              ),
+            ),
+
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.verified_user_rounded,
+                        color: Color(0xFF4ADE80), size: 15),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        'يُضاف الرصيد بعد تأكيد الدفع من الإدارة'.tr,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                            color: LightGlass.textMuted, fontSize: 11),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         );
       },
     );
   }
 
-  Widget _buildPackCard(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
-    final isGems = data['type'] == 'gems';
-    final amount = (data['amount'] as num?)?.toInt() ?? 0;
-    final price = (data['priceUsd'] as num?)?.toDouble() ?? 0;
-    final title = data['title'] ?? 'باقة'.tr;
-    final color = isGems ? const Color(0xFF38BDF8) : const Color(0xFFFFD54F);
+  Widget _balanceTile(Widget icon, String value, String label, Color color) {
+    return Column(
+      children: [
+        icon,
+        const SizedBox(height: 6),
+        Text(value,
+            style: TextStyle(
+                color: color, fontSize: 18, fontWeight: FontWeight.w900)),
+        Text(label,
+            style: const TextStyle(color: LightGlass.textMuted, fontSize: 11)),
+      ],
+    );
+  }
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
+  Widget _segment(bool gems, String label, Widget icon) {
+    final sel = _topupGems == gems;
+    final color = gems ? const Color(0xFF38BDF8) : const Color(0xFFFFB300);
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          AppHaptics.selection();
+          setState(() => _topupGems = gems);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                color.withOpacity(0.16),
-                const Color(0xFF141C30).withOpacity(0.85),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: color.withOpacity(0.45), width: 1.2),
+            gradient: sel
+                ? LinearGradient(colors: [color.withOpacity(0.9), color])
+                : null,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: sel
+                ? [BoxShadow(color: color.withOpacity(0.4), blurRadius: 10)]
+                : null,
           ),
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: isGems
-                            ? const [
-                                Color(0xFFBAE6FD),
-                                Color(0xFF38BDF8),
-                                Color(0xFF0369A1)
-                              ]
-                            : const [
-                                Color(0xFFFFF9C4),
-                                Color(0xFFFFD54F),
-                                Color(0xFFFF8F00)
-                              ],
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                            color: color.withOpacity(0.45), blurRadius: 8)
-                      ],
-                    ),
-                    child: Center(
-                      child: isGems
-                          ? const GemIcon(size: 24)
-                          : const Icon(
-                              Icons.monetization_on_rounded,
-                              color: Color(0xFF7C2D12),
-                              size: 22,
-                            ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(title,
-                            style: const TextStyle(
-                                color: LightGlass.text,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 12.5)),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              formatBalance(amount),
-                              style: TextStyle(
-                                  color: color,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 15),
-                            ),
-                            const SizedBox(width: 3),
-                            isGems
-                                ? const GemIcon(size: 14)
-                                : const Text('🪙',
-                                    style: TextStyle(fontSize: 12)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              Row(
-                children: [
-                  Text(
-                    '\$${price.toStringAsFixed(price == price.roundToDouble() ? 0 : 2)}',
-                    style: const TextStyle(
-                        color: Color(0xFF4ADE80),
-                        fontWeight: FontWeight.w900,
-                        fontSize: 16),
-                  ),
-                  const Spacer(),
-                  ElevatedButton(
-                    onPressed:
-                        _processing ? null : () => _buyPack(doc.id, data),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: color,
-                      foregroundColor: isGems
-                          ? const Color(0xFF082F49)
-                          : const Color(0xFF451A03),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      minimumSize: Size.zero,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
-                    child: Text('شراء'.tr,
-                        style: TextStyle(
-                            fontWeight: FontWeight.w900, fontSize: 12)),
-                  ),
-                ],
-              ),
+              icon,
+              const SizedBox(width: 6),
+              Text(label,
+                  style: TextStyle(
+                      color: sel ? Colors.white : const Color(0xFF94A3B8),
+                      fontWeight: FontWeight.w900,
+                      fontSize: 13)),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  /// بطاقة باقة: رسم كومة عملات/جواهر يكبر مع الباقة، الكمية، شارة
+  /// المكافأة، وزر السعر
+  Widget _packCard(_Pack p, int tier) {
+    final color = p.gems ? const Color(0xFF38BDF8) : const Color(0xFFFFC107);
+    final highlighted = p.badge != null;
+    final count = (tier + 1).clamp(1, 6);
+    return RepaintBoundary(
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              color.withOpacity(highlighted ? 0.28 : 0.16),
+              const Color(0xFF111A33),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+              color: color.withOpacity(highlighted ? 0.85 : 0.35),
+              width: highlighted ? 1.6 : 1),
+          boxShadow: highlighted
+              ? [BoxShadow(color: color.withOpacity(0.3), blurRadius: 18)]
+              : null,
+        ),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 16, 10, 10),
+              child: Column(
+                children: [
+                  // كومة العملات/الجواهر المرسومة
+                  Expanded(
+                    child: Center(
+                      child: SizedBox(
+                        width: 96,
+                        height: 70,
+                        child: Stack(
+                          alignment: Alignment.bottomCenter,
+                          children: [
+                            Container(
+                              width: 80,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                      color: color.withOpacity(0.35),
+                                      blurRadius: 24),
+                                ],
+                              ),
+                            ),
+                            for (var k = 0; k < count; k++)
+                              Positioned(
+                                bottom: (k ~/ 3) * 16.0 + (k % 3 == 1 ? 6 : 0),
+                                left: 18.0 + (k % 3) * 20 + (k ~/ 3) * 10,
+                                child: p.gems
+                                    ? const GemIcon(size: 30)
+                                    : const CoinIcon(size: 28),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Text(
+                    formatBalance(p.amount),
+                    style: TextStyle(
+                        color: color,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        shadows: [
+                          Shadow(color: color.withOpacity(0.5), blurRadius: 10)
+                        ]),
+                  ),
+                  Text(
+                    p.title.tr,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        color: LightGlass.textMuted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700),
+                  ),
+                  if (p.bonus > 0) ...[
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4ADE80).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                            color: const Color(0xFF4ADE80).withOpacity(0.5)),
+                      ),
+                      child: Text(
+                        '+{}% مجاناً'.trp([p.bonus]),
+                        style: const TextStyle(
+                            color: Color(0xFF4ADE80),
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w900),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 10),
+                  GestureDetector(
+                    onTap: _processing ? null : () => _buyPack(p.id, p.toMap()),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 9),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(colors: [
+                          Color(0xFF4ADE80),
+                          Color(0xFF16A34A),
+                        ]),
+                        borderRadius: BorderRadius.circular(13),
+                        boxShadow: [
+                          BoxShadow(
+                              color: const Color(0xFF16A34A).withOpacity(0.4),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3)),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          '\$${p.price.toStringAsFixed(p.price == p.price.roundToDouble() ? 0 : 2)}',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (highlighted)
+              Positioned(
+                top: -9,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                          colors: [Color(0xFFF472B6), Color(0xFFA855F7)]),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      p.badge!.tr,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -946,4 +1129,39 @@ class _StoreScreenState extends State<StoreScreen>
       if (mounted) setState(() => _processing = false);
     }
   }
+}
+
+/// باقة شحن رصيد (عملات أو جواهر)
+class _Pack {
+  final String id;
+  final String title;
+  final bool gems;
+  final int amount;
+  final int bonus;
+  final double price;
+  final String? badge;
+
+  const _Pack(
+      this.id, this.title, this.gems, this.amount, this.bonus, this.price,
+      {this.badge});
+
+  factory _Pack.fromDoc(QueryDocumentSnapshot doc) {
+    final d = doc.data() as Map<String, dynamic>;
+    return _Pack(
+      doc.id,
+      (d['title'] ?? 'باقة') as String,
+      d['type'] == 'gems',
+      (d['amount'] as num?)?.toInt() ?? 0,
+      (d['bonus'] as num?)?.toInt() ?? 0,
+      (d['priceUsd'] as num?)?.toDouble() ?? 0,
+      badge: d['badge'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toMap() => {
+        'title': title,
+        'type': gems ? 'gems' : 'chips',
+        'amount': amount,
+        'priceUsd': price,
+      };
 }

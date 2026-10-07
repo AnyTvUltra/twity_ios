@@ -100,12 +100,15 @@ class BottomNavBar extends StatelessWidget {
 
   Widget _buildNavItem(_NavEntry entry) {
     final isSelected = currentIndex == entry.index;
+    // التحديد يتحرك بنعومة، أما إلغاؤه فلحظي — فلا يبقى لون الزر السابق
+    // ظاهراً لوهلة بعد الانتقال لزر آخر
+    final dur = isSelected ? const Duration(milliseconds: 220) : Duration.zero;
 
     return GestureDetector(
       onTap: () => onIndexChanged(entry.index),
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
+        duration: dur,
         curve: Curves.easeOutCubic,
         margin: const EdgeInsets.symmetric(horizontal: 3),
         padding: const EdgeInsets.symmetric(vertical: 7),
@@ -140,7 +143,7 @@ class BottomNavBar extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
+              duration: dur,
               curve: Curves.easeOutCubic,
               width: 34,
               height: 34,
@@ -177,7 +180,7 @@ class BottomNavBar extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
+              duration: dur,
               curve: Curves.easeOutCubic,
               height: 3,
               width: isSelected ? 22 : 0,

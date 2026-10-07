@@ -207,8 +207,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     AppHaptics.selection();
                     setState(() => _currentNavIndex = 3);
                   },
-                  onCoinTap: () =>
-                      _showNotice('رصيدك الحالي: 1250 عملة ذهبية!'.tr),
+                  // زر + بجانب العملات يفتح صفحة شحن الرصيد مباشرة
+                  onCoinTap: () {
+                    AppHaptics.selection();
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => const StoreScreen(openTopup: true)));
+                  },
                   onStoreTap: () {
                     AppHaptics.selection();
                     Navigator.of(context).push(

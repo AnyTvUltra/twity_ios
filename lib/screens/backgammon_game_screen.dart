@@ -337,7 +337,9 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
 
   Future<void> _afterRoll() async {
     if (_e.legalMoves().isEmpty) {
-      _toast(_isHumanTurn ? 'لا توجد حركات متاحة 😕'.tr : 'الخصم لا يملك حركات'.tr);
+      _toast(_isHumanTurn
+          ? 'لا توجد حركات متاحة 😕'.tr
+          : 'الخصم لا يملك حركات'.tr);
       setState(() => _busy = true);
       await Future.delayed(const Duration(milliseconds: 1400));
       if (!mounted) return;
@@ -363,7 +365,8 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
     final (a, b) = _e.roll();
     await _animateDice(a, b);
     if (!mounted) return;
-    if (a == b && _rnd.nextDouble() < 0.35) _botSay(BgChatMsg('🔥', emoji: true));
+    if (a == b && _rnd.nextDouble() < 0.35)
+      _botSay(BgChatMsg('🔥', emoji: true));
     setState(() => _busy = false);
     _afterRoll();
   }
@@ -719,8 +722,8 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
     final data = rotate
         ? media.copyWith(
             size: Size(media.size.height, media.size.width),
-            padding: EdgeInsets.fromLTRB(media.padding.top,
-                media.padding.right, media.padding.bottom, media.padding.left),
+            padding: EdgeInsets.fromLTRB(media.padding.top, media.padding.right,
+                media.padding.bottom, media.padding.left),
           )
         : media;
     final game = MediaQuery(data: data, child: _landscape());
@@ -877,7 +880,9 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
                     chips: _resultChips,
                     title: widget.vsAI
                         ? (_e.winner == 0 ? 'فزت! 🎉'.tr : 'خسرت الجولة'.tr)
-                        : (_e.winner == 0 ? 'فاز اللاعب 1'.tr : 'فاز اللاعب 2'.tr),
+                        : (_e.winner == 0
+                            ? 'فاز اللاعب 1'.tr
+                            : 'فاز اللاعب 2'.tr),
                     onRematch: _rematch,
                     onExit: () => Navigator.of(context).pop(),
                   ),
@@ -926,7 +931,9 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
                       Row(
                         children: [
                           Expanded(
-                            child: _pill('متابعة'.tr, _mint,
+                            child: _pill(
+                                'متابعة'.tr,
+                                _mint,
                                 const Color(0xFF052E1C),
                                 () => setState(() => _confirmExit = false)),
                           ),
@@ -1052,7 +1059,8 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
           boxShadow: active
               ? [
                   BoxShadow(
-                      color: _mint.withValues(alpha: 0.12 + 0.12 * _pulse.value),
+                      color:
+                          _mint.withValues(alpha: 0.12 + 0.12 * _pulse.value),
                       blurRadius: 18,
                       spreadRadius: -2)
                 ]
@@ -1245,8 +1253,7 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
                       decoration: BoxDecoration(
                         color: const Color(0xE60B1226),
                         borderRadius: BorderRadius.circular(18),
-                        border:
-                            Border.all(color: _mint.withValues(alpha: 0.5)),
+                        border: Border.all(color: _mint.withValues(alpha: 0.5)),
                         boxShadow: [
                           BoxShadow(
                               color: _mint.withValues(alpha: 0.2),
@@ -1282,7 +1289,8 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
       builder: (_, __) {
         final t = _lid.value;
         final appear = Curves.easeOutBack.transform((t / 0.15).clamp(0.0, 1.0));
-        final p = Curves.easeInCubic.transform(((t - 0.15) / 0.7).clamp(0.0, 1.0));
+        final p =
+            Curves.easeInCubic.transform(((t - 0.15) / 0.7).clamp(0.0, 1.0));
         final angle = -math.pi * (1 - p);
         final exterior = angle.abs() > math.pi / 2;
         final lidShadow = (1 - p) * 0.6;
@@ -1294,8 +1302,8 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
               clipBehavior: Clip.none,
               children: [
                 ClipRect(
-                  clipper:
-                      _RectClipper(Rect.fromLTRB(cx, -20, g.size.width, g.size.height + 30)),
+                  clipper: _RectClipper(
+                      Rect.fromLTRB(cx, -20, g.size.width, g.size.height + 30)),
                   child: _boardPaint(g),
                 ),
                 Positioned(
@@ -1401,8 +1409,7 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
                   AnimatedBuilder(
                     animation: _fx,
                     builder: (_, __) => Stack(
-                        clipBehavior: Clip.none,
-                        children: _checkers(g, set)),
+                        clipBehavior: Clip.none, children: _checkers(g, set)),
                   )
                 else
                   ..._checkers(g, set),
@@ -1542,8 +1549,7 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
         final half = _e.turn == 0 ? g.rightHalf : g.leftHalf;
         rest = half.center + Offset((i == 0 ? -1 : 1) * size * 0.75, 0);
         final tray = _e.turn == 0 ? g.rightTray : g.leftTray;
-        start =
-            Offset(tray.center.dx, g.size.height * (i == 0 ? 0.75 : 0.25));
+        start = Offset(tray.center.dx, g.size.height * (i == 0 ? 0.75 : 0.25));
       }
       final e = Curves.easeOutCubic.transform(t);
       final bounce = (math.sin(t * math.pi * 3.2)).abs() * (1 - t) * size * 1.6;
@@ -1773,10 +1779,8 @@ class _BurstPainter extends CustomPainter {
           ..lineTo(p.dx - s * 2, p.dy)
           ..lineTo(p.dx - s * 0.5, p.dy - s * 0.5)
           ..close();
-        canvas.drawPath(
-            star,
-            Paint()
-              ..color = const Color(0xFFFFF1B8).withValues(alpha: 1 - t));
+        canvas.drawPath(star,
+            Paint()..color = const Color(0xFFFFF1B8).withValues(alpha: 1 - t));
         continue;
       }
       canvas.drawLine(
@@ -1785,10 +1789,9 @@ class _BurstPainter extends CustomPainter {
           Paint()
             ..strokeWidth = 2.2
             ..strokeCap = StrokeCap.round
-            ..color = (i.isEven
-                    ? const Color(0xFFFFE08A)
-                    : const Color(0xFFFF7A45))
-                .withValues(alpha: 1 - t));
+            ..color =
+                (i.isEven ? const Color(0xFFFFE08A) : const Color(0xFFFF7A45))
+                    .withValues(alpha: 1 - t));
     }
   }
 

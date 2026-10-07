@@ -356,6 +356,9 @@ CustomPainter _surfacePainter(
 }
 
 CustomPainter _ringPainter(SkinEffect e, double t, [ui.Image? wood]) {
+  // إطارات الصورة الشخصية: التصميم الفاخر الجديد لكل التأثيرات — الرسامات
+  // القديمة تبقى فقط لحلقات الخشب (woodUnderlay)
+  if (wood == null) return _PremiumFramePainter(e, t);
   switch (e) {
     case SkinEffect.fire:
       return _FireRingPainter(t, wood);
@@ -1789,4 +1792,407 @@ class _FxRingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_FxRingPainter old) => old.t != t;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// إطار الصورة الشخصية الفاخر — حلقة معدنية بتدرّج دوّار وحواف مشطوفة،
+// هالة نابضة، مذنّب يدور حول الإطار، وزخرفة خاصة بكل نوع:
+// لهب (نار/جمر/لافا) • شظايا بلّورية (جليد/صقيع/كريستال) • تاج ملكي
+// (ذهب/تنين) • برق متقطع (عاصفة) • جسيمات كونية (سديم/شفق/محيط/نيون)
+// ════════════════════════════════════════════════════════════════════
+enum _Motif { flame, shard, royal, bolt, cosmic, beads }
+
+class _FramePalette {
+  final Color light, main, deep, glow;
+  final _Motif motif;
+  const _FramePalette(this.light, this.main, this.deep, this.glow, this.motif);
+}
+
+_FramePalette _framePalette(SkinEffect e) {
+  switch (e) {
+    case SkinEffect.fire:
+      return const _FramePalette(Color(0xFFFFF3B0), Color(0xFFFF9F1C),
+          Color(0xFFC2410C), Color(0xFFFF6B00), _Motif.flame);
+    case SkinEffect.blaze:
+      return const _FramePalette(Color(0xFFFFE9A8), Color(0xFFFFB340),
+          Color(0xFFB45309), Color(0xFFFFA000), _Motif.flame);
+    case SkinEffect.ember:
+      return const _FramePalette(Color(0xFFFFD0B5), Color(0xFFFF7847),
+          Color(0xFF9A3412), Color(0xFFFF5A1F), _Motif.flame);
+    case SkinEffect.lava:
+      return const _FramePalette(Color(0xFFFFD27A), Color(0xFFFF5A00),
+          Color(0xFF7F1D1D), Color(0xFFFF3D00), _Motif.flame);
+    case SkinEffect.ice:
+      return const _FramePalette(Color(0xFFF0FBFF), Color(0xFF8AD4F5),
+          Color(0xFF1E6FA8), Color(0xFF7DD3FC), _Motif.shard);
+    case SkinEffect.frost:
+      return const _FramePalette(Color(0xFFFFFFFF), Color(0xFFBDEFFF),
+          Color(0xFF4A9CC7), Color(0xFFBDEFFF), _Motif.shard);
+    case SkinEffect.crystal:
+      return const _FramePalette(Color(0xFFF3E8FF), Color(0xFFB388FF),
+          Color(0xFF5B21B6), Color(0xFFA78BFA), _Motif.shard);
+    case SkinEffect.gold:
+      return const _FramePalette(Color(0xFFFFF7D1), Color(0xFFFFD54F),
+          Color(0xFFA16207), Color(0xFFFFC107), _Motif.royal);
+    case SkinEffect.dragon:
+      return const _FramePalette(Color(0xFFFFF1C1), Color(0xFFFBBF24),
+          Color(0xFF92400E), Color(0xFFF59E0B), _Motif.royal);
+    case SkinEffect.storm:
+      return const _FramePalette(Color(0xFFE0F7FF), Color(0xFF7DD3FC),
+          Color(0xFF1E3A8A), Color(0xFF38BDF8), _Motif.bolt);
+    case SkinEffect.neon:
+      return const _FramePalette(Color(0xFFD1FFF0), Color(0xFF3FF5A8),
+          Color(0xFF047857), Color(0xFF10F5A0), _Motif.cosmic);
+    case SkinEffect.galaxy:
+      return const _FramePalette(Color(0xFFEDE9FE), Color(0xFFA78BFA),
+          Color(0xFF4C1D95), Color(0xFFC084FC), _Motif.cosmic);
+    case SkinEffect.ocean:
+      return const _FramePalette(Color(0xFFE0F2FE), Color(0xFF38BDF8),
+          Color(0xFF0C4A6E), Color(0xFF0EA5E9), _Motif.cosmic);
+    case SkinEffect.aurora:
+      return const _FramePalette(Color(0xFFD1FAE5), Color(0xFF6EE7B7),
+          Color(0xFF0F766E), Color(0xFF5EEAD4), _Motif.cosmic);
+    case SkinEffect.wood:
+    case SkinEffect.walnut:
+    case SkinEffect.mahogany:
+    case SkinEffect.none:
+      return const _FramePalette(Color(0xFFF5D7A8), Color(0xFFC08A4E),
+          Color(0xFF5C3A1A), Color(0xFFD9A05B), _Motif.beads);
+  }
+}
+
+class _PremiumFramePainter extends CustomPainter {
+  final SkinEffect effect;
+  final double t;
+  _PremiumFramePainter(this.effect, this.t);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = _framePalette(effect);
+    final c = size.center(Offset.zero);
+    final R = size.shortestSide / 2;
+    final ringR = R * 0.835;
+    final w = R * 0.115;
+    final tt = t * math.pi * 2;
+    final pulse = 0.5 + 0.5 * math.sin(tt);
+
+    // ── هالة نابضة خلف الإطار ──
+    canvas.drawCircle(
+      c,
+      ringR,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w * 2.4
+        ..color = p.glow.withOpacity(0.18 + 0.16 * pulse)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, R * 0.12),
+    );
+
+    // ── الزخرفة الخارجية الخاصة بالنوع ──
+    switch (p.motif) {
+      case _Motif.flame:
+        _flames(canvas, c, R, ringR + w / 2, p, tt);
+      case _Motif.shard:
+        _shards(canvas, c, R, ringR + w / 2, p, tt);
+      case _Motif.royal:
+        _royal(canvas, c, R, ringR, w, p, tt);
+      case _Motif.bolt:
+        _bolts(canvas, c, R, ringR + w / 2, p, t);
+      case _Motif.cosmic:
+        _cosmic(canvas, c, R, p, tt);
+      case _Motif.beads:
+        break;
+    }
+
+    // ── الحلقة المعدنية بتدرّج دوّار ──
+    final rect = Rect.fromCircle(center: c, radius: ringR);
+    canvas.drawCircle(
+      c,
+      ringR,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w
+        ..shader = SweepGradient(
+          colors: [p.light, p.main, p.deep, p.main, p.light, p.deep, p.light],
+          transform: GradientRotation(tt * 0.5),
+        ).createShader(rect),
+    );
+    // حواف مشطوفة: خط داكن داخلي وخط فاتح خارجي
+    canvas.drawCircle(
+      c,
+      ringR - w / 2,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2
+        ..color = p.deep.withOpacity(0.9),
+    );
+    canvas.drawCircle(
+      c,
+      ringR + w / 2,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.0
+        ..color = p.light.withOpacity(0.85),
+    );
+    // لمعة علوية ثابتة
+    canvas.drawArc(
+      Rect.fromCircle(center: c, radius: ringR + w * 0.12),
+      -2.5,
+      1.1,
+      false,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w * 0.32
+        ..strokeCap = StrokeCap.round
+        ..color = Colors.white.withOpacity(0.55),
+    );
+
+    // ── خرزات/أحجار على الحلقة ──
+    final beads = p.motif == _Motif.beads ? 12 : 4;
+    for (var i = 0; i < beads; i++) {
+      final a = i / beads * math.pi * 2 + math.pi / 4;
+      final pos =
+          Offset(c.dx + math.cos(a) * ringR, c.dy + math.sin(a) * ringR);
+      final gs = w * (p.motif == _Motif.beads ? 0.32 : 0.42);
+      final gem = Path()
+        ..moveTo(pos.dx, pos.dy - gs)
+        ..lineTo(pos.dx + gs * 0.8, pos.dy)
+        ..lineTo(pos.dx, pos.dy + gs)
+        ..lineTo(pos.dx - gs * 0.8, pos.dy)
+        ..close();
+      canvas.drawPath(
+          gem,
+          Paint()
+            ..shader = LinearGradient(colors: [p.light, p.deep])
+                .createShader(Rect.fromCircle(center: pos, radius: gs)));
+      final glint = 0.5 + 0.5 * math.sin(tt * 2 + i * 1.7);
+      canvas.drawCircle(pos.translate(-gs * 0.2, -gs * 0.3), gs * 0.22,
+          Paint()..color = Colors.white.withOpacity(0.4 + 0.5 * glint));
+    }
+
+    // ── مذنّب يدور حول الحلقة بذيل متلاشٍ ──
+    for (var k = 0; k < 14; k++) {
+      final a = tt - k * 0.07;
+      final pos =
+          Offset(c.dx + math.cos(a) * ringR, c.dy + math.sin(a) * ringR);
+      final f = 1 - k / 14;
+      canvas.drawCircle(
+        pos,
+        w * 0.32 * f + 0.6,
+        Paint()
+          ..color =
+              Color.lerp(Colors.white, p.light, k / 14)!.withOpacity(0.85 * f)
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, 1.5 + 2 * f),
+      );
+    }
+  }
+
+  void _flames(Canvas canvas, Offset c, double R, double base, _FramePalette p,
+      double tt) {
+    const n = 16;
+    for (var i = 0; i < n; i++) {
+      final a = i / n * math.pi * 2 + math.sin(tt + i) * 0.04;
+      final len = R * (0.07 + 0.07 * (0.5 + 0.5 * math.sin(tt * 3 + i * 2.3)));
+      final half = 0.11;
+      final tip = Offset(
+          c.dx + math.cos(a) * (base + len), c.dy + math.sin(a) * (base + len));
+      final l = Offset(
+          c.dx + math.cos(a - half) * base, c.dy + math.sin(a - half) * base);
+      final r = Offset(
+          c.dx + math.cos(a + half) * base, c.dy + math.sin(a + half) * base);
+      final ctrlR = base + len * 0.5;
+      final cl = Offset(c.dx + math.cos(a - half * 0.2) * ctrlR,
+          c.dy + math.sin(a - half * 0.2) * ctrlR);
+      final cr = Offset(c.dx + math.cos(a + half * 0.2) * ctrlR,
+          c.dy + math.sin(a + half * 0.2) * ctrlR);
+      final path = Path()
+        ..moveTo(l.dx, l.dy)
+        ..quadraticBezierTo(cl.dx, cl.dy, tip.dx, tip.dy)
+        ..quadraticBezierTo(cr.dx, cr.dy, r.dx, r.dy)
+        ..close();
+      canvas.drawPath(
+        path,
+        Paint()
+          ..shader = RadialGradient(colors: [
+            p.light,
+            p.main,
+            p.deep.withOpacity(0.0),
+          ], stops: const [
+            0.0,
+            0.55,
+            1.0
+          ]).createShader(Rect.fromCircle(center: c, radius: base + len))
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 0.8),
+      );
+    }
+    // شرارات صاعدة
+    for (var i = 0; i < 6; i++) {
+      final ph = (tt / (math.pi * 2) + i / 6) % 1.0;
+      final a = i * 1.05 + 0.3;
+      final rr = base + R * 0.18 * ph;
+      canvas.drawCircle(
+          Offset(c.dx + math.cos(a) * rr, c.dy + math.sin(a) * rr),
+          1.4 * (1 - ph) + 0.4,
+          Paint()..color = p.light.withOpacity(0.9 * (1 - ph)));
+    }
+  }
+
+  void _shards(Canvas canvas, Offset c, double R, double base, _FramePalette p,
+      double tt) {
+    const n = 8;
+    for (var i = 0; i < n; i++) {
+      final a = i / n * math.pi * 2 + math.pi / 8;
+      final len = R * (i.isEven ? 0.15 : 0.1);
+      final hw = 0.08;
+      final tip = Offset(
+          c.dx + math.cos(a) * (base + len), c.dy + math.sin(a) * (base + len));
+      final mid = base + len * 0.35;
+      final l =
+          Offset(c.dx + math.cos(a - hw) * mid, c.dy + math.sin(a - hw) * mid);
+      final r =
+          Offset(c.dx + math.cos(a + hw) * mid, c.dy + math.sin(a + hw) * mid);
+      final b = Offset(
+          c.dx + math.cos(a) * (base - 1), c.dy + math.sin(a) * (base - 1));
+      final shard = Path()
+        ..moveTo(b.dx, b.dy)
+        ..lineTo(l.dx, l.dy)
+        ..lineTo(tip.dx, tip.dy)
+        ..lineTo(r.dx, r.dy)
+        ..close();
+      canvas.drawPath(
+          shard,
+          Paint()
+            ..shader = LinearGradient(colors: [
+              p.light.withOpacity(0.95),
+              p.main.withOpacity(0.75),
+              p.deep.withOpacity(0.8),
+            ]).createShader(Rect.fromPoints(b, tip)));
+      canvas.drawPath(
+          shard,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 0.7
+            ..color = Colors.white.withOpacity(0.7));
+      // لمعة متلألئة على رأس الشظية
+      final tw = 0.5 + 0.5 * math.sin(tt * 2 + i * 1.3);
+      canvas.drawCircle(tip, 1.0 + 1.6 * tw,
+          Paint()..color = Colors.white.withOpacity(0.35 + 0.55 * tw));
+    }
+  }
+
+  void _royal(Canvas canvas, Offset c, double R, double ringR, double w,
+      _FramePalette p, double tt) {
+    // خرزات لؤلؤية حول الإطار
+    const beads = 22;
+    for (var i = 0; i < beads; i++) {
+      final a = i / beads * math.pi * 2;
+      final rr = ringR + w * 0.95;
+      final pos = Offset(c.dx + math.cos(a) * rr, c.dy + math.sin(a) * rr);
+      final tw = 0.5 + 0.5 * math.sin(tt * 1.5 - i * 0.6);
+      canvas.drawCircle(pos, w * 0.2,
+          Paint()..color = Color.lerp(p.main, Colors.white, 0.3 * tw)!);
+    }
+    // تاج في الأعلى
+    final top = c.dy - ringR - w * 0.5;
+    final cw = R * 0.42;
+    final ch = R * 0.22;
+    final crown = Path()
+      ..moveTo(c.dx - cw / 2, top)
+      ..lineTo(c.dx - cw / 2 - cw * 0.06, top - ch)
+      ..lineTo(c.dx - cw * 0.22, top - ch * 0.5)
+      ..lineTo(c.dx, top - ch * 1.25)
+      ..lineTo(c.dx + cw * 0.22, top - ch * 0.5)
+      ..lineTo(c.dx + cw / 2 + cw * 0.06, top - ch)
+      ..lineTo(c.dx + cw / 2, top)
+      ..close();
+    canvas.drawPath(crown.shift(const Offset(0, 1.5)),
+        Paint()..color = Colors.black.withOpacity(0.35));
+    canvas.drawPath(
+        crown,
+        Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [p.light, p.main, p.deep],
+          ).createShader(
+              Rect.fromLTWH(c.dx - cw / 2, top - ch * 1.25, cw, ch * 1.25)));
+    canvas.drawPath(
+        crown,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 0.8
+          ..color = p.deep);
+    // أحجار التاج
+    final glint = 0.5 + 0.5 * math.sin(tt * 2);
+    for (final g in [
+      Offset(c.dx, top - ch * 1.25),
+      Offset(c.dx - cw / 2 - cw * 0.06, top - ch),
+      Offset(c.dx + cw / 2 + cw * 0.06, top - ch),
+    ]) {
+      canvas.drawCircle(g, w * 0.26, Paint()..color = const Color(0xFFE11D48));
+      canvas.drawCircle(g.translate(-0.6, -0.6), w * 0.1,
+          Paint()..color = Colors.white.withOpacity(0.5 + 0.5 * glint));
+    }
+  }
+
+  void _bolts(Canvas canvas, Offset c, double R, double base, _FramePalette p,
+      double t) {
+    final frame = (t * 10).floor();
+    final rng = math.Random(frame);
+    for (var b = 0; b < 3; b++) {
+      if (rng.nextDouble() < 0.35) continue;
+      final a = rng.nextDouble() * math.pi * 2;
+      var pt = Offset(c.dx + math.cos(a) * base, c.dy + math.sin(a) * base);
+      final path = Path()..moveTo(pt.dx, pt.dy);
+      for (var s = 1; s <= 4; s++) {
+        final rr = base + R * 0.045 * s;
+        final aa = a + (rng.nextDouble() - 0.5) * 0.35;
+        pt = Offset(c.dx + math.cos(aa) * rr, c.dy + math.sin(aa) * rr);
+        path.lineTo(pt.dx, pt.dy);
+      }
+      canvas.drawPath(
+          path,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 3
+            ..color = p.glow.withOpacity(0.5)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3));
+      canvas.drawPath(
+          path,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.2
+            ..color = Colors.white);
+    }
+  }
+
+  void _cosmic(Canvas canvas, Offset c, double R, _FramePalette p, double tt) {
+    // حلقة منقّطة تدور عكس الإطار
+    const dots = 36;
+    for (var i = 0; i < dots; i++) {
+      final a = i / dots * math.pi * 2 - tt * 0.35;
+      final rr = R * 0.97;
+      canvas.drawCircle(
+          Offset(c.dx + math.cos(a) * rr, c.dy + math.sin(a) * rr),
+          i.isEven ? 1.1 : 0.6,
+          Paint()..color = p.light.withOpacity(i.isEven ? 0.7 : 0.35));
+    }
+    // جسيمات تسبح بسرعات مختلفة
+    for (var i = 0; i < 7; i++) {
+      final speed = 0.6 + i * 0.17;
+      final a = tt * speed + i * 0.9;
+      final rr = R * (0.9 + 0.06 * math.sin(tt * 2 + i));
+      final pos = Offset(c.dx + math.cos(a) * rr, c.dy + math.sin(a) * rr);
+      canvas.drawCircle(
+          pos,
+          2.6,
+          Paint()
+            ..color = p.glow.withOpacity(0.7)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5));
+      canvas.drawCircle(pos, 1.0, Paint()..color = Colors.white);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_PremiumFramePainter old) =>
+      old.t != t || old.effect != effect;
 }

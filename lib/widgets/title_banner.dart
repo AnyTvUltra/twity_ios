@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../l10n/app_lang.dart';
@@ -253,16 +252,6 @@ class TitleBanner extends StatelessWidget {
               ),
             ],
           ),
-
-          // Pinned Sticky Note on the top-right
-          Positioned(
-            right: 0,
-            top: 28,
-            child: Transform.rotate(
-              angle: 6 * math.pi / 180,
-              child: const _StickyNoteWidget(),
-            ),
-          ),
         ],
       ),
     );
@@ -364,88 +353,4 @@ class _SparkleStarPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _StickyNoteWidget extends StatelessWidget {
-  const _StickyNoteWidget();
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          width: 70,
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white.withOpacity(0.72),
-                const Color(0xFFFFE8A3).withOpacity(0.54),
-                Colors.white.withOpacity(0.24),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.white.withOpacity(0.72)),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFFFD76A).withOpacity(0.18),
-                blurRadius: 12,
-              ),
-            ],
-          ),
-          child: Stack(
-            clipBehavior: Clip.none,
-            alignment: Alignment.topCenter,
-            children: [
-              Positioned(
-                top: -10,
-                child: Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFE53935), Color(0xFFB71C1C)],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.4),
-                        blurRadius: 3,
-                        offset: const Offset(1, 1),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(height: 3),
-                  Text(
-                    'الـلـعـب\nمـتـعـة\nلا تنتهي'.tr,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Color(0xFF42210B),
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w800,
-                      height: 1.15,
-                    ),
-                  ),
-                  SizedBox(height: 2),
-                  Text(
-                    '❤️',
-                    style: TextStyle(fontSize: 8),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }

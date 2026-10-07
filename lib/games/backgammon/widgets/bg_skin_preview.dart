@@ -64,49 +64,51 @@ class _BgSkinPreviewState extends State<BgSkinPreview>
       (16, 3, 1),
       (18, 5, 1),
     ];
+    // الطبقات الثابتة (اللوح والأحجار) تُرسم مرة واحدة داخل
+    // RepaintBoundary — وفقط طبقة المؤثر المتحرك تُعاد كل إطار. كان
+    // اللوح كاملاً بخامة الخشب وكل الأحجار تُعاد رسمها 60 مرة بالثانية
+    // لكل بطاقة فيتقطّع التمرير ويرتجف
+    final checkers = RepaintBoundary(
+      child: Stack(children: [
+        for (final (p, n, side) in s)
+          for (int k = 0; k < n; k++)
+            Positioned(
+              left: g.checker(p, k, n).dx - g.d / 2,
+              top: g.checker(p, k, n).dy - g.d / 2,
+              width: g.d,
+              height: g.d,
+              child: CustomPaint(painter: CheckerPainter(style: _set.of(side))),
+            ),
+      ]),
+    );
     return Center(
       child: SizedBox.fromSize(
         size: size,
-        child: AnimatedBuilder(
-          animation: _fx,
-          builder: (_, __) => Stack(children: [
-            CustomPaint(
+        child: Stack(children: [
+          RepaintBoundary(
+            child: CustomPaint(
                 size: size,
                 painter: BackgammonBoardPainter(g,
                     theme: _board, wood: StoreService().defaultWoodImage)),
-            if (_board.animated)
-              CustomPaint(
-                  size: size,
-                  painter: BoardEffectPainter(g, _board, _fx.value)),
-            for (final (p, n, side) in s)
-              for (int k = 0; k < n; k++)
-                Positioned(
-                  left: g.checker(p, k, n).dx - g.d / 2,
-                  top: g.checker(p, k, n).dy - g.d / 2,
-                  width: g.d,
-                  height: g.d,
-                  child: CustomPaint(
-                      painter: CheckerPainter(style: _set.of(side))),
-                ),
-          ]),
-        ),
+          ),
+          if (_board.animated)
+            RepaintBoundary(
+              child: AnimatedBuilder(
+                animation: _fx,
+                builder: (_, __) => CustomPaint(
+                    size: size,
+                    painter: BoardEffectPainter(g, _board, _fx.value)),
+              ),
+            ),
+          Positioned.fill(child: checkers),
+        ]),
       ),
     );
   }
 
   Widget _checkersPreview(double w, double h) {
     final d = math.min(h * 0.42, w / 4.2);
-    return AnimatedBuilder(
-      animation: _fx,
-      builder: (_, __) => Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-          gradient: RadialGradient(colors: [
-            BgThemes.classic.fieldColors[0],
-            BgThemes.classic.fieldColors[2],
-          ]),
-        ),
-        child: Stack(
+    Widget pieces(double t) => Stack(
           alignment: Alignment.center,
           children: [
             for (int side = 0; side < 2; side++)
@@ -117,12 +119,25 @@ class _BgSkinPreviewState extends State<BgSkinPreview>
                   width: d,
                   height: d,
                   child: CustomPaint(
-                    painter: CheckerPainter(
-                        style: _set.of(side), time: _fx.value, seed: k),
+                    painter:
+                        CheckerPainter(style: _set.of(side), time: t, seed: k),
                   ),
                 ),
           ],
-        ),
+        );
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        gradient: RadialGradient(colors: [
+          BgThemes.classic.fieldColors[0],
+          BgThemes.classic.fieldColors[2],
+        ]),
+      ),
+      child: RepaintBoundary(
+        child: _set.animated
+            ? AnimatedBuilder(
+                animation: _fx, builder: (_, __) => pieces(_fx.value))
+            : pieces(0),
       ),
     );
   }
