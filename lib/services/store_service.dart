@@ -853,7 +853,9 @@ class StoreService extends ChangeNotifier {
   /// تصاميم غرفة الكونكان — مشاهد كاملة (1024×436) بنفس تخطيط
   /// الغرفة الافتراضية فتعمل عليها مناطق اللعب المحسوبة نفسها —
   /// جهّز أي منها ليستبدل غرفة اللعب بأكملها فوراً
-  // كل الغرف بالمجوهرات (≥100) — الذهبية والزجاجية والحصيرية أغلاها
+  // السكنات القديمة أُزيلت من المتجر — تُضاف الجديدة من لوحة الأدمن
+  // (Firestore). تبقى «الكلاسيكية» الافتراضية المجانية مرجعاً للعرض
+  // عند عدم تجهيز أي سكن
   static List<StoreItem> _roomItems() => [
         for (final r in [
           (
@@ -862,76 +864,6 @@ class StoreService extends ChangeNotifier {
             0,
             StoreCurrency.gems,
             'assets/images/okey_room.png'
-          ),
-          (
-            'gold',
-            'غرفة الذهب الملكي'.tr,
-            250,
-            StoreCurrency.gems,
-            'assets/images/rooms/room_gold.png'
-          ),
-          (
-            'teal',
-            'غرفة الفيروز'.tr,
-            120,
-            StoreCurrency.gems,
-            'assets/images/rooms/room_teal.png'
-          ),
-          (
-            'glass',
-            'غرفة الكريستال'.tr,
-            300,
-            StoreCurrency.gems,
-            'assets/images/rooms/room_glass.png'
-          ),
-          (
-            'silver',
-            'غرفة الصاج الفضي'.tr,
-            180,
-            StoreCurrency.gems,
-            'assets/images/rooms/room_silver.png'
-          ),
-          (
-            'amber',
-            'غرفة العنبر'.tr,
-            250,
-            StoreCurrency.gems,
-            'assets/images/rooms/room_amber.png'
-          ),
-          (
-            'green',
-            'الغرفة الخضراء'.tr,
-            100,
-            StoreCurrency.gems,
-            'assets/images/rooms/room_green.jpg'
-          ),
-          (
-            'navy',
-            'الغرفة الكحلية'.tr,
-            120,
-            StoreCurrency.gems,
-            'assets/images/rooms/room_navy.jpg'
-          ),
-          (
-            'emerald',
-            'غرفة الزمرد الملكية'.tr,
-            150,
-            StoreCurrency.gems,
-            'assets/images/rooms/room_emerald.png'
-          ),
-          (
-            'beige',
-            'غرفة الرمال'.tr,
-            100,
-            StoreCurrency.gems,
-            'assets/images/rooms/room_beige.png'
-          ),
-          (
-            'bronze',
-            'الغرفة البرونزية'.tr,
-            120,
-            StoreCurrency.gems,
-            'assets/images/rooms/room_bronze.jpg'
           ),
         ])
           StoreItem(

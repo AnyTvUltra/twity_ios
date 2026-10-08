@@ -65,6 +65,12 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   late Animation<double> _drawCurve;
   OkeyTile? _animatingDrawTile;
 
+  // أنيميشن أخذ الحجر المرمي — يطير من الكومة إلى حامل الآخذ
+  late AnimationController _takeAnimController;
+  late Animation<double> _takeCurve;
+  OkeyTile? _animatingTakeTile;
+  int _takeToSeat = -1;
+
   // دورة تأثير سكن الطاولة المتحرك (لافا/سديم/أورورا...)
   late AnimationController _tableFxController;
 
@@ -301,6 +307,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     _engine = OkeyEngine(
         rules: widget.rules,
         turnDuration: GameSettingsService().defaultTurnTimer);
+    _engine.onDiscardTaken = _onDiscardTaken;
     _syncHumanProfile();
 
     SystemChrome.setPreferredOrientations([
@@ -336,6 +343,15 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     );
     _drawCurve = CurvedAnimation(
       parent: _drawAnimController,
+      curve: Curves.easeOutCubic,
+    );
+
+    _takeAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 360),
+    );
+    _takeCurve = CurvedAnimation(
+      parent: _takeAnimController,
       curve: Curves.easeOutCubic,
     );
 
@@ -850,6 +866,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     GameBubble.handler = null;
     _discardAnimController.dispose();
     _drawAnimController.dispose();
+    _takeAnimController.dispose();
     _tableFxController.dispose();
     _dealCtrl.dispose();
 
@@ -1283,6 +1300,60 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       setState(() => _animatingDrawTile = null);
       _drawAnimController.reset();
     });
+  }
+
+  /// بوت أخذ آخر حجر مرمي: الحجر يطير من كومة الرمي إلى حامل الآخذ
+  /// فلا يبدو اختفاؤه خطأً — يُستدعى من المحرك لحظة الأخذ
+  void _onDiscardTaken(int takerIndex, OkeyTile tile) {
+    if (!mounted || _dealing) return;
+    OkeyAudio.playTileDraw();
+    setState(() {
+      _animatingTakeTile = tile;
+      _takeToSeat = _seatOfPlayer(takerIndex);
+    });
+    _takeAnimController.forward(from: 0).then((_) {
+      if (mounted) {
+        setState(() {
+          _animatingTakeTile = null;
+          _takeToSeat = -1;
+        });
+      }
+      _takeAnimController.reset();
+    });
+  }
+
+  /// الحجر الطائر من كومة الرمي إلى حامل اللاعب الذي أخذه
+  Widget _buildTakeFlight() {
+    final from = _keyCenter(_discardKey);
+    final to = _seatRackCenter(_takeToSeat, _tableRect(_sceneSize), _sceneSize);
+    return AnimatedBuilder(
+      animation: _takeCurve,
+      builder: (context, _) {
+        final t = _takeCurve.value;
+        final x = from.dx + (to.dx - from.dx) * t;
+        final arcLift = math.sin(t * math.pi) * 40;
+        final y = from.dy + (to.dy - from.dy) * t - arcLift;
+        return Positioned(
+          left: x - 14,
+          top: y - 19,
+          child: IgnorePointer(
+            child: Transform.rotate(
+              angle: -0.15 * math.sin(t * math.pi),
+              child: Material(
+                color: Colors.transparent,
+                elevation: 8,
+                child: OkeyTileWidget(
+                  tile: _animatingTakeTile,
+                  isDragging: true,
+                  width: 28,
+                  height: 38,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   /// سحب بالإفلات: من الرزمة أو كومة اليسار مباشرة إلى خانة في الرف
@@ -1830,6 +1901,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                       },
                     ),
 
+                  // ═══ أنيميشن حجر مأخوذ من كومة الرمي نحو حامل الآخذ ═══
+                  if (_animatingTakeTile != null) _buildTakeFlight(),
+
                   // ═══════ أنيميشن توزيع الأحجار الافتتاحي ═══════
                   if (_dealing) _buildDealOverlay(),
                 ],
@@ -1947,22 +2021,22 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           ),
         ),
 
-        // صورة الخصم الأيسر + اسمه — فوق حامله الخشبي المائل المرسوم
-        // في الصورة (الجزء العلوي منه، بعيداً عن منطقة بيراته أسفله)
+        // صورة الخصم الأيسر + اسمه — أعلى مسند كنبته اليسرى المائل
+        // (الموضع المحدد بالمربع البرتقالي في مراجعة المستخدم)
         Positioned(
-          left: _roomScene ? imgRect.left + imgRect.width * 0.105 - 40 : 10,
+          left: _roomScene ? imgRect.left + imgRect.width * 0.14 - 40 : 10,
           top: _roomScene
-              ? imgRect.top + imgRect.height * 0.33 - 30
+              ? imgRect.top + imgRect.height * 0.185 - 30
               : tbl.center.dy - 24,
           width: _roomScene ? 80 : null,
           child: Center(child: _seatBadge(3)),
         ),
-        // صورة الخصم الأيمن + اسمه — فوق حامله الخشبي المائل المرسوم
+        // صورة الخصم الأيمن + اسمه — أعلى مسند كنبته اليمنى المائل
         Positioned(
-          left: _roomScene ? imgRect.left + imgRect.width * 0.895 - 40 : null,
+          left: _roomScene ? imgRect.left + imgRect.width * 0.885 - 40 : null,
           right: _roomScene ? null : 10,
           top: _roomScene
-              ? imgRect.top + imgRect.height * 0.33 - 30
+              ? imgRect.top + imgRect.height * 0.175 - 30
               : tbl.center.dy - 24,
           width: _roomScene ? 80 : null,
           child: Center(child: _seatBadge(1)),
@@ -2153,38 +2227,120 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     final need = _engine.rules.openingPoints;
     final pts = _engine.livePoints;
     final opened = widget.rummyMode || _engine.players[0].hasOpened;
+    final ready =
+        _engine.humanCanLayMelds && (opened || need <= 0 || pts >= need);
     final prog = opened || need <= 0 ? 1.0 : (pts / need).clamp(0.0, 1.0);
+    // نفس عرض زر الإعدادات (46) فيتمركز الزر والدائرة على محورٍ واحد
     return SizedBox(
-      width: 52,
-      height: 52,
-      child: CustomPaint(
-        painter: _OpeningRingPainter(prog),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (opened)
-                const Icon(Icons.check_rounded,
-                    color: Color(0xFF4ADE80), size: 16)
-              else
-                Text('${_engine.remainingOpeningPoints}',
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w900,
-                        height: 1)),
-              const SizedBox(height: 1),
-              Text('المطلوب'.tr,
-                  style: const TextStyle(
-                      color: Colors.white60,
-                      fontSize: 6.5,
-                      fontWeight: FontWeight.w700,
-                      height: 1)),
-            ],
+      width: 46,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // العدّاد الحالي بقرص صغير فوق الزر
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+            decoration: BoxDecoration(
+              color: const Color(0xCC0F172A),
+              borderRadius: BorderRadius.circular(9),
+              border: Border.all(color: const Color(0x40FFFFFF), width: 0.8),
+            ),
+            child: Text('$pts',
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                    height: 1)),
           ),
-        ),
+          const SizedBox(height: 4),
+          if (ready)
+            // بلغت نقاط الافتتاح: العداد يتحول لزر «نزول» يُنزّل Per الجاهز
+            GestureDetector(
+              onTap: _layReadyPer,
+              child: Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0xFF34D399), Color(0xFF059669)]),
+                  border:
+                      Border.all(color: const Color(0xFFA7F3D0), width: 1.4),
+                  boxShadow: const [
+                    BoxShadow(
+                        color: Color(0x6634D399),
+                        blurRadius: 10,
+                        spreadRadius: 1),
+                  ],
+                ),
+                child: Center(
+                  child: Text('نزول'.tr,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          height: 1)),
+                ),
+              ),
+            )
+          else
+            SizedBox(
+              width: 52,
+              height: 52,
+              child: CustomPaint(
+                painter: _OpeningRingPainter(prog),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('${_engine.remainingOpeningPoints}',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w900,
+                              height: 1)),
+                      const SizedBox(height: 1),
+                      Text('المطلوب'.tr,
+                          style: const TextStyle(
+                              color: Colors.white60,
+                              fontSize: 6.5,
+                              fontWeight: FontWeight.w700,
+                              height: 1)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
+  }
+
+  /// زر «نزول»: يُنزّل Per الصحيح المميّز على الرف — نفس مسار إفلات
+  /// منطقة النزول تماماً، وإن رتّب اللاعب أكثر من Per يُنزَّل أولها
+  void _layReadyPer() {
+    if (_dealing) return;
+    if (_engine.currentTurnIndex != 0) {
+      _showGameNotice('ليس دورك الآن!'.tr);
+      return;
+    }
+    if (!_engine.humanCanLayMelds) {
+      _showGameNotice('أنت تلعب {} — لا نزول على الطاولة'
+          .trp([_engine.players[0].playStyle.label]));
+      return;
+    }
+    final highlighted = _engine.getHighlightedSlotIndices();
+    if (highlighted.isEmpty) {
+      _showGameNotice('رتّب أحجارك على الاستكانة ثم اضغط نزول'.tr);
+      return;
+    }
+    if (_engine.layMeldContainingSlot(highlighted.first)) {
+      AppHaptics.medium();
+    } else {
+      _showGameNotice('هذه الأحجار لا تكوّن Per صحيحاً'.tr);
+    }
   }
 
   /// هل نقطة الإفلات فوق سطح الطاولة فعلاً (فوق مستوى الاستكانة)؟
@@ -2734,100 +2890,107 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         }
       ),
     ];
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        // عمود الأدوات — ينبثق للأعلى عند الفتح
-        AnimatedSize(
-          duration: const Duration(milliseconds: 260),
-          curve: Curves.easeOutBack,
-          alignment: Alignment.bottomCenter,
-          child: !_dockExpanded
-              ? const SizedBox.shrink()
-              : Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Container(
-                    width: 60,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xEE151922),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: Colors.white12),
-                      boxShadow: [
-                        BoxShadow(
-                            color: Colors.black.withOpacity(0.5),
-                            blurRadius: 12,
-                            offset: const Offset(0, 5)),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        for (var i = 0; i < items.length; i++) ...[
-                          _buildDockButton(
-                            icon: items[i].$1,
-                            label: items[i].$2,
-                            onTap: () {
-                              setState(() => _dockExpanded = false);
-                              items[i].$3();
-                            },
-                          ),
-                          if (i < items.length - 1)
-                            _buildDockDivider(vertical: true),
+    // عرض ثابت 46 = عرض زر الإعدادات نفسه — عمود الأدوات المنبثق
+    // (60) يتمركز فوقه فيبقى الترس ثابتاً لا يزاح يميناً أو يساراً
+    // عند الفتح/الإغلاق، ويظل محاذياً تماماً لدائرة العداد فوقه
+    return SizedBox(
+      width: 46,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // عمود الأدوات — ينبثق للأعلى عند الفتح
+          AnimatedSize(
+            duration: const Duration(milliseconds: 260),
+            curve: Curves.easeOutBack,
+            alignment: Alignment.bottomCenter,
+            child: !_dockExpanded
+                ? const SizedBox.shrink()
+                : Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Container(
+                      width: 60,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 2, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xEE151922),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Colors.white12),
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.black.withOpacity(0.5),
+                              blurRadius: 12,
+                              offset: const Offset(0, 5)),
                         ],
-                      ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (var i = 0; i < items.length; i++) ...[
+                            _buildDockButton(
+                              icon: items[i].$1,
+                              label: items[i].$2,
+                              onTap: () {
+                                setState(() => _dockExpanded = false);
+                                items[i].$3();
+                              },
+                            ),
+                            if (i < items.length - 1)
+                              _buildDockDivider(vertical: true),
+                          ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-        ),
-        // زر الإعدادات الرئيسي — يدور ربع دورة عند الانفتاح
-        GestureDetector(
-          onTap: () {
-            AppHaptics.selection();
-            OkeyAudio.playButtonClick();
-            setState(() => _dockExpanded = !_dockExpanded);
-          },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: _dockExpanded
-                  ? const Color(0xFF2A3348)
-                  : const Color(0xEE151922),
-              border: Border.all(
+          ),
+          // زر الإعدادات الرئيسي — يدور ربع دورة عند الانفتاح
+          GestureDetector(
+            onTap: () {
+              AppHaptics.selection();
+              OkeyAudio.playButtonClick();
+              setState(() => _dockExpanded = !_dockExpanded);
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
                 color: _dockExpanded
-                    ? const Color(0xFF4ADE80).withOpacity(0.8)
-                    : Colors.white24,
-                width: _dockExpanded ? 1.6 : 1.0,
-              ),
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.black.withOpacity(0.55),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4)),
-                if (_dockExpanded)
+                    ? const Color(0xFF2A3348)
+                    : const Color(0xEE151922),
+                border: Border.all(
+                  color: _dockExpanded
+                      ? const Color(0xFF4ADE80).withOpacity(0.8)
+                      : Colors.white24,
+                  width: _dockExpanded ? 1.6 : 1.0,
+                ),
+                boxShadow: [
                   BoxShadow(
-                      color: const Color(0xFF4ADE80).withOpacity(0.3),
-                      blurRadius: 14),
-              ],
-            ),
-            child: AnimatedRotation(
-              turns: _dockExpanded ? 0.25 : 0,
-              duration: const Duration(milliseconds: 260),
-              curve: Curves.easeOutBack,
-              child: Icon(
-                _dockExpanded ? Icons.close_rounded : Icons.settings_rounded,
-                color: _dockExpanded ? const Color(0xFF86EFAC) : Colors.white70,
-                size: 21,
+                      color: Colors.black.withOpacity(0.55),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4)),
+                  if (_dockExpanded)
+                    BoxShadow(
+                        color: const Color(0xFF4ADE80).withOpacity(0.3),
+                        blurRadius: 14),
+                ],
+              ),
+              child: AnimatedRotation(
+                turns: _dockExpanded ? 0.25 : 0,
+                duration: const Duration(milliseconds: 260),
+                curve: Curves.easeOutBack,
+                child: Icon(
+                  _dockExpanded ? Icons.close_rounded : Icons.settings_rounded,
+                  color:
+                      _dockExpanded ? const Color(0xFF86EFAC) : Colors.white70,
+                  size: 21,
+                ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -3500,6 +3663,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
               );
             },
           ),
+
+        // حجر مأخوذ من كومة الرمي نحو حامل الآخذ
+        if (_animatingTakeTile != null) _buildTakeFlight(),
       ],
     );
   }

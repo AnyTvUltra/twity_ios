@@ -469,6 +469,10 @@ class OkeyEngine extends ChangeNotifier {
   OkeyTile? lastDiscardTile;
   int lastDiscardPlayer = -1;
 
+  /// حدث لحظي: بوت أخذ آخر حجر مرمي من كومة اللاعب السابق — تشغّله
+  /// الواجهة لتحريك الحجر نحو حامل الآخذ بدل أن يبدو وكأنه اختفى
+  void Function(int takerIndex, OkeyTile tile)? onDiscardTaken;
+
   void swapTiles(int slotA, int slotB) {
     final temp = players[0].rackTiles[slotA];
     players[0].rackTiles[slotA] = players[0].rackTiles[slotB];
@@ -824,6 +828,9 @@ class OkeyEngine extends ChangeNotifier {
           lastDiscardTile = null;
           lastDiscardPlayer = -1;
         }
+        // أُشعر الواجهة لتحريك الحجر إلى حامل الآخذ — بلا هذه الحركة
+        // يبدو الحجر وكأنه اختفى فجأة من الطاولة
+        onDiscardTaken?.call(currentTurnIndex, drawnTile);
       } else {
         // رزمة فارغة؟ أعد خلط المرميات أولاً
         if (drawDeck.isEmpty) _refillDeckFromDiscards();
