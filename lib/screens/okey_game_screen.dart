@@ -154,7 +154,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   // الاستكانة فلا يُحسب الإفلات فوق الاستكانة نفسها رمياً
   static const _roomTableF = Rect.fromLTWH(0.080, 0.100, 0.840, 0.475);
   // استكانتي: الاستكانة الخشبية العريضة في أسفل الصورة — القضيب
-  // العلوي (الصف العلوي قاعدته 0.750) والوجه الخشبي + الشريط
+  // العلوي (الصف العلوي قاعدته 0.780) والوجه الخشبي + الشريط
   // المزخرف الأمامي (الصف السفلي قاعدته 0.935)
   static const _roomRackMineF = Rect.fromLTWH(0.155, 0.585, 0.710, 0.415);
   // حامل المقابل — الشريط الخشبي الداكن أسفل الكنبة الخلفية مباشرة
@@ -169,8 +169,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   // كلها مفصولة عن منطقة الوسط وعن بعضها بلا أي تداخل
   static const _roomMeldMineF = Rect.fromLTWH(0.200, 0.500, 0.600, 0.085);
   static const _roomMeldTopF = Rect.fromLTWH(0.360, 0.150, 0.280, 0.085);
-  static const _roomMeldLeftF = Rect.fromLTWH(0.180, 0.190, 0.140, 0.260);
-  static const _roomMeldRightF = Rect.fromLTWH(0.680, 0.190, 0.140, 0.260);
+  static const _roomMeldLeftF = Rect.fromLTWH(0.180, 0.120, 0.140, 0.370);
+  static const _roomMeldRightF = Rect.fromLTWH(0.680, 0.120, 0.140, 0.370);
   // مركز السجادة — المؤشر + رزمة السحب + كومة الرمي مجتمعين في وسط
   // الطاولة، ومحاطون بفجوة واضحة عن مناطق البيرات الأربع كلها
   static const _roomCenterF = Rect.fromLTWH(0.365, 0.300, 0.270, 0.155);
@@ -1199,14 +1199,14 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     final s = _sceneSize;
     if (_roomScene) {
       // نفس معادلة ghostMode في OkeyIstakaWidget — يجب أن تبقى متطابقة:
-      // الصف العلوي قاعدته عند 0.750 من الصورة (واقف في مجرة القضيب)
+      // الصف العلوي قاعدته عند 0.780 من الصورة (واقف في مجرة القضيب)
       // والسفلي عند 0.935 (على الشريط المزخرف الأمامي)
       final zone = _mapToImg(_roomRackMineF, s);
       final slotW = ((zone.width - 24) / 14).clamp(20.0, 40.0);
       final tileH = slotW * 1.28 * 1.10;
       final x0 = zone.left + (zone.width - slotW * 14) / 2;
       final x = x0 + slotW * (slot % 14 + 0.5);
-      final row0BaseY = zone.bottom - zone.height * (1.0 - 0.750) / 0.415;
+      final row0BaseY = zone.bottom - zone.height * (1.0 - 0.780) / 0.415;
       final row1BaseY = zone.bottom - zone.height * (1.0 - 0.935) / 0.415;
       final y = slot < 14 ? row0BaseY - tileH / 2 : row1BaseY - tileH / 2;
       return Offset(x, y);
@@ -1971,7 +1971,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         // وتختفي مؤقتاً عندما ينبثق عمود الأدوات فوق الزر نفسه
         if (!_dockExpanded)
           Positioned(
-            right: _safePadR,
+            right: _safePadR * 0.3,
             bottom: 60 + _safePadB,
             child: _buildRoundStats(),
           ),
@@ -1991,7 +1991,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           ),
         ),
         Positioned(
-          right: _safePadR,
+          right: _safePadR * 0.3,
           bottom: 8 + _safePadB,
           child: _buildLandscapeDock(),
         ),
@@ -2482,9 +2482,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     // كل توزيعات الصفوف × لفّ البيرات الطويلة على أسطر قصيرة (≥3 أحجار
     // بالسطر)، ونختار التوزيع الذي يُبقي الأحجار بأكبر حجم ممكن. اللفّ
     // يُعتمد فقط إن كسب حجماً ملحوظاً (8%) حتى لا تتقطع البيرات بلا داع
-    // الجانبان بحجم حجر ثابت معتدل (كما يمين الشاشة في التصميم)
-    // ومنطقتي: بيراتي دائماً على سطرٍ طولي واحد أمامي — لا بير فوق بير
-    final cap = (seat == 1 || seat == 3) ? 0.95 : _meldMaxScale;
+    // الجانبان بحجم حجر ثابت بحجم بيرات الخصم الأمامي (~0.65) —
+    // لا يتغيّر مع نزول بيرات جديدة أو صرف أحجار عليها، ولا يصغّر
+    // إلا إذا تجاوز المحتوى منطقته الممدودة فعلاً
+    final cap = (seat == 1 || seat == 3) ? 0.65 : _meldMaxScale;
     ({
       double scale,
       List<List<int>> lines,
