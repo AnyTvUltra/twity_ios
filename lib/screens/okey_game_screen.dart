@@ -154,7 +154,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   // الاستكانة فلا يُحسب الإفلات فوق الاستكانة نفسها رمياً
   static const _roomTableF = Rect.fromLTWH(0.080, 0.100, 0.840, 0.475);
   // استكانتي: الاستكانة الخشبية العريضة في أسفل الصورة — القضيب
-  // العلوي (الصف العلوي قاعدته 0.735) والوجه الخشبي + الشريط
+  // العلوي (الصف العلوي قاعدته 0.750) والوجه الخشبي + الشريط
   // المزخرف الأمامي (الصف السفلي قاعدته 0.935)
   static const _roomRackMineF = Rect.fromLTWH(0.155, 0.585, 0.710, 0.415);
   // حامل المقابل — الشريط الخشبي الداكن أسفل الكنبة الخلفية مباشرة
@@ -168,9 +168,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   // الجانبين على شريطي السجادة الجانبيين بمحاذاة ذراعيهما.
   // كلها مفصولة عن منطقة الوسط وعن بعضها بلا أي تداخل
   static const _roomMeldMineF = Rect.fromLTWH(0.200, 0.500, 0.600, 0.085);
-  static const _roomMeldTopF = Rect.fromLTWH(0.360, 0.200, 0.280, 0.080);
-  static const _roomMeldLeftF = Rect.fromLTWH(0.210, 0.190, 0.140, 0.260);
-  static const _roomMeldRightF = Rect.fromLTWH(0.650, 0.190, 0.140, 0.260);
+  static const _roomMeldTopF = Rect.fromLTWH(0.360, 0.150, 0.280, 0.085);
+  static const _roomMeldLeftF = Rect.fromLTWH(0.180, 0.190, 0.140, 0.260);
+  static const _roomMeldRightF = Rect.fromLTWH(0.680, 0.190, 0.140, 0.260);
   // مركز السجادة — المؤشر + رزمة السحب + كومة الرمي مجتمعين في وسط
   // الطاولة، ومحاطون بفجوة واضحة عن مناطق البيرات الأربع كلها
   static const _roomCenterF = Rect.fromLTWH(0.365, 0.300, 0.270, 0.155);
@@ -1199,14 +1199,14 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     final s = _sceneSize;
     if (_roomScene) {
       // نفس معادلة ghostMode في OkeyIstakaWidget — يجب أن تبقى متطابقة:
-      // الصف العلوي قاعدته عند 0.735 من الصورة (واقف في مجرة القضيب)
+      // الصف العلوي قاعدته عند 0.750 من الصورة (واقف في مجرة القضيب)
       // والسفلي عند 0.935 (على الشريط المزخرف الأمامي)
       final zone = _mapToImg(_roomRackMineF, s);
       final slotW = ((zone.width - 24) / 14).clamp(20.0, 40.0);
       final tileH = slotW * 1.28 * 1.10;
       final x0 = zone.left + (zone.width - slotW * 14) / 2;
       final x = x0 + slotW * (slot % 14 + 0.5);
-      final row0BaseY = zone.bottom - zone.height * (1.0 - 0.735) / 0.415;
+      final row0BaseY = zone.bottom - zone.height * (1.0 - 0.750) / 0.415;
       final row1BaseY = zone.bottom - zone.height * (1.0 - 0.935) / 0.415;
       final y = slot < 14 ? row0BaseY - tileH / 2 : row1BaseY - tileH / 2;
       return Offset(x, y);
@@ -1878,10 +1878,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           left: 60 + _safePadL,
           child: _buildStyleButtons(),
         ),
-        // صورة الخصم الأمامي + اسمه — فوق حامله الخشبي المرسوم في
-        // الصورة مباشرة، وشريحة الدور تتراكب جانباً
+        // صورة الخصم الأمامي + اسمه — مرفوعة فوق شريط حامله على ظهر
+        // الكنبة الخلفية، وشريحة الدور تتراكب جانباً
         Positioned(
-          top: _roomScene ? imgRect.top + imgRect.height * 0.125 - 30 : 2,
+          top: _roomScene ? imgRect.top + imgRect.height * 0.075 - 30 : 2,
           left: _roomScene ? imgRect.left + imgRect.width * 0.5 - 40 : null,
           right: _roomScene ? null : 0,
           width: _roomScene ? 80 : null,
@@ -1950,7 +1950,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         // صورة الخصم الأيسر + اسمه — فوق حامله الخشبي المائل المرسوم
         // في الصورة (الجزء العلوي منه، بعيداً عن منطقة بيراته أسفله)
         Positioned(
-          left: _roomScene ? imgRect.left + imgRect.width * 0.14 - 40 : 10,
+          left: _roomScene ? imgRect.left + imgRect.width * 0.105 - 40 : 10,
           top: _roomScene
               ? imgRect.top + imgRect.height * 0.33 - 30
               : tbl.center.dy - 24,
@@ -1959,7 +1959,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         ),
         // صورة الخصم الأيمن + اسمه — فوق حامله الخشبي المائل المرسوم
         Positioned(
-          left: _roomScene ? imgRect.left + imgRect.width * 0.86 - 40 : null,
+          left: _roomScene ? imgRect.left + imgRect.width * 0.895 - 40 : null,
           right: _roomScene ? null : 10,
           top: _roomScene
               ? imgRect.top + imgRect.height * 0.33 - 30
@@ -1967,20 +1967,11 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           width: _roomScene ? 80 : null,
           child: Center(child: _seatBadge(1)),
         ),
-        // صورتي + اسمي — على الطرف الخشبي الأيسر من استكانتي عند فجوة
-        // الصفّين فلا تغطي أرقام الأحجار
-        if (_roomScene)
-          Positioned(
-            left: imgRect.left + imgRect.width * 0.15 - 40,
-            top: imgRect.top + imgRect.height * 0.77 - 30,
-            width: 80,
-            child: Center(child: _seatBadge(0)),
-          ),
         // عدّاد الفتح — دائرة فوق زر الإعدادات أسفل اليمين مباشرة،
         // وتختفي مؤقتاً عندما ينبثق عمود الأدوات فوق الزر نفسه
         if (!_dockExpanded)
           Positioned(
-            right: 5 + _safePadR,
+            right: _safePadR,
             bottom: 60 + _safePadB,
             child: _buildRoundStats(),
           ),
@@ -2000,7 +1991,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           ),
         ),
         Positioned(
-          right: 8 + _safePadR,
+          right: _safePadR,
           bottom: 8 + _safePadB,
           child: _buildLandscapeDock(),
         ),
@@ -2435,6 +2426,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
 
   /// تخطيط بيرات لاعب: صفوف من البيرات، وكل بير طويل يمكن لفّه على
   /// أسطر قصيرة (perLine حجر في السطر). يُعيد المقياس والتوزيع.
+  /// [maxScale] سقف التكبير — الجانبان محدودان بحجم ثابت حتى لا
+  /// تتضخم البيرات القليلة، ومنطقتي تسمح بالتكبير أكثر
   ({
     double scale,
     List<List<int>> lines,
@@ -2442,7 +2435,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     List<double> lineH,
     double usedW,
     double contentH
-  }) _packMelds(List<int> lens, int perLine, double wrapW, Size zone) {
+  }) _packMelds(List<int> lens, int perLine, double wrapW, Size zone,
+      {double maxScale = _meldMaxScale}) {
     const spacing = 8.0, rowGap = 7.0;
     final ws = [for (final n in lens) _meldWidth(math.min(n, perLine))];
     final hs = [
@@ -2468,7 +2462,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     final contentH =
         lineH.fold<double>(0, (s, h) => s + h) + rowGap * (lines.length - 1);
     final scale = math.min(
-        _meldMaxScale, math.min(zone.width / usedW, zone.height / contentH));
+        maxScale, math.min(zone.width / usedW, zone.height / contentH));
     return (
       scale: scale,
       lines: lines,
@@ -2488,6 +2482,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     // كل توزيعات الصفوف × لفّ البيرات الطويلة على أسطر قصيرة (≥3 أحجار
     // بالسطر)، ونختار التوزيع الذي يُبقي الأحجار بأكبر حجم ممكن. اللفّ
     // يُعتمد فقط إن كسب حجماً ملحوظاً (8%) حتى لا تتقطع البيرات بلا داع
+    // الجانبان بحجم حجر ثابت معتدل (كما يمين الشاشة في التصميم)
+    // ومنطقتي: بيراتي دائماً على سطرٍ طولي واحد أمامي — لا بير فوق بير
+    final cap = (seat == 1 || seat == 3) ? 0.95 : _meldMaxScale;
     ({
       double scale,
       List<List<int>> lines,
@@ -2497,17 +2494,22 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       double contentH
     })? best;
     var bestPer = maxLen;
-    for (var per = maxLen; per >= math.min(3, maxLen); per--) {
-      final ws = [for (final n in lens) _meldWidth(math.min(n, per))];
-      final widest = ws.reduce(math.max);
-      final total =
-          ws.fold<double>(0, (s, w) => s + w) + spacing * (ws.length - 1);
-      for (var wrapW = widest; wrapW <= total + 6; wrapW += 6) {
-        final p = _packMelds(lens, per, wrapW, zone.size);
-        final need = per == bestPer ? 1.001 : 1.08;
-        if (best == null || p.scale > best.scale * need) {
-          best = p;
-          bestPer = per;
+    if (seat == 0) {
+      best =
+          _packMelds(lens, maxLen, double.infinity, zone.size, maxScale: cap);
+    } else {
+      for (var per = maxLen; per >= math.min(3, maxLen); per--) {
+        final ws = [for (final n in lens) _meldWidth(math.min(n, per))];
+        final widest = ws.reduce(math.max);
+        final total =
+            ws.fold<double>(0, (s, w) => s + w) + spacing * (ws.length - 1);
+        for (var wrapW = widest; wrapW <= total + 6; wrapW += 6) {
+          final p = _packMelds(lens, per, wrapW, zone.size, maxScale: cap);
+          final need = per == bestPer ? 1.001 : 1.08;
+          if (best == null || p.scale > best.scale * need) {
+            best = p;
+            bestPer = per;
+          }
         }
       }
     }
