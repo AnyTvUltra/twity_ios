@@ -146,32 +146,34 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   static const String _roomImage = 'assets/images/okey_room.png';
   static const double _roomImgW = 1024, _roomImgH = 436;
 
-  // سجادة اللعب الوسطى — تنتهي فوق حافة الاستكانة حتى لا يُحسب
-  // الإفلات على أحجاري رمياً على "الطاولة"
-  static const _roomCarpetF = Rect.fromLTWH(0.300, 0.255, 0.405, 0.240);
-  // سطح الطاولة الخشبي الأمامي كاملاً — الإفلات أي مكان فوقه (وليس
-  // السجادة فقط) يُحسب رمياً للحجر على الطاولة
-  static const _roomTableF = Rect.fromLTWH(0.235, 0.235, 0.545, 0.355);
-  // استكانتي: الاتحاد العمودي لمنطقتي الأحجار — اللوح الغائر (الصف
-  // العلوي قاعدته 0.758) والشريط المزخرف الأمامي (الصف السفلي حتى 0.950)
-  static const _roomRackMineF = Rect.fromLTWH(0.235, 0.600, 0.540, 0.335);
-  // حامل المقابل — العارضة الخشبية الأفقية تحت الوسادة الخلفية مباشرة
-  static const _roomRackTopF = Rect.fromLTWH(0.365, 0.185, 0.270, 0.090);
-  // حاملا الجانبين (المسندان الخشبيان المائلان بين الوسائد والطاولة)
-  static const _roomRackLeftF = Rect.fromLTWH(0.255, 0.320, 0.075, 0.300);
-  static const _roomRackRightF = Rect.fromLTWH(0.670, 0.320, 0.075, 0.300);
+  // سجادة اللعب الوسطى — السجادة الكبيرة التي تغطي وسط الصورة في
+  // سكن الطاولة المكبّرة الجديد؛ تنتهي فوق حافة الاستكانة حتى لا
+  // يُحسب الإفلات على أحجاري رمياً على "الطاولة"
+  static const _roomCarpetF = Rect.fromLTWH(0.090, 0.100, 0.820, 0.515);
+  // سطح السجادة كاملاً لالتقاط الرمي — ينتهي عند أعلى سكة
+  // الاستكانة فلا يُحسب الإفلات فوق الاستكانة نفسها رمياً
+  static const _roomTableF = Rect.fromLTWH(0.080, 0.100, 0.840, 0.475);
+  // استكانتي: الاستكانة الخشبية العريضة في أسفل الصورة — القضيب
+  // العلوي (الصف العلوي قاعدته 0.735) والوجه الخشبي + الشريط
+  // المزخرف الأمامي (الصف السفلي قاعدته 0.935)
+  static const _roomRackMineF = Rect.fromLTWH(0.155, 0.585, 0.710, 0.415);
+  // حامل المقابل — الشريط الخشبي الداكن أسفل الكنبة الخلفية مباشرة
+  static const _roomRackTopF = Rect.fromLTWH(0.360, 0.110, 0.280, 0.045);
+  // حاملا الجانبين (ذراعا الكنبتين الجانبيتين الخشبيتان المائلتان)
+  static const _roomRackLeftF = Rect.fromLTWH(0.060, 0.120, 0.130, 0.420);
+  static const _roomRackRightF = Rect.fromLTWH(0.810, 0.120, 0.130, 0.420);
   // مناطق نزول البيرات — كل لاعب ينزل بيراته أمام حامله مباشرة حتى
   // تبقى سجادة المنتصف للسحب والرمي فقط: بيراتي ملاصقة لحافة
-  // استكانتي العليا، وبيرات المقابل تحت حامله الأفقي، وبيرات
-  // الجانبين على السجادة ملاصقة للحافة الداخلية لحامليهما المائلين.
-  // الأحجار تبقى على السجادة الفاتحة لا فوق الخشب الداكن فلا تختفي
-  static const _roomMeldMineF = Rect.fromLTWH(0.265, 0.490, 0.470, 0.105);
-  static const _roomMeldTopF = Rect.fromLTWH(0.375, 0.258, 0.250, 0.075);
-  static const _roomMeldLeftF = Rect.fromLTWH(0.305, 0.415, 0.105, 0.150);
-  static const _roomMeldRightF = Rect.fromLTWH(0.590, 0.415, 0.105, 0.150);
-  // مركز السجادة — المؤشر + رزمة السحب + كومة الرمي المفصولة. أوسع وأعلى
-  // قليلاً حتى تظهر الأحجار بمقاس أوضح (المناطق الجانبية لا تلمسها)
-  static const _roomCenterF = Rect.fromLTWH(0.396, 0.340, 0.208, 0.142);
+  // استكانتي العليا، وبيرات المقابل تحت شريطه الخشبي، وبيرات
+  // الجانبين على شريطي السجادة الجانبيين بمحاذاة ذراعيهما.
+  // كلها مفصولة عن منطقة الوسط وعن بعضها بلا أي تداخل
+  static const _roomMeldMineF = Rect.fromLTWH(0.200, 0.500, 0.600, 0.085);
+  static const _roomMeldTopF = Rect.fromLTWH(0.360, 0.200, 0.280, 0.080);
+  static const _roomMeldLeftF = Rect.fromLTWH(0.210, 0.190, 0.140, 0.260);
+  static const _roomMeldRightF = Rect.fromLTWH(0.650, 0.190, 0.140, 0.260);
+  // مركز السجادة — المؤشر + رزمة السحب + كومة الرمي مجتمعين في وسط
+  // الطاولة، ومحاطون بفجوة واضحة عن مناطق البيرات الأربع كلها
+  static const _roomCenterF = Rect.fromLTWH(0.365, 0.300, 0.270, 0.155);
   // حاشية التقاط هدف الرف حول منطقة الاستكانة — تلتقط الإفلات السريع
   // المتجاوز لحدودها (الإصبع يسبق الحجر المرئي) فيقع على أقرب خانة.
   // الحاشية السفلية أوسع بكثير: الحجر المرئي يطفو فوق الإصبع فيكون
@@ -447,7 +449,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       case 2:
         pos = Positioned(
             top: _roomScene
-                ? _imgRect(_sceneSize).top + _imgRect(_sceneSize).height * 0.145
+                ? _imgRect(_sceneSize).top + _imgRect(_sceneSize).height * 0.015
                 : t.top - 14,
             left: 0,
             right: 0,
@@ -1197,14 +1199,15 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     final s = _sceneSize;
     if (_roomScene) {
       // نفس معادلة ghostMode في OkeyIstakaWidget — يجب أن تبقى متطابقة:
-      // الصف العلوي قاعدته عند 0.758 من الصورة والسفلي عند أسفل المنطقة
+      // الصف العلوي قاعدته عند 0.735 من الصورة (واقف في مجرة القضيب)
+      // والسفلي عند 0.935 (على الشريط المزخرف الأمامي)
       final zone = _mapToImg(_roomRackMineF, s);
       final slotW = ((zone.width - 24) / 14).clamp(20.0, 40.0);
       final tileH = slotW * 1.28 * 1.10;
       final x0 = zone.left + (zone.width - slotW * 14) / 2;
       final x = x0 + slotW * (slot % 14 + 0.5);
-      final row0BaseY = zone.bottom - zone.height * (0.935 - 0.758) / 0.335;
-      final row1BaseY = zone.bottom - zone.height * (0.935 - 0.912) / 0.335;
+      final row0BaseY = zone.bottom - zone.height * (1.0 - 0.735) / 0.415;
+      final row1BaseY = zone.bottom - zone.height * (1.0 - 0.935) / 0.415;
       final y = slot < 14 ? row0BaseY - tileH / 2 : row1BaseY - tileH / 2;
       return Offset(x, y);
     }
@@ -1878,7 +1881,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         // صورة الخصم الأمامي + اسمه — فوق حامله الخشبي المرسوم في
         // الصورة مباشرة، وشريحة الدور تتراكب جانباً
         Positioned(
-          top: _roomScene ? imgRect.top + imgRect.height * 0.175 - 30 : 2,
+          top: _roomScene ? imgRect.top + imgRect.height * 0.125 - 30 : 2,
           left: _roomScene ? imgRect.left + imgRect.width * 0.5 - 40 : null,
           right: _roomScene ? null : 0,
           width: _roomScene ? 80 : null,
@@ -1947,28 +1950,29 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         // صورة الخصم الأيسر + اسمه — فوق حامله الخشبي المائل المرسوم
         // في الصورة (الجزء العلوي منه، بعيداً عن منطقة بيراته أسفله)
         Positioned(
-          left: _roomScene ? imgRect.left + imgRect.width * 0.265 - 40 : 10,
+          left: _roomScene ? imgRect.left + imgRect.width * 0.14 - 40 : 10,
           top: _roomScene
-              ? imgRect.top + imgRect.height * 0.32 - 30
+              ? imgRect.top + imgRect.height * 0.33 - 30
               : tbl.center.dy - 24,
           width: _roomScene ? 80 : null,
           child: Center(child: _seatBadge(3)),
         ),
         // صورة الخصم الأيمن + اسمه — فوق حامله الخشبي المائل المرسوم
         Positioned(
-          left: _roomScene ? imgRect.left + imgRect.width * 0.745 - 40 : null,
+          left: _roomScene ? imgRect.left + imgRect.width * 0.86 - 40 : null,
           right: _roomScene ? null : 10,
           top: _roomScene
-              ? imgRect.top + imgRect.height * 0.32 - 30
+              ? imgRect.top + imgRect.height * 0.33 - 30
               : tbl.center.dy - 24,
           width: _roomScene ? 80 : null,
           child: Center(child: _seatBadge(1)),
         ),
-        // صورتي + اسمي — على الطرف الخشبي الأيسر من استكانتي
+        // صورتي + اسمي — على الطرف الخشبي الأيسر من استكانتي عند فجوة
+        // الصفّين فلا تغطي أرقام الأحجار
         if (_roomScene)
           Positioned(
-            left: imgRect.left + imgRect.width * 0.212 - 40,
-            top: _mapToImg(_roomRackMineF, Size(sw, sh)).center.dy - 30,
+            left: imgRect.left + imgRect.width * 0.15 - 40,
+            top: imgRect.top + imgRect.height * 0.77 - 30,
             width: 80,
             child: Center(child: _seatBadge(0)),
           ),
