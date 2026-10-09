@@ -804,7 +804,14 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   Future<void> _initOnline() async {
     final uid = AuthService().currentUser?.uid ?? '';
     final room = await OkeyRoomService().getRoom(widget.roomId!);
-    if (!mounted || room == null) return;
+    if (!mounted) return;
+    if (room == null) {
+      // وثيقة الغرفة غير موجودة/مقروءة (حُذفت أو انتهت أثناء
+      // الانتقال) — امحُ مؤشر العودة وارجع للوبي بدل شاشة ميتة
+      unawaited(AuthService().setActiveRoom('', ''));
+      Navigator.of(context).pop();
+      return;
+    }
 
     _room = room;
     final meIdx = room.players.indexWhere((p) => p.uid == uid);
@@ -861,10 +868,16 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       // موجودة = أعدتُ فتح التطبيق وسط جولة — استعد الحالة
       // الكاملة بدل توزيع جديد يمحو الجولة الجارية
       if (room.status == 'playing') {
-        final saved = await OkeyRoomService().loadHostState(widget.roomId!);
-        if (saved != null && mounted) {
-          _engine.loadHostState(saved);
-          _dealing = false; // التوزيع انتهى قبل الانقطاع
+        try {
+          final saved = await OkeyRoomService().loadHostState(widget.roomId!);
+          if (saved != null && mounted) {
+            _engine.loadHostState(saved);
+            _dealing = false; // التوزيع انتهى قبل الانقطاع
+          }
+        } catch (e) {
+          // حالة محفوظة فاسدة (صيغة قديمة/بيانات ناقصة) —
+          // المحرك أصلاً وزّع توزيعة جديدة في منشئه فنكمل بها
+          debugPrint('loadHostState failed, fresh deal used: $e');
         }
       }
 
@@ -1019,6 +1032,12 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     if (!mounted) return;
     _room = room;
     _roomPlayerMaps = {for (final p in room.players) p.seatIndex: p.toMap()};
+
+    // الغرفة انتهت رسمياً — امحُ مؤشر «جولة جارية» من ملفي فوراً
+    // بدل انتظار dispose (الذي قد لا يُستدعى إن مات التطبيق)
+    if (room.status == 'finished' && !_isSpectator) {
+      unawaited(AuthService().setActiveRoom('', ''));
+    }
 
     // الشات: رسالة جديدة من لاعب آخر → فقاعة فوق استكانته
     final chat = room.chat;

@@ -441,7 +441,16 @@ class OkeyRoomService {
           .get();
       for (final d in q.docs) {
         final r = OkeyRoom.fromDoc(d);
-        if (r.players.any((p) => p.uid == uid)) return r;
+        if (!r.players.any((p) => p.uid == uid)) continue;
+        // غرفة جثّة: المضيف يحدّث turnStartTime مع كل لقطة ينشرها،
+        // فغياب النبض >10د يعني أن تطبيقه مات قبل إنهاء الجولة.
+        // امحُ مؤشر العودة بدل إحياء غرفة لا يديرها أحد
+        final lastBeat = r.turnStartTime ?? r.createdAt;
+        if (DateTime.now().difference(lastBeat).inMinutes > 10) {
+          unawaited(AuthService().setActiveRoom('', ''));
+          continue;
+        }
+        return r;
       }
       return null;
     } catch (e) {
