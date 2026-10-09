@@ -357,7 +357,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           turnDuration: GameSettingsService().defaultTurnTimer);
       _engine.onDiscardTaken = _onDiscardTaken;
       _syncHumanProfile();
-      _initOnline();
+      // خطأ داخلي في التهيئة (بيانات وثيقة فاسدة مثلاً) يُسجَّل
+      // ولا يقتل التطبيق — أونلاين معطوب أفضل من شاشة سوداء
+      unawaited(_initOnline()
+          .catchError((Object e) => debugPrint('_initOnline failed: $e')));
     } else {
       _engine = OkeyEngine(
           rules: widget.rules,
@@ -873,6 +876,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           p.seatIndex: p.uid
       };
       for (final rp in room.players) {
+        // وثيقة فاسدة قد تحمل مقعداً خارج النطاق — لا تسقِط اللعبة
+        if (rp.seatIndex < 0 || rp.seatIndex > 3) continue;
         final p = _engine.players[rp.seatIndex];
         if (!rp.isBot) {
           p.name = rp.name;
@@ -886,8 +891,12 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       _engine.players[0].isHuman = true;
       _syncHumanProfile();
       _engine.addListener(_hostSyncChanged);
-      _movesSub =
-          OkeyRoomService().movesStream(widget.roomId!).listen(_consumeMoves);
+      _movesSub = OkeyRoomService().movesStream(widget.roomId!).listen(
+          _consumeMoves,
+          // رفض قواعد الأمان أو انقطاع الشبكة لا يجب أن يسقِط اللعبة —
+          // أخطاء التدفق دون معالج تقتل التطبيق عبر الـZone
+          onError: (Object e) =>
+              debugPrint('movesStream error (permissions?): $e'));
       // اللقطة الأولى: توزيع كامل + مؤشر + أيدي البعيدين
       _publishState();
     } else {
@@ -897,15 +906,23 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             .setConnected(widget.roomId!, uid, true, players: room.players));
       }
       // الضيف: مرآة مُدارة بمقعدي — لاعبي هو المقعد المحلي 0 دائماً
-      _handSub =
-          OkeyRoomService().getHandStream(widget.roomId!, uid).listen((tiles) {
+      _handSub = OkeyRoomService().getHandStream(widget.roomId!, uid).listen(
+          (tiles) {
         _myHandTiles = [for (final m in tiles) OkeyTile.fromMap(m)];
-      });
+      },
+          // رفض القواعد لا يقتل التطبيق — اليد تبقى مخفية حتى
+          // تُصلَّح القاعدة بدل إنهاء الجلسة بخطأ غير معالج
+          onError: (Object e) =>
+              debugPrint('handStream error (permissions?): $e'));
       _remoteTick =
           Timer.periodic(const Duration(seconds: 1), (_) => _remoteCountdown());
     }
-    _roomSub =
-        OkeyRoomService().getRoomStream(widget.roomId!).listen(_onRoomSnapshot);
+    _roomSub = OkeyRoomService().getRoomStream(widget.roomId!).listen(
+        _onRoomSnapshot,
+        // أخطاء التدفق (قواعد/شبكة) تُسجَّل ولا تسقِط اللعبة —
+        // تدفق بلا onError يقتل التطبيق عبر الـZone
+        onError: (Object e) =>
+            debugPrint('roomStream error (permissions?): $e'));
     unawaited(
         CompetitionService().currentSeasonId().then((s) => _seasonId = s));
     if (mounted) setState(() {});
@@ -936,7 +953,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       if (seat != null && seat != 0) {
         _engine.applyRemoteAction(seat, m);
       }
-      d.reference.delete();
+      // حذفٌ آمن عبر الخدمة — الحذف المباشر المرفوض من القواعد
+      // يُرمى خطأً غير معالج فيسقِط المضيف
+      unawaited(OkeyRoomService().deleteMove(widget.roomId!, d.id));
     }
   }
 
@@ -1035,7 +1054,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         // الأسماء والصور والألقاب والإطارات وحالة الاتصال من
         // الوثيقة — المرآة لا تعرفها
         for (final rp in room.players) {
-          final p = _engine.players[_localSeatOfDoc(rp.seatIndex)];
+          // مقعد خارج النطاق في وثيقة فاسدة لا يجب أن يهشّم الفهرسة
+          final li = _localSeatOfDoc(rp.seatIndex);
+          if (li < 0 || li > 3) continue;
+          final p = _engine.players[li];
           p.name = rp.name;
           if (rp.photoUrl.isNotEmpty) p.avatarUrl = rp.photoUrl;
           p.title = rp.title;

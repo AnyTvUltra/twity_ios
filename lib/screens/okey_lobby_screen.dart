@@ -169,7 +169,11 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                   roomId: room.id)),
         );
       }
-    });
+    },
+        // تدفق الغرفة بلا معالج خطأ — رفض القواعد أو انقطاع
+        // الشبكة كان يقتل التطبيق؛ الآن يُسجَّل ويبقى اللوبي حياً
+        onError: (Object e) =>
+            debugPrint('roomStream error (permissions?): $e'));
   }
 
   Future<void> _startWithBotsNow() async {

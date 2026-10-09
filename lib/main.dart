@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
@@ -20,27 +22,46 @@ import 'l10n/app_lang.dart';
 final _navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await AppLangController.instance.load();
-  await FirebaseService().initialize();
-  AuthService().initialize();
-  StoreService().initialize();
-  RadioService().init();
-  RadioService().initialize();
-  GameSettingsService().initialize();
+  // منطقة محروسة: الأخطاء غير المعالجة في التدفقات/المؤقتات
+  // (أخطاء Firestore كرفض قاعدة أمن مثلاً) كانت تقتل التطبيق عبر
+  // الـZone — الآن تُسجَّل وتترك الجلسة حية بدل شاشة إغلاق مفاجئة
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
 
-  // إشعارات الإدارة — شريط متحرك من الأعلى، وتبقى قابلة للعرض من جرس الإشعارات
-  BroadcastService.instance.initialize((title, body) {
-    final ctx = _navigatorKey.currentContext;
-    if (ctx == null) return;
-    TopNotification.show(
-      ctx,
-      '$title\n$body',
-      icon: Icons.notifications_active_rounded,
-    );
+    // أخطاء إطار البناء/الرسم — تُسجَّل وتُعرض كتفاصيل بدل
+    // إغلاق التطبيق على أول استثناء واجهة
+    FlutterError.onError = (details) {
+      FlutterError.presentError(details);
+    };
+    PlatformDispatcher.instance.onError = (error, stack) {
+      debugPrint('Uncaught platform error: $error\n$stack');
+      return true; // عولج — لا تنهار التطبيق
+    };
+
+    await AppLangController.instance.load();
+    await FirebaseService().initialize();
+    AuthService().initialize();
+    StoreService().initialize();
+    RadioService().init();
+    RadioService().initialize();
+    GameSettingsService().initialize();
+
+    // إشعارات الإدارة — شريط متحرك من الأعلى، وتبقى قابلة للعرض من جرس الإشعارات
+    BroadcastService.instance.initialize((title, body) {
+      final ctx = _navigatorKey.currentContext;
+      if (ctx == null) return;
+      TopNotification.show(
+        ctx,
+        '$title\n$body',
+        icon: Icons.notifications_active_rounded,
+      );
+    });
+
+    runApp(const GameHubApp());
+  }, (error, stack) {
+    // خطأ zone غير معالج — سجّله ولا تسقط التطبيق
+    debugPrint('Zone error (non-fatal now): $error\n$stack');
   });
-
-  runApp(const GameHubApp());
 }
 
 class GameHubApp extends StatefulWidget {

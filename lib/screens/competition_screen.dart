@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/competition_service.dart';
@@ -52,9 +53,12 @@ class _CompetitionScreenState extends State<CompetitionScreen>
         _seasonId = cfg?['id']?.toString();
         _seasonName = cfg?['name']?.toString();
         final e = cfg?['endsAt'];
-        _seasonEnds = e is DateTime ? e : (e?.toDate() as DateTime?);
+        // Timestamp/DateTime/غيرهما — صيغة غير معروفة لا تهشّم الشاشة
+        _seasonEnds = e is DateTime ? e : (e is Timestamp ? e.toDate() : null);
       });
-    });
+    },
+        // أخطاء تدفق الإعداد (قواعد/شبكة) تُسجَّل ولا تسقِط التبويب
+        onError: (Object e) => debugPrint('seasonConfig error: $e'));
   }
 
   @override

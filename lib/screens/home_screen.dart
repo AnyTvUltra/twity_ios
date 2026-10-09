@@ -114,8 +114,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             );
           }
         }
-      });
-    });
+        // أخطاء تدفق الحضور (قواعد/شبكة) تُسجَّل ولا تُسقِط الصفحة
+      }, onError: (Object e) => debugPrint('presenceStream error: $e'));
+      // نفس المعالجة على تدفق الأصدقاء الخارجي
+    }, onError: (Object e) => debugPrint('friendsStream error: $e'));
   }
 
   @override

@@ -770,13 +770,19 @@ class OkeyRoomService {
   }
 
   /// الضيف يرسل حركته للمضيف — الحقول: uid, seat, t (نوع الحركة)
-  /// + حمولة الحركة + at (مللي ثانية للترتيب التقريبي)
+  /// + حمولة الحركة + at (مللي ثانية للترتيب التقريبي).
+  /// لا تُرمى الأخطاء — رفض القواعد أو انقطاع الشبكة لا يجب أن
+  /// يسقِط اللعبة (الحركة ببساطة لا تصل ويعيد اللاعب المحاولة)
   Future<void> sendMove(String roomId, Map<String, dynamic> move) async {
-    await _firestore
-        .collection('rooms')
-        .doc(roomId)
-        .collection('moves')
-        .add(move);
+    try {
+      await _firestore
+          .collection('rooms')
+          .doc(roomId)
+          .collection('moves')
+          .add(move);
+    } catch (e) {
+      debugPrint('Error sending move: $e');
+    }
   }
 
   /// بثّ حركات الضيوف بترتيب الوصول — يقرأها المضيف فقط

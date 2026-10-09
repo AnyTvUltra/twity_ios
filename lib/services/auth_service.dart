@@ -458,7 +458,8 @@ class AuthService extends ChangeNotifier {
           _currentUser = AppUser.fromMap(user.uid, snapshot.data()!);
           notifyListeners();
         }
-      });
+        // رفض القواعد أو انقطاع الشبكة لا يسقِط الجلسة
+      }, onError: (Object e) => debugPrint('userDoc stream error: $e'));
 
       notifyListeners();
 
