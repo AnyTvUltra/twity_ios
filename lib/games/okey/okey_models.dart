@@ -118,6 +118,25 @@ class OkeyTile {
     );
   }
 
+  /// تسلسل للمزامنة الأونلاين — المعرّف ثابت ('tile_N') فيبقى
+  /// مرجعاً فريداً عبر الأجهزة لأحجار الرمي والأخذ
+  Map<String, dynamic> toMap() => {
+        'i': id,
+        'c': color.name,
+        'v': value,
+        'fj': isFalseJoker,
+        'ok': isRealOkey,
+      };
+
+  factory OkeyTile.fromMap(Map<String, dynamic> m) => OkeyTile(
+        id: m['i'] ?? '',
+        color: OkeyTileColor.values.firstWhere((c) => c.name == m['c'],
+            orElse: () => OkeyTileColor.black),
+        value: m['v'] ?? 0,
+        isFalseJoker: m['fj'] ?? false,
+        isRealOkey: m['ok'] ?? false,
+      );
+
   /// Whether this tile is identical to another (same color and value)
   bool isIdenticalTo(OkeyTile other) {
     return color == other.color &&
@@ -142,13 +161,16 @@ class OkeyTile {
 
 class OkeyPlayer {
   final String id;
-  final String name;
+  String name; // قابلة للتحديث — الأونلاين يملأ الاسم من وثيقة الغرفة
   String avatarUrl; // قابلة للتحديث عند مزامنة صورة الحساب الحقيقية
   final int level;
   int rating;
   int chips;
-  final bool isHuman;
-  final BotDifficulty botDifficulty;
+
+  /// «بشري» = مستخدم هذا الجهاز نفسه (المقعد المحلي 0). اللاعبون
+  /// البعيدون في الأونلاين يبقون false — تفرّقهم remoteHumanSeats
+  bool isHuman;
+  BotDifficulty botDifficulty; // قابلة للتغيير — وضع التدريب يجعلها سهلة
   List<OkeyTile?> rackTiles; // 28 slots (0-13 top tier, 14-27 bottom tier)
 
   /// هل فتح اللاعب اللعب (أنزل ما مجموعه 101+ نقطة)؟

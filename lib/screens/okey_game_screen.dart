@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,6 +21,7 @@ import '../games/okey/utils/okey_audio.dart';
 import '../services/firebase_service.dart';
 import '../services/auth_service.dart';
 import '../services/game_settings_service.dart';
+import '../services/okey_room_service.dart';
 import '../services/store_service.dart';
 import '../services/voice_service.dart';
 import '../services/radio_service.dart';
@@ -40,11 +42,20 @@ class OkeyGameScreen extends StatefulWidget {
   /// وضع رامي: نفس الطاولة والميكانيكية لكن بأوراق لعب (بلا مؤشر/كونكان/فول)
   final bool rummyMode;
 
+  /// معرّف غرفة الأونلاين (وثيقة rooms/{id}) — null = لعبة محلية ضد بوتات
+  final String? roomId;
+
+  /// وضع التدريب للمبتدئين: بوتات سهلة + تلميحات حية + اقتراح رمي —
+  /// بلا رهان ولا تسوية نقاط، جولة تعليمية خالصة
+  final bool trainingMode;
+
   OkeyGameScreen(
       {super.key,
       OkeyRules? rules,
       this.teamMode = false,
-      this.rummyMode = false})
+      this.rummyMode = false,
+      this.roomId,
+      this.trainingMode = false})
       : rules = rules ?? (rummyMode ? OkeyRules.rummy : OkeyRules.turkish);
 
   @override
@@ -135,6 +146,32 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   /// المقعد على الشاشة لا من بيانات اللاعب، فيرى كل مشاهد الحجر نفسه
   /// موجّهاً نحو صاحبه. قابل للتبديل في وضع التصحيح لمعاينة بقية المقاعد.
   int _viewerSeat = 0;
+
+  // ═══ الأونلاين — المضيف يشغّل محركاً حقيقياً والضيوف مرايا ═══
+  bool _isHost = false;
+  int _mySeat = 0; // مقعدي في وثيقة الغرفة (0-3)
+  bool get _isOnline => widget.roomId != null;
+  bool get _isRemote => _isOnline && !_isHost;
+  OkeyRoom? _room;
+  StreamSubscription? _roomSub;
+  StreamSubscription? _handSub;
+  StreamSubscription? _movesSub;
+  Timer? _publishTimer;
+  Timer? _remoteTick;
+  int _rev = 0;
+  int _lastRev = -1;
+  String _lastPublished = '';
+  int _moveSeq = 0;
+  int _lastChatAt = 0;
+  bool _hostGoneNotified = false;
+  List<OkeyTile>? _myHandTiles;
+  int? _pendingDropSlot; // خانة الإفلات المطلوبة للحجر المسحوب القادم
+  Map<int, String> _remoteUidBySeat = {};
+  Map<int, Map<String, dynamic>> _roomPlayerMaps = {};
+  final Set<String> _consumedMoves = {};
+
+  // ═══ وضع التدريب ═══
+  bool _showTrainingIntro = false;
 
   /// اللاعب الجالس في موضع الشاشة [seat] (0=أسفل، 1=يمين، 2=أعلى، 3=يسار)
   int _playerAtSeat(int seat) => (seat + _viewerSeat) % 4;
@@ -304,11 +341,30 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   @override
   void initState() {
     super.initState();
-    _engine = OkeyEngine(
-        rules: widget.rules,
-        turnDuration: GameSettingsService().defaultTurnTimer);
-    _engine.onDiscardTaken = _onDiscardTaken;
-    _syncHumanProfile();
+    if (_isOnline) {
+      // أونلاين: مرآة مؤقتة حتى تصل الوثيقة ويُحدَّد دوري — المضيف
+      // يستبدلها بمحرك حقيقي، والضيف تبقى مرآة تُحمَّل باللقطات
+      _engine = OkeyEngine.mirror(
+          rules: widget.rules,
+          turnDuration: GameSettingsService().defaultTurnTimer);
+      _engine.onDiscardTaken = _onDiscardTaken;
+      _syncHumanProfile();
+      _initOnline();
+    } else {
+      _engine = OkeyEngine(
+          rules: widget.rules,
+          turnDuration: GameSettingsService().defaultTurnTimer);
+      _engine.onDiscardTaken = _onDiscardTaken;
+      if (widget.trainingMode) {
+        // حجرة تدريب: بوتات سهلة لا تلتقط المرميات المفيدة — وبيئة
+        // هادئة للتعلم بلا ضغط المنافسة
+        for (var i = 1; i < 4; i++) {
+          _engine.players[i].botDifficulty = BotDifficulty.easy;
+        }
+        _showTrainingIntro = true;
+      }
+      _syncHumanProfile();
+    }
 
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeLeft,
@@ -705,6 +761,508 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     }
   }
 
+  // ══════════════════════════════════════════════════════════
+  //  الأونلاين: تهيئة الدور + نشر الحالة + استهلاك الحركات
+  // ══════════════════════════════════════════════════════════
+
+  /// تحديد دوري في الغرفة (مضيف/ضيف) وبناء المحرك المناسب
+  Future<void> _initOnline() async {
+    final uid = AuthService().currentUser?.uid ?? '';
+    final room = await OkeyRoomService().getRoom(widget.roomId!);
+    if (!mounted || room == null) return;
+
+    _room = room;
+    final meIdx = room.players.indexWhere((p) => p.uid == uid);
+    _mySeat = meIdx >= 0 ? room.players[meIdx].seatIndex : 0;
+    _isHost = room.hostUid == uid;
+    _roomPlayerMaps = {for (final p in room.players) p.seatIndex: p.toMap()};
+
+    if (_isHost) {
+      // المضيف = السلطة المرجعية: محرك حقيقي يوزّع ويشغّل البوتات.
+      // مقاعد اللاعبين البعيدين لا يشغّلها الـAI — تنتظر حركاتهم.
+      final mirror = _engine;
+      mirror.removeListener(_onEngineUpdate);
+      _engine = OkeyEngine(
+          rules: widget.rules,
+          turnDuration: GameSettingsService().defaultTurnTimer);
+      _engine.onDiscardTaken = _onDiscardTaken;
+      _engine.addListener(_onEngineUpdate);
+      _engine.onNotice = (msg) {
+        if (mounted) _showGameNotice(msg);
+      };
+      mirror.dispose();
+
+      _engine.remoteHumanSeats.addAll(room.players
+          .where((p) => !p.isBot && p.uid != uid)
+          .map((p) => p.seatIndex));
+      _remoteUidBySeat = {
+        for (final p in room.players.where((p) => !p.isBot && p.uid != uid))
+          p.seatIndex: p.uid
+      };
+      for (final rp in room.players) {
+        final p = _engine.players[rp.seatIndex];
+        if (!rp.isBot) {
+          p.name = rp.name;
+          if (rp.photoUrl.isNotEmpty) p.avatarUrl = rp.photoUrl;
+        }
+        p.isHuman = false; // البشري الوحيد على هذا الجهاز هو المضيف
+      }
+      _engine.players[0].isHuman = true;
+      _syncHumanProfile();
+      _engine.addListener(_hostSyncChanged);
+      _movesSub =
+          OkeyRoomService().movesStream(widget.roomId!).listen(_consumeMoves);
+      // اللقطة الأولى: توزيع كامل + مؤشر + أيدي البعيدين
+      _publishState();
+    } else {
+      // الضيف: مرآة مُدارة بمقعدي — لاعبي هو المقعد المحلي 0 دائماً
+      _handSub =
+          OkeyRoomService().getHandStream(widget.roomId!, uid).listen((tiles) {
+        _myHandTiles = [for (final m in tiles) OkeyTile.fromMap(m)];
+      });
+      _remoteTick =
+          Timer.periodic(const Duration(seconds: 1), (_) => _remoteCountdown());
+    }
+    _roomSub =
+        OkeyRoomService().getRoomStream(widget.roomId!).listen(_onRoomSnapshot);
+    if (mounted) setState(() {});
+  }
+
+  /// الضيف يرسل حركة للمضيف عبر moves/ — لا تُطبَّق محلياً أبداً،
+  /// النتيجة تعود مع اللقطة التالية فيبقى المحرك المرجعي وحيداً
+  void _sendMove(Map<String, dynamic> m) {
+    if (widget.roomId == null) return;
+    OkeyRoomService().sendMove(widget.roomId!, {
+      ...m,
+      'uid': AuthService().currentUser?.uid ?? '',
+      'seat': _mySeat,
+      'at': DateTime.now().millisecondsSinceEpoch,
+      'seq': ++_moveSeq,
+    });
+  }
+
+  /// المضيف يستهلك حركات الضيوف بترتيب الوصول — المحرك المرجعي
+  /// يرفض غير الصالح ذاتياً ثم تُحذف الوثيقة فلا تتكرر
+  void _consumeMoves(QuerySnapshot<Map<String, dynamic>> snap) {
+    if (!mounted || _room?.status != 'playing') return;
+    for (final d in snap.docs) {
+      if (_consumedMoves.contains(d.id)) continue;
+      _consumedMoves.add(d.id);
+      final m = d.data();
+      final seat = _seatOfMove(m);
+      if (seat != null && seat != 0) {
+        _engine.applyRemoteAction(seat, m);
+      }
+      d.reference.delete();
+    }
+  }
+
+  /// مقعد صاحب الحركة — يُفضَّل حقل seat المُعلن مع تثبّت من uid
+  int? _seatOfMove(Map<String, dynamic> m) {
+    final uid = '${m['uid'] ?? ''}';
+    final declared = (m['seat'] as num?)?.toInt();
+    for (final e in _remoteUidBySeat.entries) {
+      if (e.value == uid) return e.key;
+    }
+    return declared;
+  }
+
+  /// محرك المضيف تغيّر → نشر لقطة جديدة (مُجمَّعة 300ms فلا تفيض
+  /// الكتابات مع تنقّل التحديد والحركات المتتالية)
+  void _hostSyncChanged() {
+    _publishTimer?.cancel();
+    _publishTimer = Timer(const Duration(milliseconds: 300), _publishState);
+  }
+
+  /// كتابة اللقطة العامة + أيدي البعيدين على الوثيقة
+  Future<void> _publishState() async {
+    if (!_isHost || widget.roomId == null || !mounted) return;
+    final game = _engine.serializeGame();
+    game['rev'] = ++_rev;
+    // كشف التكرار: تغيّرات لا تؤثر على اللقطة (تحديد حجر مثلاً)
+    // تُنتج نفس الخريطة فلا تستحق كتابة
+    final fingerprint = game.toString();
+    if (fingerprint == _lastPublished) return;
+    _lastPublished = fingerprint;
+
+    final players = <Map<String, dynamic>>[
+      for (var i = 0; i < 4; i++)
+        {
+          ...?_roomPlayerMaps[i],
+          'tileCount': _engine.players[i].activeTiles.length,
+        }
+    ];
+    await OkeyRoomService()
+        .publishGame(widget.roomId!, game: game, players: players);
+
+    final hands = <String, List<Map<String, dynamic>>>{};
+    _remoteUidBySeat.forEach((seat, uid) {
+      hands[uid] = [
+        for (final t in _engine.players[seat].activeTiles) t.toMap()
+      ];
+    });
+    if (hands.isNotEmpty) {
+      await OkeyRoomService().publishHands(widget.roomId!, hands);
+    }
+  }
+
+  /// كل تحديث لوثيقة الغرفة — شات للجميع، ولقطة اللعبة للضيوف
+  void _onRoomSnapshot(OkeyRoom room) {
+    if (!mounted) return;
+    _room = room;
+    _roomPlayerMaps = {for (final p in room.players) p.seatIndex: p.toMap()};
+
+    // الشات: رسالة جديدة من لاعب آخر → فقاعة فوق استكانته
+    final chat = room.chat;
+    if (chat != null) {
+      final at = (chat['at'] as num?)?.toInt() ?? 0;
+      final cuid = '${chat['uid']}';
+      if (at > _lastChatAt && cuid != AuthService().currentUser?.uid) {
+        _lastChatAt = at;
+        final idx = room.players.indexWhere((p) => p.uid == cuid);
+        if (idx != -1) {
+          _showChatBubble(
+              '${chat['msg']}', _localSeatOfDoc(room.players[idx].seatIndex));
+        }
+      }
+    }
+
+    if (_isHost) {
+      setState(() {});
+      return;
+    }
+
+    // ضيف: طبّق اللقطة إن تغيّرت
+    final g = room.game;
+    if (g != null && room.status == 'playing') {
+      final rev = (g['rev'] as num?)?.toInt() ?? 0;
+      if (rev != _lastRev) {
+        _lastRev = rev;
+        _engine.loadGameState(g,
+            seatOffset: _mySeat,
+            myHand: _myHandTiles,
+            handDropSlot: _pendingDropSlot);
+        _pendingDropSlot = null;
+        // الأسماء والصور من الوثيقة — المرآة لا تعرفها
+        for (final rp in room.players) {
+          final p = _engine.players[_localSeatOfDoc(rp.seatIndex)];
+          p.name = rp.name;
+          if (rp.photoUrl.isNotEmpty) p.avatarUrl = rp.photoUrl;
+        }
+        _syncHumanProfile();
+        setState(() {});
+        return;
+      }
+    }
+
+    // احتياط: إن وصل winner قبل آخر لقطة محمّلة بعلم الفوز
+    final w = room.winner;
+    if (w != null && _engine.winner == null) {
+      final wuid = '${w['uid']}';
+      final widx = room.players.indexWhere((p) => p.uid == wuid);
+      if (widx != -1) {
+        _engine.markWinnerBySeat(
+            _localSeatOfDoc(room.players[widx].seatIndex), WinType.normal);
+      }
+    }
+    _remoteCountdown();
+    setState(() {});
+  }
+
+  /// مقعد الوثيقة → المقعد المحلي على هذا الجهاز
+  int _localSeatOfDoc(int docSeat) =>
+      _isHost ? docSeat : (docSeat - _mySeat + 4) % 4;
+
+  /// عدّاد دور الضيف: يُشتق من turnStartTime على الوثيقة —
+  /// المضيف وحده يُنفّذ انتهاء المهلة فعلياً
+  void _remoteCountdown() {
+    if (_isHost || !mounted) return;
+    final start = _room?.turnStartTime;
+    if (start == null) return;
+    final elapsed = DateTime.now().difference(start).inSeconds;
+    final remain = (_room?.turnDurationSeconds ?? 30) - elapsed;
+    final clamped = remain.clamp(0, 9999);
+    if (clamped != _engine.turnTimeRemaining) {
+      _engine.turnTimeRemaining = clamped;
+      if (mounted) setState(() {});
+    }
+    // نبض انقطاع المضيف: لا تحديث للدور بعد المهلة + سماحية
+    if (!_hostGoneNotified &&
+        remain < -20 &&
+        _room?.status == 'playing' &&
+        _engine.winner == null) {
+      _hostGoneNotified = true;
+      _showGameNotice('انقطع اتصال المضيف — الغرفة متوقفة مؤقتاً'.tr,
+          icon: Icons.wifi_off_rounded);
+    }
+  }
+
+  /// رسالة شات الغرفة: فقاعة محلية فوراً + كتابة للوثيقة فتصل
+  /// البقية مع اللقطة التالية
+  void _sendRoomChat(String msg) {
+    _showChatBubble(msg, 0);
+    if (_isOnline && widget.roomId != null) {
+      OkeyRoomService().sendRoomChat(
+          widget.roomId!, AuthService().currentUser?.uid ?? '', msg);
+    }
+  }
+
+  // ─── توجيه الأفعال: محلي → المحرك، ضيف أونلاين → للمضيف ───
+
+  /// إنزال Per يضم الخانة — الضيف يرسل معرّفات الأحجار والمضيف
+  /// يعيد التحقق من صحتها على المحرك المرجعي
+  bool _layMeldAtSlot(int slot) {
+    if (_isRemote) {
+      final tiles = _engine.previewMeldTiles(slot);
+      if (tiles.length < 3) return false;
+      _sendMove({
+        't': 'meld',
+        'ids': [for (final t in tiles) t.id]
+      });
+      return true;
+    }
+    return _engine.layMeldContainingSlot(slot);
+  }
+
+  /// صرف حجر على بير نازل — الضيف يُعنون بالمعرّف ومؤشر البير
+  bool _layoffAt(int slot, int meldIndex) {
+    if (_isRemote) {
+      final t = _engine.players[0].rackTiles[slot];
+      if (t == null) return false;
+      _sendMove({'t': 'layoff', 'id': t.id, 'm': meldIndex});
+      return true;
+    }
+    return _engine.layTileOnMeld(slot, meldIndex);
+  }
+
+  /// أخذ الجوكر من بير — الضيف يُعنون بالمعرّف ومؤشر البير
+  bool _swapJokerAt(int slot, int meldIndex) {
+    if (_isRemote) {
+      final t = _engine.players[0].rackTiles[slot];
+      if (t == null) return false;
+      _sendMove({'t': 'joker', 'id': t.id, 'm': meldIndex});
+      return true;
+    }
+    return _engine.swapJokerFromMeld(slot, meldIndex);
+  }
+
+  // ══════════════════════════════════════════════════════════
+  //  وضع التدريب — تلميحات حية للمبتدئين
+  // ══════════════════════════════════════════════════════════
+
+  /// نص التلميح الحالي حسب طور الدور — يوجّه الخطوة التالية
+  String get _trainingHint {
+    if (_dealing) return 'جارٍ توزيع الأحجار… راقب يدك تتشكّل'.tr;
+    if (_engine.currentTurnIndex != 0) {
+      return 'دور الخصم — رتّب أحجارك على الاستكانة وأنت تنتظر'.tr;
+    }
+    if (_engine.turnPhase == OkeyTurnPhase.awaitingDraw) {
+      return 'دورك! اسحب حجراً من الرزمة الوسطى، أو خذ حجر اليسار إن كان يفيد مجموعتك'
+          .tr;
+    }
+    if (_humanHasReadyPer) {
+      return 'لديك Per جاهز! اضغط زر «نزول» أو اسحب المجموعة المميّزة إلى الطاولة'
+          .tr;
+    }
+    if (_engine.remainingOpeningPoints > 0 &&
+        _engine.players[0].playStyle == OkeyPlayStyle.normal &&
+        !_engine.players[0].hasOpened) {
+      return 'ارمِ حجراً لا تحتاجه — لتفتح اللعب تحتاج {} نقطة من البيرات'
+          .trp([_engine.rules.openingPoints]);
+    }
+    return 'رتّب مجموعاتك (سلسلة بلون واحد أو نفس الرقم بألوان مختلفة) ثم ارمِ حجراً زائداً'
+        .tr;
+  }
+
+  List<Widget> _buildTrainingOverlays() {
+    final out = <Widget>[];
+    // سهم متحرك فوق الحجر المقترح رميه — يظهر فقط في طور الرمي
+    final hintSlot = (_engine.currentTurnIndex == 0 &&
+            _engine.turnPhase == OkeyTurnPhase.awaitingDiscard &&
+            !_dealing)
+        ? _engine.trainingDiscardHint
+        : null;
+    if (hintSlot != null && !_showTrainingIntro) {
+      final c = _rackSlotCenter(hintSlot);
+      out.add(Positioned(
+        left: c.dx - 13,
+        top: c.dy - 52,
+        child: IgnorePointer(
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: 1),
+            duration: const Duration(milliseconds: 900),
+            curve: Curves.easeInOut,
+            builder: (context, t, child) {
+              final bounce = math.sin(t * math.pi * 2) * 5;
+              return Transform.translate(
+                offset: Offset(0, bounce - 6),
+                child: child,
+              );
+            },
+            onEnd: () => setState(() {}), // إعادة النبض
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('ارمِ هذا'.tr,
+                    style: const TextStyle(
+                        color: Color(0xFFFFD54F),
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        shadows: [
+                          Shadow(color: Colors.black87, blurRadius: 4)
+                        ])),
+                const Icon(Icons.arrow_drop_down_rounded,
+                    color: Color(0xFFFFD54F), size: 20),
+              ],
+            ),
+          ),
+        ),
+      ));
+    }
+    // شريط التلميح الحي — تحت منطقة بيراتي مباشرة فوق الاستكانة
+    if (!_showTrainingIntro) {
+      out.add(Positioned(
+        top: _mapToImg(_roomMeldMineF, _sceneSize).bottom + 4,
+        left: _sceneSize.width * 0.18,
+        right: _sceneSize.width * 0.18,
+        child: IgnorePointer(
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                    colors: [Color(0xDD1E3A5F), Color(0xDD16213E)]),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                    color: const Color(0xFF38BDF8).withOpacity(0.55), width: 1),
+                boxShadow: [
+                  BoxShadow(
+                      color: const Color(0xFF38BDF8).withOpacity(0.18),
+                      blurRadius: 10)
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('🎓', style: TextStyle(fontSize: 12)),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      _trainingHint,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                          color: Color(0xFFE3F2FD),
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                          height: 1.25),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ));
+    }
+    // بطاقة المقدمة التعليمية — تُعرض مرة واحدة عند الدخول
+    if (_showTrainingIntro) {
+      out.add(Positioned.fill(
+        child: GestureDetector(
+          onTap: () {},
+          child: Container(
+            color: Colors.black.withOpacity(0.62),
+            child: Center(
+              child: Container(
+                width: math.min(_sceneSize.width * 0.62, 430),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF1E3A5F), Color(0xFF141B33)]),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                      color: const Color(0xFF38BDF8).withOpacity(0.6),
+                      width: 1.3),
+                  boxShadow: [
+                    BoxShadow(
+                        color: const Color(0xFF38BDF8).withOpacity(0.25),
+                        blurRadius: 22)
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('🎓 ${'حجرة التدريب'.tr}',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 10),
+                    ...[
+                      '١ · عند دورك اسحب حجراً من الرزمة أو خذ حجر اللاعب الأيسر'
+                          .tr,
+                      '٢ · كوّن «بيرات»: سلسلة متتابعة بلون واحد (مثل 5-6-7) أو نفس الرقم بألوان مختلفة'
+                          .tr,
+                      '٣ · أنزل بيراتك للطاولة — أول نزول يحتاج {} نقطة فأكثر'
+                          .trp([_engine.rules.openingPoints]),
+                      '٤ · ارمِ حجراً زائداً لإنهاء دورك — السهم الذهبي يقترح لك الأفضل'
+                          .tr,
+                      '٥ · من يفرغ يده أولاً يفوز بالجولة 🏆'.tr,
+                    ].map((s) => Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Text(s,
+                                    textAlign: TextAlign.right,
+                                    style: const TextStyle(
+                                        color: Color(0xFFCDE4FF),
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w600,
+                                        height: 1.45)),
+                              ),
+                            ],
+                          ),
+                        )),
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: () {
+                        AppHaptics.medium();
+                        setState(() => _showTrainingIntro = false);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 34, vertical: 9),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                              colors: [Color(0xFF4ADE80), Color(0xFF16A34A)]),
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                                color: const Color(0xFF4ADE80).withOpacity(0.4),
+                                blurRadius: 12)
+                          ],
+                        ),
+                        child: Text('ابدأ التعلّم'.tr,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 13)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ));
+    }
+    return out;
+  }
+
   /// إشعار داخل المشهد نفسه — يظهر أفقيًا باتجاه اللعبة المدوّرة
   void _showGameNotice(String message, {IconData? icon}) {
     AppHaptics.light();
@@ -800,14 +1358,20 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
 
   Future<void> _handleGameEnd() async {
     final winner = _engine.winner!;
+    if (_isOnline) {
+      await _handleOnlineGameEnd(winner);
+      return;
+    }
     // في الزوجي: فوز الشريك المقابل = فوز فريقك
     final isHumanWinner = winner.isHuman ||
         (widget.teamMode && identical(winner, _engine.players[2]));
-    await _settleRound(
-      chipChange: isHumanWinner ? _winChips : -_lossChips,
-      ratingChange: isHumanWinner ? 25 : -15,
-      isWin: isHumanWinner,
-    );
+    if (!widget.trainingMode) {
+      await _settleRound(
+        chipChange: isHumanWinner ? _winChips : -_lossChips,
+        ratingChange: isHumanWinner ? 25 : -15,
+        isWin: isHumanWinner,
+      );
+    }
     if (!mounted) return;
     OkeyAudio.playWin();
     OkeyWinDialog.show(
@@ -820,9 +1384,59 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           _winDialogShown = false;
           _isLeaving = false;
           _engine.initGame();
+          if (widget.trainingMode) {
+            for (var i = 1; i < 4; i++) {
+              _engine.players[i].botDifficulty = BotDifficulty.easy;
+            }
+          }
           _syncHumanProfile();
           _startDealAnim();
         });
+      },
+      onExit: () {
+        if (mounted) Navigator.of(context).pop();
+      },
+    );
+  }
+
+  /// نهاية جولة أونلاين: المضيف يعلن الفائز على الوثيقة (ويدفع له
+  /// داخل declareWin إن كان هو)، والضيف الفائز يسوّي جائزته بنفسه
+  /// مرة واحدة. الخاسر دفع رهانه عند الدخول فلا يُخصم مجدداً
+  Future<void> _handleOnlineGameEnd(OkeyPlayer winner) async {
+    final localIdx = _engine.players.indexOf(winner);
+    final docSeat = _isHost ? localIdx : (localIdx + _mySeat) % 4;
+    String wuid = '';
+    var wname = winner.name;
+    for (final p in _room?.players ?? const <OkeyRoomPlayer>[]) {
+      if (p.seatIndex == docSeat) {
+        wuid = p.uid;
+        wname = p.name;
+      }
+    }
+    final me = AuthService().currentUser?.uid;
+    final pot = (_room?.stakes ?? 0) * 4;
+
+    if (_isHost && _room?.winner == null) {
+      await OkeyRoomService().declareWin(
+        roomId: widget.roomId!,
+        winnerUid: wuid,
+        winnerName: wname,
+        potPrize: pot,
+      );
+    }
+    // ضيف فائز يسوّي جائزته — المضيف الفائز سُوّيت داخل declareWin
+    if (wuid == me && !_isHost) {
+      await _settleRound(chipChange: pot, ratingChange: 25, isWin: true);
+    }
+    if (!mounted) return;
+    OkeyAudio.playWin();
+    OkeyWinDialog.show(
+      context,
+      winner: winner,
+      winType: _engine.winType ?? WinType.normal,
+      // مباراة جديدة أونلاين تعني غرفة جديدة — خروج للوبي
+      onPlayAgain: () {
+        if (mounted) Navigator.of(context).pop();
       },
       onExit: () {
         if (mounted) Navigator.of(context).pop();
@@ -862,6 +1476,11 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     _noticeTimer?.cancel();
     _bubbleTimer?.cancel();
+    _roomSub?.cancel();
+    _handSub?.cancel();
+    _movesSub?.cancel();
+    _publishTimer?.cancel();
+    _remoteTick?.cancel();
     GameNotice.handler = null;
     GameBubble.handler = null;
     _discardAnimController.dispose();
@@ -1267,7 +1886,13 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     });
 
     _discardAnimController.forward(from: 0).then((_) {
-      _engine.discardSlot(slotIndex);
+      // أونلاين: الحركة تُرسل للمضيف بمعرّف الحجر — النتيجة تعود
+      // مع اللقطة التالية بدل التنفيذ على المرآة
+      if (_isRemote) {
+        _sendMove({'t': 'disc', 'id': tile.id});
+      } else {
+        _engine.discardSlot(slotIndex);
+      }
       setState(() => _animatingDiscardTile = null);
       _discardAnimController.reset();
     });
@@ -1281,8 +1906,21 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       return;
     }
     // رزمة فارغة؟ أعد خلط المرميات أولاً بدل إجبارك على أخذ حجر الخصم
-    if (!_engine.ensureDrawableDeck()) {
+    if (!_isRemote && !_engine.ensureDrawableDeck()) {
       _showGameNotice('لا أحجار متبقية للسحب إطلاقاً'.tr);
+      return;
+    }
+    if (_isRemote) {
+      // المضيف يعيد خلط المرميات في الرزمة تلقائياً — نمنع فقط إن
+      // لم يتبقَّ شيء نهائياً
+      if (_engine.drawDeck.isEmpty && !_engine.canRefillDeck) {
+        _showGameNotice('لا أحجار متبقية للسحب إطلاقاً'.tr);
+        return;
+      }
+      // الضيف لا يعرف الحجر — يُرسل الحركة وتصل النتيجة باللقطة
+      OkeyAudio.playTileDraw();
+      AppHaptics.light();
+      _sendMove({'t': 'draw'});
       return;
     }
     OkeyAudio.playTileDraw();
@@ -1372,6 +2010,20 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       _showGameNotice('اللاعب الأيسر يلعب فول — لا يمكن أخذ أحجاره'.tr);
       return;
     }
+    if (_isRemote) {
+      if (source == OkeyDrag.deck &&
+          _engine.drawDeck.isEmpty &&
+          !_engine.canRefillDeck) {
+        _showGameNotice('لا أحجار متبقية للسحب إطلاقاً'.tr);
+        return;
+      }
+      // خانة الإفلات تُمرَّر كتلميح ترتيب — تُطبق عند وصول اليد
+      _pendingDropSlot = toSlot;
+      _sendMove({'t': source == OkeyDrag.deck ? 'draw' : 'take'});
+      OkeyAudio.playTileDraw();
+      AppHaptics.light();
+      return;
+    }
     final ok = source == OkeyDrag.deck
         ? _engine.drawFromDeck(toSlot: toSlot)
         : _engine.drawFromDiscard(toSlot: toSlot);
@@ -1410,7 +2062,11 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     });
 
     _drawAnimController.forward(from: 0).then((_) {
-      _engine.drawFromDiscard();
+      if (_isRemote) {
+        _sendMove({'t': 'take'});
+      } else {
+        _engine.drawFromDiscard();
+      }
       setState(() => _animatingDrawTile = null);
       _drawAnimController.reset();
     });
@@ -1425,7 +2081,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         if (!_humanHasReadyPer) {
           _showGameNotice('لم تبلغ نقاط الفتح بعد — المطلوب {} نقطة'
               .trp([_engine.rules.openingPoints]));
-        } else if (_engine.layMeldContainingSlot(slotIndex)) {
+        } else if (_layMeldAtSlot(slotIndex)) {
           AppHaptics.medium();
           _showGameNotice('تم إنزال الـ Per على الطاولة'.tr);
         }
@@ -1923,6 +2579,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         ),
         // فقاعات الشات — فوق استكانة المرسل داخل المشهد
         _buildChatBubbles(),
+        // وضع التدريب: شريط تلميح حي + سهم اقتراح الرمي + بطاقة تعليمية
+        if (widget.trainingMode) ..._buildTrainingOverlays(),
         Positioned(
           top: 6 + _safePadT,
           left: 14 + _safePadL,
@@ -2143,7 +2801,13 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
               ],
             ),
           );
-          if (ok == true) _engine.declarePlayStyle(style);
+          if (ok == true) {
+            if (_isRemote) {
+              _sendMove({'t': 'style', 's': style.name});
+            } else {
+              _engine.declarePlayStyle(style);
+            }
+          }
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
@@ -2182,7 +2846,11 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       onTap: () {
         AppHaptics.heavy();
         OkeyAudio.playWin();
-        _engine.declareHumanWin();
+        if (_isRemote) {
+          _sendMove({'t': 'win'});
+        } else {
+          _engine.declareHumanWin();
+        }
       },
       child: Container(
         // زر جانبي مدمج — كان شريطاً عريضاً يغطي بيرات اللاعب على الطاولة
@@ -2336,7 +3004,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       _showGameNotice('رتّب أحجارك على الاستكانة ثم اضغط نزول'.tr);
       return;
     }
-    if (_engine.layMeldContainingSlot(highlighted.first)) {
+    if (_layMeldAtSlot(highlighted.first)) {
       AppHaptics.medium();
     } else {
       _showGameNotice('هذه الأحجار لا تكوّن Per صحيحاً'.tr);
@@ -2393,7 +3061,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
               .trp([_engine.rules.openingPoints]));
           return;
         }
-        if (_engine.layMeldContainingSlot(s)) {
+        if (_layMeldAtSlot(s)) {
           AppHaptics.medium();
         } else {
           _showGameNotice('هذه الأحجار لا تكوّن Per صحيحاً'.tr);
@@ -2513,7 +3181,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       },
       onAcceptWithDetails: (details) {
         final slot = _rackSlotOf(details.data);
-        if (_engine.layMeldContainingSlot(slot)) {
+        if (_layMeldAtSlot(slot)) {
           AppHaptics.medium();
         } else {
           _showGameNotice('هذه الأحجار لا تكوّن Per صحيحاً'.tr);
@@ -2742,12 +3410,12 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       onWillAcceptWithDetails: (details) => OkeyDrag.isRackTile(details.data),
       onAcceptWithDetails: (details) {
         // الحجر يمثّل الجوكر في هذا البير؟ ضعه مكانه وخذ الجوكر لرفّك
-        if (_engine.swapJokerFromMeld(details.data, meldIndex)) {
+        if (_swapJokerAt(details.data, meldIndex)) {
           AppHaptics.medium();
           return;
         }
         // وإلا جرّب الصرف على البير (المحرك يتحقق: الفتح/الدور/صحة الحجر)
-        if (_engine.layTileOnMeld(details.data, meldIndex)) {
+        if (_layoffAt(details.data, meldIndex)) {
           AppHaptics.light();
           return;
         }
@@ -2876,7 +3544,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         () {
           AppHaptics.selection();
           OkeyAudio.playButtonClick();
-          OkeyChatDialog.show(context);
+          OkeyChatDialog.show(context, onSend: _sendRoomChat);
         }
       ),
       (
@@ -3567,7 +4235,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                       onTap: () {
                         AppHaptics.selection();
                         OkeyAudio.playButtonClick();
-                        OkeyChatDialog.show(context);
+                        OkeyChatDialog.show(context, onSend: _sendRoomChat);
                       },
                     ),
                     _buildDockDivider(),

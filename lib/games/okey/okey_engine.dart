@@ -37,7 +37,9 @@ class OkeyEngine extends ChangeNotifier {
   static const int defaultTurnDuration = 72;
 
   /// مهلة الدور الفعلية (ثواني) — تُضبط من إعدادات السيرفر عبر الشاشة
-  final int turnDuration;
+  /// مدة الدور بالثواني — قابلة للتحديث على محرك المرآة لتطابق
+  /// إعداد المضيف (القيمة تُحمَّل مع كل لقطة في loadGameState)
+  int turnDuration;
   Timer? _turnCountdownTimer;
   Timer? _botTimer;
   bool isDisposed = false;
@@ -55,6 +57,36 @@ class OkeyEngine extends ChangeNotifier {
   OkeyEngine({OkeyRules? rules, this.turnDuration = defaultTurnDuration})
       : rules = rules ?? OkeyRules.turkish {
     initGame();
+  }
+
+  /// محرك مرآة لجهاز الضيف في اللعب الأونلاين: هياكل فارغة فقط —
+  /// بلا توزيع ولا مؤقتات ولا بوتات، والحالة تُحمَّل كاملة من
+  /// loadGameState بعد كل تحديث للوثيقة. حركات اللاعب تُرسل
+  /// للمضيف كـpendingMoves بدل تنفيذها محلياً
+  OkeyEngine.mirror({OkeyRules? rules, this.turnDuration = defaultTurnDuration})
+      : rules = rules ?? OkeyRules.turkish {
+    isOnlineMirror = true;
+    indicatorTile =
+        OkeyTile(id: '_pending', color: OkeyTileColor.black, value: 1);
+    realOkeySample = indicatorTile;
+    fakeJokerAssigned = indicatorTile;
+    drawDeck = <OkeyTile>[];
+    discardPiles = List.generate(4, (_) => <OkeyTile>[]);
+    tableMelds = <OkeyGroup>[];
+    players = [
+      for (var i = 0; i < 4; i++)
+        OkeyPlayer(
+          id: 'p_$i',
+          name: '…',
+          avatarUrl: 'assets/images/player_left.png',
+          level: 1,
+          rating: 0,
+          chips: 0,
+          isHuman: i == 0,
+        )
+    ];
+    turnPhase = OkeyTurnPhase.awaitingDraw;
+    gameState = OkeyGameState.lobby;
   }
 
   void initGame() {
@@ -265,7 +297,14 @@ class OkeyEngine extends ChangeNotifier {
   }
 
   void _handleTurnTimeout() {
-    if (currentTurnIndex != 0) return; // bot timeouts handled by bot AI
+    if (currentTurnIndex != 0) {
+      // أونلاين على جهاز المضيف: لاعب بعيد تجاوز مهلة الدور — يلعب
+      // المضيف عنه آلياً (سحب + رمي) فلا تتجمّد الغرفة على غائب
+      if (remoteHumanSeats.contains(currentTurnIndex)) {
+        autoPlaySeat(currentTurnIndex);
+      }
+      return; // bot timeouts handled by bot AI
+    }
 
     if (turnPhase == OkeyTurnPhase.awaitingDraw) {
       drawFromDeck();
@@ -472,6 +511,18 @@ class OkeyEngine extends ChangeNotifier {
   /// حدث لحظي: بوت أخذ آخر حجر مرمي من كومة اللاعب السابق — تشغّله
   /// الواجهة لتحريك الحجر نحو حامل الآخذ بدل أن يبدو وكأنه اختفى
   void Function(int takerIndex, OkeyTile tile)? onDiscardTaken;
+
+  /// مقاعد اللاعبين البشريين البعيدين في وضع الأونلاين (على جهاز
+  /// المضيف فقط): الـAI لا يشغّلهم — حركاتهم تصل عبر
+  /// applyRemoteAction، وتجاوز المهلة يشغّلهم آلياً
+  final Set<int> remoteHumanSeats = {};
+
+  /// أحجار اليسار المأخوذة لكل مقعد بعيد — المقعد 0 يبقى عبر
+  /// _takenLeftTile (قاعدة: من أخذه دون فتح يُعاده للكومة ويسحب بديلاً)
+  final Map<int, OkeyTile> _takenLeftBySeat = {};
+
+  /// صحيح في محرك المرآة على جهاز الضيف — لا توزيع ولا مؤقتات
+  bool isOnlineMirror = false;
 
   void swapTiles(int slotA, int slotB) {
     final temp = players[0].rackTiles[slotA];
@@ -765,7 +816,8 @@ class OkeyEngine extends ChangeNotifier {
 
     notifyListeners();
 
-    if (currentTurnIndex != 0) {
+    // مقاعد اللاعبين البعيدين لا يشغّلها الـAI — تنتظر حركاتهم
+    if (currentTurnIndex != 0 && !remoteHumanSeats.contains(currentTurnIndex)) {
       _runBotTurn();
     }
   }
@@ -801,7 +853,9 @@ class OkeyEngine extends ChangeNotifier {
     final thinkDelay = Duration(milliseconds: 1400 + _random.nextInt(800));
 
     _botTimer = Timer(thinkDelay, () {
-      if (isDisposed || currentTurnIndex == 0) return;
+      if (isDisposed ||
+          currentTurnIndex == 0 ||
+          remoteHumanSeats.contains(currentTurnIndex)) return;
 
       final prevIndex = (currentTurnIndex + 3) % 4;
       final prevDiscards = discardPiles[prevIndex];
@@ -1641,12 +1695,13 @@ class OkeyEngine extends ChangeNotifier {
     if (laid) notifyListeners();
   }
 
-  bool layMeldContainingSlot(int slotIndex) {
-    if (!humanCanLayMelds) return false;
-    if (slotIndex < 0 ||
-        slotIndex >= 28 ||
-        players[0].rackTiles[slotIndex] == null) return false;
-    final rack = players[0].rackTiles;
+  /// أفضل كتلة بير صحيحة تضم الخانة المعطاة على رف مقعد معيّن —
+  /// قراءة فقط بلا أي تعديل للحالة. تخدم إنزال البير المحلي ومعاينة
+  /// المجموعة على جهاز الضيف قبل إرسال حركة «نزول» للمضيف
+  (List<int> slots, bool isRun)? _meldGroupAt(int seat, int slotIndex) {
+    if (slotIndex < 0 || slotIndex >= 28) return null;
+    final rack = players[seat].rackTiles;
+    if (rack[slotIndex] == null) return null;
     final rowStart = slotIndex < 14 ? 0 : 14;
     final rowEnd = rowStart + 14;
     List<int>? bestSlots;
@@ -1667,37 +1722,43 @@ class OkeyEngine extends ChangeNotifier {
         }
       }
     }
+    return bestSlots == null ? null : (bestSlots, bestIsRun);
+  }
 
-    if (bestSlots == null) return false;
-    final tiles = bestSlots.map((i) => rack[i]!).toList();
-
-    final human = players[0];
+  /// إنزال مجموعة مؤكدة على الطاولة لأي مقعد — الأحجار تُزال من
+  /// الرف بالمعرّف فيعمل مع مقاعد اللاعبين البعيدين (خاناتهم على
+  /// أجهزتهم لا تطابق ترتيب المضيف)
+  bool _commitMeldForSeat(int seat, List<OkeyTile> tiles, bool isRun) {
+    final p = players[seat];
     // النزول معلّق حتى تكتمل نقاط الافتتاح (101) في نفس الدور
     final group = OkeyGroup(
       tiles: tiles,
-      isRun: bestIsRun,
-      ownerIndex: 0,
-      pending: !human.hasOpened,
+      isRun: isRun,
+      ownerIndex: seat,
+      pending: !p.hasOpened,
     );
     tableMelds.add(group);
-    for (final slot in bestSlots) {
-      rack[slot] = null;
+    for (final t in tiles) {
+      final i = p.rackTiles.indexWhere((x) => x?.id == t.id);
+      if (i != -1) p.rackTiles[i] = null;
     }
-    selectedTileIndex = null;
+    if (seat == 0) selectedTileIndex = null;
     OkeyAudio.playTileDiscard();
 
-    if (!human.hasOpened) {
-      final total = meldPointsFor(0);
+    if (!p.hasOpened) {
+      final total = meldPointsFor(seat);
       if (total >= rules.openingPoints) {
-        human.hasOpened = true;
-        human.openedPoints = total;
-        for (final m in tableMelds.where((m) => m.ownerIndex == 0)) {
+        p.hasOpened = true;
+        p.openedPoints = total;
+        for (final m in tableMelds.where((m) => m.ownerIndex == seat)) {
           m.pending = false;
         }
-        onNotice?.call(rules.isRummy
-            ? '✨ أنزلت بيراتك على الطاولة!'.tr
-            : '🎉 فتحت اللعب بـ {} نقطة!'.trp([total]));
-      } else {
+        onNotice?.call(seat == 0
+            ? (rules.isRummy
+                ? '✨ أنزلت بيراتك على الطاولة!'.tr
+                : '🎉 فتحت اللعب بـ {} نقطة!'.trp([total]))
+            : '🎉 {} فتح اللعب بـ {} نقطة!'.trp([p.name, total]));
+      } else if (seat == 0) {
         onNotice?.call(
             'مجموعتك {} نقطة — المجموع {}/{}. أنزل المزيد قبل الرمي وإلا ستُعاد الأحجار'
                 .trp([group.points, total, rules.openingPoints]));
@@ -1705,13 +1766,22 @@ class OkeyEngine extends ChangeNotifier {
     }
 
     // نزل آخر أحجار يده كاملة على الطاولة = فوز بالحجر الأخير
-    if (human.activeTiles.isEmpty) {
-      _checkEmptyRackWin(0);
+    if (p.activeTiles.isEmpty) {
+      _checkEmptyRackWin(seat);
       return true;
     }
 
     notifyListeners();
     return true;
+  }
+
+  bool layMeldContainingSlot(int slotIndex) {
+    if (!humanCanLayMelds) return false;
+    final found = _meldGroupAt(0, slotIndex);
+    if (found == null) return false;
+    final rack = players[0].rackTiles;
+    final tiles = found.$1.map((i) => rack[i]!).toList();
+    return _commitMeldForSeat(0, tiles, found.$2);
   }
 
   // ── SORTING ALGORITHMS ──
@@ -1907,6 +1977,609 @@ class OkeyEngine extends ChangeNotifier {
       colors.add(t.color);
     }
     return true;
+  }
+
+  // ══════════════════════════════════════════════════════
+  //  اللعب الأونلاين — تسلسل الحالة + عمليات مقعدية عامة
+  // ══════════════════════════════════════════════════════
+  //
+  // المعمارية: المضيف (المقعد 0 في الوثيقة) يملك المحرك الحقيقي —
+  // يوزّع ويشغّل البوتات ويطبّق حركات اللاعبين البعيدين الواردة من
+  // rooms/{id}/moves ثم يكتب لقطة عامة في حقل game على الوثيقة.
+  // أيدي اللاعبين الخاصة تُكتب في rooms/{id}/hands/{uid} يقرأها
+  // صاحبها فقط. الضيف يشغّل OkeyEngine.mirror ويحمّل اللقطة عبر
+  // loadGameState مع seatOffset = مقعده فيُصبح محلياً المقعد 0 —
+  // كل ميكانيكيات الواجهة (الرف، النزول، التمييز) تعمل بلا تعديل.
+
+  /// دور اللاعب وطوره صحيحان لهذه العملية؟ (على محرك المضيف فقط)
+  bool _seatTurnOk(int seat, OkeyTurnPhase need) =>
+      !isOnlineMirror &&
+      winner == null &&
+      currentTurnIndex == seat &&
+      turnPhase == need;
+
+  /// سحب من الرزمة لأي مقعد (المقعد 0 يمرّر للمسار المحلي الأصلي)
+  bool drawFromDeckForSeat(int seat) {
+    if (seat == 0) return drawFromDeck();
+    if (!_seatTurnOk(seat, OkeyTurnPhase.awaitingDraw)) return false;
+    if (drawDeck.isEmpty) _refillDeckFromDiscards();
+    if (drawDeck.isEmpty) return false;
+    final rack = players[seat].rackTiles;
+    final emptySlot = rack.indexOf(null);
+    if (emptySlot == -1) return false;
+    rack[emptySlot] = drawDeck.removeAt(0);
+    turnPhase = OkeyTurnPhase.awaitingDiscard;
+    OkeyAudio.playTilePickup();
+    notifyListeners();
+    return true;
+  }
+
+  /// أخذ آخر حجر مرمي من لاعب اليسار لأي مقعد
+  bool drawFromDiscardForSeat(int seat) {
+    if (seat == 0) return drawFromDiscard();
+    if (!_seatTurnOk(seat, OkeyTurnPhase.awaitingDraw)) return false;
+    final left = (seat + 3) % 4;
+    final pile = discardPiles[left];
+    if (pile.isEmpty) return false;
+    // مرميات لاعب الفول مخفية ولا تُؤخذ
+    if (players[left].playStyle == OkeyPlayStyle.full) return false;
+    final rack = players[seat].rackTiles;
+    final emptySlot = rack.indexOf(null);
+    if (emptySlot == -1) return false;
+    final tile = pile.removeLast();
+    if (identical(tile, lastDiscardTile)) {
+      lastDiscardTile = null;
+      lastDiscardPlayer = -1;
+    }
+    rack[emptySlot] = tile;
+    _takenLeftBySeat[seat] = tile;
+    turnPhase = OkeyTurnPhase.awaitingDiscard;
+    // يُشعر الواجهة لتحريك الحجر نحو حامل الآخذ
+    onDiscardTaken?.call(seat, tile);
+    OkeyAudio.playTilePickup();
+    notifyListeners();
+    return true;
+  }
+
+  /// إعادة حجر اليسار المأخوذ لكومته + سحب بديل — نسخة مقعدية عامة
+  /// من _returnTakenLeftTile (التي تخدم المقعد 0 فقط)
+  void _returnTakenTileForSeat(int seat, OkeyTile taken) {
+    if (seat == 0) {
+      _returnTakenLeftTile(taken);
+      return;
+    }
+    final rack = players[seat].rackTiles;
+    final slot = rack.indexWhere((t) => identical(t, taken));
+    if (slot != -1) {
+      rack[slot] = null;
+      final left = (seat + 3) % 4;
+      discardPiles[left].add(taken);
+      lastDiscardTile = taken;
+      lastDiscardPlayer = left;
+    }
+    if (drawDeck.isEmpty) _refillDeckFromDiscards();
+    if (drawDeck.isNotEmpty) {
+      final empty = rack.indexOf(null);
+      if (empty != -1) rack[empty] = drawDeck.removeAt(0);
+    }
+  }
+
+  /// رمي حجر من أي مقعد — يُعنون بمعرّف الحجر لا بخانته (ترتيب
+  /// الضيف على جهازه خاص ولا يعرفه المضيف)
+  bool discardTileForSeat(int seat, String tileId) {
+    if (seat == 0) {
+      final i = players[0].rackTiles.indexWhere((t) => t?.id == tileId);
+      return i != -1 && discardSlot(i);
+    }
+    if (!_seatTurnOk(seat, OkeyTurnPhase.awaitingDiscard)) return false;
+    final rack = players[seat].rackTiles;
+    var slot = rack.indexWhere((t) => t?.id == tileId);
+    if (slot == -1) return false;
+    var tile = rack[slot]!;
+
+    // نزول معلّق دون نقاط الافتتاح يُعاد للرف قبل الرمي
+    if (!players[seat].hasOpened) _retractPendingMelds(seat);
+
+    // من أخذ حجر اليسار ولم يفتح: يُعاد لكومته ويسحب بديلاً
+    final taken = _takenLeftBySeat.remove(seat);
+    if (taken != null &&
+        !rules.isRummy &&
+        players[seat].playStyle == OkeyPlayStyle.normal &&
+        !players[seat].hasOpened) {
+      _returnTakenTileForSeat(seat, taken);
+      if (identical(tile, taken)) {
+        // حاول رمي الحجر المأخوذ نفسه — عاد وسُحب بديله؛ اختر غيره
+        notifyListeners();
+        return true;
+      }
+      slot = rack.indexWhere((t) => t?.id == tileId);
+      if (slot == -1) {
+        notifyListeners();
+        return true;
+      }
+      tile = rack[slot]!;
+    }
+
+    rack[slot] = null;
+    discardPiles[seat].add(tile);
+    lastDiscardTile = tile;
+    lastDiscardPlayer = seat;
+    OkeyAudio.playTileDiscard();
+
+    final remaining = players[seat].activeTiles;
+    if (_styleWins(players[seat], remaining)) {
+      _declareWinner(players[seat],
+          tile.isRealOkey ? WinType.discardOkey : WinType.normal);
+      return true;
+    }
+    _advanceTurn();
+    return true;
+  }
+
+  /// إنزال بير بمعرّفات أحجاره (الضيف يرسل القائمة والمضيف يعيد
+  /// التحقق من صحتها — لا ثقة بأي تجميع يصل من الشبكة)
+  bool layMeldByIdsForSeat(int seat, List<String> ids) {
+    if (seat == 0) return false;
+    if (!_seatTurnOk(seat, OkeyTurnPhase.awaitingDiscard)) return false;
+    final p = players[seat];
+    if (p.playStyle != OkeyPlayStyle.normal) return false;
+    final rack = p.rackTiles;
+    final tiles = <OkeyTile>[];
+    for (final id in ids) {
+      final i = rack.indexWhere((t) => t?.id == id);
+      if (i == -1 || tiles.any((t) => t.id == id)) return false;
+      tiles.add(rack[i]!);
+    }
+    if (tiles.length < 3) return false;
+    final isRun = _isValidRun(tiles);
+    if (!isRun && !_isValidSet(tiles)) return false;
+    return _commitMeldForSeat(seat, tiles, isRun);
+  }
+
+  /// صرف حجر على بير نازل — نسخة مقعدية عامة من layTileOnMeld
+  bool layTileOnMeldForSeat(int seat, String tileId, int meldIndex) {
+    if (seat == 0) {
+      final i = players[0].rackTiles.indexWhere((t) => t?.id == tileId);
+      return i != -1 && layTileOnMeld(i, meldIndex);
+    }
+    if (!_seatTurnOk(seat, OkeyTurnPhase.awaitingDiscard)) return false;
+    final p = players[seat];
+    if (p.playStyle != OkeyPlayStyle.normal) return false;
+    if (meldIndex < 0 || meldIndex >= tableMelds.length) return false;
+    final rack = p.rackTiles;
+    final slot = rack.indexWhere((t) => t?.id == tileId);
+    if (slot == -1) return false;
+    final tile = rack[slot]!;
+    final meld = tableMelds[meldIndex];
+    final myPending = meld.ownerIndex == seat && meld.pending;
+    if (!p.hasOpened && !myPending) return false;
+    if (!canLayOffTile(tile, meld)) return false;
+
+    rack[slot] = null;
+    _insertIntoMeld(meld, tile);
+    OkeyAudio.playTileDiscard();
+
+    // صرف على بير معلّق قد يُكمل نقاط الافتتاح
+    if (meld.pending && !p.hasOpened) {
+      final total = meldPointsFor(seat);
+      if (total >= rules.openingPoints) {
+        p.hasOpened = true;
+        p.openedPoints = total;
+        for (final m in tableMelds.where((m) => m.ownerIndex == seat)) {
+          m.pending = false;
+        }
+      }
+    }
+    if (p.activeTiles.isEmpty) {
+      _checkEmptyRackWin(seat);
+      return true;
+    }
+    notifyListeners();
+    return true;
+  }
+
+  /// أخذ الجوكر من بير مقابل إبداله بالحجر الحقيقي — نسخة مقعدية
+  bool swapJokerFromMeldForSeat(int seat, String tileId, int meldIndex) {
+    if (seat == 0) {
+      final i = players[0].rackTiles.indexWhere((t) => t?.id == tileId);
+      return i != -1 && swapJokerFromMeld(i, meldIndex);
+    }
+    if (!_seatTurnOk(seat, OkeyTurnPhase.awaitingDiscard)) return false;
+    final p = players[seat];
+    if (p.playStyle != OkeyPlayStyle.normal) return false;
+    if (meldIndex < 0 || meldIndex >= tableMelds.length) return false;
+    final rack = p.rackTiles;
+    final slot = rack.indexWhere((t) => t?.id == tileId);
+    if (slot == -1) return false;
+    final tile = rack[slot]!;
+    final meld = tableMelds[meldIndex];
+    final myPending = meld.ownerIndex == seat && meld.pending;
+    if (!p.hasOpened && !myPending) return false;
+    final k = jokerSlotFor(meld, tile);
+    if (k == -1) return false;
+    final joker = meld.tiles[k];
+    meld.tiles[k] = tile;
+    rack[slot] = joker;
+    OkeyAudio.playTilePickup();
+    notifyListeners();
+    return true;
+  }
+
+  /// إعلان كونكان/فول لأي مقعد — نفس شروط اللاعب المحلي
+  bool declarePlayStyleForSeat(int seat, OkeyPlayStyle style) {
+    if (seat == 0) return declarePlayStyle(style);
+    if (style == OkeyPlayStyle.normal || rules.isRummy) return false;
+    final p = players[seat];
+    if (p.playStyle != OkeyPlayStyle.normal || p.hasOpened) return false;
+    if (tableMelds.any((m) => m.ownerIndex == seat)) return false;
+    p.playStyle = style;
+    onNotice?.call('🀄 {} بدأ اللعب {}'.trp([p.name, style.label]));
+    notifyListeners();
+    return true;
+  }
+
+  /// إعلان فوز لأي مقعد — نفس تحقق canDeclareOkeyOut لكن للمقعد s
+  bool declareWinForSeat(int seat) {
+    if (seat == 0) {
+      if (!canDeclareOkeyOut) return false;
+      _declareWinner(players[0], WinType.normal);
+      return true;
+    }
+    if (currentTurnIndex != seat || winner != null) return false;
+    final p = players[seat];
+    final active = p.activeTiles;
+    bool ok;
+    if (p.playStyle != OkeyPlayStyle.normal) {
+      ok = false;
+      for (var i = 0; i < active.length; i++) {
+        final rest = List<OkeyTile>.from(active)..removeAt(i);
+        if (_styleWins(p, rest)) {
+          ok = true;
+          break;
+        }
+      }
+    } else if (p.hasOpened) {
+      ok = _remainingAllPlaceableOnTable(active);
+    } else if (active.length == 14) {
+      ok = isWinningHand(active);
+    } else if (active.length == 15) {
+      ok = false;
+      for (var i = 0; i < active.length; i++) {
+        final rest = List<OkeyTile>.from(active)..removeAt(i);
+        if (isWinningHand(rest)) {
+          ok = true;
+          break;
+        }
+      }
+    } else {
+      ok = false;
+    }
+    if (!ok) return false;
+    _declareWinner(p, WinType.normal);
+    return true;
+  }
+
+  /// لعب آلي لمقعد بعيد تجاوز مهلته: سحب من الرزمة ثم رمي أرخص
+  /// حجر غير أوكي — يُبقي الغرفة حية إذا انقطع اتصال لاعب
+  void autoPlaySeat(int seat) {
+    if (isOnlineMirror || currentTurnIndex != seat || winner != null) return;
+    if (turnPhase == OkeyTurnPhase.awaitingDraw) {
+      drawFromDeckForSeat(seat);
+    }
+    if (turnPhase != OkeyTurnPhase.awaitingDiscard) return;
+    final rack = players[seat].rackTiles;
+    for (var i = rack.length - 1; i >= 0; i--) {
+      final t = rack[i];
+      if (t != null && !t.isRealOkey && !t.isFalseJoker) {
+        discardTileForSeat(seat, t.id);
+        return;
+      }
+    }
+    for (var i = rack.length - 1; i >= 0; i--) {
+      final t = rack[i];
+      if (t != null) {
+        discardTileForSeat(seat, t.id);
+        return;
+      }
+    }
+  }
+
+  /// معاينة أحجار البير الذي يضم الخانة (قراءة فقط) — الضيف
+  /// الأونلاين يستخدمها لإرسال معرّفات الأحجار ضمن حركة «نزول»
+  /// بدل تنفيذ النزول على المرآة
+  List<OkeyTile> previewMeldTiles(int slotIndex) {
+    final found = _meldGroupAt(0, slotIndex);
+    if (found == null) return const [];
+    return [for (final i in found.$1) players[0].rackTiles[i]!];
+  }
+
+  /// المضيف يطبّق حركة واردة من لاعب بعيد — إعادة false تعني
+  /// حركة غير صالحة (خارج الدور أو مخالفة للقواعد) فتُحذف وتُتجاهل
+  bool applyRemoteAction(int seat, Map<String, dynamic> m) {
+    if (isOnlineMirror || seat <= 0 || seat > 3) return false;
+    switch (m['t']) {
+      case 'draw':
+        return drawFromDeckForSeat(seat);
+      case 'take':
+        return drawFromDiscardForSeat(seat);
+      case 'disc':
+        return discardTileForSeat(seat, '${m['id']}');
+      case 'meld':
+        final raw = m['ids'];
+        return layMeldByIdsForSeat(
+            seat, [for (final e in (raw is List ? raw : const [])) '$e']);
+      case 'layoff':
+        return layTileOnMeldForSeat(
+            seat, '${m['id']}', (m['m'] as num?)?.toInt() ?? -1);
+      case 'joker':
+        return swapJokerFromMeldForSeat(
+            seat, '${m['id']}', (m['m'] as num?)?.toInt() ?? -1);
+      case 'style':
+        final s = OkeyPlayStyle.values.firstWhere((e) => e.name == m['s'],
+            orElse: () => OkeyPlayStyle.normal);
+        return declarePlayStyleForSeat(seat, s);
+      case 'win':
+        return declareWinForSeat(seat);
+    }
+    return false;
+  }
+
+  // ─── التسلسل ───
+
+  Map<String, dynamic> _meldToMap(OkeyGroup m) => {
+        'o': m.ownerIndex,
+        'r': m.isRun,
+        'p': m.pending,
+        't': [for (final t in m.tiles) t.toMap()],
+      };
+
+  /// لقطة الحالة العامة: كل ما يظهر للجميع على الطاولة — بلا
+  /// محتوى الرزمة ولا أيدي اللاعبين (اليد الخاصة تُرسل عبر
+  /// handForSeat إلى وثيقة hands/{uid} المحمية بالقواعد)
+  Map<String, dynamic> serializeGame() {
+    return {
+      'v': 1,
+      'turn': currentTurnIndex,
+      'phase': turnPhase.name,
+      'gs': gameState.name,
+      'turnDur': turnDuration,
+      'deck': drawDeck.length,
+      'ind': indicatorTile.toMap(),
+      'okey': realOkeySample.toMap(),
+      'ldTile': lastDiscardTile?.toMap(),
+      'ldSeat': lastDiscardPlayer,
+      'melds': [for (final m in tableMelds) _meldToMap(m)],
+      'piles': [
+        for (final p in discardPiles)
+          {'n': p.length, 'top': p.isEmpty ? null : p.last.toMap()}
+      ],
+      'pl': [
+        for (var i = 0; i < 4; i++)
+          {
+            'n': players[i].activeTiles.length,
+            'open': players[i].hasOpened,
+            'pts': players[i].openedPoints,
+            'st': players[i].playStyle.name,
+          }
+      ],
+      'win': winner == null ? -1 : players.indexOf(winner!),
+      'wt': winType?.name,
+    };
+  }
+
+  /// اليد الخاصة لمقعد — تُكتب في rooms/{id}/hands/{uid} يقرأها
+  /// صاحبها فقط (المضيف لا يحتاج وثيقة ليده — محركه يملكها أصلاً)
+  Map<String, dynamic> handForSeat(int seat) => {
+        'tiles': [for (final t in players[seat].activeTiles) t.toMap()]
+      };
+
+  /// أحجار رفّي بعد دمج اليد الواردة — للاختبار وفحص الأخطاء
+  List<OkeyTile> get mirrorMyTiles => players[0].activeTiles;
+
+  /// تحميل لقطة عامة على محرك المرآة. [seatOffset] مقعدي في الوثيقة
+  /// فتُدار الإحالات بحيث يصبح لاعبي المقعد المحلي 0 وتعمل كل
+  /// ميكانيكيات الواجهة بلا تعديل. [myHand] آخر يد وصلت من وثيقة
+  /// hands/{uid}. [handDropSlot] خانة مفضّلة للحجر الجديد (سحب
+  /// بالإفلات على خانة معيّنة)
+  void loadGameState(
+    Map<String, dynamic> g, {
+    required int seatOffset,
+    List<OkeyTile>? myHand,
+    int? handDropSlot,
+  }) {
+    int loc(int docSeat) => (docSeat - seatOffset + 4) % 4;
+
+    final td = (g['turnDur'] as num?)?.toInt();
+    if (td != null && td > 0) turnDuration = td;
+    currentTurnIndex = loc((g['turn'] as num?)?.toInt() ?? 0);
+    turnPhase = OkeyTurnPhase.values
+        .firstWhere((e) => e.name == g['phase'], orElse: () => turnPhase);
+    final gs = OkeyGameState.values
+        .firstWhere((e) => e.name == g['gs'], orElse: () => gameState);
+    // حالات الدور في اللقطة من منظور المضيف — تُعاد ترجمتها محلياً
+    gameState = (gs == OkeyGameState.win ||
+            gs == OkeyGameState.roundEnd ||
+            gs == OkeyGameState.lobby)
+        ? gs
+        : (currentTurnIndex == 0
+            ? OkeyGameState.yourTurn
+            : OkeyGameState.opponentTurn);
+
+    final deckCount = (g['deck'] as num?)?.toInt() ?? 0;
+    if (drawDeck.length != deckCount) {
+      drawDeck = List.generate(
+          deckCount,
+          (i) =>
+              OkeyTile(id: '_deck_$i', color: OkeyTileColor.black, value: 1));
+    }
+
+    if (g['ind'] is Map) {
+      indicatorTile =
+          OkeyTile.fromMap(Map<String, dynamic>.from(g['ind'] as Map));
+    }
+    if (g['okey'] is Map) {
+      realOkeySample =
+          OkeyTile.fromMap(Map<String, dynamic>.from(g['okey'] as Map));
+      fakeJokerAssigned = realOkeySample;
+    }
+
+    final ld = g['ldTile'];
+    lastDiscardTile =
+        ld is Map ? OkeyTile.fromMap(Map<String, dynamic>.from(ld)) : null;
+    final ldSeat = (g['ldSeat'] as num?)?.toInt() ?? -1;
+    lastDiscardPlayer = ldSeat < 0 ? -1 : loc(ldSeat);
+
+    tableMelds = [
+      for (final raw in (g['melds'] as List? ?? const []))
+        if (raw is Map)
+          OkeyGroup(
+            tiles: [
+              for (final tm in (raw['t'] as List? ?? const []))
+                OkeyTile.fromMap(Map<String, dynamic>.from(tm as Map))
+            ],
+            isRun: raw['r'] == true,
+            ownerIndex: loc((raw['o'] as num?)?.toInt() ?? 0),
+            pending: raw['p'] == true,
+          )
+    ];
+
+    // كومات الرمي: القمة الحقيقية فقط تكفي العرض (الأخذ يتحقق
+    // منها المضيف)، والعدد الفعلي يُحفظ في mirrorPileCounts
+    final piles = g['piles'] as List? ?? const [];
+    for (var ds = 0; ds < 4; ds++) {
+      final li = loc(ds);
+      final pd = ds < piles.length ? piles[ds] : null;
+      final top = pd is Map ? pd['top'] : null;
+      mirrorPileCounts[li] = pd is Map ? (pd['n'] as num?)?.toInt() ?? 0 : 0;
+      discardPiles[li] = [
+        if (top is Map) OkeyTile.fromMap(Map<String, dynamic>.from(top)),
+      ];
+    }
+
+    final pl = g['pl'] as List? ?? const [];
+    for (var ds = 0; ds < 4; ds++) {
+      final li = loc(ds);
+      final pd = ds < pl.length && pl[ds] is Map ? pl[ds] as Map : null;
+      if (pd == null) continue;
+      final p = players[li];
+      p.hasOpened = pd['open'] == true;
+      p.openedPoints = (pd['pts'] as num?)?.toInt() ?? 0;
+      p.playStyle = OkeyPlayStyle.values.firstWhere((e) => e.name == pd['st'],
+          orElse: () => OkeyPlayStyle.normal);
+      final n = (pd['n'] as num?)?.toInt() ?? 0;
+      if (li == 0 && myHand != null) {
+        _mergeMyRack(myHand, preferredSlot: handDropSlot);
+      } else {
+        _resizePlaceholderRack(p, n);
+      }
+    }
+
+    final winSeat = (g['win'] as num?)?.toInt() ?? -1;
+    if (winSeat >= 0) {
+      winner = players[loc(winSeat)];
+      winType = WinType.values
+          .firstWhere((e) => e.name == g['wt'], orElse: () => WinType.normal);
+      gameState = OkeyGameState.win;
+      turnPhase = OkeyTurnPhase.gameOver;
+    }
+
+    selectedTileIndex = null;
+    notifyListeners();
+  }
+
+  /// عدد أحجار كل كومة رمي كما في الوثيقة (على المرآة تحمل الكومة
+  /// قمتها الحقيقية فقط — هذا العداد للعرض إن احتاجته الواجهة)
+  final List<int> mirrorPileCounts = [0, 0, 0, 0];
+
+  /// دمج يدي الواردة من وثيقة اليد الخاصة مع ترتيبي المحلي الحالي:
+  /// الأحجار المعروفة تبقى في خاناتها فيحافظ اللاعب على ترتيبه،
+  /// والجديدة تُوضع في خانة الإفلات المفضّلة ثم أول خانة فارغة
+  void _mergeMyRack(List<OkeyTile> fresh, {int? preferredSlot}) {
+    final rack = players[0].rackTiles;
+    final byId = <String, OkeyTile>{for (final t in fresh) t.id: t};
+    final placed = <String>{};
+    for (var i = 0; i < rack.length; i++) {
+      final t = rack[i];
+      if (t == null) continue;
+      final f = byId[t.id];
+      if (f != null && placed.add(t.id)) {
+        rack[i] = f; // نسخة اللقطة — تحمل رايات الأوكي المحدّثة
+      } else {
+        rack[i] = null; // حجر غادر اليد (رُمي أو نزل على الطاولة)
+      }
+    }
+    for (final t in fresh) {
+      if (placed.contains(t.id)) continue;
+      var slot = -1;
+      if (preferredSlot != null &&
+          preferredSlot >= 0 &&
+          preferredSlot < 28 &&
+          rack[preferredSlot] == null) {
+        slot = preferredSlot;
+        preferredSlot = null;
+      } else {
+        slot = rack.indexOf(null);
+      }
+      if (slot == -1) break;
+      rack[slot] = t;
+      placed.add(t.id);
+    }
+  }
+
+  /// رفّ placeholders لأحجار خصم مخفية — العدد وحده ما يظهر على
+  /// حامله، ولا تُرسل هوية الأحجار للمرآة أصلاً (معلومة مخفية)
+  void _resizePlaceholderRack(OkeyPlayer p, int n) {
+    p.rackTiles = List.filled(28, null);
+    for (var i = 0; i < n && i < 28; i++) {
+      p.rackTiles[i] =
+          OkeyTile(id: '_h_${p.id}_$i', color: OkeyTileColor.black, value: 1);
+    }
+  }
+
+  /// ضبط الفائز على المرآة من بيانات وثيقة الغرفة — احتياط لحالة
+  /// وصول winner/status=finished قبل آخر لقطة محمّلة بعلم الفوز
+  void markWinnerBySeat(int localSeat, WinType type) {
+    if (winner != null) return;
+    winner = players[localSeat];
+    winType = type;
+    gameState = OkeyGameState.win;
+    turnPhase = OkeyTurnPhase.gameOver;
+    notifyListeners();
+  }
+
+  // ─── وضع التدريب ───
+
+  /// خانة الحجر المقترح رميه في وضع التدريب: أقل حجر عزلة — ليس
+  /// جزءاً من مجموعة مميّزة، ليس أوكي، وأقل قيمة وأبعد عن تشكيل
+  /// سلاسل/أزواج مع بقية اليد. null إن لم يوجد مرشّح
+  int? get trainingDiscardHint {
+    final hl = getHighlightedSlotIndices();
+    final rack = players[0].rackTiles;
+    int? best;
+    var bestScore = 1 << 30;
+    for (var i = 0; i < 28; i++) {
+      final t = rack[i];
+      if (t == null || hl.contains(i) || t.isRealOkey || t.isFalseJoker) {
+        continue;
+      }
+      var score = t.value;
+      for (final o in rack) {
+        if (o == null || identical(o, t)) continue;
+        if (!o.isRealOkey &&
+            o.color == t.color &&
+            (o.value - t.value).abs() <= 2) {
+          score += 20; // جار لوني قريب = احتمال سلسلة
+        }
+        if (!o.isRealOkey && o.value == t.value && o.color != t.color) {
+          score += 15; // نفس الرقم بلون آخر = زوج محتمل
+        }
+      }
+      if (score < bestScore) {
+        bestScore = score;
+        best = i;
+      }
+    }
+    return best;
   }
 
   @override

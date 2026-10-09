@@ -5,13 +5,18 @@ import 'game_notice.dart';
 import '../../../l10n/app_lang.dart';
 
 class OkeyChatDialog extends StatefulWidget {
-  const OkeyChatDialog({super.key});
+  /// معاودة اختيارية عند الإرسال — الأونلاين يمرّرها لبثّ الرسالة
+  /// على وثيقة الغرفة بدل الفقاعة المحلية المباشرة
+  final void Function(String msg)? onSend;
 
-  static Future<void> show(BuildContext context) {
+  const OkeyChatDialog({super.key, this.onSend});
+
+  static Future<void> show(BuildContext context,
+      {void Function(String msg)? onSend}) {
     return showOkeyLandscapeDialog(
       context,
       barrierColor: Colors.black.withOpacity(0.6),
-      builder: (_) => const OkeyChatDialog(),
+      builder: (_) => OkeyChatDialog(onSend: onSend),
     );
   }
 
@@ -35,6 +40,11 @@ class _OkeyChatDialogState extends State<OkeyChatDialog> {
     AppHaptics.selection();
     OkeyAudio.playButtonClick();
     Navigator.of(context).pop();
+    if (widget.onSend != null) {
+      // أونلاين: الشاشة تعرض الفقاعة محلياً وتبثّ الرسالة للغرفة
+      widget.onSend!(msg);
+      return;
+    }
     // الرسالة وحدها في فقاعة فوق استكانة المرسل — بدون كلمة "أرسلت"
     GameBubble.show(context, msg, playerIndex: 0);
   }

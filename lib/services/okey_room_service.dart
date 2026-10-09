@@ -70,6 +70,13 @@ class OkeyRoom {
   final Map<String, dynamic>? winner;
   final DateTime createdAt;
 
+  /// لقطة اللعبة العامة التي يكتبها المضيف (لا تحتوي أيدي اللاعبين
+  /// ولا الرزمة — أحجار كل لاعب الخاصة في hands/{uid})
+  final Map<String, dynamic>? game;
+
+  /// آخر رسالة شات سريعة داخل الغرفة: {uid, msg, at}
+  final Map<String, dynamic>? chat;
+
   OkeyRoom({
     required this.id,
     required this.stakes,
@@ -86,6 +93,8 @@ class OkeyRoom {
     this.centerDiscards = const [],
     this.winner,
     required this.createdAt,
+    this.game,
+    this.chat,
   });
 
   factory OkeyRoom.fromDoc(DocumentSnapshot doc) {
@@ -126,6 +135,10 @@ class OkeyRoom {
           ? Map<String, dynamic>.from(data['winner'])
           : null,
       createdAt: created,
+      game:
+          data['game'] != null ? Map<String, dynamic>.from(data['game']) : null,
+      chat:
+          data['chat'] != null ? Map<String, dynamic>.from(data['chat']) : null,
     );
   }
 }
@@ -381,6 +394,141 @@ class OkeyRoomService {
       }
     } catch (e) {
       debugPrint('Error declaring win: $e');
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  مزامنة اللعب الأونلاين — المضيف سلطة مرجعية، الضيوف مرايا
+  // ═══════════════════════════════════════════════════════════
+  //
+  // - الوثيقة الرئيسية تحمل «game»: لقطة عامة بلا أيدٍ ولا رزمة.
+  // - rooms/{id}/hands/{uid}: يد كل لاعب الخاصة — يقرأها صاحبها.
+  // - rooms/{id}/moves/{auto}: حركات الضيوف — يستهلكها المضيف
+  //   بالحذف بعد تطبيقها على محركه المرجعي.
+
+  /// جلب الغرفة مرة واحدة — شاشة اللعب تحتاجها لتحديد مقعدي ودوري
+  Future<OkeyRoom?> getRoom(String roomId) async {
+    try {
+      final doc = await _firestore.collection('rooms').doc(roomId).get();
+      return doc.exists ? OkeyRoom.fromDoc(doc) : null;
+    } catch (e) {
+      debugPrint('Error fetching room: $e');
+      return null;
+    }
+  }
+
+  /// المضيف يكتب لقطة الحالة العامة + عدّادات أحجار اللاعبين
+  /// ويُحدّث مؤقّت الدور — كل إعادة كتابة تشغّل مرايا الضيوف
+  Future<void> publishGame(
+    String roomId, {
+    required Map<String, dynamic> game,
+    required List<Map<String, dynamic>> players,
+  }) async {
+    try {
+      await _firestore.collection('rooms').doc(roomId).update({
+        'game': game,
+        'players': players,
+        'currentTurnSeat': game['turn'],
+        'turnPhase': game['phase'],
+        'turnStartTime': FieldValue.serverTimestamp(),
+        'turnDurationSeconds': game['turnDur'] ?? 30,
+        'drawDeckCount': game['deck'],
+        'centerDiscards': game['ldTile'] == null ? const [] : [game['ldTile']],
+        'gameRev': game['rev'],
+      });
+    } catch (e) {
+      debugPrint('Error publishing game state: $e');
+    }
+  }
+
+  /// أيدي اللاعبين البعيدين — كل وثيقة hands/{uid} يقرأها صاحبها
+  /// فقط بحسب قواعد الأمان، فيبقى ترتيب ومحتوى اليد مخفيين عن باقي
+  /// اللاعبين رغم أن المضيف يملكها فعلياً
+  Future<void> publishHands(
+      String roomId, Map<String, List<Map<String, dynamic>>> handsByUid) async {
+    try {
+      final batch = _firestore.batch();
+      handsByUid.forEach((uid, tiles) {
+        batch.set(
+          _firestore
+              .collection('rooms')
+              .doc(roomId)
+              .collection('hands')
+              .doc(uid),
+          {'uid': uid, 'tiles': tiles},
+        );
+      });
+      await batch.commit();
+    } catch (e) {
+      debugPrint('Error publishing hands: $e');
+    }
+  }
+
+  /// بثّ يد اللاعب نفسه — الضيف يقرأ أحجاره الحقيقية من هنا
+  Stream<List<Map<String, dynamic>>> getHandStream(String roomId, String uid) {
+    return _firestore
+        .collection('rooms')
+        .doc(roomId)
+        .collection('hands')
+        .doc(uid)
+        .snapshots()
+        .map((d) {
+      final data = d.data();
+      if (data == null) return const <Map<String, dynamic>>[];
+      return [
+        for (final t in (data['tiles'] as List? ?? const []))
+          Map<String, dynamic>.from(t as Map)
+      ];
+    });
+  }
+
+  /// الضيف يرسل حركته للمضيف — الحقول: uid, seat, t (نوع الحركة)
+  /// + حمولة الحركة + at (مللي ثانية للترتيب التقريبي)
+  Future<void> sendMove(String roomId, Map<String, dynamic> move) async {
+    await _firestore
+        .collection('rooms')
+        .doc(roomId)
+        .collection('moves')
+        .add(move);
+  }
+
+  /// بثّ حركات الضيوف بترتيب الوصول — يقرأها المضيف فقط
+  Stream<QuerySnapshot<Map<String, dynamic>>> movesStream(String roomId) {
+    return _firestore
+        .collection('rooms')
+        .doc(roomId)
+        .collection('moves')
+        .orderBy('at')
+        .snapshots();
+  }
+
+  /// حذف حركة بعد استهلاكها على محرك المضيف
+  Future<void> deleteMove(String roomId, String moveId) async {
+    try {
+      await _firestore
+          .collection('rooms')
+          .doc(roomId)
+          .collection('moves')
+          .doc(moveId)
+          .delete();
+    } catch (e) {
+      debugPrint('Error deleting move: $e');
+    }
+  }
+
+  /// رسالة شات سريعة داخل الغرفة — تُكتب على الوثيقة فيراها الجميع
+  /// مع اللقطة التالية، وتُعرض كفقاعة فوق استكانة المرسل
+  Future<void> sendRoomChat(String roomId, String uid, String msg) async {
+    try {
+      await _firestore.collection('rooms').doc(roomId).update({
+        'chat': {
+          'uid': uid,
+          'msg': msg,
+          'at': DateTime.now().millisecondsSinceEpoch,
+        }
+      });
+    } catch (e) {
+      debugPrint('Error sending room chat: $e');
     }
   }
 }

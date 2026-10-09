@@ -134,7 +134,8 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
           MaterialPageRoute(
               builder: (context) => OkeyGameScreen(
                   rules: OkeyRules.fromId(_currentRoom?.variant),
-                  teamMode: _teamMode)),
+                  teamMode: _teamMode,
+                  roomId: room.id)),
         );
       }
     });
@@ -346,7 +347,90 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
           _buildModeSelector(),
           const SizedBox(height: 16),
           _buildJoinButton(),
+          const SizedBox(height: 14),
+          _buildTrainingCard(),
         ],
+      ),
+    );
+  }
+
+  /// بطاقة حجرة التدريب — جولة تعليمية ضد بوتات سهلة بتلميحات حية،
+  /// بلا رهان ولا نقاط: للمبتدئين ومن يريد الإحماء قبل اللعب الحقيقي
+  Widget _buildTrainingCard() {
+    return GestureDetector(
+      onTap: () {
+        AppHaptics.medium();
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => OkeyGameScreen(
+              rules: widget.rules,
+              teamMode: false,
+              trainingMode: true,
+            ),
+          ),
+        );
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0x331E5B8C), Color(0x2A142A4E)],
+              ),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                  color: const Color(0xFF38BDF8).withOpacity(0.5), width: 1.1),
+              boxShadow: [
+                BoxShadow(
+                    color: const Color(0xFF38BDF8).withOpacity(0.14),
+                    blurRadius: 16,
+                    spreadRadius: -4),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const RadialGradient(
+                        colors: [Color(0x4038BDF8), Colors.transparent]),
+                    border: Border.all(
+                        color: const Color(0xFF38BDF8).withOpacity(0.4)),
+                  ),
+                  child: const Center(
+                      child: Text('🎓', style: TextStyle(fontSize: 26))),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('حجرة التدريب'.tr,
+                          style: TextStyle(
+                              color: _textWhite,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w900)),
+                      const SizedBox(height: 3),
+                      Text(
+                        'تعلّم اللعب ببوتات سهلة وتلميحات حية — بلا رهان'.tr,
+                        style: const TextStyle(color: _textDim, fontSize: 10.5),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.arrow_forward_ios_rounded,
+                    color: Color(0xFF38BDF8), size: 16),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1002,48 +1086,78 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
 
           const SizedBox(height: 12),
 
-          // زر البدء الفوري مع الروبوتات
-          GestureDetector(
-            onTap: _startWithBotsNow,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 15),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF34D399), Color(0xFF059669)],
-                ),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFF6EE7B7), width: 1.2),
-                boxShadow: [
-                  BoxShadow(
-                      color: const Color(0xFF10B981).withOpacity(0.35),
-                      blurRadius: 18,
-                      spreadRadius: -4),
-                ],
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.bolt_rounded, color: Colors.white),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        'بدء اللعبة فوراً (ملء المقاعد بروبوتات)'.tr,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 14,
-                            height: 1.2),
-                      ),
-                    ),
+          // زر البدء الفوري مع الروبوتات — للمضيف فقط (قواعد
+          // Firestore تمنع غيره من تغيير status على أي حال)
+          if (room.hostUid == AuthService().currentUser?.uid)
+            GestureDetector(
+              onTap: _startWithBotsNow,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 15),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF34D399), Color(0xFF059669)],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  border:
+                      Border.all(color: const Color(0xFF6EE7B7), width: 1.2),
+                  boxShadow: [
+                    BoxShadow(
+                        color: const Color(0xFF10B981).withOpacity(0.35),
+                        blurRadius: 18,
+                        spreadRadius: -4),
                   ],
                 ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.bolt_rounded, color: Colors.white),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          'بدء اللعبة فوراً (ملء المقاعد بروبوتات)'.tr,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 14,
+                              height: 1.2),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          else
+            // ضيف ينتظر بدء المضيف — القواعد تمنعه من تغيير status
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.06),
+                borderRadius: BorderRadius.circular(20),
+                border:
+                    Border.all(color: Colors.white.withOpacity(0.14), width: 1),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Color(0xFF34D399))),
+                  const SizedBox(width: 10),
+                  Text('بانتظار المضيف لبدء اللعبة…'.tr,
+                      style: const TextStyle(
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12.5)),
+                ],
               ),
             ),
-          ),
         ],
       ),
     );

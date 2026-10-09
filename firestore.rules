@@ -256,9 +256,47 @@ service cloud.firestore {
       allow update: if isAdmin() || (signedIn()
         // الغرف القديمة قد تفتقد playerUids — نسمح للتوافقية
         && (!('playerUids' in resource.data)
-            || request.auth.uid in resource.data.playerUids));
+            || request.auth.uid in resource.data.playerUids)
+        // حقول السلطة المرجعية للمضيف وحده: لقطة اللعبة والفائز
+        // والحالة ومؤقّت الدور وكومة الرمي — لا يستطيع ضيف تزويرها.
+        // players/playerUids يبقيان للأعضاء (انضمام quickMatch)،
+        // وchat للرسائل السريعة بينهم
+        && (!changedKeys().hasAny([
+            'game', 'gameRev', 'winner', 'status', 'currentTurnSeat',
+            'turnPhase', 'turnStartTime', 'drawDeckCount',
+            'centerDiscards', 'hostUid'])
+            || resource.data.hostUid == request.auth.uid));
       allow delete: if isAdmin()
         || (signedIn() && resource.data.hostUid == request.auth.uid);
+
+      // ── حركات اللعب الأونلاين: الضيوف يرسلون، المضيف يستهلك ──
+      // الإنشاء لعضو الغرفة صاحب الحركة فقط (uid+seat مثبّتان)،
+      // والقراءة لأعضائها، والحذف للمضيف وحده بعد تطبيقها على
+      // المحرك المرجعي — فلا يستطيع ضيف حذف حركة غيره أو التعديل
+      match /moves/{moveId} {
+        allow create: if signedIn()
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.keys().hasAll(['uid', 'seat', 't', 'at'])
+          && (!('playerUids' in get(/databases/$(database)/documents/rooms/$(id)).data)
+              || request.auth.uid in get(/databases/$(database)/documents/rooms/$(id)).data.playerUids);
+        allow read: if signedIn()
+          && (!('playerUids' in get(/databases/$(database)/documents/rooms/$(id)).data)
+              || request.auth.uid in get(/databases/$(database)/documents/rooms/$(id)).data.playerUids);
+        allow update: if false;
+        allow delete: if isAdmin() || (signedIn()
+          && get(/databases/$(database)/documents/rooms/$(id)).data.hostUid
+              == request.auth.uid);
+      }
+
+      // ── أيدي اللاعبين: خاصة بصاحبها — يقرأها وحده فقط ──
+      // الكتابة للمضيف حصرياً (صاحب المحرك المرجعي) فيستحيل على
+      // ضيف تزوير يده — المضيف يعيد كتابتها مع كل لقطة على أي حال
+      match /hands/{uid} {
+        allow read: if signedIn() && request.auth.uid == uid;
+        allow write: if isAdmin() || (signedIn()
+          && get(/databases/$(database)/documents/rooms/$(id)).data.hostUid
+              == request.auth.uid);
+      }
     }
     // ملفات اللاعبين القديمة: المالك فقط ضمن سقف تغيّر
     match /players/{id} {
