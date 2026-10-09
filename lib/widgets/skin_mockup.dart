@@ -81,9 +81,70 @@ class SkinMockup extends StatelessWidget {
         return BgSkinPreview(category: category, itemId: item?.id ?? '');
       case StoreCategory.okeyRoom:
         return _buildRoomMockup();
+      case StoreCategory.title:
+        return _buildTitleMockup();
       default:
         return _buildBackgroundMockup();
     }
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // موك اب اللقب — لوحة اسم ذهبية: صورة رمزية + اسم + اللقب تحته
+  // (اللقب نص بلا صورة — المعاينة تعرض شكله على بطاقة لاعب)
+  // ══════════════════════════════════════════════════════════
+  Widget _buildTitleMockup() {
+    const gold = Color(0xFFFFD54F);
+    return SizedBox(
+      width: width,
+      height: height,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // صورة رمزية + اسم اللاعب كما يظهر بالغرفة
+            Container(
+              width: height * 0.52,
+              height: height * 0.52,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF60A5FA), Color(0xFF3B82F6)],
+                ),
+              ),
+              child: Center(
+                  child: Text('🀄', style: TextStyle(fontSize: height * 0.26))),
+            ),
+            const SizedBox(height: 4),
+            Text('لاعب',
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800)),
+            const SizedBox(height: 2),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [
+                  gold.withOpacity(0.22),
+                  const Color(0x33FF9800),
+                ]),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: gold.withOpacity(0.6)),
+              ),
+              child: Text(
+                '✦ ${item?.name ?? 'اللقب'} ✦',
+                style: const TextStyle(
+                    color: Color(0xFFFFE9A8),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   // ══════════════════════════════════════════════════════════

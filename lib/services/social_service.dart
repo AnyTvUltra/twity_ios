@@ -130,6 +130,22 @@ class SocialService {
         .map((snap) => snap.docs.map((d) => {'uid': d.id, ...d.data()}).toList());
   }
 
+  /// حضور الأصدقاء الحي — استعلام `whereIn` واحد على وثائق المستخدمين
+  /// (أول 30 صديقاً — حد Firestore). يعيد uid → {isOnline, activeRoom, activeGame}.
+  Stream<Map<String, Map<String, dynamic>>> friendsPresenceStream(List<String> uids) {
+    if (uids.isEmpty) return Stream.value(const {});
+    final ids = uids.take(30).toList();
+    return _firestore.collection('users').where(FieldPath.documentId, whereIn: ids).snapshots().map((snap) => {
+          for (final d in snap.docs)
+            d.id: {
+              'isOnline': d.data()['isOnline'] == true,
+              'activeRoom': d.data()['activeRoom'] ?? '',
+              'activeGame': d.data()['activeGame'] ?? '',
+              'displayName': d.data()['displayName'] ?? '',
+            },
+        });
+  }
+
   /// إضافة صديق مباشرة (تُستخدم داخلياً عند قبول الطلب)
   Future<void> addFriend(String myUid, AppUser friend) async {
     try {

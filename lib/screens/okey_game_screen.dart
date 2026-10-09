@@ -20,6 +20,7 @@ import '../games/okey/widgets/okey_win_overlay.dart';
 import '../games/okey/utils/okey_audio.dart';
 import '../services/firebase_service.dart';
 import '../services/auth_service.dart';
+import '../services/competition_service.dart';
 import '../services/game_settings_service.dart';
 import '../services/okey_room_service.dart';
 import '../services/store_service.dart';
@@ -49,13 +50,18 @@ class OkeyGameScreen extends StatefulWidget {
   /// بلا رهان ولا تسوية نقاط، جولة تعليمية خالصة
   final bool trainingMode;
 
+  /// وضع المشاهدة: مرآة قراءة فقط — بلا يد خاصة ولا تفاعل،
+  /// لأصدقاء اللاعبين الذين يريدون متابعة الجولة حية
+  final bool spectate;
+
   OkeyGameScreen(
       {super.key,
       OkeyRules? rules,
       this.teamMode = false,
       this.rummyMode = false,
       this.roomId,
-      this.trainingMode = false})
+      this.trainingMode = false,
+      this.spectate = false})
       : rules = rules ?? (rummyMode ? OkeyRules.rummy : OkeyRules.turkish);
 
   @override
@@ -152,6 +158,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   int _mySeat = 0; // مقعدي في وثيقة الغرفة (0-3)
   bool get _isOnline => widget.roomId != null;
   bool get _isRemote => _isOnline && !_isHost;
+  bool get _isSpectator => widget.spectate;
   OkeyRoom? _room;
   StreamSubscription? _roomSub;
   StreamSubscription? _handSub;
@@ -169,6 +176,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   Map<int, String> _remoteUidBySeat = {};
   Map<int, Map<String, dynamic>> _roomPlayerMaps = {};
   final Set<String> _consumedMoves = {};
+  String? _seasonId; // مفتاح الموسم الجاري — لتسجيل النتائج موسمياً
 
   // ═══ وضع التدريب ═══
   bool _showTrainingIntro = false;
@@ -483,36 +491,60 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       Color(0xFFFBBF24), // يسار — ذهبي
     ];
     final c = colors[_chatBubblePlayer.clamp(0, 3)];
+    // رد فعل إيموجي (بادئة ⚡) يظهر كإيموجي كبير بلا إطار نصي
+    final isReaction = msg.startsWith('⚡');
     final bubble = AnimatedSwitcher(
       duration: const Duration(milliseconds: 220),
       transitionBuilder: (child, anim) => ScaleTransition(
         scale: CurvedAnimation(parent: anim, curve: Curves.easeOutBack),
         child: FadeTransition(opacity: anim, child: child),
       ),
-      child: Container(
-        key: ValueKey(msg),
-        constraints: const BoxConstraints(maxWidth: 240),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          color: const Color(0xF5192130),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: c.withOpacity(0.75), width: 1.3),
-          boxShadow: [
-            BoxShadow(
-                color: c.withOpacity(0.30), blurRadius: 12, spreadRadius: 1),
-            BoxShadow(
-                color: Colors.black.withOpacity(0.5),
-                blurRadius: 8,
-                offset: const Offset(0, 4)),
-          ],
-        ),
-        child: Text(
-          msg,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-              color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
-        ),
-      ),
+      child: isReaction
+          ? Container(
+              key: ValueKey(msg),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xF5192130),
+                border: Border.all(color: c.withOpacity(0.75), width: 1.6),
+                boxShadow: [
+                  BoxShadow(
+                      color: c.withOpacity(0.35),
+                      blurRadius: 14,
+                      spreadRadius: 1),
+                ],
+              ),
+              child:
+                  Text(msg.substring(1), style: const TextStyle(fontSize: 34)),
+            )
+          : Container(
+              key: ValueKey(msg),
+              constraints: const BoxConstraints(maxWidth: 240),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              decoration: BoxDecoration(
+                color: const Color(0xF5192130),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: c.withOpacity(0.75), width: 1.3),
+                boxShadow: [
+                  BoxShadow(
+                      color: c.withOpacity(0.30),
+                      blurRadius: 12,
+                      spreadRadius: 1),
+                  BoxShadow(
+                      color: Colors.black.withOpacity(0.5),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4)),
+                ],
+              ),
+              child: Text(
+                msg,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700),
+              ),
+            ),
     );
     // مقعد صاحب الفقاعة على الشاشة من منظور هذا المشاهد + مواضع نسبية
     // للطاولة الفعلية حتى تبقى قرب حامله على أي أبعاد شاشة
@@ -777,7 +809,28 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     _isHost = room.hostUid == uid;
     _roomPlayerMaps = {for (final p in room.players) p.seatIndex: p.toMap()};
 
-    if (_isHost) {
+    if (_isSpectator) {
+      // مشاهد: مرآة بمنظور المقعد 0 بلا يد خاصة ولا تحكم —
+      // players[0].isHuman=false فتتعطّل كل تفاعلات الواجهة تلقائياً
+      final mirror = _engine;
+      mirror.removeListener(_onEngineUpdate);
+      _engine = OkeyEngine.mirror(
+          rules: widget.rules,
+          turnDuration: GameSettingsService().defaultTurnTimer);
+      _engine.onDiscardTaken = _onDiscardTaken;
+      _engine.addListener(_onEngineUpdate);
+      mirror.dispose();
+      for (final p in _engine.players) {
+        p.isHuman = false;
+      }
+      _mySeat = 0; // منظور المقعد 0 — المضيف أسفل الطاولة
+      _remoteTick =
+          Timer.periodic(const Duration(seconds: 1), (_) => _remoteCountdown());
+      // سجّل حضوري كمشاهد على وثيقة الغرفة (قائمة spectators)
+      if (uid.isNotEmpty) {
+        unawaited(OkeyRoomService().joinAsSpectator(widget.roomId!, uid));
+      }
+    } else if (_isHost) {
       // المضيف = السلطة المرجعية: محرك حقيقي يوزّع ويشغّل البوتات.
       // مقاعد اللاعبين البعيدين لا يشغّلها الـAI — تنتظر حركاتهم.
       final mirror = _engine;
@@ -790,7 +843,27 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       _engine.onNotice = (msg) {
         if (mounted) _showGameNotice(msg);
       };
+      // مقعد بعيد تجمد → علّمه منقطعاً على الوثيقة ليرى الجميع
+      _engine.onRemoteSeatAutoPlayed = (seat) {
+        final ruid = _remoteUidBySeat[seat];
+        if (ruid != null && _room != null) {
+          _engine.players[seat].connected = false;
+          unawaited(OkeyRoomService().setConnected(widget.roomId!, ruid, false,
+              players: _room!.players));
+        }
+      };
       mirror.dispose();
+
+      // نجاة المضيف: إن كانت الغرفة جارية ووثيقة host_state
+      // موجودة = أعدتُ فتح التطبيق وسط جولة — استعد الحالة
+      // الكاملة بدل توزيع جديد يمحو الجولة الجارية
+      if (room.status == 'playing') {
+        final saved = await OkeyRoomService().loadHostState(widget.roomId!);
+        if (saved != null && mounted) {
+          _engine.loadHostState(saved);
+          _dealing = false; // التوزيع انتهى قبل الانقطاع
+        }
+      }
 
       _engine.remoteHumanSeats.addAll(room.players
           .where((p) => !p.isBot && p.uid != uid)
@@ -805,6 +878,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           p.name = rp.name;
           if (rp.photoUrl.isNotEmpty) p.avatarUrl = rp.photoUrl;
         }
+        p.title = rp.title;
+        p.frameId = rp.frameId;
+        p.connected = rp.connected;
         p.isHuman = false; // البشري الوحيد على هذا الجهاز هو المضيف
       }
       _engine.players[0].isHuman = true;
@@ -815,6 +891,11 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       // اللقطة الأولى: توزيع كامل + مؤشر + أيدي البعيدين
       _publishState();
     } else {
+      // عدتُ للجولة بعد انقطاع؟ — أعلن اتصالي من جديد
+      if (room.status == 'playing' && meIdx >= 0) {
+        unawaited(OkeyRoomService()
+            .setConnected(widget.roomId!, uid, true, players: room.players));
+      }
       // الضيف: مرآة مُدارة بمقعدي — لاعبي هو المقعد المحلي 0 دائماً
       _handSub =
           OkeyRoomService().getHandStream(widget.roomId!, uid).listen((tiles) {
@@ -825,13 +906,15 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     }
     _roomSub =
         OkeyRoomService().getRoomStream(widget.roomId!).listen(_onRoomSnapshot);
+    unawaited(
+        CompetitionService().currentSeasonId().then((s) => _seasonId = s));
     if (mounted) setState(() {});
   }
 
   /// الضيف يرسل حركة للمضيف عبر moves/ — لا تُطبَّق محلياً أبداً،
   /// النتيجة تعود مع اللقطة التالية فيبقى المحرك المرجعي وحيداً
   void _sendMove(Map<String, dynamic> m) {
-    if (widget.roomId == null) return;
+    if (widget.roomId == null || _isSpectator) return;
     OkeyRoomService().sendMove(widget.roomId!, {
       ...m,
       'uid': AuthService().currentUser?.uid ?? '',
@@ -890,6 +973,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         {
           ...?_roomPlayerMaps[i],
           'tileCount': _engine.players[i].activeTiles.length,
+          'connected': _engine.players[i].connected,
         }
     ];
     await OkeyRoomService()
@@ -904,6 +988,11 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     if (hands.isNotEmpty) {
       await OkeyRoomService().publishHands(widget.roomId!, hands);
     }
+
+    // حالة النجاة: نسخة كاملة (رزمة+أيدي) يقرأها المضيف وحده —
+    // إن أُغلق تطبيقه وسط الجولة يستعيدها كما كانت
+    unawaited(OkeyRoomService()
+        .publishHostState(widget.roomId!, _engine.serializeHostState()));
   }
 
   /// كل تحديث لوثيقة الغرفة — شات للجميع، ولقطة اللعبة للضيوف
@@ -943,11 +1032,15 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             myHand: _myHandTiles,
             handDropSlot: _pendingDropSlot);
         _pendingDropSlot = null;
-        // الأسماء والصور من الوثيقة — المرآة لا تعرفها
+        // الأسماء والصور والألقاب والإطارات وحالة الاتصال من
+        // الوثيقة — المرآة لا تعرفها
         for (final rp in room.players) {
           final p = _engine.players[_localSeatOfDoc(rp.seatIndex)];
           p.name = rp.name;
           if (rp.photoUrl.isNotEmpty) p.avatarUrl = rp.photoUrl;
+          p.title = rp.title;
+          p.frameId = rp.frameId;
+          p.connected = rp.connected;
         }
         _syncHumanProfile();
         setState(() {});
@@ -971,7 +1064,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
 
   /// مقعد الوثيقة → المقعد المحلي على هذا الجهاز
   int _localSeatOfDoc(int docSeat) =>
-      _isHost ? docSeat : (docSeat - _mySeat + 4) % 4;
+      (_isHost || _isSpectator) ? docSeat : (docSeat - _mySeat + 4) % 4;
 
   /// عدّاد دور الضيف: يُشتق من turnStartTime على الوثيقة —
   /// المضيف وحده يُنفّذ انتهاء المهلة فعلياً
@@ -1428,6 +1521,22 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     if (wuid == me && !_isHost) {
       await _settleRound(chipChange: pot, ratingChange: 25, isWin: true);
     }
+    // الخاسر يدوّن نتيجته (إحصائيات/أسبوعي/موسم) بلا خصم إضافي —
+    // رهانه دُفع عند الدخول
+    if (wuid != me && me != null && me.isNotEmpty && !_isSpectator) {
+      unawaited(AuthService().updateMatchResult(
+        chipChange: 0,
+        ratingChange: -8,
+        isWin: false,
+        game: 'okey',
+        seasonId: _seasonId,
+      ));
+    }
+    // غرفة بطولة → النتيجة تُحسب في ترتيب البطولة أيضاً
+    final tid = _room?.tournamentId ?? '';
+    if (tid.isNotEmpty && me != null && me.isNotEmpty) {
+      unawaited(CompetitionService().recordTournamentResult(tid, wuid == me));
+    }
     if (!mounted) return;
     OkeyAudio.playWin();
     OkeyWinDialog.show(
@@ -1455,6 +1564,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       chipChange: chipChange,
       ratingChange: ratingChange,
       isWin: isWin,
+      game: 'okey',
+      chipsWon: chipChange > 0 ? chipChange : 0,
+      seasonId: _seasonId,
     );
     if (!success) {
       _roundSettled = false;
@@ -1468,6 +1580,22 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   @override
   void dispose() {
     OkeyTileWidget.cardMode = false;
+    // أعلن انقطاعي للغرفة (أفضل جهد — المضيف يبدأ اللعب عني)
+    // وأزيل حضوري من ملفي ليختفي «يلعب الآن» عن الأصدقاء
+    if (_isOnline && !_isSpectator) {
+      final uid = AuthService().currentUser?.uid;
+      if (uid != null && _room != null) {
+        unawaited(OkeyRoomService()
+            .setConnected(widget.roomId!, uid, false, players: _room!.players));
+      }
+      unawaited(AuthService().setActiveRoom('', ''));
+    } else if (_isSpectator && widget.roomId != null) {
+      // مشاهد يغادر — أخرجني من قائمة spectators بلا أثر على اللعب
+      final uid = AuthService().currentUser?.uid;
+      if (uid != null) {
+        unawaited(OkeyRoomService().leaveSpectate(widget.roomId!, uid));
+      }
+    }
     _engine.removeListener(_onEngineUpdate);
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
@@ -2581,6 +2709,43 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         _buildChatBubbles(),
         // وضع التدريب: شريط تلميح حي + سهم اقتراح الرمي + بطاقة تعليمية
         if (widget.trainingMode) ..._buildTrainingOverlays(),
+        // شارة المشاهدة — المشاهد يرى الطاولة حية بلا تحكم
+        if (_isSpectator)
+          Positioned(
+            top: 8 + _safePadT,
+            left: 0,
+            right: 0,
+            child: IgnorePointer(
+              child: Center(
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.62),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                        color: const Color(0xFF38BDF8).withOpacity(0.55),
+                        width: 1),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.visibility_rounded,
+                          color: Color(0xFF38BDF8), size: 13),
+                      const SizedBox(width: 6),
+                      Text(
+                        'وضع المشاهدة — تتابع الجولة حية'.tr,
+                        style: const TextStyle(
+                            color: Color(0xFFBFE3FF),
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
         Positioned(
           top: 6 + _safePadT,
           left: 14 + _safePadL,
@@ -3727,6 +3892,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                   ),
                 ),
               _seatAvatar(p, seat, isTurn),
+              // إطار الصورة المجهّز للاعب البعيد — يُجلب من
+              // store_items بالمعرّف الوارد في وثيقة الغرفة
+              if (p.frameId.isNotEmpty) _remoteFrameRing(p.frameId),
             ],
           ),
         ),
@@ -3748,6 +3916,46 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
                 height: 1.1),
           ),
         ),
+        // اللقب المجهّز — شريط ذهبي رفيع تحت الاسم
+        if (p.title.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.only(top: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                  colors: [Color(0xFF7C4A03), Color(0xFFB8860B)]),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: const Color(0x66FFD54F), width: 0.6),
+            ),
+            child: Text(
+              p.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                  color: Color(0xFFFFE9A8),
+                  fontSize: 7,
+                  fontWeight: FontWeight.w800,
+                  height: 1.1),
+            ),
+          ),
+        // شارة الانقطاع — لاعب بعيد فقد الاتصال والمضيف يلعب عنه
+        if (_isOnline && !p.isHuman && !p.connected)
+          Container(
+            margin: const EdgeInsets.only(top: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+            decoration: BoxDecoration(
+              color: Colors.red.withOpacity(0.75),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              'منقطع…'.tr,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 7,
+                  fontWeight: FontWeight.w800,
+                  height: 1.1),
+            ),
+          ),
         // شارة أسلوب اللعب (كونكان/فول) تحت الاسم
         if (p.playStyle != OkeyPlayStyle.normal)
           Container(
@@ -3766,6 +3974,46 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
             ),
           ),
       ],
+    );
+  }
+
+  /// كاش إطارات اللاعبين البعيدين — يُملأ من store_items حسب
+  /// frameId الوارد في وثيقة الغرفة (قراءة عامة)
+  final Map<String, StoreItem?> _remoteFrames = {};
+
+  /// حلقة إطار لاعب بعيد حول أفاتاره — تُجلب مرة وتُخزَّن
+  Widget _remoteFrameRing(String frameId) {
+    final cached = _remoteFrames[frameId];
+    if (cached != null) return _frameRingWidget(cached);
+    return FutureBuilder<StoreItem?>(
+      future: StoreService().itemById(frameId),
+      builder: (_, snap) {
+        final item = snap.data;
+        if (item == null) return const SizedBox.shrink();
+        _remoteFrames[frameId] = item;
+        return _frameRingWidget(item);
+      },
+    );
+  }
+
+  Widget _frameRingWidget(StoreItem item) {
+    const outer = 44.0;
+    final effect = skinEffectOf(item);
+    return IgnorePointer(
+      child: effect != SkinEffect.none
+          ? AnimatedFrameRing(effect: effect, size: outer)
+          : item.imageBase64.isEmpty
+              ? const SizedBox.shrink()
+              : SizedBox(
+                  width: outer,
+                  height: outer,
+                  child: SkinTransformImage(
+                    image: item.provider,
+                    zoom: item.zoom,
+                    offsetX: item.offsetX,
+                    offsetY: item.offsetY,
+                  ),
+                ),
     );
   }
 

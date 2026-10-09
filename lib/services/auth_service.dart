@@ -36,6 +36,26 @@ class AppUser {
   final List<String> ownedSkins;
   final Map<String, String> equippedSkins;
 
+  /// اللقب المجهّز من المتجر (نص يظهر تحت الاسم — فئة title)
+  final String title;
+
+  /// إحصائيات كل لعبة على حدة:
+  /// {okey: {wins,losses,bestWin,bestStreak,curStreak}, …}
+  final Map<String, dynamic> gameStats;
+
+  /// انتصارات هذا الأسبوع + مفتاح الأسبوع (يُصفَّر عند بدء أسبوع جديد)
+  final int weeklyWins;
+  final String weekKey;
+
+  /// تقييم الموسم الحالي + مفتاح الموسم (يُصفَّر عند بدء موسم جديد)
+  final int seasonRating;
+  final String seasonId;
+
+  /// حضور اللعب: الغرفة/اللعبة النشطة الآن — ليعرض الأصدقاء
+  /// «يلعب الآن» وزرّا المشاهدة/الانضمام
+  final String activeRoom;
+  final String activeGame;
+
   /// اشتراك VIP فعّال حالياً؟
   bool get isVip => vipUntil != null && vipUntil!.isAfter(DateTime.now());
 
@@ -65,6 +85,14 @@ class AppUser {
     this.isOnline = true,
     this.ownedSkins = const [],
     this.equippedSkins = const {},
+    this.title = '',
+    this.gameStats = const {},
+    this.weeklyWins = 0,
+    this.weekKey = '',
+    this.seasonRating = 0,
+    this.seasonId = '',
+    this.activeRoom = '',
+    this.activeGame = '',
   });
 
   factory AppUser.fromMap(String uid, Map<String, dynamic> data) {
@@ -113,6 +141,16 @@ class AppUser {
             (k, v) => MapEntry(k.toString(), v.toString()),
           ) ??
           const {},
+      title: data['title'] ?? '',
+      gameStats: data['gameStats'] is Map
+          ? Map<String, dynamic>.from(data['gameStats'])
+          : const {},
+      weeklyWins: (data['weeklyWins'] as num?)?.toInt() ?? 0,
+      weekKey: data['weekKey'] ?? '',
+      seasonRating: (data['seasonRating'] as num?)?.toInt() ?? 0,
+      seasonId: data['seasonId'] ?? '',
+      activeRoom: data['activeRoom'] ?? '',
+      activeGame: data['activeGame'] ?? '',
     );
   }
 
@@ -144,6 +182,14 @@ class AppUser {
       'isOnline': isOnline,
       'ownedSkins': ownedSkins,
       'equippedSkins': equippedSkins,
+      'title': title,
+      'gameStats': gameStats,
+      'weeklyWins': weeklyWins,
+      'weekKey': weekKey,
+      'seasonRating': seasonRating,
+      'seasonId': seasonId,
+      'activeRoom': activeRoom,
+      'activeGame': activeGame,
       'updatedAt': FieldValue.serverTimestamp(),
     };
   }
@@ -170,6 +216,14 @@ class AppUser {
     bool? isOnline,
     List<String>? ownedSkins,
     Map<String, String>? equippedSkins,
+    String? title,
+    Map<String, dynamic>? gameStats,
+    int? weeklyWins,
+    String? weekKey,
+    int? seasonRating,
+    String? seasonId,
+    String? activeRoom,
+    String? activeGame,
   }) {
     return AppUser(
       uid: uid,
@@ -194,6 +248,14 @@ class AppUser {
       isOnline: isOnline ?? this.isOnline,
       ownedSkins: ownedSkins ?? this.ownedSkins,
       equippedSkins: equippedSkins ?? this.equippedSkins,
+      title: title ?? this.title,
+      gameStats: gameStats ?? this.gameStats,
+      weeklyWins: weeklyWins ?? this.weeklyWins,
+      weekKey: weekKey ?? this.weekKey,
+      seasonRating: seasonRating ?? this.seasonRating,
+      seasonId: seasonId ?? this.seasonId,
+      activeRoom: activeRoom ?? this.activeRoom,
+      activeGame: activeGame ?? this.activeGame,
     );
   }
 }
@@ -269,6 +331,12 @@ class AuthService extends ChangeNotifier {
         'isOnline': u.isOnline,
         'ownedSkins': u.ownedSkins,
         'equippedSkins': u.equippedSkins,
+        'title': u.title,
+        'gameStats': u.gameStats,
+        'weeklyWins': u.weeklyWins,
+        'weekKey': u.weekKey,
+        'seasonRating': u.seasonRating,
+        'seasonId': u.seasonId,
       };
 
   AppUser _userFromJson(Map<String, dynamic> d) => AppUser(
@@ -298,6 +366,14 @@ class AuthService extends ChangeNotifier {
         equippedSkins: (d['equippedSkins'] as Map?)
                 ?.map((k, v) => MapEntry(k.toString(), v.toString())) ??
             const {},
+        title: d['title'] ?? '',
+        gameStats: d['gameStats'] is Map
+            ? Map<String, dynamic>.from(d['gameStats'])
+            : const {},
+        weeklyWins: (d['weeklyWins'] as num?)?.toInt() ?? 0,
+        weekKey: d['weekKey'] ?? '',
+        seasonRating: (d['seasonRating'] as num?)?.toInt() ?? 0,
+        seasonId: d['seasonId'] ?? '',
       );
 
   Future<void> _saveUserToCache(AppUser u) async {
@@ -624,14 +700,72 @@ class AuthService extends ChangeNotifier {
   }
 
   /// تحديث رصيد العملات والتقييم بعد المباراة
+  /// مفتاح أسبوع ISO التقريبي (سنة-رقم أسبوع) — يتغيّر كل اثنين
+  /// فيصفّر عدّاد weeklyWins تلقائياً عند أول تحديث أسبوعي جديد
+  static String currentWeekKey() {
+    final now = DateTime.now();
+    final dayOfYear = now.difference(DateTime(now.year)).inDays;
+    final week = ((dayOfYear + now.weekday - 1) / 7).floor();
+    return '${now.year}-w$week';
+  }
+
+  /// يحسب إحصائيات لعبة محدّثة داخل الحقول الجديدة — يُستدعى من
+  /// updateMatchResult حين تُمرَّر اللعبة، فيتجمّع سجلّ لكل لعبة:
+  /// انتصارات/خسارات/أكبر ربح/أطول سلسلة انتصار والسلسلة الحالية
+  static Map<String, dynamic> updatedGameStats(
+      Map<String, dynamic> stats, String game, bool isWin, int chipsWon) {
+    final out = Map<String, dynamic>.from(stats);
+    final g = out[game] is Map
+        ? Map<String, dynamic>.from(out[game] as Map)
+        : <String, dynamic>{};
+    final w = (g['wins'] as num?)?.toInt() ?? 0;
+    final l = (g['losses'] as num?)?.toInt() ?? 0;
+    final bestWin = (g['bestWin'] as num?)?.toInt() ?? 0;
+    final bestStreak = (g['bestStreak'] as num?)?.toInt() ?? 0;
+    final curStreak = (g['curStreak'] as num?)?.toInt() ?? 0;
+    final newStreak = isWin ? curStreak + 1 : 0;
+    g['wins'] = w + (isWin ? 1 : 0);
+    g['losses'] = l + (isWin ? 0 : 1);
+    g['bestWin'] = chipsWon > bestWin ? chipsWon : bestWin;
+    g['curStreak'] = newStreak;
+    g['bestStreak'] = newStreak > bestStreak ? newStreak : bestStreak;
+    out[game] = g;
+    return out;
+  }
+
   Future<bool> updateMatchResult({
     required int chipChange,
     required int ratingChange,
     required bool isWin,
     bool recordResult = true,
+
+    /// معرّف اللعبة ('okey'/'backgammon'/'domino'/'chess') — عند
+    /// تمريره تُحدَّث الإحصائيات التفصيلية والأسبوعية والموسمية
+    String? game,
+
+    /// صافي العملات المكسوبة هذه الجولة (لتتبّع «أكبر ربح»)
+    int chipsWon = 0,
+
+    /// مفتاح الموسم الجاري — من CompetitionService عند توفّره،
+    /// فيُضاف تغيّر التقييم إلى seasonRating معاً
+    String? seasonId,
   }) async {
     final user = _currentUser;
     if (user == null) return false;
+
+    final wk = currentWeekKey();
+    final newStats = game != null && recordResult
+        ? updatedGameStats(user.gameStats, game, isWin, chipsWon)
+        : user.gameStats;
+    final newWeeklyWins = !recordResult
+        ? user.weeklyWins
+        : (user.weekKey == wk ? user.weeklyWins : 0) + (isWin ? 1 : 0);
+    final sameSeason = seasonId != null && user.seasonId == seasonId;
+    final newSeasonRating = seasonId == null || !recordResult
+        ? user.seasonRating
+        : ((sameSeason ? user.seasonRating : 1200) + ratingChange)
+            .clamp(500, 5000);
+    final newSeasonId = seasonId ?? user.seasonId;
 
     if (user.uid.startsWith('guest_')) {
       _currentUser = user.copyWith(
@@ -639,6 +773,11 @@ class AuthService extends ChangeNotifier {
         rating: (user.rating + ratingChange).clamp(500, 5000),
         wins: recordResult && isWin ? user.wins + 1 : user.wins,
         losses: recordResult && !isWin ? user.losses + 1 : user.losses,
+        gameStats: newStats,
+        weeklyWins: newWeeklyWins,
+        weekKey: wk,
+        seasonRating: newSeasonRating,
+        seasonId: newSeasonId,
       );
       notifyListeners();
       return true;
@@ -652,11 +791,28 @@ class AuthService extends ChangeNotifier {
         final latest = snapshot.exists && snapshot.data() != null
             ? AppUser.fromMap(user.uid, snapshot.data()!)
             : user;
+        // أعد الحساب على أحدث بيانات السيرفر لا على الكاش المحلي
+        final lStats = game != null && recordResult
+            ? updatedGameStats(latest.gameStats, game, isWin, chipsWon)
+            : latest.gameStats;
+        final lWeekly = !recordResult
+            ? latest.weeklyWins
+            : (latest.weekKey == wk ? latest.weeklyWins : 0) + (isWin ? 1 : 0);
+        final lSameSeason = seasonId != null && latest.seasonId == seasonId;
+        final lSeason = seasonId == null || !recordResult
+            ? latest.seasonRating
+            : ((lSameSeason ? latest.seasonRating : 1200) + ratingChange)
+                .clamp(500, 5000);
         updatedUser = latest.copyWith(
           chips: (latest.chips + chipChange).clamp(0, 999999999),
           rating: (latest.rating + ratingChange).clamp(500, 5000),
           wins: recordResult && isWin ? latest.wins + 1 : latest.wins,
           losses: recordResult && !isWin ? latest.losses + 1 : latest.losses,
+          gameStats: lStats,
+          weeklyWins: lWeekly,
+          weekKey: wk,
+          seasonRating: lSeason,
+          seasonId: seasonId ?? latest.seasonId,
         );
         transaction.set(
             docRef,
@@ -665,6 +821,11 @@ class AuthService extends ChangeNotifier {
               'rating': updatedUser.rating,
               'wins': updatedUser.wins,
               'losses': updatedUser.losses,
+              'gameStats': updatedUser.gameStats,
+              'weeklyWins': updatedUser.weeklyWins,
+              'weekKey': wk,
+              'seasonRating': updatedUser.seasonRating,
+              'seasonId': updatedUser.seasonId,
               'updatedAt': FieldValue.serverTimestamp(),
             },
             SetOptions(merge: true));
@@ -676,6 +837,33 @@ class AuthService extends ChangeNotifier {
       debugPrint('Error updating match result: $e');
       return false;
     }
+  }
+
+  /// حضور اللعب — الغرفة/اللعبة النشطة تُعرض للأصدقاء («يلعب الآن»)
+  /// مع أزرار المشاهدة/الانضمام. تُستدعى عند دخول وخروج الغرف.
+  Future<void> setActiveRoom(String roomId, String game) async {
+    final user = _currentUser;
+    if (user == null || user.uid.startsWith('guest_')) return;
+    _currentUser = user.copyWith(activeRoom: roomId, activeGame: game);
+    try {
+      await _firestore.collection('users').doc(user.uid).update({
+        'activeRoom': roomId,
+        'activeGame': game,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (_) {}
+  }
+
+  /// حالة الاتصال العامة — يستدعيها مراقب دورة حياة التطبيق
+  Future<void> setOnlinePresence(bool online) async {
+    final user = _currentUser;
+    if (user == null || user.uid.startsWith('guest_')) return;
+    try {
+      await _firestore.collection('users').doc(user.uid).update({
+        'isOnline': online,
+        'lastSeen': FieldValue.serverTimestamp(),
+      });
+    } catch (_) {}
   }
 
   /// تعديل رصيد العملات (شحن أو خصم عند الشراء من المتجر)
@@ -764,6 +952,30 @@ class AuthService extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('Error updating skin data: $e');
+      return false;
+    }
+  }
+
+  /// تحديث نص اللقب المجهّز — يُكتب على وثيقة المستخدم ليراه
+  /// اللاعبون الآخرون في الغرف ولوحة المتصدرين والأصدقاء
+  Future<bool> updateTitle(String title) async {
+    final user = _currentUser;
+    if (user == null) return false;
+    if (user.uid.startsWith('guest_')) {
+      _currentUser = user.copyWith(title: title);
+      notifyListeners();
+      return true;
+    }
+    try {
+      await _firestore.collection('users').doc(user.uid).update({
+        'title': title,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      _currentUser = user.copyWith(title: title);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error updating title: $e');
       return false;
     }
   }

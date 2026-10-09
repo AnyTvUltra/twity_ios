@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models.dart';
+import '../services/auth_service.dart';
+import '../services/social_service.dart';
 import '../utils/haptics.dart';
 import '../utils/top_notification.dart';
 import '../widgets/app_background.dart';
@@ -12,6 +15,7 @@ import '../widgets/announcement_banner.dart';
 import 'game_screen.dart';
 import 'achievements_screen.dart';
 import 'chat_screen.dart';
+import 'competition_screen.dart';
 import 'profile_screen.dart';
 import 'okey_rules_screen.dart';
 import 'store_screen.dart';
@@ -72,10 +76,52 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     // Start the stagger animation
     _staggerController.forward();
+    _watchFriendsPresence();
+  }
+
+  // حضور الأصدقاء — اشتراك واحد يكشف دخول أي صديق لغرفة ويُعلمني بإشعار
+  StreamSubscription? _friendsSub;
+  StreamSubscription? _presenceSub;
+  final Map<String, String> _friendRooms = {};
+  final Set<String> _notifiedPlays = {};
+
+  void _watchFriendsPresence() {
+    AuthService? auth;
+    try {
+      auth = AuthService();
+    } catch (_) {
+      return;
+    }
+    final me = auth.currentUser;
+    if (me == null || me.uid.startsWith('guest_')) return;
+    _friendsSub = SocialService().getFriendsStream(me.uid).listen((friends) {
+      final uids = friends.map((f) => '${f['uid']}').toList();
+      _presenceSub?.cancel();
+      _presenceSub = SocialService().friendsPresenceStream(uids).listen((map) {
+        if (!mounted) return;
+        for (final e in map.entries) {
+          final cur = '${e.value['activeRoom'] ?? ''}';
+          final prev = _friendRooms[e.key] ?? '';
+          _friendRooms[e.key] = cur;
+          if (prev.isEmpty &&
+              cur.isNotEmpty &&
+              e.value['activeGame'] == 'okey' &&
+              _notifiedPlays.add('${e.key}:$cur')) {
+            TopNotification.show(
+              context,
+              '${'صديقك يلعب الآن'.tr}: ${e.value['displayName'] ?? ''}',
+              icon: Icons.sports_esports_rounded,
+            );
+          }
+        }
+      });
+    });
   }
 
   @override
   void dispose() {
+    _friendsSub?.cancel();
+    _presenceSub?.cancel();
     _staggerController.dispose();
     super.dispose();
   }
@@ -128,6 +174,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 const ChatScreen(),
                 // Tab 3: Profile & Stats
                 const ProfileScreen(),
+                // Tab 4: التنافسية — المتصدرون والبطولات والموسم
+                const CompetitionScreen(),
               ],
             ),
 

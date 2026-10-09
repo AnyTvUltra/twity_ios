@@ -22,12 +22,15 @@ class StoreCategory {
   static const String bgCheckers = 'bgCheckers';
   // غرفة الكونكان — تصميم المشهد الكامل (نفس تخطيط الصورة المرجعية)
   static const String okeyRoom = 'okeyRoom';
+  // اللقب — نص فخم يظهر تحت اسم اللاعب في الغرف والمتصدرين
+  static const String title = 'title';
 
   /// الفئات المعروضة كتبويبات في المتجر — الأحجار/الطاولة/الاستكانة/
   /// الخلفية محذوفة لأن غرفة الكونكان الموحّدة تغطيها كلها
   static const List<String> all = [
     okeyRoom,
     frame,
+    title,
     chessBoard,
     chessPieces,
     bgBoard,
@@ -51,6 +54,8 @@ class StoreCategory {
         return 'الخلفية'.tr;
       case frame:
         return 'إطار الصورة'.tr;
+      case title:
+        return 'اللقب'.tr;
       case chessBoard:
         return 'لوحة الشطرنج'.tr;
       case chessPieces:
@@ -78,6 +83,8 @@ class StoreCategory {
         return Icons.wallpaper_rounded;
       case frame:
         return Icons.account_circle_rounded;
+      case title:
+        return Icons.workspace_premium_rounded;
       case chessBoard:
         return Icons.grid_4x4_rounded;
       case chessPieces:
@@ -1019,8 +1026,38 @@ class StoreService extends ChangeNotifier {
     }
     await AuthService().updateSkinData(equippedSkins: map);
 
+    // اللقب نص: يُحفظ على وثيقة المستخدم ليراه الآخرون في
+    // الغرف والمتصدرين (لا يحتاجون جلب عنصر المتجر نفسه)
+    if (category == StoreCategory.title) {
+      await AuthService().updateTitle(item?.name ?? '');
+    }
+
     if (item != null) await _decodeUiImage(item);
     notifyListeners();
+  }
+
+  /// جلب عنصر بمعرفه — من الكاش أولاً ثم من Firestore. تستخدمه
+  /// واجهة الغرفة لعرض إطارات اللاعبين البعيدين (imageBase64
+  /// عام القراءة في store_items)
+  final Map<String, StoreItem?> _remoteItemCache = {};
+  Future<StoreItem?> itemById(String id) async {
+    if (id.isEmpty) return null;
+    if (_remoteItemCache.containsKey(id)) return _remoteItemCache[id];
+    try {
+      final local = _items.firstWhere((e) => e.id == id);
+      _remoteItemCache[id] = local;
+      return local;
+    } catch (_) {}
+    try {
+      final doc =
+          await _firebase.firestore.collection('store_items').doc(id).get();
+      final item = doc.exists ? StoreItem.fromDoc(doc) : null;
+      _remoteItemCache[id] = item;
+      if (item != null) await _decodeUiImage(item);
+      return item;
+    } catch (_) {
+      return null;
+    }
   }
 
   bool isEquipped(StoreItem item) {

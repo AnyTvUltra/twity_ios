@@ -284,6 +284,19 @@
         );
       }
 
+      if (category === 'title') {
+        // اللقب: بطاقة لاعب مصغّرة — صورة + اسم + اللقب الذهبي تحته
+        return (
+          <div className="flex items-center justify-center h-full">
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center text-xl" style={{ background: 'linear-gradient(135deg,#60a5fa,#3b82f6)', boxShadow: '0 4px 10px rgba(0,0,0,.4)' }}>🀄</div>
+              <div className="text-white text-[11px] font-bold">لاعب</div>
+              <div className="px-2.5 py-0.5 rounded-lg text-[10px] font-black" style={{ background: 'linear-gradient(90deg,rgba(255,213,79,.25),rgba(255,152,0,.2))', border: '1px solid rgba(255,213,79,.6)', color: '#FFE9A8' }}>✦ أسطورة الأوكي ✦</div>
+            </div>
+          </div>
+        );
+      }
+
       // background: مشهد كامل — الخلفية + طاولة مصغرة + استكانة
       return (
         <div className="absolute inset-0 rounded-xl overflow-hidden">
@@ -347,6 +360,13 @@
       const [songFile, setSongFile] = useState(null);
       const [songUploadProgress, setSongUploadProgress] = useState(-1); // -1 = لا يوجد رفع
       const [selectedRadioGroup, setSelectedRadioGroup] = useState('all');
+
+      // البطولات الأسبوعية + الموسم المصنّف
+      const [tournaments, setTournaments] = useState([]);
+      const [newTournament, setNewTournament] = useState({ name: '', entryFee: 500, p1: 5000, p2: 3000, p3: 1500, days: 7 });
+      const [savingTournament, setSavingTournament] = useState(false);
+      const [seasonCfg, setSeasonCfg] = useState({ name: '', days: 30 });
+      const [seasonDoc, setSeasonDoc] = useState(null);
 
       // Modals
       const [editingPlayer, setEditingPlayer] = useState(null);
@@ -529,6 +549,12 @@
             setBroadcasts(list);
           });
 
+          const unsubTournaments = onSnapshot(collection(window.db, 'tournaments'), (snap) => {
+            setTournaments(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+          });
+          const unsubSeason = onSnapshot(doc(window.db, 'config', 'season'), (snap) => {
+            setSeasonDoc(snap.exists ? snap.data() : null);
+          });
           const unsubRadioSongs = onSnapshot(collection(window.db, 'radio_songs'), (snap) => {
               const list = [];
               snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
@@ -547,6 +573,8 @@
               unsubRadioGroups();
               unsubRadioSongs();
               unsubBroadcasts();
+              unsubTournaments();
+              unsubSeason();
             };
           } catch (e) {
             console.error("Firebase init failed:", e);
@@ -734,7 +762,7 @@
       };
 
       // ═══════════ المتجر والسكنات ═══════════
-      const categoryLabels = { okeyRoom: 'غرفة الكونكان 🚪', frame: 'إطار الصورة 🖼️', chessBoard: 'لوحة الشطرنج ♞', chessPieces: 'أحجار الشطرنج ♟️' };
+      const categoryLabels = { okeyRoom: 'غرفة الكونكان 🚪', frame: 'إطار الصورة 🖼️', title: 'لقب اللاعب 🏷️', chessBoard: 'لوحة الشطرنج ♞', chessPieces: 'أحجار الشطرنج ♟️' };
 
       const handleSkinImagePick = (e) => {
         const file = e.target.files && e.target.files[0];
@@ -751,7 +779,9 @@
       const handleAddSkin = async (e) => {
         e && e.preventDefault();
         if (!newSkin.name.trim()) { showToast('اكتب اسم التصميم أولاً', 'error'); return; }
-        if (!skinImageB64) { showToast('ارفع صورة التصميم أولاً', 'error'); return; }
+        const isTitle = newSkin.category === 'title';
+        if (!isTitle && !skinImageB64) { showToast('ارفع صورة التصميم أولاً', 'error'); return; }
+        if (isTitle && newSkin.name.trim().length > 30) { showToast('اللقب طويل — 30 خانة كحد أقصى', 'error'); return; }
         try {
           setSavingSkin(true);
           const { collection, addDoc, serverTimestamp } = window.fbTools;
@@ -760,7 +790,7 @@
             category: newSkin.category,
             price: Number(newSkin.price) || 0,
             currency: newSkin.currency,
-            imageBase64: skinImageB64,
+            imageBase64: isTitle ? '' : skinImageB64,
             active: true,
             zoom: newSkin.zoom,
             offsetX: newSkin.ox,
@@ -797,6 +827,86 @@
           showToast(`🗑️ تم حذف "${item.name}"`);
         } catch (err) {
           showToast('خطأ أثناء الحذف: ' + err.message, 'error');
+        }
+      };
+
+      // ═══════════ البطولات والموسم ═══════════
+      const handleAddTournament = async (e) => {
+        e && e.preventDefault();
+        if (!newTournament.name.trim()) { showToast('اكتب اسم البطولة أولاً', 'error'); return; }
+        try {
+          setSavingTournament(true);
+          const { collection, addDoc, serverTimestamp } = window.fbTools;
+          const days = Math.max(1, Number(newTournament.days) || 7);
+          const ends = new Date(Date.now() + days * 86400000);
+          await addDoc(collection(window.db, 'tournaments'), {
+            name: newTournament.name.trim(),
+            game: 'okey',
+            variant: 'turkish',
+            entryFee: Number(newTournament.entryFee) || 0,
+            prizes: [Number(newTournament.p1) || 0, Number(newTournament.p2) || 0, Number(newTournament.p3) || 0],
+            status: 'active',
+            startAt: serverTimestamp(),
+            endAt: ends,
+          });
+          setNewTournament({ name: '', entryFee: 500, p1: 5000, p2: 3000, p3: 1500, days: 7 });
+          showToast('🏆 نُشرت البطولة — ظهرت للاعبين في تبويب التنافسية فوراً!');
+        } catch (err) {
+          showToast('فشل إنشاء البطولة: ' + err.message, 'error');
+        } finally {
+          setSavingTournament(false);
+        }
+      };
+
+      const handleEndTournament = async (t) => {
+        if (!confirm(`إنهاء بطولة "${t.name}"؟ يفتح باب استلام الجوائز للفائزين ويوقف تسجيل النقاط.`)) return;
+        try {
+          const { doc, updateDoc } = window.fbTools;
+          await updateDoc(doc(window.db, 'tournaments', t.id), { status: 'ended' });
+          showToast(`انتهت "${t.name}" — الفائزون الثلاثة الأوائل يستطيعون استلام جوائزهم الآن`);
+        } catch (err) {
+          showToast('خطأ: ' + err.message, 'error');
+        }
+      };
+
+      const handleDeleteTournament = async (t) => {
+        if (!confirm(`حذف بطولة "${t.name}" نهائياً؟`)) return;
+        try {
+          const { doc, deleteDoc } = window.fbTools;
+          await deleteDoc(doc(window.db, 'tournaments', t.id));
+          showToast(`🗑️ تم حذف "${t.name}"`);
+        } catch (err) {
+          showToast('خطأ: ' + err.message, 'error');
+        }
+      };
+
+      const handleSaveSeason = async (e) => {
+        e && e.preventDefault();
+        if (!seasonCfg.name.trim()) { showToast('اكتب اسم الموسم', 'error'); return; }
+        try {
+          const { doc, setDoc, serverTimestamp } = window.fbTools;
+          const days = Math.max(1, Number(seasonCfg.days) || 30);
+          const ends = new Date(Date.now() + days * 86400000);
+          const id = 's' + Date.now().toString(36);
+          await setDoc(doc(window.db, 'config', 'season'), {
+            id, name: seasonCfg.name.trim(), active: true,
+            startedAt: serverTimestamp(), endsAt: ends,
+          });
+          setSeasonCfg({ name: '', days: 30 });
+          showToast(`💎 بدأ "${seasonCfg.name}" — تقييم الموسم يُحسب من الآن`);
+        } catch (err) {
+          showToast('خطأ: ' + err.message, 'error');
+        }
+      };
+
+      const handleEndSeason = async () => {
+        if (!confirm('إنهاء الموسم الحالي؟ تتوقف النقاط الموسمية وتبقى اللوحة كأرشيف.')) return;
+        try {
+          const { doc, updateDoc } = window.fbTools;
+          await updateDoc(doc(window.db, 'config', 'season'), { active: false });
+          showToast('انتهى الموسم الحالي');
+        } catch (err) {
+          showToast('خطأ: ' + err.message, 'error');
         }
       };
 
@@ -1157,6 +1267,7 @@
                   { id: 'broadcast', label: 'إشعارات اللاعبين', icon: 'megaphone' },
                   { id: 'settings', label: 'إعدادات اللعبة والسيرفر', icon: 'sliders-horizontal' },
                   { id: 'history', label: 'سجل المباريات المباشر', icon: 'history', badge: gameLogs.length },
+                  { id: 'tournaments', label: 'البطولات والموسم', icon: 'trophy', badge: tournaments.filter(t => t.status === 'active').length },
                 ].map((item) => {
                   const isActive = activeTab === item.id;
                   return (
@@ -1223,6 +1334,7 @@
                   {activeTab === 'broadcast' && 'إرسال إشعار لجميع اللاعبين'}
                   {activeTab === 'settings' && 'إعدادات السيرفر والألعاب'}
                   {activeTab === 'history' && 'سجل الجولات والمباريات'}
+                  {activeTab === 'tournaments' && 'إدارة البطولات الأسبوعية والموسم المصنّف'}
                 </h1>
                 <p className="text-xs text-gray-400 mt-0.5">سحابة Firebase متصلة ومتزامنة مباشرة في الوقت الحقيقي</p>
               </div>
@@ -1661,6 +1773,7 @@
                         <option value="all">كل الفئات ({storeItems.length})</option>
                         <option value="okeyRoom">🚪 غرفة الكونكان</option>
                         <option value="frame">👤 إطار الصورة</option>
+                        <option value="title">🏷️ لقب اللاعب</option>
                         <option value="chessBoard">♞ لوحة الشطرنج</option>
                         <option value="chessPieces">♟️ أحجار الشطرنج</option>
                       </select>
@@ -1938,6 +2051,110 @@
                         <p className="text-center py-10 text-gray-500 text-sm">لا توجد تذاكر دعم حالياً.</p>
                       )}
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: TOURNAMENTS & SEASON */}
+              {activeTab === 'tournaments' && (
+                <div className="space-y-6">
+                  {/* إنشاء بطولة أسبوعية */}
+                  <div className="glass-card p-6 rounded-2xl border border-amber-500/20">
+                    <h3 className="text-base font-black text-amber-300 mb-1">🏆 إنشاء بطولة أسبوعية</h3>
+                    <p className="text-[11px] text-gray-400 mb-4">تظهر للاعبين في تبويب «التنافسية ← البطولات» فور النشر — غرف البطولة تُجمع نقاطها تلقائياً (فوز=3 نقاط، مباراة=1).</p>
+                    <form onSubmit={handleAddTournament} className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      <div className="col-span-2 md:col-span-1">
+                        <label className="text-xs font-bold text-gray-300 block mb-1">اسم البطولة</label>
+                        <input required value={newTournament.name} onChange={e => setNewTournament(t => ({ ...t, name: e.target.value }))} placeholder="بطولة الأوكي الكبرى" className="w-full bg-dark-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-400" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-gray-300 block mb-1">رهان الغرفة 🪙</label>
+                        <input type="number" min="0" value={newTournament.entryFee} onChange={e => setNewTournament(t => ({ ...t, entryFee: e.target.value }))} className="w-full bg-dark-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-400" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-gray-300 block mb-1">المدة (أيام)</label>
+                        <input type="number" min="1" max="30" value={newTournament.days} onChange={e => setNewTournament(t => ({ ...t, days: e.target.value }))} className="w-full bg-dark-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-400" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-amber-300 block mb-1">🥇 جائزة الأول</label>
+                        <input type="number" min="0" value={newTournament.p1} onChange={e => setNewTournament(t => ({ ...t, p1: e.target.value }))} className="w-full bg-dark-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-400" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-gray-300 block mb-1">🥈 جائزة الثاني</label>
+                        <input type="number" min="0" value={newTournament.p2} onChange={e => setNewTournament(t => ({ ...t, p2: e.target.value }))} className="w-full bg-dark-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-400" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-gray-300 block mb-1">🥉 جائزة الثالث</label>
+                        <input type="number" min="0" value={newTournament.p3} onChange={e => setNewTournament(t => ({ ...t, p3: e.target.value }))} className="w-full bg-dark-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-amber-400" />
+                      </div>
+                      <div className="col-span-2 md:col-span-3 flex justify-end">
+                        <button type="submit" disabled={savingTournament} className="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm rounded-xl shadow-lg shadow-amber-500/20 transition disabled:opacity-50">
+                          {savingTournament ? '⏳ جارٍ النشر…' : '🚀 نشر البطولة'}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+
+                  {/* قائمة البطولات */}
+                  <div className="glass-card p-6 rounded-2xl">
+                    <h3 className="text-base font-black text-white mb-4">البطولات ({tournaments.length})</h3>
+                    <div className="space-y-3">
+                      {tournaments.map(t => {
+                        const ends = t.endAt?.toDate ? t.endAt.toDate() : null;
+                        const left = ends ? ends - Date.now() : 0;
+                        const leftTxt = left > 0 ? (left > 86400000 ? `${Math.ceil(left / 86400000)} يوم` : `${Math.ceil(left / 3600000)} ساعة`) : 'انتهى الوقت';
+                        return (
+                          <div key={t.id} className={`flex flex-wrap items-center gap-3 p-4 rounded-xl border ${t.status === 'active' ? 'border-amber-500/30 bg-amber-500/5' : 'border-gray-800 opacity-60'}`}>
+                            <span className="text-2xl">🏆</span>
+                            <div className="flex-1 min-w-[140px]">
+                              <p className="text-sm font-bold text-white">{t.name}</p>
+                              <p className="text-[11px] text-gray-400">دخول {(t.entryFee || 0).toLocaleString()} 🪙 • الجوائز {(t.prizes || []).join(' / ')} • {leftTxt}</p>
+                            </div>
+                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold ${t.status === 'active' ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30' : 'bg-gray-700/50 text-gray-400'}`}>
+                              {t.status === 'active' ? 'جارية' : 'منتهية'}
+                            </span>
+                            {t.status === 'active' && (
+                              <button onClick={() => handleEndTournament(t)} className="px-3 py-1.5 text-[11px] font-bold rounded-lg bg-rose-500/15 text-rose-300 border border-rose-500/30 hover:bg-rose-500/25 transition">إنهاء وفتح الجوائز</button>
+                            )}
+                            <button onClick={() => handleDeleteTournament(t)} className="px-3 py-1.5 text-[11px] font-bold rounded-lg bg-gray-700/50 text-gray-300 hover:bg-gray-600/60 transition">🗑️</button>
+                          </div>
+                        );
+                      })}
+                      {tournaments.length === 0 && (
+                        <p className="text-center py-8 text-gray-500 text-sm">لا بطولات — أنشئ أول بطولة من النموذج أعلاه.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* الموسم المصنّف */}
+                  <div className="glass-card p-6 rounded-2xl border border-violet-500/25">
+                    <h3 className="text-base font-black text-violet-300 mb-1">💎 الموسم المصنّف</h3>
+                    <p className="text-[11px] text-gray-400 mb-4">إعدادات الموسم تُكتب في config/season — كل مباراة مصنّفة تغيّر seasonRating للاعبين، ولوحة الموسم تُعرض في التطبيق.</p>
+                    {seasonDoc && seasonDoc.active ? (
+                      <div className="flex flex-wrap items-center gap-3 p-4 rounded-xl border border-violet-500/30 bg-violet-500/5">
+                        <span className="text-2xl">💎</span>
+                        <div className="flex-1">
+                          <p className="text-sm font-bold text-white">{seasonDoc.name}</p>
+                          <p className="text-[11px] text-gray-400">موسم نشط {seasonDoc.endsAt?.toDate ? `— ينتهي ${seasonDoc.endsAt.toDate().toLocaleDateString('ar')}` : ''}</p>
+                        </div>
+                        <button onClick={handleEndSeason} className="px-4 py-2 text-xs font-bold rounded-xl bg-rose-500/15 text-rose-300 border border-rose-500/30 hover:bg-rose-500/25 transition">إنهاء الموسم</button>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleSaveSeason} className="flex flex-wrap items-end gap-3">
+                        <div className="flex-1 min-w-[160px]">
+                          <label className="text-xs font-bold text-gray-300 block mb-1">اسم الموسم الجديد</label>
+                          <input required value={seasonCfg.name} onChange={e => setSeasonCfg(s => ({ ...s, name: e.target.value }))} placeholder="موسم الأبطال" className="w-full bg-dark-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-400" />
+                        </div>
+                        <div className="w-28">
+                          <label className="text-xs font-bold text-gray-300 block mb-1">المدة (أيام)</label>
+                          <input type="number" min="1" value={seasonCfg.days} onChange={e => setSeasonCfg(s => ({ ...s, days: e.target.value }))} className="w-full bg-dark-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-400" />
+                        </div>
+                        <button type="submit" className="px-5 py-2.5 bg-violet-500 hover:bg-violet-600 text-white font-bold text-sm rounded-xl transition">بدء الموسم</button>
+                      </form>
+                    )}
+                    {seasonDoc && !seasonDoc.active && (
+                      <p className="text-[11px] text-gray-500 mt-3">آخر موسم: {seasonDoc.name} — منتهٍ. ابدأ موسماً جديداً بالنموذج أعلاه.</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -2361,19 +2578,28 @@
                     >
                       <option value="okeyRoom">🚪 غرفة الكونكان (المشهد كاملاً)</option>
                       <option value="frame">👤 إطار الصورة الشخصية</option>
+                      <option value="title">🏷️ لقب لاعب (نص يظهر تحت الاسم — بلا صورة)</option>
                       <option value="chessBoard">♞ لوحة الشطرنج (الخشبة والمربعات)</option>
                       <option value="chessPieces">♟️ أحجار الشطرنج (نسيج القطع)</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-gray-300 block mb-1">صورة التصميم</label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleSkinImagePick}
-                      className="w-full text-xs text-gray-400 file:ml-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-emerald-500/20 file:text-emerald-300 file:font-bold file:text-xs hover:file:bg-emerald-500/30 file:cursor-pointer"
-                    />
+                    {newSkin.category === 'title' ? (
+                      <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-200">
+                        🏷️ اللقب نص فقط — الاسم الذي تكتبه أعلاه سيظهر ذهبياً تحت اسم اللاعب في الغرفة والمتصدرين والبروفايل. لا حاجة لصورة.
+                      </div>
+                    ) : (
+                      <>
+                        <label className="text-xs font-bold text-gray-300 block mb-1">صورة التصميم</label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleSkinImagePick}
+                          className="w-full text-xs text-gray-400 file:ml-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-emerald-500/20 file:text-emerald-300 file:font-bold file:text-xs hover:file:bg-emerald-500/30 file:cursor-pointer"
+                        />
+                      </>
+                    )}
                   </div>
 
                   {/* Live Mockup Preview — اسحب الصورة لتحريكها */}

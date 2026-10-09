@@ -77,6 +77,22 @@ service cloud.firestore {
         && deltaWithin('losses', 2)
         && deltaWithin('level', 1)
         && deltaWithin('rating', 300)
+        // المتصدرون/الموسم: نفس سقف العدّادات المقابلة —
+        // انتصارات الأسبوع لا تتجاوز فوزين لكل كتابة، والتقييم
+        // الموسمي نفس حد التقييم العام
+        && deltaWithin('weeklyWins', 2)
+        && deltaWithin('seasonRating', 300)
+        // اللقب والحضور: نصوص تجميلية — حدّ أقصى للطول فقط
+        && (!changedKeys().hasAny(['title'])
+            || request.resource.data.get('title', '').size() <= 30)
+        && (!changedKeys().hasAny(['activeRoom'])
+            || request.resource.data.get('activeRoom', '').size() <= 40)
+        && (!changedKeys().hasAny(['activeGame'])
+            || request.resource.data.get('activeGame', '').size() <= 20)
+        && (!changedKeys().hasAny(['seasonId'])
+            || request.resource.data.get('seasonId', '').size() <= 30)
+        && (!changedKeys().hasAny(['weekKey'])
+            || request.resource.data.get('weekKey', '').size() <= 10)
         // عدّادات المكافآت: لا يمكن إرجاعها للماضي
         && freshTs('lastDailyGiftClaim')
         && freshTs('lastWheelSpin')
@@ -254,13 +270,35 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.resource.data.hostUid == request.auth.uid;
       allow update: if isAdmin() || (signedIn()
-        // الغرف القديمة قد تفتقد playerUids — نسمح للتوافقية
-        && (!('playerUids' in resource.data)
-            || request.auth.uid in resource.data.playerUids)
+        && (
+          // أ) عضو حالي في الغرفة — شات/اتصال/إعداد
+          (!('playerUids' in resource.data)
+              || request.auth.uid in resource.data.playerUids)
+          ||
+          // ب) لاعب جديد يضيف نفسه — الانضمام بالكود/المطابقة السريعة.
+          //    مقيد: لا يغيّر إلا players/playerUids، ولا يضيف
+          //    أكثر من مقعد واحد، ولا يستطيع إضافة غيره
+          (changedKeys().hasOnly(['players', 'playerUids'])
+            && request.auth.uid in request.resource.data.get('playerUids', [])
+            && request.resource.data.get('playerUids', []).size()
+                <= resource.data.get('playerUids', []).size() + 1
+            && request.resource.data.get('players', []).size()
+                <= resource.data.get('players', []).size() + 1)
+          ||
+          // ج) مشاهد يدير عضويته فقط — لا يضيف ولا يزيل
+          //    من spectators سوى نفسه وبلا أي تغيير آخر
+          (changedKeys().hasOnly(['spectators'])
+            && resource.data.get('spectators', []).toSet()
+                .diff(request.resource.data.get('spectators', []).toSet())
+                .hasOnly([request.auth.uid])
+            && request.resource.data.get('spectators', []).toSet()
+                .diff(resource.data.get('spectators', []).toSet())
+                .hasOnly([request.auth.uid]))
+        )
         // حقول السلطة المرجعية للمضيف وحده: لقطة اللعبة والفائز
         // والحالة ومؤقّت الدور وكومة الرمي — لا يستطيع ضيف تزويرها.
         // players/playerUids يبقيان للأعضاء (انضمام quickMatch)،
-        // وchat للرسائل السريعة بينهم
+        // وchat للرسائل السريعة وردود الفعل بينهم
         && (!changedKeys().hasAny([
             'game', 'gameRev', 'winner', 'status', 'currentTurnSeat',
             'turnPhase', 'turnStartTime', 'drawDeckCount',
@@ -296,6 +334,50 @@ service cloud.firestore {
         allow write: if isAdmin() || (signedIn()
           && get(/databases/$(database)/documents/rooms/$(id)).data.hostUid
               == request.auth.uid);
+      }
+
+      // ── حالة المضيف الكاملة (الرزمة وكل الأيدي) ──
+      // للمضيف وحده قراءةً وكتابةً — تحمل ما لا يجوز وضعه
+      // في اللقطة العامة لتنجو الجولة من إعادة فتح تطبيقه
+      match /host_state/{doc} {
+        allow read, write: if isAdmin() || (signedIn()
+          && get(/databases/$(database)/documents/rooms/$(id)).data.hostUid
+              == request.auth.uid);
+      }
+    }
+
+    // ── البطولات الأسبوعية ──
+    // الوثائق الأم: ينشئها الأدمن ويديرها من لوحته؛ النتائج تُحسب
+    // من مباريات الغرف الموسومة tournamentId
+    match /tournaments/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+
+      // ترتيب المشاركين: كل لاعب يكتب سجله بنفسه فقط،
+      // وبزيادات مقيدة (فوز=3 نقاط، مباراة واحدة لكل كتابة)
+      match /standings/{uid} {
+        allow read: if signedIn();
+        allow create: if signedIn()
+          && request.auth.uid == uid
+          && request.resource.data.get('points', 0) <= 3
+          && request.resource.data.get('matches', 0) <= 1;
+        allow update: if signedIn()
+          && request.auth.uid == uid
+          && request.resource.data.points >= resource.data.points
+          && request.resource.data.matches >= resource.data.matches
+          && request.resource.data.points - resource.data.points <= 3
+          && request.resource.data.matches - resource.data.matches <= 1;
+        allow delete: if isAdmin();
+      }
+
+      // مطالبات الجوائز: وثيقة واحدة للفائز تمنع تكرار الاستلام
+      match /claims/{uid} {
+        allow read: if isAdmin()
+          || (signedIn() && request.auth.uid == uid);
+        allow create: if signedIn()
+          && request.auth.uid == uid
+          && request.resource.data.claimed == true;
+        allow update, delete: if isAdmin();
       }
     }
     // ملفات اللاعبين القديمة: المالك فقط ضمن سقف تغيّر

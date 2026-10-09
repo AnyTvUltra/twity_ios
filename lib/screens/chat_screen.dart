@@ -1,8 +1,10 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import '../games/okey/okey_rules.dart';
 import '../services/auth_service.dart';
 import '../services/broadcast_service.dart';
 import '../services/social_service.dart';
+import 'okey_game_screen.dart';
 import '../utils/haptics.dart';
 import '../utils/top_notification.dart';
 import '../widgets/user_avatar.dart';
@@ -780,20 +782,29 @@ class _ChatScreenState extends State<ChatScreen> {
           stream: SocialService().getFriendsStream(myUid),
           builder: (context, snapshot) {
             final friends = snapshot.data ?? [];
-            return Column(
-              children: [
-                _sectionTitle('أصدقائي'.tr, count: null, color: _C.green),
-                if (friends.isEmpty)
-                  _emptyState(
-                    icon: Icons.group_add_rounded,
-                    title: 'لم تُضِف أصدقاء بعد'.tr,
-                    subtitle:
-                        'لم تُضِف أصدقاء بعد. ابحث عنهم أعلاه وأرسل طلب صداقة!'
-                            .tr,
-                  )
-                else
-                  for (final f in friends) _friendTile(_friendUser(f), myUid),
-              ],
+            // حضور الأصدقاء — استعلام جماعي واحد على أول 30 صديقاً
+            return StreamBuilder<Map<String, Map<String, dynamic>>>(
+              stream: SocialService().friendsPresenceStream(
+                  friends.map((f) => f['uid'].toString()).toList()),
+              builder: (context, ps) {
+                final presence = ps.data ?? const {};
+                return Column(
+                  children: [
+                    _sectionTitle('أصدقائي'.tr, count: null, color: _C.green),
+                    if (friends.isEmpty)
+                      _emptyState(
+                        icon: Icons.group_add_rounded,
+                        title: 'لم تُضِف أصدقاء بعد'.tr,
+                        subtitle:
+                            'لم تُضِف أصدقاء بعد. ابحث عنهم أعلاه وأرسل طلب صداقة!'
+                                .tr,
+                      )
+                    else
+                      for (final f in friends)
+                        _friendTile(_friendUser(f), myUid, presence[f['uid']]),
+                  ],
+                );
+              },
             );
           },
         ),
@@ -856,13 +867,38 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Widget _friendTile(AppUser u, String myUid) {
+  Widget _friendTile(AppUser u, String myUid,
+      [Map<String, dynamic>? presence]) {
+    final playing = (presence?['activeRoom'] ?? '').toString().isNotEmpty;
+    final online = presence?['isOnline'] == true;
     return _card(
       margin: const EdgeInsets.only(bottom: 10),
       onTap: () => _openChat(u),
       child: Row(
         children: [
-          UserAvatar(photoUrl: u.photoUrl, name: u.displayName, size: 46),
+          Stack(
+            children: [
+              UserAvatar(photoUrl: u.photoUrl, name: u.displayName, size: 46),
+              if (presence != null)
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  child: Container(
+                    width: 13,
+                    height: 13,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: playing
+                          ? const Color(0xFFC084FC)
+                          : online
+                              ? _C.green
+                              : const Color(0xFF64748B),
+                      border: Border.all(color: _C.bgTop, width: 2),
+                    ),
+                  ),
+                ),
+            ],
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -877,9 +913,20 @@ class _ChatScreenState extends State<ChatScreen> {
                         fontSize: 14)),
                 Text('@${u.username}',
                     style: const TextStyle(color: _C.cyan, fontSize: 11)),
+                if (playing)
+                  Text('يلعب الآن 🎮'.tr,
+                      style: const TextStyle(
+                          color: Color(0xFFC084FC),
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800)),
               ],
             ),
           ),
+          if (playing && (presence?['activeGame'] ?? '') == 'okey')
+            _pill(
+                icon: Icons.visibility_rounded,
+                color: const Color(0xFFC084FC),
+                onTap: () => _spectateRoom(presence!['activeRoom'].toString())),
           _pill(
               icon: Icons.chat_bubble_rounded,
               color: _C.cyan,
@@ -888,6 +935,17 @@ class _ChatScreenState extends State<ChatScreen> {
         ],
       ),
     );
+  }
+
+  /// دخول غرفة الصديق كمشاهد
+  void _spectateRoom(String roomId) {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => OkeyGameScreen(
+        rules: OkeyRules.turkish,
+        roomId: roomId,
+        spectate: true,
+      ),
+    ));
   }
 
   Widget _menu(AppUser u, String myUid, {required bool isFriend}) {

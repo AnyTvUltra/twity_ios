@@ -27,6 +27,19 @@ class OkeyChatDialog extends StatefulWidget {
 class _OkeyChatDialogState extends State<OkeyChatDialog> {
   final TextEditingController _textController = TextEditingController();
 
+  /// ردود فعل سريعة — تُبثّ كفقاعة إيموجي كبيرة فوق استكانة المرسل.
+  /// بادئة ⚡ تميّزها عن نص الشات على نفس قناة البث الموجودة.
+  static const List<String> quickReactions = [
+    '😂',
+    '👏',
+    '🔥',
+    '😮',
+    '😎',
+    '💔',
+    '🤞',
+    '🏆',
+  ];
+
   final List<Map<String, String>> _quickMessages = [
     {'en': 'Good luck!', 'ar': 'حظاً موفقاً! 🍀'.tr},
     {'en': 'Nice!', 'ar': 'حركة رائعة! 🔥'.tr},
@@ -142,7 +155,28 @@ class _OkeyChatDialogState extends State<OkeyChatDialog> {
                 );
               }).toList(),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
+
+            // صف ردود الفعل — إيموجي كبيرة تطير فوق استكانتك
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: quickReactions.map((e) {
+                return GestureDetector(
+                  onTap: () => _send('⚡$e'),
+                  child: Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      color: const Color(0x22FFFFFF),
+                      shape: BoxShape.circle,
+                      border:
+                          Border.all(color: const Color(0x33FFFFFF), width: 1),
+                    ),
+                    child: Text(e, style: const TextStyle(fontSize: 19)),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 12),
 
             // حقل كتابة مخصص
             Row(

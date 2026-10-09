@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../games/okey/okey_rules.dart';
 import '../services/auth_service.dart';
 import '../services/okey_room_service.dart';
@@ -35,6 +36,9 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
   OkeyRoom? _currentRoom;
   StreamSubscription<OkeyRoom>? _roomSub;
   late final AnimationController _ctaGlow;
+
+  /// غرفة جارية أنا عضو فيها — لافتة «عودة للجولة» بعد انقطاع
+  OkeyRoom? _activeRoom;
 
   // ═══ لوحة الألوان: Deep Navy + Electric Blue + Gold ═══
   static const _bgTop = Color(0xFF0A0F24);
@@ -83,6 +87,33 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
       lowerBound: 0.6,
       upperBound: 1.0,
     )..repeat(reverse: true);
+    _checkActiveRoom();
+  }
+
+  /// هل أنا عضو في غرفة جارية؟ — بعد انقطاع/إعادة فتح يظهر
+  /// زر العودة فينقلني مباشرة إلى مقعدي
+  Future<void> _checkActiveRoom() async {
+    final uid = AuthService().currentUser?.uid;
+    if (uid == null) return;
+    final room = await OkeyRoomService().findMyActiveRoom(uid);
+    if (mounted && room != null && _currentRoom == null) {
+      setState(() => _activeRoom = room);
+    }
+  }
+
+  /// العودة إلى جولتي الجارية بعد انقطاع
+  void _rejoinActiveRoom() {
+    final room = _activeRoom;
+    if (room == null) return;
+    AppHaptics.medium();
+    VoiceService().joinRoomVoice(room.id);
+    Navigator.of(context).pushReplacement(MaterialPageRoute(
+      builder: (_) => OkeyGameScreen(
+        rules: OkeyRules.fromId(room.variant),
+        teamMode: _teamMode,
+        roomId: room.id,
+      ),
+    ));
   }
 
   Future<void> _handleQuickMatch() async {
@@ -318,6 +349,11 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // لافتة العودة: لديّ جولة جارية بعد انقطاع — زر مباشر لمقعدي
+          if (_activeRoom != null) ...[
+            _buildReturnBanner(),
+            const SizedBox(height: 14),
+          ],
           _buildTournamentBanner(),
           const SizedBox(height: 20),
 
@@ -347,6 +383,15 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
           _buildModeSelector(),
           const SizedBox(height: 16),
           _buildJoinButton(),
+          const SizedBox(height: 14),
+          // الغرف الخاصة: أنشئ بكود أو انضم بكود صديقك
+          Row(
+            children: [
+              Expanded(child: _buildPrivateCreateCard()),
+              const SizedBox(width: 10),
+              Expanded(child: _buildJoinByCodeCard()),
+            ],
+          ),
           const SizedBox(height: 14),
           _buildTrainingCard(),
         ],
@@ -430,6 +475,284 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  /// لافتة «عودة للجولة» — أنا عضو في غرفة جارية (عدت من انقطاع)
+  Widget _buildReturnBanner() {
+    final room = _activeRoom!;
+    return GestureDetector(
+      onTap: _rejoinActiveRoom,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0x402E7D32), Color(0x2A0F3D1B)],
+              ),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                  color: const Color(0xFF4ADE80).withOpacity(0.55), width: 1.2),
+              boxShadow: [
+                BoxShadow(
+                    color: const Color(0xFF4ADE80).withOpacity(0.16),
+                    blurRadius: 18,
+                    spreadRadius: -4),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const RadialGradient(
+                        colors: [Color(0x404ADE80), Colors.transparent]),
+                    border: Border.all(
+                        color: const Color(0xFF4ADE80).withOpacity(0.4)),
+                  ),
+                  child: const Center(
+                      child: Text('🔄', style: TextStyle(fontSize: 24))),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('لديك جولة جارية!'.tr,
+                          style: TextStyle(
+                              color: _textWhite,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w900)),
+                      const SizedBox(height: 3),
+                      Text(
+                        'الرهان {} 🪙 — اضغط للعودة إلى مقعدك'
+                            .trp([room.stakes]),
+                        style: const TextStyle(color: _textDim, fontSize: 10.5),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.play_circle_fill_rounded,
+                    color: Color(0xFF4ADE80), size: 30),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// بطاقة «غرفة خاصة» — أنشئ غرفة بكود تشاركه مع أصدقائك
+  Widget _buildPrivateCreateCard() {
+    return _lobbyMiniCard(
+      icon: '🔑',
+      title: 'غرفة خاصة'.tr,
+      subtitle: 'كود لأصدقائك'.tr,
+      accent: const Color(0xFFFBBF24),
+      onTap: _createPrivateRoom,
+    );
+  }
+
+  /// بطاقة «انضم بكود» — أدخل كود غرفة صديقك
+  Widget _buildJoinByCodeCard() {
+    return _lobbyMiniCard(
+      icon: '🎟️',
+      title: 'انضم بكود'.tr,
+      subtitle: 'أدخل كود الغرفة'.tr,
+      accent: const Color(0xFF38BDF8),
+      onTap: _showJoinByCodeDialog,
+    );
+  }
+
+  Widget _lobbyMiniCard({
+    required String icon,
+    required String title,
+    required String subtitle,
+    required Color accent,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0x2E16204A),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: accent.withOpacity(0.45), width: 1.1),
+              boxShadow: [
+                BoxShadow(
+                    color: accent.withOpacity(0.12),
+                    blurRadius: 16,
+                    spreadRadius: -4),
+              ],
+            ),
+            child: Row(
+              children: [
+                Text(icon, style: const TextStyle(fontSize: 26)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title,
+                          style: TextStyle(
+                              color: _textWhite,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w900)),
+                      const SizedBox(height: 2),
+                      Text(subtitle,
+                          style:
+                              const TextStyle(color: _textDim, fontSize: 9.5)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// إنشاء غرفة خاصة بالرهان المحدد — ثم تظهر شاشة الانتظار
+  /// بكودها الكبير القابل للنسخ ليشاركه المضيف مع أصدقائه
+  Future<void> _createPrivateRoom() async {
+    final user = AuthService().currentUser;
+    if (user == null) {
+      TopNotification.show(context, 'يرجى تسجيل الدخول أولاً!'.tr,
+          icon: Icons.lock_rounded);
+      return;
+    }
+    if (user.chips < _selectedStakes) {
+      TopNotification.show(context,
+          'رصيدك غير كافٍ لهذه الطاولة! تحتاج {} عملة'.trp([_selectedStakes]),
+          icon: Icons.warning_rounded);
+      return;
+    }
+    AppHaptics.medium();
+    setState(() => _isSearching = true);
+    final room = await OkeyRoomService().createPrivateRoom(
+        stakes: _selectedStakes, user: user, variant: widget.rules.id);
+    setState(() => _isSearching = false);
+    if (room != null) {
+      setState(() => _currentRoom = room);
+      _listenToRoom(room.id);
+    } else if (mounted) {
+      TopNotification.show(context, 'تعذر إنشاء الغرفة — حاول مجدداً'.tr,
+          icon: Icons.error_outline_rounded);
+    }
+  }
+
+  /// نافذة إدخال كود الغرفة — 6 خانات كبيرة، تنضم فور التحقق
+  void _showJoinByCodeDialog() {
+    AppHaptics.selection();
+    final ctrl = TextEditingController();
+    var busy = false;
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlg) => AlertDialog(
+          backgroundColor: const Color(0xFF141B33),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: const BorderSide(color: Color(0x40FFD54F))),
+          title: Text('انضم بكود الغرفة'.tr,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('أدخل الكود الذي شاركه صديقك (6 خانات)'.tr,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      color: Color(0xFF8EA3C8), fontSize: 11.5)),
+              const SizedBox(height: 14),
+              TextField(
+                controller: ctrl,
+                textAlign: TextAlign.center,
+                maxLength: 6,
+                textCapitalization: TextCapitalization.characters,
+                style: const TextStyle(
+                    color: Color(0xFFFFD54F),
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 8),
+                decoration: InputDecoration(
+                  counterText: '',
+                  hintText: '••••••',
+                  hintStyle: const TextStyle(
+                      color: Color(0x40FFD54F), letterSpacing: 8),
+                  filled: true,
+                  fillColor: const Color(0x40000000),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none),
+                ),
+              ),
+            ],
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text('إلغاء'.tr,
+                  style: const TextStyle(color: Color(0xFF8EA3C8))),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF22C55E),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: busy
+                  ? null
+                  : () async {
+                      final code = ctrl.text.trim().toUpperCase();
+                      if (code.length != 6) return;
+                      setDlg(() => busy = true);
+                      final user = AuthService().currentUser;
+                      if (user == null) {
+                        Navigator.of(ctx).pop();
+                        return;
+                      }
+                      final res =
+                          await OkeyRoomService().joinRoomByCode(code, user);
+                      setDlg(() => busy = false);
+                      if (!ctx.mounted) return;
+                      Navigator.of(ctx).pop();
+                      if (res.room != null) {
+                        setState(() => _currentRoom = res.room);
+                        _listenToRoom(res.room!.id);
+                      } else {
+                        TopNotification.show(context, res.error,
+                            icon: Icons.error_outline_rounded);
+                      }
+                    },
+              child: busy
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
+                  : Text('انضم'.tr,
+                      style: const TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.w800)),
+            ),
+          ],
         ),
       ),
     );
@@ -941,7 +1264,10 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                 ),
                 child: Column(
                   children: [
-                    Text('غرفة الانتظار 🪑'.tr,
+                    Text(
+                        room.isPrivate
+                            ? 'غرفة خاصة 🔑'.tr
+                            : 'غرفة الانتظار 🪑'.tr,
                         style: TextStyle(
                             color: _textWhite,
                             fontSize: 17,
@@ -951,6 +1277,49 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                         'قيمة الرهان: {} 🪙 • الجائزة: {} 💰'
                             .trp([room.stakes, room.stakes * 4]),
                         style: const TextStyle(color: _gold, fontSize: 13)),
+                    // كود الغرفة الخاصة — كبير وقابل للنسخ لمشاركته
+                    if (room.isPrivate && room.code.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      GestureDetector(
+                        onTap: () {
+                          AppHaptics.selection();
+                          Clipboard.setData(ClipboardData(text: room.code));
+                          TopNotification.show(
+                              context, 'نُسخ الكود — شاركه مع أصدقائك'.tr,
+                              icon: Icons.copy_rounded);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 18, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0x40000000),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                                color: _gold.withOpacity(0.5), width: 1.1),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                room.code,
+                                style: const TextStyle(
+                                    color: _gold,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 6),
+                              ),
+                              const SizedBox(width: 10),
+                              const Icon(Icons.copy_rounded,
+                                  color: _gold, size: 17),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text('اضغط الكود لنسخه — أصدقاؤك ينضمّون به'.tr,
+                          style:
+                              const TextStyle(color: _textDim, fontSize: 9.5)),
+                    ],
                   ],
                 ),
               ),

@@ -421,6 +421,8 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
         chipChange: chips,
         ratingChange: win ? 12 * mult : -10 * mult,
         isWin: win,
+        game: 'backgammon',
+        chipsWon: chips > 0 ? chips : 0,
       );
     }
     (win || !widget.vsAI) ? BgAudio.win() : BgAudio.lose();
@@ -454,7 +456,10 @@ class _BackgammonGameScreenState extends State<BackgammonGameScreen>
   void _resignConfirmed() {
     if (widget.bet > 0) {
       AuthService().updateMatchResult(
-          chipChange: -widget.bet, ratingChange: -10, isWin: false);
+          chipChange: -widget.bet,
+          ratingChange: -10,
+          isWin: false,
+          game: 'backgammon');
     }
     Navigator.of(context).pop();
   }

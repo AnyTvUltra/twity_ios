@@ -302,6 +302,7 @@ class OkeyEngine extends ChangeNotifier {
       // المضيف عنه آلياً (سحب + رمي) فلا تتجمّد الغرفة على غائب
       if (remoteHumanSeats.contains(currentTurnIndex)) {
         autoPlaySeat(currentTurnIndex);
+        onRemoteSeatAutoPlayed?.call(currentTurnIndex);
       }
       return; // bot timeouts handled by bot AI
     }
@@ -516,6 +517,10 @@ class OkeyEngine extends ChangeNotifier {
   /// المضيف فقط): الـAI لا يشغّلهم — حركاتهم تصل عبر
   /// applyRemoteAction، وتجاوز المهلة يشغّلهم آلياً
   final Set<int> remoteHumanSeats = {};
+
+  /// يُستدعى عندما يلعب المضيف عن مقعد بعيد متجمد — الشاشة تعلّم
+  /// المقعد «منقطعاً» على وثيقة الغرفة فيظهر للجميع
+  void Function(int seat)? onRemoteSeatAutoPlayed;
 
   /// أحجار اليسار المأخوذة لكل مقعد بعيد — المقعد 0 يبقى عبر
   /// _takenLeftTile (قاعدة: من أخذه دون فتح يُعاده للكومة ويسحب بديلاً)
@@ -2372,6 +2377,97 @@ class OkeyEngine extends ChangeNotifier {
   Map<String, dynamic> handForSeat(int seat) => {
         'tiles': [for (final t in players[seat].activeTiles) t.toMap()]
       };
+
+  // ═══ حالة المضيف الكاملة — نجاة المضيف من إعادة فتح التطبيق ═══
+  // تُكتب في rooms/{id}/host_state/state (المضيف وحده يقرؤها
+  // ويكتبها بحسب القواعد): الرزمة الحقيقية + كل الأيدي + تتبّع
+  // الحجر المأخوذ — أي كل ما تخفيه اللقطة العامة عن الضيوف.
+
+  Map<String, dynamic> serializeHostState() {
+    final pub = serializeGame();
+    return {
+      ...pub,
+      'deckTiles': [for (final t in drawDeck) t.toMap()],
+      'racks': [
+        for (var i = 0; i < 4; i++)
+          [for (final t in players[i].rackTiles) t?.toMap()]
+      ],
+      'pilesFull': [
+        for (final p in discardPiles) [for (final t in p) t.toMap()]
+      ],
+      'taken': {
+        for (final e in _takenLeftBySeat.entries) '${e.key}': e.value.toMap()
+      },
+      'remote': remoteHumanSeats.toList(),
+      'botDiffs': [for (final p in players) p.botDifficulty.name],
+      'conn': [for (final p in players) p.connected],
+    };
+  }
+
+  /// يعيد بناء المحرك المرجعي كاملاً من وثيقة host_state — يُستدعى
+  /// على محرك جديد (أعاد المضيف فتح التطبيق وسط جولة) فيستعيد
+  /// الرزمة والأيدي والدور كما كانت لحظة آخر نشر
+  void loadHostState(Map<String, dynamic> s) {
+    loadGameState(s, seatOffset: 0); // الحقول العامة أولاً
+
+    final dt = s['deckTiles'] as List? ?? const [];
+    if (dt.isNotEmpty) {
+      drawDeck = [
+        for (final m in dt)
+          OkeyTile.fromMap(Map<String, dynamic>.from(m as Map))
+      ];
+    }
+
+    final racks = s['racks'] as List? ?? const [];
+    for (var i = 0; i < 4 && i < racks.length; i++) {
+      final r = racks[i] as List? ?? const [];
+      for (var k = 0; k < 28; k++) {
+        final v = k < r.length ? r[k] : null;
+        players[i].rackTiles[k] =
+            v is Map ? OkeyTile.fromMap(Map<String, dynamic>.from(v)) : null;
+      }
+    }
+
+    final pf = s['pilesFull'] as List? ?? const [];
+    for (var i = 0; i < 4 && i < pf.length; i++) {
+      discardPiles[i] = [
+        for (final m in (pf[i] as List? ?? const []))
+          OkeyTile.fromMap(Map<String, dynamic>.from(m as Map))
+      ];
+    }
+
+    _takenLeftBySeat.clear();
+    final tk = s['taken'];
+    if (tk is Map) {
+      tk.forEach((k, v) {
+        final seat = int.tryParse('$k');
+        if (seat != null && v is Map) {
+          _takenLeftBySeat[seat] =
+              OkeyTile.fromMap(Map<String, dynamic>.from(v));
+        }
+      });
+    }
+
+    final rem = s['remote'] as List? ?? const [];
+    remoteHumanSeats
+      ..clear()
+      ..addAll(rem.map((e) => (e as num).toInt()));
+
+    final bd = s['botDiffs'] as List? ?? const [];
+    for (var i = 0; i < 4 && i < bd.length; i++) {
+      players[i].botDifficulty = BotDifficulty.values.firstWhere(
+          (e) => e.name == bd[i],
+          orElse: () => BotDifficulty.medium);
+    }
+
+    // علم الاتصال — المقاعد المنقطعة تستمر مؤتمتة بعد استعادة المضيف
+    final conn = s['conn'] as List? ?? const [];
+    for (var i = 0; i < 4 && i < conn.length; i++) {
+      players[i].connected = conn[i] == true;
+    }
+
+    notifyListeners();
+  }
 
   /// أحجار رفّي بعد دمج اليد الواردة — للاختبار وفحص الأخطاء
   List<OkeyTile> get mirrorMyTiles => players[0].activeTiles;

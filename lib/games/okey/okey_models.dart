@@ -163,6 +163,12 @@ class OkeyPlayer {
   final String id;
   String name; // قابلة للتحديث — الأونلاين يملأ الاسم من وثيقة الغرفة
   String avatarUrl; // قابلة للتحديث عند مزامنة صورة الحساب الحقيقية
+
+  /// اللقب المجهّز ومعرّف إطار الصورة — يُملآن من وثيقة الغرفة
+  /// للاعبين البعيدين فيعرض الجميع ألقاب وإطارات بعضهم
+  String title = '';
+  String frameId = '';
+  bool connected = true; // منقطع مؤقتاً = يلعب المضيف عنه
   final int level;
   int rating;
   int chips;

@@ -99,6 +99,8 @@ class _DominoGameScreenState extends State<DominoGameScreen> {
         chipChange: chips,
         ratingChange: win ? 12 : -10,
         isWin: win,
+        game: 'domino',
+        chipsWon: chips > 0 ? chips : 0,
       );
     }
     setState(() {
@@ -129,7 +131,10 @@ class _DominoGameScreenState extends State<DominoGameScreen> {
   void _resignConfirmed() {
     if (widget.bet > 0) {
       AuthService().updateMatchResult(
-          chipChange: -widget.bet, ratingChange: -10, isWin: false);
+          chipChange: -widget.bet,
+          ratingChange: -10,
+          isWin: false,
+          game: 'domino');
     }
     Navigator.of(context).pop();
   }

@@ -932,6 +932,33 @@ class ProfileScreen extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 10),
 
+                                  // اللقب المجهّز — نص فخم ذهبي تحت اسم المستخدم
+                                  if ((user?.title ?? '').isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(bottom: 8),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(colors: [
+                                            _gold.withOpacity(0.2),
+                                            const Color(0x33FF9800),
+                                          ]),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          border: Border.all(
+                                              color: _gold.withOpacity(0.55)),
+                                        ),
+                                        child: Text(
+                                          '✦ ${user!.title} ✦',
+                                          style: const TextStyle(
+                                              color: Color(0xFFFFE9A8),
+                                              fontSize: 11.5,
+                                              fontWeight: FontWeight.w900),
+                                        ),
+                                      ),
+                                    ),
+
                                   // الشارات: التوثيق + الرتبة
                                   Wrap(
                                     alignment: WrapAlignment.center,
@@ -1086,6 +1113,10 @@ class ProfileScreen extends StatelessWidget {
                           ),
                         ),
                       ),
+                      const SizedBox(height: 18),
+
+                      // ═══ الإحصائيات التفصيلية لكل لعبة ═══
+                      _gameStatsCard(user),
                       const SizedBox(height: 18),
 
                       // ═══ الإحالة والإهداء 🤝 ═══
@@ -1332,6 +1363,154 @@ class ProfileScreen extends StatelessWidget {
         height: 1,
         margin: const EdgeInsets.symmetric(horizontal: 16),
         color: const Color(0x14FFFFFF));
+  }
+
+  /// بطاقة الإحصائيات التفصيلية — سجل لكل لعبة: فوز/خسارة/سلسلة/أكبر ربح
+  Widget _gameStatsCard(AppUser? user) {
+    final games = <MapEntry<String, Map<String, dynamic>>>[
+      for (final g in const ['okey', 'backgammon', 'domino', 'chess'])
+        if (user?.gameStats[g] is Map)
+          MapEntry(g, Map<String, dynamic>.from(user!.gameStats[g] as Map)),
+    ];
+    const meta = {
+      'okey': ('🀄', 'أوكي', _gold),
+      'backgammon': ('🎲', 'طاولة', _pink),
+      'domino': ('🁡', 'دومينو', _cyan),
+      'chess': ('♟️', 'شطرنج', _emerald),
+    };
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+            decoration: BoxDecoration(
+              color: const Color(0x2E101838),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: _cyan.withOpacity(0.3), width: 1.1),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.query_stats_rounded,
+                        color: _cyan, size: 18),
+                    const SizedBox(width: 7),
+                    Text('إحصائياتي التفصيلية'.tr,
+                        style: const TextStyle(
+                            color: _textWhite,
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w900)),
+                    const Spacer(),
+                    // انتصارات هذا الأسبوع — تتصفّر كل أحد
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 9, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _gold.withOpacity(0.14),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: _gold.withOpacity(0.4)),
+                      ),
+                      child: Text(
+                        '🔥 ${(user?.weeklyWins ?? 0)} ${'هذا الأسبوع'.tr}',
+                        style: const TextStyle(
+                            color: _gold,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                if (games.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    child: Text(
+                      'العب أول مباراة لترى سجلّك التفصيلي هنا'.tr,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: _textDim, fontSize: 11),
+                    ),
+                  )
+                else
+                  for (final e in games)
+                    _gameStatRow(e.key, e.value, meta[e.key]!),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _gameStatRow(
+      String game, Map<String, dynamic> s, (String, String, Color) m) {
+    final wins = (s['wins'] as num?)?.toInt() ?? 0;
+    final losses = (s['losses'] as num?)?.toInt() ?? 0;
+    final total = wins + losses;
+    final rate = total > 0 ? (wins / total * 100).toStringAsFixed(0) : '—';
+    final streak = (s['curStreak'] as num?)?.toInt() ?? 0;
+    final bestStreak = (s['bestStreak'] as num?)?.toInt() ?? 0;
+    final bestWin = (s['bestWin'] as num?)?.toInt() ?? 0;
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+      decoration: BoxDecoration(
+        color: m.$3.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: m.$3.withOpacity(0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(m.$1, style: const TextStyle(fontSize: 15)),
+              const SizedBox(width: 6),
+              Text(m.$2.tr,
+                  style: TextStyle(
+                      color: m.$3, fontSize: 12, fontWeight: FontWeight.w900)),
+              const SizedBox(width: 8),
+              Text('$total ${'مباراة'.tr}',
+                  style: const TextStyle(color: _textDim, fontSize: 9.5)),
+              const Spacer(),
+              Text('{} فوز / {} خسارة'.trp([wins, losses]),
+                  style: const TextStyle(
+                      color: _textWhite,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700)),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              _miniStat('نسبة الفوز'.tr, '$rate%', m.$3),
+              _miniStat('السلسلة'.tr, streak > 0 ? '🔥$streak' : '—',
+                  const Color(0xFFFF8A50)),
+              _miniStat('أفضل سلسلة'.tr, '$bestStreak', _gold),
+              _miniStat('أكبر ربح'.tr,
+                  bestWin > 0 ? '+${formatBalance(bestWin)}' : '—', _emerald),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _miniStat(String label, String value, Color color) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(value,
+              style: TextStyle(
+                  color: color, fontSize: 11.5, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 2),
+          Text(label, style: const TextStyle(color: _textDim, fontSize: 8.5)),
+        ],
+      ),
+    );
   }
 }
 

@@ -50,10 +50,11 @@ class GameHubApp extends StatefulWidget {
   State<GameHubApp> createState() => _GameHubAppState();
 }
 
-class _GameHubAppState extends State<GameHubApp> {
+class _GameHubAppState extends State<GameHubApp> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     AppLangController.instance.addListener(_onLangChanged);
     // فحص التحديث بعد أول إطار — لا يظهر أي حوار إن كان التطبيق محدثاً
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -62,12 +63,22 @@ class _GameHubAppState extends State<GameHubApp> {
     });
   }
 
+  /// حضور online/offline مرتبط بدورة حياة التطبيق
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final online = state == AppLifecycleState.resumed;
+    try {
+      AuthService().setOnlinePresence(online);
+    } catch (_) {}
+  }
+
   void _onLangChanged() {
     if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     AppLangController.instance.removeListener(_onLangChanged);
     super.dispose();
   }

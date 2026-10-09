@@ -38,6 +38,14 @@ class BottomNavBar extends StatelessWidget {
       accentDeep: Color(0xFF92400E),
     ),
     _NavEntry(
+      index: 4,
+      icon: Icons.emoji_events_outlined,
+      activeIcon: Icons.emoji_events_rounded,
+      label: 'التنافسية'.tr,
+      accent: Color(0xFFC084FC),
+      accentDeep: Color(0xFF6B21A8),
+    ),
+    _NavEntry(
       index: 0,
       icon: Icons.grid_view_rounded,
       activeIcon: Icons.grid_view_rounded,

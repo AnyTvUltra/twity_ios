@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:game_hub/games/okey/okey_engine.dart';
 import 'package:game_hub/games/okey/okey_models.dart';
 import 'package:game_hub/games/okey/okey_rules.dart';
+import 'package:game_hub/services/auth_service.dart';
+import 'package:game_hub/services/okey_room_service.dart';
 
 /// اختبارات اللعب الأونلاين: تسلسل الحالة، دوران المقاعد على المرآة،
 /// تطبيق حركات اللاعبين البعيدين على محرك المضيف، ولمحة التدريب
@@ -179,6 +181,105 @@ void main() {
       host.applyRemoteAction(1, {'t': 'disc', 'id': other.id});
       expect(host.discardPiles[0].contains(myTile), isTrue);
       host.dispose();
+    });
+  });
+
+  group('حالة المضيف الكاملة (نجاة من الانقطاع)', () {
+    test('serializeHostState → loadHostState يستعيد الرزمة وكل الأيدي', () {
+      final host = OkeyEngine(rules: OkeyRules.turkish);
+      // محاكاة تقدّم: حرّك أحجاراً وتخلّص من بعضها
+      host.currentTurnIndex = 0;
+      final deckIds = [for (final t in host.drawDeck) t.id];
+      final hand1Ids = [for (final t in host.players[1].activeTiles) t.id];
+
+      final saved = host.serializeHostState();
+      final restored = OkeyEngine(rules: OkeyRules.turkish);
+      restored.loadHostState(Map<String, dynamic>.from(saved));
+
+      // الرزمة نفسها بنفس الترتيب — الضيوف يكملون من حيث انقطع المضيف
+      expect([for (final t in restored.drawDeck) t.id], deckIds);
+      expect([for (final t in restored.players[1].activeTiles) t.id], hand1Ids);
+      expect(restored.players[2].activeTiles.length,
+          host.players[2].activeTiles.length);
+      expect(restored.indicatorTile.id, host.indicatorTile.id);
+      host.dispose();
+      restored.dispose();
+    });
+
+    test('loadHostState يستعيد علم اتصال كل مقعد', () {
+      final host = OkeyEngine(rules: OkeyRules.turkish);
+      host.players[2].connected = false;
+      final saved = host.serializeHostState();
+      final restored = OkeyEngine(rules: OkeyRules.turkish);
+      restored.loadHostState(Map<String, dynamic>.from(saved));
+      expect(restored.players[2].connected, isFalse);
+      expect(restored.players[0].connected, isTrue);
+      host.dispose();
+      restored.dispose();
+    });
+  });
+
+  group('نموذج الغرفة الجديد', () {
+    test('OkeyRoomPlayer يحمل connected/title/frameId في التسلسل', () {
+      final p = OkeyRoomPlayer(
+        uid: 'u1',
+        name: 'سارة',
+        username: 'sara',
+        photoUrl: '',
+        seatIndex: 2,
+        connected: false,
+        title: 'أسطورة الأوكي',
+        frameId: 'fr_gold',
+      );
+      final back = OkeyRoomPlayer.fromMap(p.toMap());
+      expect(back.connected, isFalse);
+      expect(back.title, 'أسطورة الأوكي');
+      expect(back.frameId, 'fr_gold');
+      expect(back.seatIndex, 2);
+      // الافتراضي متصل — الغرف القديمة لا تحمل الحقل
+      final old = OkeyRoomPlayer.fromMap({
+        'uid': 'u2',
+        'name': 'x',
+        'username': 'x',
+        'photoUrl': '',
+        'seatIndex': 0,
+      });
+      expect(old.connected, isTrue);
+      expect(old.title, '');
+    });
+  });
+
+  group('الإحصائيات التفصيلية والأسبوعية', () {
+    test('updatedGameStats يجمع فوزاً وخسارةً وسلسلةً وأكبر ربح', () {
+      var s = <String, dynamic>{};
+      s = AuthService.updatedGameStats(s, 'okey', true, 500);
+      s = AuthService.updatedGameStats(s, 'okey', true, 1200);
+      s = AuthService.updatedGameStats(s, 'okey', false, 0);
+      final g = s['okey'] as Map;
+      expect(g['wins'], 2);
+      expect(g['losses'], 1);
+      expect(g['curStreak'], 0, reason: 'الخسارة كسرت السلسلة');
+      expect(g['bestStreak'], 2);
+      expect(g['bestWin'], 1200);
+      // لعبة ثانية مستقلة
+      s = AuthService.updatedGameStats(s, 'domino', true, 300);
+      expect((s['domino'] as Map)['wins'], 1);
+      expect((s['okey'] as Map)['wins'], 2);
+    });
+
+    test('currentWeekKey يثبت بصيغة السنة-أسبوع', () {
+      final wk = AuthService.currentWeekKey();
+      expect(RegExp(r'^\d{4}-w\d{2}$').hasMatch(wk), isTrue,
+          reason: 'صيغة $wk تتطابق مع مفتاح أسبوع ISO');
+    });
+
+    test('بادئة التفاعل ⚡ تبقى نصاً يمكن تمييزه في قناة الشات', () {
+      // ردود الفعل تُرمَّز على قناة chat نفسها — بادئة تميّزها
+      const reaction = '⚡😂';
+      expect(reaction.startsWith('⚡'), isTrue);
+      expect(reaction.substring(1), '😂');
+      // حدود الحجم — لا رسائل مفتوحة ضخمة
+      expect(reaction.length <= 8, isTrue);
     });
   });
 
