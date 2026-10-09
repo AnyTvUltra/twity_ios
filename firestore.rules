@@ -289,10 +289,10 @@ service cloud.firestore {
           //    من spectators سوى نفسه وبلا أي تغيير آخر
           (changedKeys().hasOnly(['spectators'])
             && resource.data.get('spectators', []).toSet()
-                .diff(request.resource.data.get('spectators', []).toSet())
+                .difference(request.resource.data.get('spectators', []).toSet())
                 .hasOnly([request.auth.uid])
             && request.resource.data.get('spectators', []).toSet()
-                .diff(resource.data.get('spectators', []).toSet())
+                .difference(resource.data.get('spectators', []).toSet())
                 .hasOnly([request.auth.uid]))
         )
         // حقول السلطة المرجعية للمضيف وحده: لقطة اللعبة والفائز
