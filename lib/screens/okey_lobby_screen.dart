@@ -7,6 +7,7 @@ import '../services/auth_service.dart';
 import '../services/okey_room_service.dart';
 import '../services/social_service.dart';
 import '../services/voice_service.dart';
+import '../utils/crash_diag.dart';
 import '../utils/format.dart';
 import '../utils/haptics.dart';
 import '../utils/top_notification.dart';
@@ -106,6 +107,7 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
     final room = _activeRoom;
     if (room == null) return;
     AppHaptics.medium();
+    CrashDiag.step('lobby.rejoin room=${room.id} status=${room.status}');
     VoiceService().joinRoomVoice(room.id);
     Navigator.of(context).pushReplacement(MaterialPageRoute(
       builder: (_) => OkeyGameScreen(
@@ -159,6 +161,7 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
       if (room.status == 'playing' && mounted) {
         // Start voice chat room connection
         VoiceService().joinRoomVoice(room.id);
+        CrashDiag.step('lobby.nav playing room=${room.id}');
 
         _roomSub?.cancel();
         Navigator.of(context).pushReplacement(

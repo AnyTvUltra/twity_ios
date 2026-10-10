@@ -17,6 +17,7 @@ import 'widgets/connectivity_gate.dart';
 import 'widgets/maintenance_gate.dart';
 import 'widgets/update_dialog.dart';
 import 'utils/top_notification.dart';
+import 'utils/crash_diag.dart';
 import 'l10n/app_lang.dart';
 
 final _navigatorKey = GlobalKey<NavigatorState>();
@@ -25,6 +26,9 @@ void main() async {
   // منطقة محروسة: الأخطاء غير المعالجة في التدفقات/المؤقتات
   // (أخطاء Firestore كرفض قاعدة أمن مثلاً) كانت تقتل التطبيق عبر
   // الـZone — الآن تُسجَّل وتترك الجلسة حية بدل شاشة إغلاق مفاجئة
+  // أداة تشخيص الكراش — تلتقط مخلّفات الجلسة الميتة قبل كل شيء
+  CrashDiag.init();
+
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
 
@@ -32,9 +36,11 @@ void main() async {
     // إغلاق التطبيق على أول استثناء واجهة
     FlutterError.onError = (details) {
       FlutterError.presentError(details);
+      CrashDiag.crash(details.exception, details.stack);
     };
     PlatformDispatcher.instance.onError = (error, stack) {
       debugPrint('Uncaught platform error: $error\n$stack');
+      CrashDiag.crash(error, stack);
       return true; // عولج — لا تنهار التطبيق
     };
 
@@ -58,8 +64,38 @@ void main() async {
     });
 
     runApp(const GameHubApp());
+
+    // إن ماتت الجلسة السابقة بكراش — اعرض التقرير الملتقط ليصوّره
+    // المستخدم ويرسله (نص + آخر خطوة قبل الإغلاق)
+    if (CrashDiag.pendingReport != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Timer(const Duration(milliseconds: 800), () {
+          final ctx = _navigatorKey.currentContext;
+          if (ctx == null) return;
+          showDialog(
+            context: ctx,
+            builder: (_) => AlertDialog(
+              title: const Text('تقرير إغلاق سابق'),
+              content: SingleChildScrollView(
+                child: SelectableText(CrashDiag.pendingReport!,
+                    style:
+                        const TextStyle(fontSize: 11, fontFamily: 'monospace')),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('حسناً'),
+                ),
+              ],
+            ),
+          );
+        });
+      });
+    }
   }, (error, stack) {
-    // خطأ zone غير معالج — سجّله ولا تسقط التطبيق
+    // خطأ zone غير معالج — اكتبه على القرص (ينجو من موت العملية)
+    // وسجّله ولا تسقط التطبيق
+    CrashDiag.crash(error, stack);
     debugPrint('Zone error (non-fatal now): $error\n$stack');
   });
 }
@@ -91,6 +127,10 @@ class _GameHubAppState extends State<GameHubApp> with WidgetsBindingObserver {
     try {
       AuthService().setOnlinePresence(online);
     } catch (_) {}
+    // خروج نظيف (خلفية/قتل يدوي من المبدّل) — امسح أثر الخطوات
+    // حتى لا يُقرأ ككراش لاحقاً؛ الكراش الـnative في المقدمة لا
+    // يمرّ بهذا الحدث فتبقى خطواته محفوظة
+    if (state != AppLifecycleState.resumed) CrashDiag.clearSteps();
   }
 
   void _onLangChanged() {

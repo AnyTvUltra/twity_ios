@@ -31,6 +31,7 @@ import '../widgets/animated_skin_effect.dart';
 import '../widgets/skin_image.dart';
 import '../games/okey/widgets/game_notice.dart';
 import 'package:game_hub/utils/haptics.dart';
+import '../utils/crash_diag.dart';
 import '../l10n/app_lang.dart';
 
 /// شاشة لعبة الأوكي التركية – تصميم بورتريت واقعي بدون تدوير
@@ -601,6 +602,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       final f = _dealFlights[i];
       if (t >= f.$3 && _dealTickFired < i) {
         _dealTickFired = i;
+        if (i == 0) CrashDiag.step('okey.deal.firstSound');
         OkeyAudio.playTileDraw();
       }
       if (t >= f.$3 + _dealFlightMs && _landedFlights.add(i)) {
@@ -802,14 +804,18 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
 
   /// تحديد دوري في الغرفة (مضيف/ضيف) وبناء المحرك المناسب
   Future<void> _initOnline() async {
+    CrashDiag.step('okey.initOnline.start room=${widget.roomId}');
     final uid = AuthService().currentUser?.uid ?? '';
     final room = await OkeyRoomService().getRoom(widget.roomId!);
+    CrashDiag.step('okey.room fetched=${room != null} status=${room?.status}');
     if (!mounted) return;
     if (room == null) {
       // وثيقة الغرفة غير موجودة/مقروءة (حُذفت أو انتهت أثناء
       // الانتقال) — امحُ مؤشر العودة وارجع للوبي بدل شاشة ميتة
       unawaited(AuthService().setActiveRoom('', ''));
-      Navigator.of(context).pop();
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
       return;
     }
 
@@ -869,7 +875,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       // الكاملة بدل توزيع جديد يمحو الجولة الجارية
       if (room.status == 'playing') {
         try {
+          CrashDiag.step('okey.hostState.reading');
           final saved = await OkeyRoomService().loadHostState(widget.roomId!);
+          CrashDiag.step('okey.hostState.read done=${saved != null}');
           if (saved != null && mounted) {
             _engine.loadHostState(saved);
             _dealing = false; // التوزيع انتهى قبل الانقطاع
@@ -877,6 +885,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         } catch (e) {
           // حالة محفوظة فاسدة (صيغة قديمة/بيانات ناقصة) —
           // المحرك أصلاً وزّع توزيعة جديدة في منشئه فنكمل بها
+          CrashDiag.step('okey.hostState.failed $e');
           debugPrint('loadHostState failed, fresh deal used: $e');
         }
       }
@@ -936,6 +945,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         // تدفق بلا onError يقتل التطبيق عبر الـZone
         onError: (Object e) =>
             debugPrint('roomStream error (permissions?): $e'));
+    CrashDiag.step(
+        'okey.streams.ok host=$_isHost spec=$_isSpectator seat=$_mySeat');
     unawaited(
         CompetitionService().currentSeasonId().then((s) => _seasonId = s));
     if (mounted) setState(() {});
@@ -992,6 +1003,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   /// كتابة اللقطة العامة + أيدي البعيدين على الوثيقة
   Future<void> _publishState() async {
     if (!_isHost || widget.roomId == null || !mounted) return;
+    if (_rev == 0) CrashDiag.step('okey.publish.first');
     final game = _engine.serializeGame();
     game['rev'] = ++_rev;
     // كشف التكرار: تغيّرات لا تؤثر على اللقطة (تحديد حجر مثلاً)
@@ -1028,8 +1040,15 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   }
 
   /// كل تحديث لوثيقة الغرفة — شات للجميع، ولقطة اللعبة للضيوف
+  bool _snapLogged = false;
+
   void _onRoomSnapshot(OkeyRoom room) {
     if (!mounted) return;
+    if (!_snapLogged) {
+      _snapLogged = true;
+      CrashDiag.step(
+          'okey.snap status=${room.status} pl=${room.players.length}');
+    }
     _room = room;
     _roomPlayerMaps = {for (final p in room.players) p.seatIndex: p.toMap()};
 
