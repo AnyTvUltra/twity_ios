@@ -475,11 +475,15 @@
                 ? (b64.startsWith('asset:') ? null
                    : `data:image/${b64.startsWith('/9j/') ? 'jpeg' : 'png'};base64,${b64}`)
                 : (data.imageUrl || null);
+              const validCat = ['okeyRoom','frame','title','chessBoard','chessPieces','bgBoard','bgCheckers','tile','table','rack','background'].includes(data.category);
               list.push({
                 id: d.id,
                 ...data,
                 imgUri,
                 active: data.active === true,
+                // صيغة قديمة بالكامل (بلا imageBase64 أو فئة غير معروفة):
+                // التفعيل وحده لا يصلحها — الأفضل حذفها وإنشاؤها من جديد
+                brokenLegacy: !b64 || !validCat,
                 legacyFields: data.active !== true && data.isActive === true,
               });
             });
@@ -1563,8 +1567,8 @@
                         <div key={item.id} className="card overflow-hidden flex flex-col">
                           <div className="h-36 bg-[#0a0a0c] border-b border-[#232327] relative">
                             <SkinPreview category={item.category} uri={item.imgUri} zoom={item.zoom || 1} ox={item.offsetX ?? item.ox ?? 0} oy={item.offsetY ?? item.oy ?? 0} />
-                            <span className={`absolute top-2 right-2 badge ${item.active ? 'b-ok' : item.legacyFields ? 'b-warn' : 'b-neutral'}`}>
-                              {item.active ? 'نشط' : item.legacyFields ? 'قديم' : 'مخفي'}
+                            <span className={`absolute top-2 right-2 badge ${item.active ? 'b-ok' : item.brokenLegacy ? 'b-danger' : item.legacyFields ? 'b-warn' : 'b-neutral'}`}>
+                              {item.active ? 'نشط' : item.brokenLegacy ? 'قديم' : item.legacyFields ? 'قديم' : 'مخفي'}
                             </span>
                           </div>
                           <div className="p-3 flex-1 flex flex-col gap-1">
@@ -1573,9 +1577,11 @@
                             <div className="text-xs font-bold text-amber-400 mt-1">
                               {item.currency === 'gems' ? '💎' : '🪙'} {item.price}
                             </div>
-                            {item.legacyFields && (
+                            {item.brokenLegacy ? (
+                              <div className="text-[10px] text-rose-400/80 leading-snug">صيغة قديمة لا يقرأها التطبيق — احذفه وأنشئه من جديد</div>
+                            ) : item.legacyFields ? (
                               <div className="text-[10px] text-amber-500/80 leading-snug">حقول قديمة — اضغط «تفعيل» ليظهر في التطبيق</div>
-                            )}
+                            ) : null}
                           </div>
                           <div className="px-3 pb-3 flex gap-1.5">
                             <button onClick={() => handleToggleSkin(item)} className={`btn btn-sm flex-1 ${item.active ? 'btn-sec' : 'btn-ok'}`}>
