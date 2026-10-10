@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 
 /// تشخيص الكراشات الميدانية — خصوصاً على iOS حيث الأخطاء

@@ -2004,14 +2004,33 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   //  منطق اللعبة
   // ─────────────────────────────────────────────
 
+  /// صندوق المشهد إن كان مرسوماً — آمن حتى قبل اكتمال أول layout
+  RenderBox? _sceneRenderBox() {
+    try {
+      final ro = _sceneKey.currentContext?.findRenderObject();
+      if (ro is RenderBox && ro.attached && ro.hasSize) return ro;
+    } catch (_) {}
+    return null;
+  }
+
   /// مركز عنصر في المشهد بإحداثيات المشهد المنطقية (844×390)
   Offset _keyCenter(GlobalKey key) {
-    final ctx = key.currentContext;
-    final sceneCtx = _sceneKey.currentContext;
-    if (ctx == null || sceneCtx == null) return const Offset(422, 190);
-    final box = ctx.findRenderObject() as RenderBox;
-    final scene = sceneCtx.findRenderObject() as RenderBox;
-    return scene.globalToLocal(box.localToGlobal(box.size.center(Offset.zero)));
+    const fallback = Offset(422, 190);
+    try {
+      final ctx = key.currentContext;
+      final sceneCtx = _sceneKey.currentContext;
+      if (ctx == null || sceneCtx == null) return fallback;
+      final box = ctx.findRenderObject();
+      final scene = sceneCtx.findRenderObject();
+      if (box is! RenderBox || scene is! RenderBox) return fallback;
+      if (!box.attached || !box.hasSize || !scene.attached || !scene.hasSize) {
+        return fallback;
+      }
+      return scene
+          .globalToLocal(box.localToGlobal(box.size.center(Offset.zero)));
+    } catch (_) {
+      return fallback;
+    }
   }
 
   /// عرض خانة الرف الفعلي — نفس معادلة OkeyIstakaWidget (حتى 40 كحد أقصى)
@@ -2060,9 +2079,11 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     // الحجر يطير من مركزه الظاهر — details.offset هو زاوية صندوق
     // الـfeedback فيضاف نصف حجم الحجر للوصول للمركز
     Offset from;
-    if (dropGlobal != null && _sceneKey.currentContext != null) {
-      final scene = _sceneKey.currentContext!.findRenderObject() as RenderBox;
-      from = scene.globalToLocal(dropGlobal + _dropTileHalfScene);
+    if (dropGlobal != null) {
+      final scene = _sceneRenderBox();
+      from = scene != null
+          ? scene.globalToLocal(dropGlobal + _dropTileHalfScene)
+          : _rackSlotCenter(slotIndex);
     } else {
       from = _rackSlotCenter(slotIndex);
     }
@@ -3240,9 +3261,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   /// الإفلات عند مستوى الاستكانة أو أسفلها لا يُحتسب رمياً أبداً —
   /// هذا يمنع السحب السريع داخل/تحت الاستكانة من رمي الحجر بالخطأ
   bool _isOverTable(Offset dropGlobal) {
-    final ctx = _sceneKey.currentContext;
-    if (ctx == null) return true;
-    final scene = ctx.findRenderObject() as RenderBox;
+    final scene = _sceneRenderBox();
+    if (scene == null) return true;
     // details.offset = زاوية صندوق الـfeedback لا الإصبع ولا المركز —
     // نضيف نصف حجم الحجر فيصل التقييم لمركزه الظاهر الفعلي
     final local = scene.globalToLocal(dropGlobal + _dropTileHalfScene);
