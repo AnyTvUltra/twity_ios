@@ -169,7 +169,50 @@
         <div className="rounded-md shadow-md border border-black/40" style={{ width: w, height: h, ...bg, ...extra }}></div>
       );
       switch (category) {
+        case 'okeyRoom':
+          return (
+            <div className="w-full h-full relative" style={bg}>
+              <div className="absolute inset-0 border border-indigo-500/30 rounded-lg"></div>
+              <div className="absolute bottom-1 inset-x-0 text-center text-[10px] text-white/60">مشهد الغرفة كاملاً — يستبدل طاولة اللعب ومحيطها</div>
+            </div>
+          );
+        case 'frame':
+          return (
+            <div className="w-full h-full flex items-center justify-center" style={{ background: '#1c1c22' }}>
+              <div className="w-24 h-24 rounded-full p-1.5 shadow-lg border border-black/40" style={bg}>
+                <div className="w-full h-full rounded-full bg-zinc-700 border-2 border-black/30"></div>
+              </div>
+            </div>
+          );
+        case 'title':
+          return (
+            <div className="w-full h-full flex flex-col items-center justify-center gap-2" style={{ background: '#1c1c22' }}>
+              <div className="w-14 h-14 rounded-full bg-zinc-700 border border-black/40"></div>
+              <div className="px-3 py-0.5 rounded text-[11px] font-800 font-bold" style={{ ...bg, backgroundSize: 'cover', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.8)' }}>لقب اللاعب</div>
+            </div>
+          );
+        case 'chessBoard':
+          return (
+            <div className="w-full h-full flex items-center justify-center" style={{ background: '#1c1c22' }}>
+              <div className="w-28 h-28 rounded border-2 border-black/50 shadow-lg relative overflow-hidden" style={bg}>
+                <div className="absolute inset-0 grid grid-cols-8 grid-rows-8 opacity-40">
+                  {Array.from({length: 64}).map((_, i) => (
+                    <div key={i} className={((i >> 3) + i) % 2 === 0 ? 'bg-white/25' : 'bg-black/25'}></div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        case 'chessPieces':
+          return (
+            <div className="w-full h-full flex items-end justify-center gap-4 pb-5" style={{ background: '#1c1c22' }}>
+              <div className="w-8 h-12 rounded-t-full border border-black/40 shadow-md" style={bg}></div>
+              <div className="w-8 h-16 rounded-t-full border border-black/40 shadow-md" style={bg}></div>
+              <div className="w-8 h-10 rounded-t-full border border-black/40 shadow-md" style={bg}></div>
+            </div>
+          );
         case 'okeyTile':
+        case 'tile':
         case 'tiles':
           return (
             <div className="w-full h-full flex items-end justify-center gap-3 pb-5" style={{ background: '#1c1c22' }}>
@@ -261,7 +304,7 @@
 
       const [storeItems, setStoreItems] = useState([]);
       const [showAddSkinModal, setShowAddSkinModal] = useState(false);
-      const [newSkin, setNewSkin] = useState({ name: '', category: 'okeyTile', price: '', currency: 'chips', ox: 0, oy: 0, zoom: 1 });
+      const [newSkin, setNewSkin] = useState({ name: '', category: 'okeyRoom', price: '', currency: 'chips', ox: 0, oy: 0, zoom: 1 });
       const [savingSkin, setSavingSkin] = useState(false);
       const [skinImageFile, setSkinImageFile] = useState(null);
       const [skinImageDataUri, setSkinImageDataUri] = useState(null);
@@ -303,11 +346,26 @@
       const [toast, setToast] = useState(null);
       const [skinCategoryFilter, setSkinCategoryFilter] = useState('all');
 
+      // فئات المتجر الحقيقية — مطابقة لـ StoreCategory في التطبيق
+      const SKIN_CATEGORIES = [
+        { id: 'okeyRoom', label: 'غرفة الكونكان' },
+        { id: 'frame', label: 'إطار الصورة' },
+        { id: 'title', label: 'اللقب' },
+        { id: 'chessBoard', label: 'لوحة الشطرنج' },
+        { id: 'chessPieces', label: 'أحجار الشطرنج' },
+        { id: 'bgBoard', label: 'لوح الطاولي' },
+        { id: 'bgCheckers', label: 'أحجار الطاولي' },
+      ];
+
       const categoryLabels = {
-        okeyTile: 'أحجار أوكي', dominoTile: 'أحجار دومينو', okeyTable: 'طاولة أوكي',
-        okeyRack: 'استكانة', bgBoard: 'لوح الطاولي', bgCheckers: 'أحجار الطاولي',
-        tableBg: 'خلفيات شاشة', title: 'ألقاب', frame: 'إطارات',
-        tiles: 'أحجار', table: 'طاولة', rack: 'استكانة', background: 'خلفية'
+        okeyRoom: 'غرفة الكونكان', frame: 'إطار الصورة', title: 'اللقب',
+        chessBoard: 'لوحة الشطرنج', chessPieces: 'أحجار الشطرنج',
+        bgBoard: 'لوح الطاولي', bgCheckers: 'أحجار الطاولي',
+        tile: 'الأحجار (قديمة)', table: 'الطاولة (قديمة)',
+        rack: 'الاستكانة (قديمة)', background: 'الخلفية (قديمة)',
+        okeyTile: 'أحجار أوكي ⚠️ مفتاح قديم', dominoTile: 'أحجار دومينو ⚠️ مفتاح قديم',
+        okeyTable: 'طاولة أوكي ⚠️ مفتاح قديم', okeyRack: 'استكانة ⚠️ مفتاح قديم',
+        tableBg: 'خلفية ⚠️ مفتاح قديم', tiles: 'أحجار ⚠️ مفتاح قديم',
       };
 
       const tabs = [
@@ -405,10 +463,26 @@
             });
           } catch (e) { console.warn('Matches query failed', e); }
 
-          // 5. عناصر المتجر
+          // 5. عناصر المتجر — نطبّع الحقول لعقد التطبيق:
+          //    imageBase64 (أو imageUrl القديمة) → imgUri للمعاينة
+          //    active → حالة الظهور كما يراها التطبيق فعلاً
           const unsubStore = onSnapshot(collection(window.db, 'store_items'), (snap) => {
             const list = [];
-            snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
+            snap.forEach((d) => {
+              const data = d.data();
+              const b64 = data.imageBase64 || '';
+              const imgUri = b64
+                ? (b64.startsWith('asset:') ? null
+                   : `data:image/${b64.startsWith('/9j/') ? 'jpeg' : 'png'};base64,${b64}`)
+                : (data.imageUrl || null);
+              list.push({
+                id: d.id,
+                ...data,
+                imgUri,
+                active: data.active === true,
+                legacyFields: data.active !== true && data.isActive === true,
+              });
+            });
             setStoreItems(list);
           });
 
@@ -720,34 +794,54 @@
         r.readAsDataURL(f);
       };
 
+      // يضغط الصورة ويحوّلها لسلسلة base64 خام (بدون بادئة data:)
+      // مطابق لما يخزنه التطبيق في imageBase64 — حد Firestore للوثيقة 1MB
+      const encodeImageToBase64 = (dataUri) => new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 1024;
+          let w = img.width, h = img.height;
+          if (Math.max(w, h) > MAX) { const s = MAX / Math.max(w, h); w = Math.round(w * s); h = Math.round(h * s); }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          const ctx2 = canvas.getContext('2d');
+          ctx2.fillStyle = '#ffffff';
+          ctx2.fillRect(0, 0, w, h);
+          ctx2.drawImage(img, 0, 0, w, h);
+          // JPEG بجودة تنازلية حتى نبقى دون ~900KB من base64
+          for (const q of [0.82, 0.7, 0.55, 0.4]) {
+            const out = canvas.toDataURL('image/jpeg', q).split(',')[1];
+            if (out.length < 900000) return resolve(out);
+            if (q === 0.4) return reject(new Error('الصورة كبيرة جداً — جرّب صورة أصغر'));
+          }
+        };
+        img.onerror = () => reject(new Error('تعذّر قراءة الصورة'));
+        img.src = dataUri;
+      });
+
       const handleAddSkin = async (e) => {
         e.preventDefault();
+        if (!skinImageDataUri) { showToast('اختر صورة التصميم أولاً', 'error'); return; }
         setSavingSkin(true);
         try {
-          let url = '';
-          if (skinImageFile && window.fbStorageTools) {
-            const { storageRef, uploadBytesResumable, getDownloadURL } = window.fbStorageTools;
-            const path = `skins/${Date.now()}_${skinImageFile.name}`;
-            const ref = storageRef(window.fbStorage, path);
-            const snap = await uploadBytesResumable(ref, skinImageFile);
-            url = await getDownloadURL(snap.ref);
-          }
+          const imageBase64 = await encodeImageToBase64(skinImageDataUri);
           const { collection, addDoc, serverTimestamp } = window.fbTools;
+          // العقد نفسه الذي تكتبه لوحة الأدمن داخل التطبيق — يقرأه المتجر مباشرة
           await addDoc(collection(window.db, 'store_items'), {
             name: newSkin.name,
             category: newSkin.category,
             price: Number(newSkin.price) || 0,
             currency: newSkin.currency,
-            imageUrl: url,
+            imageBase64,
+            active: true,
             zoom: newSkin.zoom,
-            ox: newSkin.ox,
-            oy: newSkin.oy,
-            isActive: true,
+            offsetX: newSkin.ox,
+            offsetY: newSkin.oy,
             createdAt: serverTimestamp()
           });
-          showToast('تمت إضافة التصميم للمتجر');
+          showToast('تم نشر التصميم في المتجر');
           setShowAddSkinModal(false);
-          setNewSkin({ name: '', category: 'okeyTile', price: '', currency: 'chips', ox: 0, oy: 0, zoom: 1 });
+          setNewSkin({ name: '', category: 'okeyRoom', price: '', currency: 'chips', ox: 0, oy: 0, zoom: 1 });
           setSkinImageFile(null);
           setSkinImageDataUri(null);
         } catch (err) {
@@ -757,10 +851,11 @@
         }
       };
 
+      // يكتب الحقل الصحيح `active` — ويُصلح الوثائق القديمة ذات isActive تلقائياً
       const handleToggleSkin = async (item) => {
         try {
           const { doc, updateDoc } = window.fbTools;
-          await updateDoc(doc(window.db, 'store_items', item.id), { isActive: !(item.isActive !== false) });
+          await updateDoc(doc(window.db, 'store_items', item.id), { active: !(item.active === true) });
           showToast('تم تغيير حالة التصميم');
         } catch (err) {
           showToast('خطأ: ' + err.message, 'error');
@@ -1446,19 +1541,16 @@
                     <div className="card card-pad flex flex-col sm:flex-row gap-3 sm:items-center">
                       <div>
                         <div className="sec-title"><i data-lucide="palette"></i> عناصر المتجر</div>
-                        <div className="sec-sub">{storeItems.length} عنصراً • الفئات مطابقة لمتجر التطبيق</div>
+                        <div className="sec-sub">{storeItems.length} عنصراً من Firestore — العناصر المدمجة (الإطارات المتحركة، الغرفة الكلاسيكية) جزء من كود التطبيق ولا تُدار من هنا</div>
                       </div>
                       <div className="sm:mr-auto flex gap-2">
-                        <select value={skinCategoryFilter} onChange={(e) => setSkinCategoryFilter(e.target.value)} className="inp sm:w-44">
+                        <select value={skinCategoryFilter} onChange={(e) => setSkinCategoryFilter(e.target.value)} className="inp sm:w-48">
                           <option value="all">كل الفئات</option>
-                          <option value="okeyTile">أحجار أوكي</option>
-                          <option value="dominoTile">أحجار دومينو</option>
-                          <option value="okeyTable">طاولة أوكي</option>
-                          <option value="okeyRack">استكانة</option>
-                          <option value="bgBoard">لوح الطاولي</option>
-                          <option value="bgCheckers">أحجار الطاولي</option>
-                          <option value="tableBg">خلفيات شاشة</option>
-                          <option value="title">ألقاب</option>
+                          {SKIN_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                          <option value="tile">الأحجار (قديمة)</option>
+                          <option value="table">الطاولة (قديمة)</option>
+                          <option value="rack">الاستكانة (قديمة)</option>
+                          <option value="background">الخلفية (قديمة)</option>
                         </select>
                         <button onClick={() => setShowAddSkinModal(true)} className="btn btn-primary">
                           <i data-lucide="plus" style={{width:14,height:14}}></i> سكن جديد
@@ -1470,9 +1562,9 @@
                       {filteredStoreItems.map(item => (
                         <div key={item.id} className="card overflow-hidden flex flex-col">
                           <div className="h-36 bg-[#0a0a0c] border-b border-[#232327] relative">
-                            <SkinPreview category={item.category} uri={item.imageUrl} zoom={item.zoom || 1} ox={item.ox || 0} oy={item.oy || 0} />
-                            <span className={`absolute top-2 right-2 badge ${item.isActive !== false ? 'b-ok' : 'b-neutral'}`}>
-                              {item.isActive !== false ? 'نشط' : 'مخفي'}
+                            <SkinPreview category={item.category} uri={item.imgUri} zoom={item.zoom || 1} ox={item.offsetX ?? item.ox ?? 0} oy={item.offsetY ?? item.oy ?? 0} />
+                            <span className={`absolute top-2 right-2 badge ${item.active ? 'b-ok' : item.legacyFields ? 'b-warn' : 'b-neutral'}`}>
+                              {item.active ? 'نشط' : item.legacyFields ? 'قديم' : 'مخفي'}
                             </span>
                           </div>
                           <div className="p-3 flex-1 flex flex-col gap-1">
@@ -1481,10 +1573,13 @@
                             <div className="text-xs font-bold text-amber-400 mt-1">
                               {item.currency === 'gems' ? '💎' : '🪙'} {item.price}
                             </div>
+                            {item.legacyFields && (
+                              <div className="text-[10px] text-amber-500/80 leading-snug">حقول قديمة — اضغط «تفعيل» ليظهر في التطبيق</div>
+                            )}
                           </div>
                           <div className="px-3 pb-3 flex gap-1.5">
-                            <button onClick={() => handleToggleSkin(item)} className={`btn btn-sm flex-1 ${item.isActive !== false ? 'btn-sec' : 'btn-ok'}`}>
-                              {item.isActive !== false ? 'إخفاء' : 'تفعيل'}
+                            <button onClick={() => handleToggleSkin(item)} className={`btn btn-sm flex-1 ${item.active ? 'btn-sec' : 'btn-ok'}`}>
+                              {item.active ? 'إخفاء' : 'تفعيل'}
                             </button>
                             <button onClick={() => handleDeleteSkin(item.id)} className="btn btn-danger btn-sm">
                               <i data-lucide="trash-2" style={{width:12,height:12}}></i>
@@ -2097,16 +2192,9 @@
                       </div>
                     </div>
                     <div>
-                      <label className="lbl">الفئة</label>
+                      <label className="lbl">الفئة (مطابقة لمتجر التطبيق)</label>
                       <select value={newSkin.category} onChange={(e) => setNewSkin(prev => ({ ...prev, category: e.target.value }))} className="inp">
-                        <option value="okeyTile">أحجار أوكي (ظهر الحجر)</option>
-                        <option value="dominoTile">أحجار دومينو</option>
-                        <option value="okeyTable">طاولة أوكي</option>
-                        <option value="okeyRack">استكانة أوكي</option>
-                        <option value="bgBoard">لوح الطاولي</option>
-                        <option value="bgCheckers">أحجار الطاولي</option>
-                        <option value="tableBg">خلفية شاشة</option>
-                        <option value="title">لقب نصي</option>
+                        {SKIN_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
                       </select>
                     </div>
                   </div>
