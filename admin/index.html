@@ -274,6 +274,59 @@
         );
       }
 
+      if (category === 'bgBoard') {
+        // لوح الطاولي: إطار خشبي + ميدان الكسنة + مثلثات متعاكسة + عارضة وسطى
+        const tri = (i, down) => (
+          <div key={i} style={{
+            width: 0, height: 0,
+            borderLeft: '7px solid transparent', borderRight: '7px solid transparent',
+            ...(down
+              ? { borderTop: `30px solid ${i % 2 ? '#f0d9b5' : '#4a2410'}` }
+              : { borderBottom: `30px solid ${i % 2 ? '#4a2410' : '#f0d9b5'}` }),
+            opacity: .92,
+          }}></div>
+        );
+        return (
+          <div className="flex items-center justify-center h-full">
+            <div className="w-44 h-28 rounded-md p-1.5 relative" style={{ background: 'linear-gradient(135deg,#6b4423,#3a2110,#241505)', boxShadow: '0 8px 18px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,217,160,.4)' }}>
+              <div className="w-full h-full relative overflow-hidden rounded-sm">
+                <div className="absolute inset-0"><Img fallback="linear-gradient(135deg,#8a5a2b,#3a2110)" /></div>
+                <div className="absolute top-0 inset-x-0 flex justify-between px-1">{[0, 1, 2, 3, 4, 5].map(i => tri(i, true))}</div>
+                <div className="absolute bottom-0 inset-x-0 flex justify-between px-1">{[0, 1, 2, 3, 4, 5].map(i => tri(i, false))}</div>
+                <div className="absolute inset-y-0 left-1/2 w-1.5 -translate-x-1/2" style={{ background: 'rgba(30,15,5,.75)' }}></div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      if (category === 'bgCheckers') {
+        // أحجار الطاولي: كومتان من أقراص دائرية تُملأ بنسيج الكسنة
+        const checker = (side) => (
+          <div className="flex flex-col-reverse items-center">
+            {[0, 1, 2].map(k => (
+              <div key={k} className="w-9 h-9 rounded-full relative overflow-hidden" style={{
+                marginTop: k === 0 ? 0 : -22,
+                border: '2px solid rgba(0,0,0,.45)',
+                boxShadow: '0 3px 5px rgba(0,0,0,.55)',
+                backgroundImage: uri ? `url(${uri})` : (side === 0
+                  ? 'radial-gradient(circle at 35% 30%, #fff6dc, #d9c9a3)'
+                  : 'radial-gradient(circle at 35% 30%, #6b3a20, #2e1208)'),
+                backgroundSize: 'cover', backgroundPosition: 'center',
+              }}>
+                <div className="absolute inset-0 rounded-full" style={{ boxShadow: 'inset 0 3px 4px rgba(255,255,255,.35), inset 0 -4px 6px rgba(0,0,0,.5), inset 0 0 0 3px rgba(0,0,0,.2)' }}></div>
+              </div>
+            ))}
+          </div>
+        );
+        return (
+          <div className="flex items-end justify-center gap-8 h-full pb-3" style={{ background: 'radial-gradient(circle at 50% 60%, rgba(90,50,20,.45), transparent 75%)' }}>
+            {checker(0)}
+            {checker(1)}
+          </div>
+        );
+      }
+
       if (category === 'okeyRoom') {
         // غرفة الكونكان: صورة المشهد كاملة بلا موك-أب وهمي فوقها
         return (
@@ -762,7 +815,7 @@
       };
 
       // ═══════════ المتجر والسكنات ═══════════
-      const categoryLabels = { okeyRoom: 'غرفة الكونكان 🚪', frame: 'إطار الصورة 🖼️', title: 'لقب اللاعب 🏷️', chessBoard: 'لوحة الشطرنج ♞', chessPieces: 'أحجار الشطرنج ♟️' };
+      const categoryLabels = { okeyRoom: 'غرفة الكونكان 🚪', frame: 'إطار الصورة 🖼️', title: 'لقب اللاعب 🏷️', chessBoard: 'لوحة الشطرنج ♞', chessPieces: 'أحجار الشطرنج ♟️', bgBoard: 'لوح الطاولي 🎲', bgCheckers: 'أحجار الطاولي ⚫', tile: 'الأحجار (قديمة)', table: 'الطاولة (قديمة)', rack: 'الاستكانة (قديمة)', background: 'الخلفية (قديمة)' };
 
       const handleSkinImagePick = (e) => {
         const file = e.target.files && e.target.files[0];
@@ -1776,6 +1829,8 @@
                         <option value="title">🏷️ لقب اللاعب</option>
                         <option value="chessBoard">♞ لوحة الشطرنج</option>
                         <option value="chessPieces">♟️ أحجار الشطرنج</option>
+                        <option value="bgBoard">🎲 لوح الطاولي</option>
+                        <option value="bgCheckers">⚫ أحجار الطاولي</option>
                       </select>
                     </div>
 
@@ -2581,6 +2636,8 @@
                       <option value="title">🏷️ لقب لاعب (نص يظهر تحت الاسم — بلا صورة)</option>
                       <option value="chessBoard">♞ لوحة الشطرنج (الخشبة والمربعات)</option>
                       <option value="chessPieces">♟️ أحجار الشطرنج (نسيج القطع)</option>
+                      <option value="bgBoard">🎲 لوح الطاولي (الخشبة والمثلثات)</option>
+                      <option value="bgCheckers">⚫ أحجار الطاولي (نسيج الأقراص)</option>
                     </select>
                   </div>
 
