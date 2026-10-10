@@ -205,9 +205,78 @@ class _AuthGateState extends State<_AuthGate> {
   @override
   Widget build(BuildContext context) {
     if (_authAvailable && (_authOrNull?.isAuthenticated ?? false)) {
+      // حظر إداري — يسبق كل شيء ولا يترك سوى تسجيل الخروج
+      if (_authOrNull?.currentUser?.isBanned == true) {
+        return const _BannedScreen();
+      }
       // وضع الصيانة يُطبَّق بعد الدخول — شاشة الدخول تبقى متاحة للمدير
       return const MaintenanceGate(child: HomeScreen());
     }
     return AuthScreen(onAuthenticated: () {});
+  }
+}
+
+/// شاشة الحساب المحظور — تظهر عند isBanned=true في وثيقة المستخدم
+/// ويستطيع اللاعب فقط تسجيل الخروج (فك الحظر يكون من لوحة الإدارة)
+class _BannedScreen extends StatelessWidget {
+  const _BannedScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0E1F),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(22),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFFEF5350).withOpacity(0.12),
+                  border: Border.all(
+                      color: const Color(0xFFEF5350).withOpacity(0.4),
+                      width: 1.5),
+                ),
+                child: const Icon(Icons.block_rounded,
+                    color: Color(0xFFEF5350), size: 56),
+              ),
+              const SizedBox(height: 24),
+              Text('تم حظر حسابك'.tr,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900)),
+              const SizedBox(height: 12),
+              Text(
+                'تم إيقاف هذا الحساب من قبل الإدارة. إذا كنت تعتقد أن هذا خطأ، تواصل مع الدعم.'
+                    .tr,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    color: Color(0xFFB8C4DC), fontSize: 14, height: 1.6),
+              ),
+              const SizedBox(height: 28),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => AuthService().signOut(),
+                  icon: const Icon(Icons.logout_rounded, size: 18),
+                  label: Text('تسجيل خروج'.tr),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFEF5350),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

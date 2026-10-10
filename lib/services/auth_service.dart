@@ -56,6 +56,9 @@ class AppUser {
   final String activeRoom;
   final String activeGame;
 
+  /// حظر إداري — عند true يُمنع اللاعب من الوصول للتطبيق
+  final bool isBanned;
+
   /// اشتراك VIP فعّال حالياً؟
   bool get isVip => vipUntil != null && vipUntil!.isAfter(DateTime.now());
 
@@ -93,6 +96,7 @@ class AppUser {
     this.seasonId = '',
     this.activeRoom = '',
     this.activeGame = '',
+    this.isBanned = false,
   });
 
   factory AppUser.fromMap(String uid, Map<String, dynamic> data) {
@@ -151,6 +155,7 @@ class AppUser {
       seasonId: data['seasonId'] ?? '',
       activeRoom: data['activeRoom'] ?? '',
       activeGame: data['activeGame'] ?? '',
+      isBanned: data['isBanned'] == true,
     );
   }
 
@@ -190,6 +195,7 @@ class AppUser {
       'seasonId': seasonId,
       'activeRoom': activeRoom,
       'activeGame': activeGame,
+      'isBanned': isBanned,
       'updatedAt': FieldValue.serverTimestamp(),
     };
   }
@@ -224,6 +230,7 @@ class AppUser {
     String? seasonId,
     String? activeRoom,
     String? activeGame,
+    bool? isBanned,
   }) {
     return AppUser(
       uid: uid,
@@ -256,6 +263,7 @@ class AppUser {
       seasonId: seasonId ?? this.seasonId,
       activeRoom: activeRoom ?? this.activeRoom,
       activeGame: activeGame ?? this.activeGame,
+      isBanned: isBanned ?? this.isBanned,
     );
   }
 }
