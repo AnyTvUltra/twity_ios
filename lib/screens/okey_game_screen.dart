@@ -31,7 +31,6 @@ import '../widgets/animated_skin_effect.dart';
 import '../widgets/skin_image.dart';
 import '../games/okey/widgets/game_notice.dart';
 import 'package:game_hub/utils/haptics.dart';
-import '../utils/crash_diag.dart';
 import '../l10n/app_lang.dart';
 
 /// شاشة لعبة الأوكي التركية – تصميم بورتريت واقعي بدون تدوير
@@ -166,7 +165,6 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   StreamSubscription? _movesSub;
   Timer? _publishTimer;
   Timer? _remoteTick;
-  Timer? _diagBeat; // نبض تشخيصي — يتوقف ذاتياً بعد ~12 ثانية
   int _rev = 0;
   int _lastRev = -1;
   String _lastPublished = '';
@@ -455,7 +453,6 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        if (_isOnline) CrashDiag.step('okey.deal.forward');
         _dealCtrl.forward();
       }
     });
@@ -606,7 +603,6 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       final f = _dealFlights[i];
       if (t >= f.$3 && _dealTickFired < i) {
         _dealTickFired = i;
-        if (i == 0) CrashDiag.step('okey.deal.firstSound');
         OkeyAudio.playTileDraw();
       }
       if (t >= f.$3 + _dealFlightMs && _landedFlights.add(i)) {
@@ -808,10 +804,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
 
   /// تحديد دوري في الغرفة (مضيف/ضيف) وبناء المحرك المناسب
   Future<void> _initOnline() async {
-    CrashDiag.step('okey.initOnline.start room=${widget.roomId}');
     final uid = AuthService().currentUser?.uid ?? '';
     final room = await OkeyRoomService().getRoom(widget.roomId!);
-    CrashDiag.step('okey.room fetched=${room != null} status=${room?.status}');
     if (!mounted) return;
     if (room == null) {
       // وثيقة الغرفة غير موجودة/مقروءة (حُذفت أو انتهت أثناء
@@ -879,9 +873,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       // الكاملة بدل توزيع جديد يمحو الجولة الجارية
       if (room.status == 'playing') {
         try {
-          CrashDiag.step('okey.hostState.reading');
           final saved = await OkeyRoomService().loadHostState(widget.roomId!);
-          CrashDiag.step('okey.hostState.read done=${saved != null}');
           if (saved != null && mounted) {
             _engine.loadHostState(saved);
             _dealing = false; // التوزيع انتهى قبل الانقطاع
@@ -889,7 +881,6 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         } catch (e) {
           // حالة محفوظة فاسدة (صيغة قديمة/بيانات ناقصة) —
           // المحرك أصلاً وزّع توزيعة جديدة في منشئه فنكمل بها
-          CrashDiag.step('okey.hostState.failed $e');
           debugPrint('loadHostState failed, fresh deal used: $e');
         }
       }
@@ -928,17 +919,12 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     } else {
       // عدتُ للجولة بعد انقطاع؟ — أعلن اتصالي من جديد
       if (room.status == 'playing' && meIdx >= 0) {
-        CrashDiag.step('okey.setConnected.sent');
         unawaited(OkeyRoomService()
-            .setConnected(widget.roomId!, uid, true, players: room.players)
-            .then((_) => CrashDiag.step('okey.setConnected.done')));
+            .setConnected(widget.roomId!, uid, true, players: room.players));
       }
       // الضيف: مرآة مُدارة بمقعدي — لاعبي هو المقعد المحلي 0 دائماً
       _handSub = OkeyRoomService().getHandStream(widget.roomId!, uid).listen(
           (tiles) {
-        if (_myHandTiles == null) {
-          CrashDiag.step('okey.hand.first tiles=${tiles.length}');
-        }
         _myHandTiles = [for (final m in tiles) OkeyTile.fromMap(m)];
       },
           // رفض القواعد لا يقتل التطبيق — اليد تبقى مخفية حتى
@@ -954,21 +940,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         // تدفق بلا onError يقتل التطبيق عبر الـZone
         onError: (Object e) =>
             debugPrint('roomStream error (permissions?): $e'));
-    CrashDiag.step(
-        'okey.streams.ok host=$_isHost spec=$_isSpectator seat=$_mySeat');
     unawaited(
         CompetitionService().currentSeasonId().then((s) => _seasonId = s));
-    // نبض حياة تشخيصي: يكشف بالضبط كم عاش التطبيق بعد ربط
-    // التدفقات — يتوقف ذاتياً بعد ~12 ثانية فلا يُغرق الملف
-    var beat = 0;
-    _diagBeat?.cancel();
-    _diagBeat = Timer.periodic(const Duration(milliseconds: 400), (t) {
-      if (++beat > 30 || !mounted) {
-        t.cancel();
-        return;
-      }
-      CrashDiag.step('okey.beat $beat');
-    });
     if (mounted) setState(() {});
   }
 
@@ -1023,7 +996,6 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   /// كتابة اللقطة العامة + أيدي البعيدين على الوثيقة
   Future<void> _publishState() async {
     if (!_isHost || widget.roomId == null || !mounted) return;
-    if (_rev == 0) CrashDiag.step('okey.publish.first');
     final game = _engine.serializeGame();
     game['rev'] = ++_rev;
     // كشف التكرار: تغيّرات لا تؤثر على اللقطة (تحديد حجر مثلاً)
@@ -1040,10 +1012,8 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           'connected': _engine.players[i].connected,
         }
     ];
-    if (_rev <= 1) CrashDiag.step('okey.publish.game.sent');
     await OkeyRoomService()
         .publishGame(widget.roomId!, game: game, players: players);
-    if (_rev <= 1) CrashDiag.step('okey.publish.game.done');
 
     final hands = <String, List<Map<String, dynamic>>>{};
     _remoteUidBySeat.forEach((seat, uid) {
@@ -1052,32 +1022,18 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       ];
     });
     if (hands.isNotEmpty) {
-      if (_rev <= 1) CrashDiag.step('okey.publish.hands.sent');
       await OkeyRoomService().publishHands(widget.roomId!, hands);
-      if (_rev <= 1) CrashDiag.step('okey.publish.hands.done');
     }
 
     // حالة النجاة: نسخة كاملة (رزمة+أيدي) يقرأها المضيف وحده —
     // إن أُغلق تطبيقه وسط الجولة يستعيدها كما كانت
-    if (_rev <= 1) CrashDiag.step('okey.publish.hostState.sent');
     unawaited(OkeyRoomService()
-        .publishHostState(widget.roomId!, _engine.serializeHostState())
-        .then((_) {
-      if (_rev <= 1) CrashDiag.step('okey.publish.hostState.done');
-    }));
+        .publishHostState(widget.roomId!, _engine.serializeHostState()));
   }
 
   /// كل تحديث لوثيقة الغرفة — شات للجميع، ولقطة اللعبة للضيوف
-  bool _snapLogged = false;
-  bool _snapFrameLogged = false;
-
   void _onRoomSnapshot(OkeyRoom room) {
     if (!mounted) return;
-    if (!_snapLogged) {
-      _snapLogged = true;
-      CrashDiag.step(
-          'okey.snap status=${room.status} pl=${room.players.length}');
-    }
     _room = room;
     _roomPlayerMaps = {for (final p in room.players) p.seatIndex: p.toMap()};
 
@@ -1103,12 +1059,6 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     }
 
     if (_isHost) {
-      if (!_snapFrameLogged) {
-        _snapFrameLogged = true;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          CrashDiag.step('okey.snap.frame.done');
-        });
-      }
       setState(() {});
       return;
     }
@@ -1119,9 +1069,6 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       final rev = (g['rev'] as num?)?.toInt() ?? 0;
       if (rev != _lastRev) {
         _lastRev = rev;
-        if (!_snapFrameLogged) {
-          CrashDiag.step('okey.snap.loadGS.begin rev=$rev');
-        }
         _engine.loadGameState(g,
             seatOffset: _mySeat,
             myHand: _myHandTiles,
@@ -1141,15 +1088,6 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           p.connected = rp.connected;
         }
         _syncHumanProfile();
-        if (!_snapFrameLogged) {
-          _snapFrameLogged = true;
-          CrashDiag.step('okey.snap.loadGS.done');
-          // هل نجا الإطار الأول بعد اللقطة؟ غياب هذه الخطوة يعني
-          // موتاً داخل أول رسم — راسترايزر native لا تدفق بيانات
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            CrashDiag.step('okey.snap.frame.done');
-          });
-        }
         setState(() {});
         return;
       }
@@ -1716,7 +1654,6 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     _movesSub?.cancel();
     _publishTimer?.cancel();
     _remoteTick?.cancel();
-    _diagBeat?.cancel();
     GameNotice.handler = null;
     GameBubble.handler = null;
     _discardAnimController.dispose();
