@@ -32,9 +32,17 @@ class CrashDiag {
       }
       final steps = File('$_dir/yy_steps.txt');
       if (steps.existsSync()) {
-        final lines = steps.readAsStringSync().trim().split('\n');
-        if (lines.isNotEmpty && lines.last.isNotEmpty) {
-          buf.writeln('📍 آخر خطوة وصلها التطبيق:\n${lines.last}');
+        final lines = steps
+            .readAsStringSync()
+            .trim()
+            .split('\n')
+            .where((l) => l.trim().isNotEmpty)
+            .toList();
+        if (lines.isNotEmpty) {
+          final tail =
+              lines.length > 40 ? lines.sublist(lines.length - 40) : lines;
+          buf.writeln(
+              '📍 أثر الخطوات قبل الإغلاق (${lines.length} خطوة):\n${tail.join('\n')}');
         }
         steps.deleteSync();
       }

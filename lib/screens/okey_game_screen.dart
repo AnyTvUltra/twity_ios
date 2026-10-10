@@ -166,6 +166,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   StreamSubscription? _movesSub;
   Timer? _publishTimer;
   Timer? _remoteTick;
+  Timer? _diagBeat; // نبض تشخيصي — يتوقف ذاتياً بعد ~12 ثانية
   int _rev = 0;
   int _lastRev = -1;
   String _lastPublished = '';
@@ -453,7 +454,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       dms += _dealGapMs;
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _dealCtrl.forward();
+      if (mounted) {
+        if (_isOnline) CrashDiag.step('okey.deal.forward');
+        _dealCtrl.forward();
+      }
     });
 
     // تسخين خامة الخشب الافتراضية (طاولة + استكانات) قبل أول رسم
@@ -924,12 +928,17 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     } else {
       // عدتُ للجولة بعد انقطاع؟ — أعلن اتصالي من جديد
       if (room.status == 'playing' && meIdx >= 0) {
+        CrashDiag.step('okey.setConnected.sent');
         unawaited(OkeyRoomService()
-            .setConnected(widget.roomId!, uid, true, players: room.players));
+            .setConnected(widget.roomId!, uid, true, players: room.players)
+            .then((_) => CrashDiag.step('okey.setConnected.done')));
       }
       // الضيف: مرآة مُدارة بمقعدي — لاعبي هو المقعد المحلي 0 دائماً
       _handSub = OkeyRoomService().getHandStream(widget.roomId!, uid).listen(
           (tiles) {
+        if (_myHandTiles == null) {
+          CrashDiag.step('okey.hand.first tiles=${tiles.length}');
+        }
         _myHandTiles = [for (final m in tiles) OkeyTile.fromMap(m)];
       },
           // رفض القواعد لا يقتل التطبيق — اليد تبقى مخفية حتى
@@ -949,6 +958,17 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         'okey.streams.ok host=$_isHost spec=$_isSpectator seat=$_mySeat');
     unawaited(
         CompetitionService().currentSeasonId().then((s) => _seasonId = s));
+    // نبض حياة تشخيصي: يكشف بالضبط كم عاش التطبيق بعد ربط
+    // التدفقات — يتوقف ذاتياً بعد ~12 ثانية فلا يُغرق الملف
+    var beat = 0;
+    _diagBeat?.cancel();
+    _diagBeat = Timer.periodic(const Duration(milliseconds: 400), (t) {
+      if (++beat > 30 || !mounted) {
+        t.cancel();
+        return;
+      }
+      CrashDiag.step('okey.beat $beat');
+    });
     if (mounted) setState(() {});
   }
 
@@ -1020,8 +1040,10 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           'connected': _engine.players[i].connected,
         }
     ];
+    if (_rev <= 1) CrashDiag.step('okey.publish.game.sent');
     await OkeyRoomService()
         .publishGame(widget.roomId!, game: game, players: players);
+    if (_rev <= 1) CrashDiag.step('okey.publish.game.done');
 
     final hands = <String, List<Map<String, dynamic>>>{};
     _remoteUidBySeat.forEach((seat, uid) {
@@ -1030,17 +1052,24 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       ];
     });
     if (hands.isNotEmpty) {
+      if (_rev <= 1) CrashDiag.step('okey.publish.hands.sent');
       await OkeyRoomService().publishHands(widget.roomId!, hands);
+      if (_rev <= 1) CrashDiag.step('okey.publish.hands.done');
     }
 
     // حالة النجاة: نسخة كاملة (رزمة+أيدي) يقرأها المضيف وحده —
     // إن أُغلق تطبيقه وسط الجولة يستعيدها كما كانت
+    if (_rev <= 1) CrashDiag.step('okey.publish.hostState.sent');
     unawaited(OkeyRoomService()
-        .publishHostState(widget.roomId!, _engine.serializeHostState()));
+        .publishHostState(widget.roomId!, _engine.serializeHostState())
+        .then((_) {
+      if (_rev <= 1) CrashDiag.step('okey.publish.hostState.done');
+    }));
   }
 
   /// كل تحديث لوثيقة الغرفة — شات للجميع، ولقطة اللعبة للضيوف
   bool _snapLogged = false;
+  bool _snapFrameLogged = false;
 
   void _onRoomSnapshot(OkeyRoom room) {
     if (!mounted) return;
@@ -1074,6 +1103,12 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     }
 
     if (_isHost) {
+      if (!_snapFrameLogged) {
+        _snapFrameLogged = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          CrashDiag.step('okey.snap.frame.done');
+        });
+      }
       setState(() {});
       return;
     }
@@ -1084,6 +1119,9 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
       final rev = (g['rev'] as num?)?.toInt() ?? 0;
       if (rev != _lastRev) {
         _lastRev = rev;
+        if (!_snapFrameLogged) {
+          CrashDiag.step('okey.snap.loadGS.begin rev=$rev');
+        }
         _engine.loadGameState(g,
             seatOffset: _mySeat,
             myHand: _myHandTiles,
@@ -1103,6 +1141,15 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           p.connected = rp.connected;
         }
         _syncHumanProfile();
+        if (!_snapFrameLogged) {
+          _snapFrameLogged = true;
+          CrashDiag.step('okey.snap.loadGS.done');
+          // هل نجا الإطار الأول بعد اللقطة؟ غياب هذه الخطوة يعني
+          // موتاً داخل أول رسم — راسترايزر native لا تدفق بيانات
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            CrashDiag.step('okey.snap.frame.done');
+          });
+        }
         setState(() {});
         return;
       }
@@ -1669,6 +1716,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
     _movesSub?.cancel();
     _publishTimer?.cancel();
     _remoteTick?.cancel();
+    _diagBeat?.cancel();
     GameNotice.handler = null;
     GameBubble.handler = null;
     _discardAnimController.dispose();
