@@ -217,6 +217,47 @@ void main() {
       host.dispose();
       restored.dispose();
     });
+
+    void assertNoNestedArrays(Object? v, [String path = 'root']) {
+      if (v is List) {
+        for (var i = 0; i < v.length; i++) {
+          expect(v[i] is List, isFalse,
+              reason: 'Firestore يرفض مصفوفة داخل مصفوفة: $path[$i]');
+          assertNoNestedArrays(v[i], '$path[$i]');
+        }
+      } else if (v is Map) {
+        for (final e in v.entries) {
+          assertNoNestedArrays(e.value, '$path.${e.key}');
+        }
+      }
+    }
+
+    test('serializeHostState لا يحوي مصفوفات متداخلة (قيد Firestore)', () {
+      // سبب كراش iOS الصامت: كتابة List<List> في وثيقة تُسقط التطبيق
+      // باستثناء native لا يصل معالجات Dart
+      final host = OkeyEngine(rules: OkeyRules.turkish);
+      assertNoNestedArrays(host.serializeHostState(), 'hostState');
+      assertNoNestedArrays(host.serializeGame(), 'game');
+      host.dispose();
+    });
+
+    test('loadHostState يقرأ الشكل القديم (مصفوفة مباشرة) للتوافق', () {
+      final host = OkeyEngine(rules: OkeyRules.turkish);
+      final saved = host.serializeHostState();
+      // محاكاة وثيقة قديمة: فكّ التغليف {'t': [...]} إلى [...]
+      saved['racks'] = [
+        for (final r in saved['racks'] as List) (r as Map)['t']
+      ];
+      saved['pilesFull'] = [
+        for (final p in saved['pilesFull'] as List) (p as Map)['t']
+      ];
+      final restored = OkeyEngine(rules: OkeyRules.turkish);
+      restored.loadHostState(Map<String, dynamic>.from(saved));
+      expect(restored.players[1].activeTiles.length,
+          host.players[1].activeTiles.length);
+      host.dispose();
+      restored.dispose();
+    });
   });
 
   group('نموذج الغرفة الجديد', () {

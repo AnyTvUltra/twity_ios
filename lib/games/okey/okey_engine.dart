@@ -2385,15 +2385,23 @@ class OkeyEngine extends ChangeNotifier {
 
   Map<String, dynamic> serializeHostState() {
     final pub = serializeGame();
+    // تنبيه مهم: Firestore يرفض المصفوفات داخل مصفوفات — كتابة
+    // List<List<...>> تُسقط تطبيق iOS باستثناء native صامت.
+    // كل قائمة داخلية تُغلَّف بخريطة {'t': [...]}.
     return {
       ...pub,
       'deckTiles': [for (final t in drawDeck) t.toMap()],
       'racks': [
         for (var i = 0; i < 4; i++)
-          [for (final t in players[i].rackTiles) t?.toMap()]
+          {
+            't': [for (final t in players[i].rackTiles) t?.toMap()]
+          }
       ],
       'pilesFull': [
-        for (final p in discardPiles) [for (final t in p) t.toMap()]
+        for (final p in discardPiles)
+          {
+            't': [for (final t in p) t.toMap()]
+          }
       ],
       'taken': {
         for (final e in _takenLeftBySeat.entries) '${e.key}': e.value.toMap()
@@ -2420,7 +2428,12 @@ class OkeyEngine extends ChangeNotifier {
 
     final racks = s['racks'] as List? ?? const [];
     for (var i = 0; i < 4 && i < racks.length; i++) {
-      final r = racks[i] as List? ?? const [];
+      // الشكل الجديد يغلّف الرف بخريطة {'t': [...]} — الشكل القديم
+      // (مصفوفة مباشرة) وُجد قبل الإصلاح فيستمر دعمه للتوافق
+      final entry = racks[i];
+      final r = entry is Map
+          ? (entry['t'] as List? ?? const [])
+          : (entry as List? ?? const []);
       for (var k = 0; k < 28; k++) {
         final v = k < r.length ? r[k] : null;
         players[i].rackTiles[k] =
@@ -2430,8 +2443,12 @@ class OkeyEngine extends ChangeNotifier {
 
     final pf = s['pilesFull'] as List? ?? const [];
     for (var i = 0; i < 4 && i < pf.length; i++) {
+      final entry = pf[i];
+      final list = entry is Map
+          ? (entry['t'] as List? ?? const [])
+          : (entry as List? ?? const []);
       discardPiles[i] = [
-        for (final m in (pf[i] as List? ?? const []))
+        for (final m in list)
           OkeyTile.fromMap(Map<String, dynamic>.from(m as Map))
       ];
     }
