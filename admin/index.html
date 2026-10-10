@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="google" content="notranslate">
   <title>Yalla Yari — لوحة الإدارة</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -96,7 +97,7 @@
     .navitem .cnt.alert { background: rgba(244,63,94,.2); color: #fb7185; }
 
     .sec-title { font-size: 14px; font-weight: 800; color: #e4e4e7; display: flex; align-items: center; gap: 8px; }
-    .sec-title i { width: 16px; height: 16px; color: #818cf8; }
+    .sec-title svg { width: 16px; height: 16px; color: #818cf8; }
     .sec-sub { font-size: 11px; color: #71717a; margin-top: 2px; }
 
     .divider { border: none; border-top: 1px solid #232327; margin: 0; }
@@ -104,7 +105,7 @@
 
     .stat-card { background: #141417; border: 1px solid #232327; border-radius: 12px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; }
     .stat-ico { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .stat-ico i { width: 20px; height: 20px; }
+    .stat-ico svg { width: 20px; height: 20px; }
 
     input[type="range"] { accent-color: #6366f1; }
     audio { outline: none; }
@@ -150,12 +151,32 @@
   <script type="text/babel">
     const { useState, useEffect, useMemo, useRef } = React;
 
+    /* ---------- أيقونة lucide مرسومة داخل React ----------
+       لا نستخدم lucide.createIcons() إطلاقاً — كان يستبدل عناصر <i>
+       بـ<svg> خارج علم React فينفجر removeChild عند أي إعادة رسم */
+    const _lucideIcons = (window.lucide && (window.lucide.icons || window.lucide.Icons)) || {};
+    const _iconPascal = (n) => String(n || '').split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('');
+    const Icon = ({ name, size = 16, className = '', style }) => {
+      const def = _lucideIcons[_iconPascal(name)] || _lucideIcons[name];
+      const node = Array.isArray(def) ? def : (def && def.iconNode);
+      if (!node) {
+        return <span className={className} style={{ display: 'inline-block', verticalAlign: 'middle', width: size, height: size, ...(style || {}) }} />;
+      }
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+          className={className} style={{ display: 'inline-block', verticalAlign: 'middle', ...(style || {}) }}>
+          {node.map(([tag, attrs], i) => React.createElement(tag, { key: i, ...attrs }))}
+        </svg>
+      );
+    };
+
     /* ---------- معاينة السكنات — تُعرض على شكل قطعة اللعبة ---------- */
     function SkinPreview({ category, uri, zoom = 1, ox = 0, oy = 0 }) {
       if (!uri) {
         return (
           <div className="w-full h-full flex items-center justify-center bg-zinc-900 rounded-xl">
-            <i data-lucide="image" className="w-8 h-8 text-zinc-600"></i>
+            <Icon name="image" className="w-8 h-8 text-zinc-600"/>
           </div>
         );
       }
@@ -1151,9 +1172,7 @@
 
       const tabTitle = tabs.find(t => t.id === activeTab)?.name || '';
 
-      useEffect(() => {
-        if (window.lucide) lucide.createIcons();
-      });
+      // لا lucide.createIcons — الأيقونات تُرسم عبر مكوّن Icon داخل React
 
       /* ==================== الواجهة ==================== */
 
@@ -1162,7 +1181,7 @@
           <div className="min-h-screen flex items-center justify-center bg-[#0a0a0c]">
             <div className="flex flex-col items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center">
-                <i data-lucide="shield-check" className="w-5 h-5 text-white"></i>
+                <Icon name="shield-check" className="w-5 h-5 text-white"/>
               </div>
               <div className="flex items-center gap-2 text-zinc-400 text-sm">
                 <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
@@ -1181,7 +1200,7 @@
               <div className="card p-8">
                 <div className="flex flex-col items-center mb-8">
                   <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center mb-4">
-                    <i data-lucide="shield-check" className="w-6 h-6 text-white"></i>
+                    <Icon name="shield-check" className="w-6 h-6 text-white"/>
                   </div>
                   <h1 className="text-lg font-800 font-bold text-white">لوحة إدارة Yalla Yari</h1>
                   <p className="text-xs text-zinc-500 mt-1">سجّل الدخول بحساب مدير مصرّح به</p>
@@ -1221,7 +1240,7 @@
           <aside className="hidden md:flex flex-col w-60 shrink-0 border-l border-[#232327] bg-[#0d0d10] sticky top-0 h-screen">
             <div className="h-16 flex items-center gap-3 px-5 border-b border-[#232327]">
               <div className="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0">
-                <i data-lucide="shield-check" className="w-4.5 h-4.5 text-white" style={{width:18,height:18}}></i>
+                <Icon name="shield-check" className="w-4.5 h-4.5 text-white" style={{width:18,height:18}}/>
               </div>
               <div className="min-w-0">
                 <div className="text-sm font-800 font-bold text-white leading-tight">Yalla Yari</div>
@@ -1235,7 +1254,7 @@
                 const alert = (tab.id === 'topup' || tab.id === 'reports') && cnt > 0;
                 return (
                   <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`navitem ${activeTab === tab.id ? 'active' : ''}`}>
-                    <i data-lucide={tab.icon} style={{width:16,height:16}}></i>
+                    <Icon name={tab.icon} style={{width:16,height:16}}/>
                     <span>{tab.name}</span>
                     {cnt !== null && cnt > 0 && <span className={`cnt ${alert ? 'alert' : ''}`}>{cnt}</span>}
                   </button>
@@ -1249,7 +1268,7 @@
                 متصل بمشروع <code className="text-zinc-400">game-651a3</code>
               </div>
               <button onClick={handleLogout} className="navitem text-rose-400 hover:bg-rose-500/10">
-                <i data-lucide="log-out" style={{width:16,height:16}}></i>
+                <Icon name="log-out" style={{width:16,height:16}}/>
                 <span>تسجيل الخروج</span>
               </button>
             </div>
@@ -1262,7 +1281,7 @@
             <header className="h-16 shrink-0 border-b border-[#232327] bg-[#0d0d10]/90 backdrop-blur sticky top-0 z-30 flex items-center justify-between px-4 md:px-6">
               <div className="flex items-center gap-3">
                 <div className="md:hidden w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-                  <i data-lucide="shield-check" style={{width:16,height:16}} className="text-white"></i>
+                  <Icon name="shield-check" style={{width:16,height:16}} className="text-white"/>
                 </div>
                 <div>
                   <h1 className="text-base font-800 font-bold text-white leading-tight">{tabTitle}</h1>
@@ -1272,16 +1291,16 @@
               <div className="flex items-center gap-3">
                 {(pendingOrders + pendingVip) > 0 && (
                   <button onClick={() => setActiveTab('topup')} className="badge b-warn cursor-pointer">
-                    <i data-lucide="bell" style={{width:12,height:12}}></i>
+                    <Icon name="bell" style={{width:12,height:12}}/>
                     {pendingOrders + pendingVip} طلب معلّق
                   </button>
                 )}
                 <div className="hidden sm:flex items-center gap-2 text-[11px] text-zinc-400 border border-[#2b2b30] rounded-lg px-3 py-1.5">
-                  <i data-lucide="user-cog" style={{width:13,height:13}}></i>
+                  <Icon name="user-cog" style={{width:13,height:13}}/>
                   <span dir="ltr">{user.email}</span>
                 </div>
                 <button onClick={handleLogout} className="md:hidden btn btn-sec btn-sm">
-                  <i data-lucide="log-out" style={{width:13,height:13}}></i>
+                  <Icon name="log-out" style={{width:13,height:13}}/>
                 </button>
               </div>
             </header>
@@ -1291,7 +1310,7 @@
               {tabs.map(tab => (
                 <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold whitespace-nowrap transition ${activeTab === tab.id ? 'bg-indigo-600/15 text-indigo-300 border border-indigo-500/30' : 'text-zinc-400 border border-transparent'}`}>
-                  <i data-lucide={tab.icon} style={{width:13,height:13}}></i>
+                  <Icon name={tab.icon} style={{width:13,height:13}}/>
                   {tab.name}
                 </button>
               ))}
@@ -1306,28 +1325,28 @@
                   <div className="space-y-5">
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                       <div className="stat-card">
-                        <div className="stat-ico bg-indigo-500/10 text-indigo-400"><i data-lucide="users"></i></div>
+                        <div className="stat-ico bg-indigo-500/10 text-indigo-400"><Icon name="users"/></div>
                         <div>
                           <div className="text-2xl font-800 font-bold text-white leading-none">{players.length}</div>
                           <div className="text-[11px] text-zinc-500 mt-1">لاعب مسجّل</div>
                         </div>
                       </div>
                       <div className="stat-card">
-                        <div className="stat-ico bg-amber-500/10 text-amber-400"><i data-lucide="coins"></i></div>
+                        <div className="stat-ico bg-amber-500/10 text-amber-400"><Icon name="coins"/></div>
                         <div>
                           <div className="text-2xl font-800 font-bold text-white leading-none">{totalChips.toLocaleString()}</div>
                           <div className="text-[11px] text-zinc-500 mt-1">إجمالي الرقائق</div>
                         </div>
                       </div>
                       <div className="stat-card">
-                        <div className="stat-ico bg-emerald-500/10 text-emerald-400"><i data-lucide="credit-card"></i></div>
+                        <div className="stat-ico bg-emerald-500/10 text-emerald-400"><Icon name="credit-card"/></div>
                         <div>
                           <div className="text-2xl font-800 font-bold text-white leading-none">{pendingOrders + pendingVip}</div>
                           <div className="text-[11px] text-zinc-500 mt-1">طلبات معلّقة (شحن + VIP)</div>
                         </div>
                       </div>
                       <div className="stat-card">
-                        <div className="stat-ico bg-rose-500/10 text-rose-400"><i data-lucide="flag"></i></div>
+                        <div className="stat-ico bg-rose-500/10 text-rose-400"><Icon name="flag"/></div>
                         <div>
                           <div className="text-2xl font-800 font-bold text-white leading-none">{pendingReports + openTickets}</div>
                           <div className="text-[11px] text-zinc-500 mt-1">بلاغات وتذاكر مفتوحة</div>
@@ -1337,7 +1356,7 @@
 
                     {config.maintenanceMode && (
                       <div className="card border-amber-500/30 bg-amber-500/5 p-4 flex items-center gap-3">
-                        <i data-lucide="alert-triangle" className="text-amber-400" style={{width:18,height:18}}></i>
+                        <Icon name="alert-triangle" className="text-amber-400" style={{width:18,height:18}}/>
                         <div>
                           <div className="text-sm font-bold text-amber-300">وضع الصيانة مفعّل</div>
                           <div className="text-[11px] text-amber-400/70">اللاعبون لا يستطيعون الدخول حالياً</div>
@@ -1348,20 +1367,20 @@
 
                     <div className="grid md:grid-cols-2 gap-4">
                       <div className="card card-pad">
-                        <div className="sec-title mb-1"><i data-lucide="zap"></i> إجراءات سريعة</div>
+                        <div className="sec-title mb-1"><Icon name="zap"/> إجراءات سريعة</div>
                         <div className="sec-sub mb-4">عمليات إدارية شائعة</div>
                         <div className="grid grid-cols-2 gap-2">
-                          <button onClick={() => setShowAddPlayerModal(true)} className="btn btn-sec"><i data-lucide="user-plus" style={{width:14,height:14}}></i> لاعب جديد</button>
-                          <button onClick={() => setActiveTab('broadcast')} className="btn btn-sec"><i data-lucide="megaphone" style={{width:14,height:14}}></i> إشعار عام</button>
-                          <button onClick={() => setActiveTab('topup')} className="btn btn-sec"><i data-lucide="credit-card" style={{width:14,height:14}}></i> مراجعة الطلبات</button>
-                          <button onClick={() => setActiveTab('tournaments')} className="btn btn-sec"><i data-lucide="trophy" style={{width:14,height:14}}></i> بطولات</button>
-                          <button onClick={() => addEconomyToAllUsers(5000)} className="btn btn-ok"><i data-lucide="gift" style={{width:14,height:14}}></i> +5000 للجميع</button>
-                          <button onClick={() => setActiveTab('settings')} className="btn btn-sec"><i data-lucide="settings" style={{width:14,height:14}}></i> الإعدادات</button>
+                          <button onClick={() => setShowAddPlayerModal(true)} className="btn btn-sec"><Icon name="user-plus" style={{width:14,height:14}}/> لاعب جديد</button>
+                          <button onClick={() => setActiveTab('broadcast')} className="btn btn-sec"><Icon name="megaphone" style={{width:14,height:14}}/> إشعار عام</button>
+                          <button onClick={() => setActiveTab('topup')} className="btn btn-sec"><Icon name="credit-card" style={{width:14,height:14}}/> مراجعة الطلبات</button>
+                          <button onClick={() => setActiveTab('tournaments')} className="btn btn-sec"><Icon name="trophy" style={{width:14,height:14}}/> بطولات</button>
+                          <button onClick={() => addEconomyToAllUsers(5000)} className="btn btn-ok"><Icon name="gift" style={{width:14,height:14}}/> +5000 للجميع</button>
+                          <button onClick={() => setActiveTab('settings')} className="btn btn-sec"><Icon name="settings" style={{width:14,height:14}}/> الإعدادات</button>
                         </div>
                       </div>
 
                       <div className="card card-pad">
-                        <div className="sec-title mb-1"><i data-lucide="megaphone"></i> الإعلان الحالي</div>
+                        <div className="sec-title mb-1"><Icon name="megaphone"/> الإعلان الحالي</div>
                         <div className="sec-sub mb-4">يظهر لجميع اللاعبين داخل التطبيق</div>
                         {config.announcement ? (
                           <div className="bg-[#0a0a0c] border border-[#2b2b30] rounded-lg p-4 text-sm text-zinc-300 leading-relaxed">
@@ -1371,14 +1390,14 @@
                           <div className="empty">لا يوجد إعلان نشط حالياً</div>
                         )}
                         <button onClick={() => { setActiveTab('settings'); setSettingsEditing(true); }} className="btn btn-sec btn-sm mt-4">
-                          <i data-lucide="pencil" style={{width:12,height:12}}></i> تعديل الإعلان
+                          <Icon name="pencil" style={{width:12,height:12}}/> تعديل الإعلان
                         </button>
                       </div>
                     </div>
 
                     <div className="card overflow-hidden">
                       <div className="px-5 py-4 border-b border-[#232327] flex items-center justify-between">
-                        <div className="sec-title"><i data-lucide="trophy"></i> أفضل اللاعبين تقييماً</div>
+                        <div className="sec-title"><Icon name="trophy"/> أفضل اللاعبين تقييماً</div>
                         <button onClick={() => setActiveTab('players')} className="btn btn-sec btn-sm">عرض الكل</button>
                       </div>
                       {[...players].sort((a, b) => b.rating - a.rating).slice(0, 5).map((p, i) => (
@@ -1407,7 +1426,7 @@
                   <div className="space-y-4">
                     <div className="card card-pad flex flex-col sm:flex-row gap-3 sm:items-center">
                       <div className="relative flex-1">
-                        <i data-lucide="search" className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500" style={{width:14,height:14}}></i>
+                        <Icon name="search" className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500" style={{width:14,height:14}}/>
                         <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
                           placeholder="ابحث بالاسم أو البريد..." className="inp pr-9" />
                       </div>
@@ -1418,7 +1437,7 @@
                         <option value="online">متصل الآن</option>
                       </select>
                       <button onClick={() => setShowAddPlayerModal(true)} className="btn btn-primary">
-                        <i data-lucide="user-plus" style={{width:14,height:14}}></i> لاعب جديد
+                        <Icon name="user-plus" style={{width:14,height:14}}/> لاعب جديد
                       </button>
                     </div>
 
@@ -1474,15 +1493,15 @@
                                 <td>
                                   <div className="flex items-center gap-1.5 justify-end">
                                     <button onClick={() => setEditingPlayer(p)} className="btn btn-sec btn-sm" title="تعديل الرصيد">
-                                      <i data-lucide="wallet" style={{width:12,height:12}}></i> الرصيد
+                                      <Icon name="wallet" style={{width:12,height:12}}/> الرصيد
                                     </button>
                                     <button onClick={() => togglePlayerStatus(p.id, p.status)}
                                       className={`btn btn-sm ${p.status === 'banned' ? 'btn-ok' : 'btn-sec'}`}
                                       title={p.status === 'banned' ? 'إلغاء الحظر' : 'حظر'}>
-                                      <i data-lucide={p.status === 'banned' ? 'unlock' : 'ban'} style={{width:12,height:12}}></i>
+                                      <Icon name={p.status === 'banned' ? 'unlock' : 'ban'} style={{width:12,height:12}}/>
                                     </button>
                                     <button onClick={() => deletePlayer(p.id, p.name)} className="btn btn-danger btn-sm" title="حذف نهائي">
-                                      <i data-lucide="trash-2" style={{width:12,height:12}}></i>
+                                      <Icon name="trash-2" style={{width:12,height:12}}/>
                                     </button>
                                   </div>
                                 </td>
@@ -1500,14 +1519,14 @@
                 {activeTab === 'economy' && (
                   <div className="grid md:grid-cols-3 gap-4">
                     <div className="card card-pad">
-                      <div className="sec-title mb-1"><i data-lucide="coins"></i> رصيد البداية</div>
+                      <div className="sec-title mb-1"><Icon name="coins"/> رصيد البداية</div>
                       <div className="sec-sub mb-4">الرقائق الممنوحة لكل لاعب جديد</div>
                       <div className="text-3xl font-800 font-bold text-amber-400 mb-4">{config.startingChips}</div>
                       <button onClick={() => { setActiveTab('settings'); setSettingsEditing(true); }} className="btn btn-sec w-full">تعديل من الإعدادات</button>
                     </div>
 
                     <div className="card card-pad">
-                      <div className="sec-title mb-1"><i data-lucide="send"></i> توزيع جماعي</div>
+                      <div className="sec-title mb-1"><Icon name="send"/> توزيع جماعي</div>
                       <div className="sec-sub mb-4">إضافة/خصم رقائق لكل اللاعبين دفعة واحدة</div>
                       <input type="number" value={economyAmount} onChange={(e) => setEconomyAmount(Number(e.target.value))} className="inp mb-3" placeholder="المبلغ" />
                       <div className="grid grid-cols-2 gap-2">
@@ -1519,7 +1538,7 @@
                     </div>
 
                     <div className="card card-pad">
-                      <div className="sec-title mb-1"><i data-lucide="bar-chart-3"></i> إحصائيات الثروة</div>
+                      <div className="sec-title mb-1"><Icon name="bar-chart-3"/> إحصائيات الثروة</div>
                       <div className="sec-sub mb-4">نظرة على اقتصاد اللعبة</div>
                       <div className="space-y-3">
                         <div className="flex justify-between items-center border-b border-[#232327] pb-2">
@@ -1544,7 +1563,7 @@
                   <div className="space-y-4">
                     <div className="card card-pad flex flex-col sm:flex-row gap-3 sm:items-center">
                       <div>
-                        <div className="sec-title"><i data-lucide="palette"></i> عناصر المتجر</div>
+                        <div className="sec-title"><Icon name="palette"/> عناصر المتجر</div>
                         <div className="sec-sub">{storeItems.length} عنصراً من Firestore — العناصر المدمجة (الإطارات المتحركة، الغرفة الكلاسيكية) جزء من كود التطبيق ولا تُدار من هنا</div>
                       </div>
                       <div className="sm:mr-auto flex gap-2">
@@ -1557,7 +1576,7 @@
                           <option value="background">الخلفية (قديمة)</option>
                         </select>
                         <button onClick={() => setShowAddSkinModal(true)} className="btn btn-primary">
-                          <i data-lucide="plus" style={{width:14,height:14}}></i> سكن جديد
+                          <Icon name="plus" style={{width:14,height:14}}/> سكن جديد
                         </button>
                       </div>
                     </div>
@@ -1588,7 +1607,7 @@
                               {item.active ? 'إخفاء' : 'تفعيل'}
                             </button>
                             <button onClick={() => handleDeleteSkin(item.id)} className="btn btn-danger btn-sm">
-                              <i data-lucide="trash-2" style={{width:12,height:12}}></i>
+                              <Icon name="trash-2" style={{width:12,height:12}}/>
                             </button>
                           </div>
                         </div>
@@ -1606,7 +1625,7 @@
                     <div className="card overflow-hidden">
                       <div className="px-5 py-4 border-b border-[#232327] flex items-center justify-between">
                         <div>
-                          <div className="sec-title"><i data-lucide="credit-card"></i> طلبات شحن الرصيد</div>
+                          <div className="sec-title"><Icon name="credit-card"/> طلبات شحن الرصيد</div>
                           <div className="sec-sub">طلبات الشراء الواردة من التطبيق (orders)</div>
                         </div>
                         {pendingOrders > 0 && <span className="badge b-warn">{pendingOrders} معلّق</span>}
@@ -1614,7 +1633,7 @@
                       {orders.map(o => (
                         <div key={o.id} className="flex flex-wrap items-center gap-3 px-5 py-3.5 border-b border-[#232327]/50 last:border-0">
                           <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${o.type === 'gems' ? 'bg-sky-500/10 text-sky-400' : 'bg-amber-500/10 text-amber-400'}`}>
-                            <i data-lucide={o.type === 'gems' ? 'gem' : 'coins'} style={{width:16,height:16}}></i>
+                            <Icon name={o.type === 'gems' ? 'gem' : 'coins'} style={{width:16,height:16}}/>
                           </div>
                           <div className="flex-1 min-w-[160px]">
                             <div className="text-sm font-bold text-white">
@@ -1627,8 +1646,8 @@
                           <div className="text-sm font-800 font-bold text-emerald-400">${o.priceUsd}</div>
                           {o.status === 'pending' ? (
                             <div className="flex gap-1.5">
-                              <button onClick={() => handleApproveOrder(o)} className="btn btn-ok btn-sm"><i data-lucide="check" style={{width:12,height:12}}></i> موافقة وشحن</button>
-                              <button onClick={() => handleRejectOrder(o)} className="btn btn-danger btn-sm"><i data-lucide="x" style={{width:12,height:12}}></i> رفض</button>
+                              <button onClick={() => handleApproveOrder(o)} className="btn btn-ok btn-sm"><Icon name="check" style={{width:12,height:12}}/> موافقة وشحن</button>
+                              <button onClick={() => handleRejectOrder(o)} className="btn btn-danger btn-sm"><Icon name="x" style={{width:12,height:12}}/> رفض</button>
                             </div>
                           ) : (
                             <span className={`badge ${o.status === 'approved' ? 'b-ok' : 'b-danger'}`}>
@@ -1644,7 +1663,7 @@
                     <div className="card overflow-hidden">
                       <div className="px-5 py-4 border-b border-[#232327] flex items-center justify-between">
                         <div>
-                          <div className="sec-title"><i data-lucide="crown"></i> طلبات اشتراك VIP</div>
+                          <div className="sec-title"><Icon name="crown"/> طلبات اشتراك VIP</div>
                           <div className="sec-sub">طلبات ترقية الاشتراك الواردة من التطبيق (vip_requests) — الموافقة تضيف 30 يوماً لاشتراك اللاعب</div>
                         </div>
                         {pendingVip > 0 && <span className="badge b-vip">{pendingVip} معلّق</span>}
@@ -1652,7 +1671,7 @@
                       {vipRequests.map(r => (
                         <div key={r.id} className="flex flex-wrap items-center gap-3 px-5 py-3.5 border-b border-[#232327]/50 last:border-0">
                           <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${r.plan === 'vipPlus' ? 'bg-pink-500/10 text-pink-400' : 'bg-purple-500/10 text-purple-400'}`}>
-                            <i data-lucide="crown" style={{width:16,height:16}}></i>
+                            <Icon name="crown" style={{width:16,height:16}}/>
                           </div>
                           <div className="flex-1 min-w-[160px]">
                             <div className="text-sm font-bold text-white flex items-center gap-2">
@@ -1666,8 +1685,8 @@
                           <div className="text-sm font-800 font-bold text-emerald-400">${r.priceUsd}</div>
                           {r.status === 'pending' ? (
                             <div className="flex gap-1.5">
-                              <button onClick={() => handleApproveVip(r)} className="btn btn-ok btn-sm"><i data-lucide="check" style={{width:12,height:12}}></i> تفعيل 30 يوم</button>
-                              <button onClick={() => handleRejectVip(r)} className="btn btn-danger btn-sm"><i data-lucide="x" style={{width:12,height:12}}></i> رفض</button>
+                              <button onClick={() => handleApproveVip(r)} className="btn btn-ok btn-sm"><Icon name="check" style={{width:12,height:12}}/> تفعيل 30 يوم</button>
+                              <button onClick={() => handleRejectVip(r)} className="btn btn-danger btn-sm"><Icon name="x" style={{width:12,height:12}}/> رفض</button>
                             </div>
                           ) : (
                             <span className={`badge ${r.status === 'approved' ? 'b-ok' : 'b-danger'}`}>
@@ -1683,11 +1702,11 @@
                     <div className="card overflow-hidden">
                       <div className="px-5 py-4 border-b border-[#232327] flex items-center justify-between">
                         <div>
-                          <div className="sec-title"><i data-lucide="package"></i> باقات المتجر</div>
+                          <div className="sec-title"><Icon name="package"/> باقات المتجر</div>
                           <div className="sec-sub">باقات الرقائق والجواهر المعروضة في متجر التطبيق</div>
                         </div>
                         <button onClick={() => setShowAddPackModal(true)} className="btn btn-primary btn-sm">
-                          <i data-lucide="plus" style={{width:13,height:13}}></i> باقة جديدة
+                          <Icon name="plus" style={{width:13,height:13}}/> باقة جديدة
                         </button>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-5">
@@ -1696,7 +1715,7 @@
                             {p.badge && <span className="absolute top-3 left-3 badge b-info">{p.badge}</span>}
                             <div className="flex items-center gap-2 mb-3">
                               <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${p.type === 'gems' ? 'bg-sky-500/10 text-sky-400' : 'bg-amber-500/10 text-amber-400'}`}>
-                                <i data-lucide={p.type === 'gems' ? 'gem' : 'coins'} style={{width:15,height:15}}></i>
+                                <Icon name={p.type === 'gems' ? 'gem' : 'coins'} style={{width:15,height:15}}/>
                               </div>
                               <div className="text-sm font-bold text-white flex-1 truncate">{p.title}</div>
                               <span className={`badge ${p.active !== false ? 'b-ok' : 'b-neutral'}`}>{p.active !== false ? 'معروضة' : 'مخفية'}</span>
@@ -1714,7 +1733,7 @@
                               <button onClick={() => togglePackStatus(p.id, p.active !== false)} className={`btn btn-sm flex-1 ${p.active !== false ? 'btn-sec' : 'btn-ok'}`}>
                                 {p.active !== false ? 'إخفاء' : 'عرض'}
                               </button>
-                              <button onClick={() => deletePack(p.id)} className="btn btn-danger btn-sm"><i data-lucide="trash-2" style={{width:12,height:12}}></i></button>
+                              <button onClick={() => deletePack(p.id)} className="btn btn-danger btn-sm"><Icon name="trash-2" style={{width:12,height:12}}/></button>
                             </div>
                           </div>
                         ))}
@@ -1730,10 +1749,10 @@
                     <div className="card card-pad">
                       <div className="flex items-center justify-between mb-4">
                         <div>
-                          <div className="sec-title"><i data-lucide="folder"></i> مجموعات الراديو</div>
+                          <div className="sec-title"><Icon name="folder"/> مجموعات الراديو</div>
                           <div className="sec-sub">التصنيفات الظاهرة في ميزة الراديو داخل اللعبة</div>
                         </div>
-                        <button onClick={() => setShowAddGroupModal(true)} className="btn btn-primary btn-sm"><i data-lucide="plus" style={{width:13,height:13}}></i> مجموعة جديدة</button>
+                        <button onClick={() => setShowAddGroupModal(true)} className="btn btn-primary btn-sm"><Icon name="plus" style={{width:13,height:13}}/> مجموعة جديدة</button>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {radioGroups.map(g => (
@@ -1742,10 +1761,10 @@
                             <span className="font-bold text-zinc-200">{g.name}</span>
                             <span className="text-[10px] text-zinc-500">({radioSongs.filter(s => s.groupId === g.id).length})</span>
                             <button onClick={() => toggleRadioGroup(g.id, g.active !== false)} className="text-zinc-500 hover:text-zinc-200 mr-1" title="تفعيل/إخفاء">
-                              <i data-lucide={g.active !== false ? 'eye' : 'eye-off'} style={{width:13,height:13}}></i>
+                              <Icon name={g.active !== false ? 'eye' : 'eye-off'} style={{width:13,height:13}}/>
                             </button>
                             <button onClick={() => handleDeleteRadioGroup(g.id)} className="text-zinc-500 hover:text-rose-400" title="حذف">
-                              <i data-lucide="trash-2" style={{width:13,height:13}}></i>
+                              <Icon name="trash-2" style={{width:13,height:13}}/>
                             </button>
                           </div>
                         ))}
@@ -1756,17 +1775,17 @@
                     <div className="card overflow-hidden">
                       <div className="px-5 py-4 border-b border-[#232327] flex items-center justify-between">
                         <div>
-                          <div className="sec-title"><i data-lucide="music"></i> الأغاني والمحطات</div>
+                          <div className="sec-title"><Icon name="music"/> الأغاني والمحطات</div>
                           <div className="sec-sub">{radioSongs.length} عنصراً — ملفات مرفوعة أو روابط بث مباشر</div>
                         </div>
-                        <button onClick={() => setShowAddSongModal(true)} className="btn btn-primary btn-sm"><i data-lucide="plus" style={{width:13,height:13}}></i> إضافة أغنية/محطة</button>
+                        <button onClick={() => setShowAddSongModal(true)} className="btn btn-primary btn-sm"><Icon name="plus" style={{width:13,height:13}}/> إضافة أغنية/محطة</button>
                       </div>
                       {radioSongs.map(s => {
                         const grp = radioGroups.find(g => g.id === s.groupId);
                         return (
                           <div key={s.id} className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-[#232327]/50 last:border-0">
                             <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${s.active !== false ? 'bg-indigo-500/10 text-indigo-400' : 'bg-zinc-800 text-zinc-500'}`}>
-                              <i data-lucide="music" style={{width:15,height:15}}></i>
+                              <Icon name="music" style={{width:15,height:15}}/>
                             </div>
                             <div className="flex-1 min-w-[150px]">
                               <div className="text-sm font-bold text-white">{s.name}</div>
@@ -1777,7 +1796,7 @@
                               <button onClick={() => toggleSongStatus(s)} className={`btn btn-sm ${s.active !== false ? 'btn-sec' : 'btn-ok'}`}>
                                 {s.active !== false ? 'إخفاء' : 'تفعيل'}
                               </button>
-                              <button onClick={() => deleteSong(s.id)} className="btn btn-danger btn-sm"><i data-lucide="trash-2" style={{width:12,height:12}}></i></button>
+                              <button onClick={() => deleteSong(s.id)} className="btn btn-danger btn-sm"><Icon name="trash-2" style={{width:12,height:12}}/></button>
                             </div>
                           </div>
                         );
@@ -1792,7 +1811,7 @@
                   <div className="space-y-5">
                     <div className="card overflow-hidden">
                       <div className="px-5 py-4 border-b border-[#232327] flex items-center justify-between">
-                        <div className="sec-title"><i data-lucide="flag"></i> بلاغات اللاعبين</div>
+                        <div className="sec-title"><Icon name="flag"/> بلاغات اللاعبين</div>
                         {pendingReports > 0 && <span className="badge b-danger">{pendingReports} قيد الانتظار</span>}
                       </div>
                       <div className="overflow-x-auto">
@@ -1838,13 +1857,13 @@
 
                     <div className="card overflow-hidden">
                       <div className="px-5 py-4 border-b border-[#232327] flex items-center justify-between">
-                        <div className="sec-title"><i data-lucide="life-buoy"></i> تذاكر الدعم</div>
+                        <div className="sec-title"><Icon name="life-buoy"/> تذاكر الدعم</div>
                         {openTickets > 0 && <span className="badge b-info">{openTickets} مفتوحة</span>}
                       </div>
                       {tickets.map(t => (
                         <div key={t.id} className="flex flex-wrap items-start gap-3 px-5 py-3.5 border-b border-[#232327]/50 last:border-0">
                           <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${t.status === 'open' ? 'bg-sky-500/10 text-sky-400' : 'bg-zinc-800 text-zinc-500'}`}>
-                            <i data-lucide="message-square" style={{width:15,height:15}}></i>
+                            <Icon name="message-square" style={{width:15,height:15}}/>
                           </div>
                           <div className="flex-1 min-w-[200px]">
                             <div className="text-sm font-bold text-white">{t.subject}</div>
@@ -1867,7 +1886,7 @@
                 {activeTab === 'broadcast' && (
                   <div className="grid md:grid-cols-5 gap-5">
                     <div className="card card-pad md:col-span-2 h-fit">
-                      <div className="sec-title mb-1"><i data-lucide="megaphone"></i> إشعار عام جديد</div>
+                      <div className="sec-title mb-1"><Icon name="megaphone"/> إشعار عام جديد</div>
                       <div className="sec-sub mb-4">يصل كإشعار داخل التطبيق لكل اللاعبين</div>
                       <form onSubmit={handleSendBroadcast} className="space-y-3">
                         <div>
@@ -1878,22 +1897,22 @@
                           <label className="lbl">نص الرسالة</label>
                           <textarea required rows={4} value={broadcastBody} onChange={(e) => setBroadcastBody(e.target.value)} placeholder="اكتب محتوى الإشعار..." className="inp resize-none"></textarea>
                         </div>
-                        <button type="submit" className="btn btn-primary w-full"><i data-lucide="send" style={{width:13,height:13}}></i> إرسال لجميع اللاعبين</button>
+                        <button type="submit" className="btn btn-primary w-full"><Icon name="send" style={{width:13,height:13}}/> إرسال لجميع اللاعبين</button>
                       </form>
                     </div>
                     <div className="card overflow-hidden md:col-span-3 h-fit">
-                      <div className="px-5 py-4 border-b border-[#232327] sec-title"><i data-lucide="history"></i> الإشعارات المرسلة</div>
+                      <div className="px-5 py-4 border-b border-[#232327] sec-title"><Icon name="history"/> الإشعارات المرسلة</div>
                       {broadcasts.map(b => (
                         <div key={b.id} className="flex items-start gap-3 px-5 py-3.5 border-b border-[#232327]/50 last:border-0">
                           <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center shrink-0">
-                            <i data-lucide="bell" style={{width:14,height:14}}></i>
+                            <Icon name="bell" style={{width:14,height:14}}/>
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-bold text-white">{b.title}</div>
                             <div className="text-xs text-zinc-400 mt-0.5 leading-relaxed">{b.body}</div>
                             <div className="text-[10px] text-zinc-600 mt-1">{b.createdAt?.toDate ? b.createdAt.toDate().toLocaleString('ar') : ''}</div>
                           </div>
-                          <button onClick={() => deleteBroadcast(b.id)} className="btn btn-danger btn-sm"><i data-lucide="trash-2" style={{width:12,height:12}}></i></button>
+                          <button onClick={() => deleteBroadcast(b.id)} className="btn btn-danger btn-sm"><Icon name="trash-2" style={{width:12,height:12}}/></button>
                         </div>
                       ))}
                       {broadcasts.length === 0 && <div className="empty">لا توجد إشعارات مرسلة</div>}
@@ -1906,7 +1925,7 @@
                   <div className="space-y-5">
                     <div className="grid md:grid-cols-2 gap-5">
                       <div className="card card-pad">
-                        <div className="sec-title mb-1"><i data-lucide="trophy"></i> بطولة جديدة</div>
+                        <div className="sec-title mb-1"><Icon name="trophy"/> بطولة جديدة</div>
                         <div className="sec-sub mb-4">بطولة أوكي (النسخة التركية) — تظهر فوراً في تبويب البطولات</div>
                         <form onSubmit={handleAddTournament} className="space-y-3">
                           <div>
@@ -1938,7 +1957,7 @@
                       </div>
 
                       <div className="card card-pad h-fit">
-                        <div className="sec-title mb-1"><i data-lucide="calendar-clock"></i> إدارة الموسم</div>
+                        <div className="sec-title mb-1"><Icon name="calendar-clock"/> إدارة الموسم</div>
                         <div className="sec-sub mb-4">الموسم الحالي: <span className="text-indigo-300 font-bold">{config.season?.name || 'غير محدد'}</span></div>
                         <div className="space-y-3">
                           <div>
@@ -1950,7 +1969,7 @@
                             <input type="number" min="1" value={seasonDuration} onChange={(e) => setSeasonDuration(Number(e.target.value))} className="inp" />
                           </div>
                           <button onClick={handleEndSeason} disabled={savingSeason} className="btn btn-danger w-full">
-                            <i data-lucide="refresh-cw" style={{width:13,height:13}}></i>
+                            <Icon name="refresh-cw" style={{width:13,height:13}}/>
                             {savingSeason ? 'جارٍ التنفيذ...' : 'إنهاء الموسم الحالي وبدء جديد'}
                           </button>
                           <p className="text-[10px] text-zinc-600 leading-relaxed">يُصفِّر تقييمات الموسم في التطبيق ويبدأ عدّاداً جديداً (config/season).</p>
@@ -1959,14 +1978,14 @@
                     </div>
 
                     <div className="card overflow-hidden">
-                      <div className="px-5 py-4 border-b border-[#232327] sec-title"><i data-lucide="list"></i> البطولات</div>
+                      <div className="px-5 py-4 border-b border-[#232327] sec-title"><Icon name="list"/> البطولات</div>
                       {tournamentsList.map(t => {
                         const ends = t.endAt?.toDate ? t.endAt.toDate() : null;
                         const isActive = t.status === 'active';
                         return (
                           <div key={t.id} className="flex flex-wrap items-center gap-3 px-5 py-3.5 border-b border-[#232327]/50 last:border-0">
                             <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${isActive ? 'bg-amber-500/10 text-amber-400' : 'bg-zinc-800 text-zinc-500'}`}>
-                              <i data-lucide="trophy" style={{width:15,height:15}}></i>
+                              <Icon name="trophy" style={{width:15,height:15}}/>
                             </div>
                             <div className="flex-1 min-w-[180px]">
                               <div className="text-sm font-bold text-white">{t.name}</div>
@@ -1977,7 +1996,7 @@
                             </div>
                             <span className={`badge ${isActive ? 'b-ok' : 'b-neutral'}`}>{isActive ? 'نشطة' : 'منتهية'}</span>
                             {isActive && <button onClick={() => handleEndTournament(t.id)} className="btn btn-sec btn-sm">إنهاء</button>}
-                            <button onClick={() => handleDeleteTournament(t.id)} className="btn btn-danger btn-sm"><i data-lucide="trash-2" style={{width:12,height:12}}></i></button>
+                            <button onClick={() => handleDeleteTournament(t.id)} className="btn btn-danger btn-sm"><Icon name="trash-2" style={{width:12,height:12}}/></button>
                           </div>
                         );
                       })}
@@ -1990,7 +2009,7 @@
                 {activeTab === 'settings' && (
                   <div className="max-w-2xl space-y-5">
                     <div className="card card-pad">
-                      <div className="sec-title mb-1"><i data-lucide="settings"></i> إعدادات اللعبة العامة</div>
+                      <div className="sec-title mb-1"><Icon name="settings"/> إعدادات اللعبة العامة</div>
                       <div className="sec-sub mb-5">تُقرأ مباشرة من <code className="text-zinc-400">config/game_settings</code> وتؤثر على التطبيق فوراً</div>
                       <div className="space-y-5">
                         <div className="flex items-center justify-between gap-4 border border-[#2b2b30] rounded-lg p-4">
@@ -2034,7 +2053,7 @@
                         </div>
 
                         <button onClick={handleSaveSettings} disabled={!settingsEditing} className="btn btn-primary w-full py-2.5">
-                          <i data-lucide="save" style={{width:14,height:14}}></i> حفظ الإعدادات
+                          <Icon name="save" style={{width:14,height:14}}/> حفظ الإعدادات
                         </button>
                       </div>
                     </div>
@@ -2045,7 +2064,7 @@
                 {activeTab === 'history' && (
                   <div className="card overflow-hidden">
                     <div className="px-5 py-4 border-b border-[#232327] flex items-center justify-between">
-                      <div className="sec-title"><i data-lucide="history"></i> آخر المباريات المسجّلة</div>
+                      <div className="sec-title"><Icon name="history"/> آخر المباريات المسجّلة</div>
                       <span className="badge b-neutral">{matches.length}</span>
                     </div>
                     <div className="overflow-x-auto">
@@ -2087,8 +2106,8 @@
             <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
               <div className="card w-full max-w-md border-[#2b2b30]">
                 <div className="px-5 py-4 border-b border-[#232327] flex items-center justify-between">
-                  <div className="sec-title"><i data-lucide="wallet"></i> تعديل رصيد {editingPlayer.name}</div>
-                  <button onClick={() => setEditingPlayer(null)} className="text-zinc-500 hover:text-white"><i data-lucide="x" style={{width:16,height:16}}></i></button>
+                  <div className="sec-title"><Icon name="wallet"/> تعديل رصيد {editingPlayer.name}</div>
+                  <button onClick={() => setEditingPlayer(null)} className="text-zinc-500 hover:text-white"><Icon name="x" style={{width:16,height:16}}/></button>
                 </div>
                 <div className="p-5 space-y-4">
                   <div className="grid grid-cols-2 gap-3">
@@ -2142,8 +2161,8 @@
             <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
               <div className="card w-full max-w-md border-[#2b2b30]">
                 <div className="px-5 py-4 border-b border-[#232327] flex items-center justify-between">
-                  <div className="sec-title"><i data-lucide="user-plus"></i> إنشاء لاعب جديد</div>
-                  <button onClick={() => setShowAddPlayerModal(false)} className="text-zinc-500 hover:text-white"><i data-lucide="x" style={{width:16,height:16}}></i></button>
+                  <div className="sec-title"><Icon name="user-plus"/> إنشاء لاعب جديد</div>
+                  <button onClick={() => setShowAddPlayerModal(false)} className="text-zinc-500 hover:text-white"><Icon name="x" style={{width:16,height:16}}/></button>
                 </div>
                 <form onSubmit={handleCreatePlayer} className="p-5 space-y-4">
                   <div>
@@ -2174,8 +2193,8 @@
             <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
               <div className="card w-full max-w-lg border-[#2b2b30] max-h-[90vh] overflow-y-auto">
                 <div className="px-5 py-4 border-b border-[#232327] flex items-center justify-between sticky top-0 bg-[#141417] z-10">
-                  <div className="sec-title"><i data-lucide="palette"></i> إضافة سكن جديد للمتجر</div>
-                  <button onClick={() => setShowAddSkinModal(false)} className="text-zinc-500 hover:text-white"><i data-lucide="x" style={{width:16,height:16}}></i></button>
+                  <div className="sec-title"><Icon name="palette"/> إضافة سكن جديد للمتجر</div>
+                  <button onClick={() => setShowAddSkinModal(false)} className="text-zinc-500 hover:text-white"><Icon name="x" style={{width:16,height:16}}/></button>
                 </div>
                 <form onSubmit={handleAddSkin} className="p-5 space-y-4">
                   <div className="grid grid-cols-2 gap-3">
@@ -2209,7 +2228,7 @@
                     <label className="lbl">صورة التصميم (PNG)</label>
                     <label className={`flex items-center justify-center gap-2 w-full border-2 border-dashed rounded-lg px-4 py-4 text-sm cursor-pointer transition ${skinImageDataUri ? 'border-indigo-500 bg-indigo-500/5 text-indigo-300' : 'border-[#2b2b30] bg-[#0a0a0c] text-zinc-500 hover:border-indigo-500/50 hover:text-zinc-300'}`}>
                       <input type="file" accept="image/*" className="hidden" onChange={handleStoreFileSelect} />
-                      <i data-lucide="upload" style={{width:15,height:15}}></i>
+                      <Icon name="upload" style={{width:15,height:15}}/>
                       {skinImageDataUri ? `تم اختيار: ${skinImageFile?.name}` : 'ارفع صورة التصميم'}
                     </label>
                   </div>
@@ -2271,8 +2290,8 @@
             <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
               <div className="card w-full max-w-md border-[#2b2b30]">
                 <div className="px-5 py-4 border-b border-[#232327] flex items-center justify-between">
-                  <div className="sec-title"><i data-lucide="package"></i> باقة شحن جديدة</div>
-                  <button onClick={() => setShowAddPackModal(false)} className="text-zinc-500 hover:text-white"><i data-lucide="x" style={{width:16,height:16}}></i></button>
+                  <div className="sec-title"><Icon name="package"/> باقة شحن جديدة</div>
+                  <button onClick={() => setShowAddPackModal(false)} className="text-zinc-500 hover:text-white"><Icon name="x" style={{width:16,height:16}}/></button>
                 </div>
                 <form onSubmit={handleAddPack} className="p-5 space-y-4">
                   <div>
@@ -2320,8 +2339,8 @@
             <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
               <div className="card w-full max-w-md border-[#2b2b30]">
                 <div className="px-5 py-4 border-b border-[#232327] flex items-center justify-between">
-                  <div className="sec-title"><i data-lucide="folder-plus"></i> مجموعة راديو جديدة</div>
-                  <button onClick={() => setShowAddGroupModal(false)} className="text-zinc-500 hover:text-white"><i data-lucide="x" style={{width:16,height:16}}></i></button>
+                  <div className="sec-title"><Icon name="folder-plus"/> مجموعة راديو جديدة</div>
+                  <button onClick={() => setShowAddGroupModal(false)} className="text-zinc-500 hover:text-white"><Icon name="x" style={{width:16,height:16}}/></button>
                 </div>
                 <form onSubmit={handleAddRadioGroup} className="p-5 space-y-4">
                   <div className="grid grid-cols-3 gap-3">
@@ -2348,8 +2367,8 @@
             <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
               <div className="card w-full max-w-md border-[#2b2b30]">
                 <div className="px-5 py-4 border-b border-[#232327] flex items-center justify-between">
-                  <div className="sec-title"><i data-lucide="music"></i> أغنية / محطة جديدة</div>
-                  <button onClick={() => setShowAddSongModal(false)} className="text-zinc-500 hover:text-white"><i data-lucide="x" style={{width:16,height:16}}></i></button>
+                  <div className="sec-title"><Icon name="music"/> أغنية / محطة جديدة</div>
+                  <button onClick={() => setShowAddSongModal(false)} className="text-zinc-500 hover:text-white"><Icon name="x" style={{width:16,height:16}}/></button>
                 </div>
                 <form onSubmit={handleAddRadioSong} className="p-5 space-y-4">
                   <div>
@@ -2371,7 +2390,7 @@
                     <label className="lbl">ملف صوتي (MP3) — يُرفع إلى Firebase Storage</label>
                     <label className={`flex items-center justify-center gap-2 w-full border-2 border-dashed rounded-lg px-4 py-3 text-sm cursor-pointer transition ${songFile ? 'border-indigo-500 bg-indigo-500/5 text-indigo-300' : 'border-[#2b2b30] bg-[#0a0a0c] text-zinc-500 hover:border-indigo-500/50'}`}>
                       <input type="file" accept="audio/*" className="hidden" onChange={(e) => { const f = e.target.files[0] || null; setSongFile(f); if (f && !newSong.name.trim()) setNewSong(prev => ({ ...prev, name: f.name.replace(/\.[^.]+$/, '') })); }} />
-                      <i data-lucide="upload" style={{width:14,height:14}}></i>
+                      <Icon name="upload" style={{width:14,height:14}}/>
                       {songFile ? `${songFile.name} (${(songFile.size / 1048576).toFixed(1)} MB)` : 'اختر ملف صوتي من جهازك'}
                     </label>
                   </div>
