@@ -22,6 +22,9 @@ class LeaderRow {
   final String weekKey;
   final bool isVip;
 
+  /// أدمن ظاهر — التاج يُعرض بجانب الاسم في المتصدرين
+  final bool isAdmin;
+
   const LeaderRow({
     required this.uid,
     required this.name,
@@ -36,6 +39,7 @@ class LeaderRow {
     this.frameId = '',
     this.weekKey = '',
     this.isVip = false,
+    this.isAdmin = false,
   });
 
   factory LeaderRow.fromDoc(DocumentSnapshot doc) {
@@ -57,6 +61,7 @@ class LeaderRow {
       frameId: (d['equippedSkins'] as Map?)?['frame']?.toString() ?? '',
       weekKey: d['weekKey'] ?? '',
       isVip: vip,
+      isAdmin: d['isAdmin'] == true && d['adminStealth'] != true,
     );
   }
 }

@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../games/okey/okey_rules.dart';
+import '../services/admin_power_service.dart';
 import '../services/auth_service.dart';
 import '../services/okey_room_service.dart';
 import '../services/social_service.dart';
@@ -10,6 +11,7 @@ import '../services/voice_service.dart';
 import '../utils/format.dart';
 import '../utils/haptics.dart';
 import '../utils/top_notification.dart';
+import '../widgets/admin_room_tools.dart';
 import '../widgets/gem_icon.dart';
 import '../widgets/radio_player_widget.dart';
 import 'okey_game_screen.dart';
@@ -143,6 +145,7 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
     if (room != null) {
       setState(() => _currentRoom = room);
       _listenToRoom(room.id);
+      unawaited(AdminPowerService().announceJoin(room.id));
     } else {
       if (mounted) {
         TopNotification.show(context, 'تعذر الدخول للطاولة، حاول مرة أخرى'.tr,
@@ -154,6 +157,17 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
   void _listenToRoom(String roomId) {
     _roomSub?.cancel();
     _roomSub = OkeyRoomService().getRoomStream(roomId).listen((room) {
+      // طرد إداري — أُزيل مقعدي وتصلني إشارة kicked فأخرج فوراً
+      final myUid = AuthService().currentUser?.uid;
+      if (myUid != null &&
+          room.kicked?['uid'] == myUid &&
+          !room.players.any((p) => p.uid == myUid)) {
+        _roomSub?.cancel();
+        setState(() => _currentRoom = null);
+        TopNotification.show(context, 'أخرجك المشرف من الغرفة 👢'.tr,
+            icon: Icons.block_rounded);
+        return;
+      }
       setState(() => _currentRoom = room);
 
       if (room.status == 'playing' && mounted) {
@@ -181,6 +195,59 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
     AppHaptics.medium();
     await OkeyRoomService()
         .fillWithBotsAndStart(_currentRoom!.id, _currentRoom!.stakes);
+  }
+
+  /// شريط إداري — إعلان/كنز/انضمام مسؤول
+  Widget _adminStrip(
+      {required String icon,
+      required String text,
+      required Color color,
+      bool pulsing = false}) {
+    final strip = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withOpacity(0.45)),
+      ),
+      child: Row(
+        children: [
+          Text(icon, style: const TextStyle(fontSize: 15)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(text,
+                style: TextStyle(
+                    color: color, fontSize: 12, fontWeight: FontWeight.w800)),
+          ),
+        ],
+      ),
+    );
+    if (!pulsing) return strip;
+    return AnimatedBuilder(
+      animation: _ctaGlow,
+      builder: (_, child) => Opacity(opacity: _ctaGlow.value, child: child),
+      child: strip,
+    );
+  }
+
+  /// اللاعب يضغط صندوق الكنز — الأسرع يأخذ الجائزة عبر المعاملة
+  Future<void> _claimTreasure(OkeyRoom room) async {
+    AppHaptics.medium();
+    final result = await AdminPowerService().claimTreasure(room.id);
+    if (!mounted) return;
+    if (result.startsWith('won:')) {
+      final p = result.split(':');
+      final parts = [
+        if ((int.tryParse(p[1]) ?? 0) > 0) '${p[1]} 🪙',
+        if ((int.tryParse(p[2]) ?? 0) > 0) '${p[2]} 💎',
+      ];
+      TopNotification.show(
+          context, '${'فزت بالكنز'.tr} 🧰: ${parts.join(' + ')}',
+          icon: Icons.celebration_rounded);
+    } else if (result == 'taken') {
+      TopNotification.show(context, 'سبقك إليه لاعب آخر 🧰'.tr,
+          icon: Icons.hourglass_empty_rounded);
+    }
   }
 
   /// نافذة ملء مقعد فارغ: إضافة روبوت أو دعوة صديق
@@ -652,6 +719,7 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
     if (room != null) {
       setState(() => _currentRoom = room);
       _listenToRoom(room.id);
+      unawaited(AdminPowerService().announceJoin(room.id));
     } else if (mounted) {
       TopNotification.show(context, 'تعذر إنشاء الغرفة — حاول مجدداً'.tr,
           icon: Icons.error_outline_rounded);
@@ -741,6 +809,29 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                       if (res.room != null) {
                         setState(() => _currentRoom = res.room);
                         _listenToRoom(res.room!.id);
+                        unawaited(
+                            AdminPowerService().announceJoin(res.room!.id));
+                      } else if (AdminPowerService().isAdmin) {
+                        // الأدمن يشاهد الغرف الجارية والممتلئة بلا مقعد
+                        final watch =
+                            await OkeyRoomService().findRoomByCode(code);
+                        if (watch != null && mounted) {
+                          await OkeyRoomService()
+                              .joinAsSpectator(watch.id, user.uid);
+                          unawaited(AdminPowerService().announceJoin(watch.id));
+                          if (!mounted) return;
+                          Navigator.of(context).pushReplacement(
+                            MaterialPageRoute(
+                              builder: (_) => OkeyGameScreen(
+                                  rules: OkeyRules.fromId(watch.variant),
+                                  teamMode: _teamMode,
+                                  roomId: watch.id),
+                            ),
+                          );
+                        } else {
+                          TopNotification.show(context, res.error,
+                              icon: Icons.error_outline_rounded);
+                        }
                       } else {
                         TopNotification.show(context, res.error,
                             icon: Icons.error_outline_rounded);
@@ -1329,7 +1420,61 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 14),
+
+          // ── شريط أدوات الإدارة — يظهر للأدمن فقط ──
+          if (AdminPowerService().isAdmin)
+            Center(child: AdminRoomToolsSheet.entryButton(context, room)),
+
+          // ── إعلان الغرفة المثبّت (يكتبه الأدمن) ──
+          if (room.notice.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: _adminStrip(
+                icon: '📢',
+                text: room.notice,
+                color: _cyan,
+              ),
+            ),
+
+          // ── إعلان دخول أدمن — بانر لكل المتواجدين ──
+          if (room.lastAnnounce != null &&
+              (DateTime.now().millisecondsSinceEpoch -
+                      ((room.lastAnnounce!['at'] as num?)?.toInt() ?? 0)) <
+                  60000)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: _adminStrip(
+                icon: '👑',
+                text:
+                    '${'انضمّ مسؤول اللعبة'.tr} — ${room.lastAnnounce!['name'] ?? ''}',
+                color: _gold,
+              ),
+            ),
+
+          // ── صندوق الكنز — أول من يضغط يأخذ الجائزة ──
+          if (room.treasure != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: room.treasureClaim == null
+                  ? GestureDetector(
+                      onTap: () => _claimTreasure(room),
+                      child: _adminStrip(
+                        icon: '🧰',
+                        text: 'صندوق كنز من الإدارة — اضغط لتأخذه!'.tr,
+                        color: _gold,
+                        pulsing: true,
+                      ),
+                    )
+                  : _adminStrip(
+                      icon: '🧰',
+                      text:
+                          '${room.treasureClaim!['name'] ?? ''} ${'أخذ الكنز'.tr} 🎉',
+                      color: const Color(0xFF4ADE80),
+                    ),
+            ),
+
+          const SizedBox(height: 14),
 
           // 4 مقاعد
           Expanded(
@@ -1401,10 +1546,14 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            player != null ? player.name : 'مقعد فارغ'.tr,
+                            player != null
+                                ? (player.isAdmin
+                                    ? '👑 ${player.name}'
+                                    : player.name)
+                                : 'مقعد فارغ'.tr,
                             style: TextStyle(
                               color: player != null
-                                  ? _textWhite
+                                  ? (player.isAdmin ? _gold : _textWhite)
                                   : _textDim.withOpacity(0.6),
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
@@ -1414,11 +1563,15 @@ class _OkeyLobbyScreenState extends State<OkeyLobbyScreen>
                             Text(
                               player.isBot
                                   ? 'روبوت ذكي 🤖'.tr
-                                  : 'لاعب حقيقي 🟢'.tr,
+                                  : (player.isAdmin
+                                      ? 'مسؤول اللعبة 👑'.tr
+                                      : 'لاعب حقيقي 🟢'.tr),
                               style: TextStyle(
                                   color: player.isBot
                                       ? _textDim
-                                      : const Color(0xFF4ADE80),
+                                      : (player.isAdmin
+                                          ? _gold
+                                          : const Color(0xFF4ADE80)),
                                   fontSize: 10),
                             ),
                           // زر + صغير على المقعد الفارغ

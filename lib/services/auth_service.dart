@@ -59,11 +59,34 @@ class AppUser {
   /// حظر إداري — عند true يُمنع اللاعب من الوصول للتطبيق
   final bool isBanned;
 
+  /// صلاحيات إدارية — لا يكتبها المستخدم لنفسه (قواعد Firestore)
+  final bool isAdmin;
+
+  /// وضع التخفي — يخفي تاج الأدمن عن بقية اللاعبين
+  final bool adminStealth;
+
+  /// كتم الشات حتى هذا التاريخ (إشراف) — يكتبه الأدمن فقط
+  final DateTime? mutedUntil;
+
+  /// حظر مؤقت حتى هذا التاريخ (إشراف) — يكتبه الأدمن فقط
+  final DateTime? banUntil;
+
   /// اشتراك VIP فعّال حالياً؟
   bool get isVip => vipUntil != null && vipUntil!.isAfter(DateTime.now());
 
   /// مشترك VIP+ (الباقة الأعلى)؟
   bool get isVipPlus => isVip && vipTier == 'vipPlus';
+
+  /// مكتوم حالياً؟ يفحصه الشات قبل إرسال أي رسالة
+  bool get isMutedNow =>
+      mutedUntil != null && mutedUntil!.isAfter(DateTime.now());
+
+  /// محظور مؤقتاً؟ يعامل كحظر دائم ما دام التاريخ مستقبلاً
+  bool get isTempBanned =>
+      banUntil != null && banUntil!.isAfter(DateTime.now());
+
+  /// أدمن يظهر للآخرين بالتاج — التخفي يخفيه
+  bool get isVisibleAdmin => isAdmin && !adminStealth;
 
   AppUser({
     required this.uid,
@@ -97,6 +120,10 @@ class AppUser {
     this.activeRoom = '',
     this.activeGame = '',
     this.isBanned = false,
+    this.isAdmin = false,
+    this.adminStealth = false,
+    this.mutedUntil,
+    this.banUntil,
   });
 
   factory AppUser.fromMap(String uid, Map<String, dynamic> data) {
@@ -115,6 +142,14 @@ class AppUser {
     DateTime? lastLootBox;
     if (data['lastLootBox'] is Timestamp) {
       lastLootBox = (data['lastLootBox'] as Timestamp).toDate();
+    }
+    DateTime? mutedUntil;
+    if (data['mutedUntil'] is Timestamp) {
+      mutedUntil = (data['mutedUntil'] as Timestamp).toDate();
+    }
+    DateTime? banUntil;
+    if (data['banUntil'] is Timestamp) {
+      banUntil = (data['banUntil'] as Timestamp).toDate();
     }
 
     return AppUser(
@@ -156,6 +191,10 @@ class AppUser {
       activeRoom: data['activeRoom'] ?? '',
       activeGame: data['activeGame'] ?? '',
       isBanned: data['isBanned'] == true,
+      isAdmin: data['isAdmin'] == true,
+      adminStealth: data['adminStealth'] == true,
+      mutedUntil: mutedUntil,
+      banUntil: banUntil,
     );
   }
 
@@ -196,6 +235,10 @@ class AppUser {
       'activeRoom': activeRoom,
       'activeGame': activeGame,
       'isBanned': isBanned,
+      'isAdmin': isAdmin,
+      'adminStealth': adminStealth,
+      'mutedUntil': mutedUntil != null ? Timestamp.fromDate(mutedUntil!) : null,
+      'banUntil': banUntil != null ? Timestamp.fromDate(banUntil!) : null,
       'updatedAt': FieldValue.serverTimestamp(),
     };
   }
@@ -231,6 +274,12 @@ class AppUser {
     String? activeRoom,
     String? activeGame,
     bool? isBanned,
+    bool? isAdmin,
+    bool? adminStealth,
+    DateTime? mutedUntil,
+    DateTime? banUntil,
+    bool clearMute = false,
+    bool clearBanUntil = false,
   }) {
     return AppUser(
       uid: uid,
@@ -264,6 +313,10 @@ class AppUser {
       activeRoom: activeRoom ?? this.activeRoom,
       activeGame: activeGame ?? this.activeGame,
       isBanned: isBanned ?? this.isBanned,
+      isAdmin: isAdmin ?? this.isAdmin,
+      adminStealth: adminStealth ?? this.adminStealth,
+      mutedUntil: clearMute ? null : (mutedUntil ?? this.mutedUntil),
+      banUntil: clearBanUntil ? null : (banUntil ?? this.banUntil),
     );
   }
 }
@@ -420,6 +473,7 @@ class AuthService extends ChangeNotifier {
         // جلسة الضيف المحلية لا ترتبط بحساب Firebase، فلا يجوز مسحها هنا
         if (_currentUser?.uid.startsWith('guest_') ?? false) return;
         _userDocSub?.cancel();
+        _claimsSub?.cancel();
         _currentUser = null;
         notifyListeners();
       }
@@ -471,18 +525,20 @@ class AuthService extends ChangeNotifier {
 
       notifyListeners();
 
-      // مزايا تلقائية عند الدخول: إطار VIP الذهبي + مطالبات الهدايا/الإحالة
+      // مزايا تلقائية عند الدخول: إطار VIP الذهبي + بثّ مطالبات الهدايا
       unawaited(_applyVipPerks());
-      unawaited(_processPendingClaims());
+      _startClaimsListener();
     } catch (e) {
       debugPrint('Error fetching/creating user: $e');
     }
   }
 
-  /// يجهّز إطار VIP الذهبي تلقائياً للمشترك إن لم يكن لديه إطار مجهز
+  /// يجهّز إطار VIP الذهبي تلقائياً للمشترك — والأدمن يلبسه أيضاً
   Future<void> _applyVipPerks() async {
     final user = _currentUser;
-    if (user == null || !user.isVip || user.uid.startsWith('guest_')) {
+    if (user == null ||
+        (!user.isVip && !user.isAdmin) ||
+        user.uid.startsWith('guest_')) {
       return;
     }
     const vipFrameId = 'builtin_frame_vip_gold';
@@ -505,7 +561,29 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  /// معالجة مطالبات الهدايا والإحالة الواردة — تُرصَّد عند فتح التطبيق
+  /// بثّ لحظي لمطالبات الهدايا — تصل الهدية واللاعب داخل المباراة
+  StreamSubscription<QuerySnapshot>? _claimsSub;
+
+  /// آخر رسالة هدية — تعرضها الواجهة كإشعار علوي ثم تُصفَّر
+  final ValueNotifier<String?> giftAlert = ValueNotifier<String?>(null);
+
+  void _startClaimsListener() {
+    final user = _currentUser;
+    _claimsSub?.cancel();
+    if (user == null || user.uid.startsWith('guest_')) return;
+    _claimsSub = _firestore
+        .collection('claims')
+        .where('toUid', isEqualTo: user.uid)
+        .where('claimed', isEqualTo: false)
+        .snapshots()
+        .listen((snap) {
+      if (snap.docs.isNotEmpty) unawaited(_processPendingClaims());
+    }, onError: (Object e) => debugPrint('claims stream error: $e'));
+  }
+
+  /// معالجة مطالبات الهدايا والإحالة الواردة — لحظياً عبر البثّ
+  /// كل وثيقة تُقلَب claimed داخل معاملة حتى لا يتكرر الرصد
+  /// لو فُتح الحساب على جهازين في اللحظة نفسها
   Future<void> _processPendingClaims() async {
     final user = _currentUser;
     if (user == null || user.uid.startsWith('guest_')) return;
@@ -521,20 +599,30 @@ class AuthService extends ChangeNotifier {
       int chips = 0;
       int gems = 0;
       final skins = <String>[];
-      final batch = _firestore.batch();
+      bool fromAdmin = false;
+      int grantedCount = 0;
 
       for (final d in snap.docs) {
-        final data = d.data();
-        chips += (data['chips'] as num?)?.toInt() ?? 0;
-        gems += (data['gems'] as num?)?.toInt() ?? 0;
-        final skin = data['skinId'] as String?;
+        final granted = await _firestore.runTransaction((tx) async {
+          final s = await tx.get(d.reference);
+          final data = s.data();
+          if (data == null || data['claimed'] == true) return null;
+          tx.update(d.reference, {'claimed': true});
+          return data;
+        });
+        if (granted == null) continue;
+        grantedCount++;
+        chips += (granted['chips'] as num?)?.toInt() ?? 0;
+        gems += (granted['gems'] as num?)?.toInt() ?? 0;
+        if (granted['fromAdmin'] == true) fromAdmin = true;
+        final skin = granted['skinId'] as String?;
         if (skin != null &&
             skin.isNotEmpty &&
             !user.ownedSkins.contains(skin)) {
           skins.add(skin);
         }
-        batch.update(d.reference, {'claimed': true});
       }
+      if (grantedCount == 0) return;
 
       final owned = [...user.ownedSkins, ...skins];
       await _firestore.collection('users').doc(user.uid).update({
@@ -543,7 +631,6 @@ class AuthService extends ChangeNotifier {
         'ownedSkins': owned,
         'updatedAt': FieldValue.serverTimestamp(),
       });
-      await batch.commit();
 
       _currentUser = user.copyWith(
         chips: user.chips + chips,
@@ -551,10 +638,17 @@ class AuthService extends ChangeNotifier {
         ownedSkins: owned,
       );
       notifyListeners();
-      if (chips + gems > 0 || skins.isNotEmpty) {
-        debugPrint(
-            'Claims processed: +$chips chips, +$gems gems, ${skins.length} skins');
-      }
+
+      final parts = <String>[
+        if (chips > 0) '$chips 🪙',
+        if (gems > 0) '$gems 💎',
+        if (skins.isNotEmpty) '${skins.length} ${'سكن'.tr}',
+      ];
+      giftAlert.value = fromAdmin
+          ? '${'هدية من الإدارة'.tr} 👑: ${parts.join(' + ')}'
+          : '${'وصلتك هدية'.tr} 🎁: ${parts.join(' + ')}';
+      debugPrint(
+          'Claims processed: +$chips chips, +$gems gems, ${skins.length} skins');
     } catch (e) {
       debugPrint('Error processing claims: $e');
     }
@@ -1614,6 +1708,7 @@ class AuthService extends ChangeNotifier {
     try {
       if (!user.uid.startsWith('guest_')) {
         _userDocSub?.cancel();
+        _claimsSub?.cancel();
         await _firestore.collection('users').doc(user.uid).delete();
         final fbUser = _auth.currentUser;
         try {
@@ -1654,6 +1749,7 @@ class AuthService extends ChangeNotifier {
   void dispose() {
     _authSub?.cancel();
     _userDocSub?.cancel();
+    _claimsSub?.cancel();
     super.dispose();
   }
 }

@@ -69,7 +69,8 @@ service cloud.firestore {
         // حقول يمنع على المستخدم تغييرها بنفسه (تصعيد صلاحيات/اشتراك)
         && !changedKeys().hasAny(
             ['uid', 'email', 'vipUntil', 'vipTier', 'banned', 'isBanned',
-             'isAdmin', 'role', 'createdAt'])
+             'isAdmin', 'role', 'createdAt', 'mutedUntil', 'banUntil',
+             'adminStealth'])
         // الاقتصاد والإحصائيات: تغيّر محدود السقف لكل تحديث
         && deltaWithin('chips', 50000)
         && deltaWithin('gems', 2000)
@@ -163,12 +164,15 @@ service cloud.firestore {
     }
 
     // ── المطالبات: إهداء/إحالة — لا يجوز إنشاء مطالبة لنفسك ──
+    // سقف الهدية للمستخدم العادي؛ الأدمن يهدي بلا سقف (كل هدية موثّقة هنا)
     match /claims/{id} {
       allow create: if signedIn()
         && request.resource.data.claimed == false
         && request.resource.data.toUid != request.auth.uid
         && request.resource.data.fromUid == request.auth.uid
-        && request.resource.data.chips <= 10000;
+        && (isAdmin()
+            || (request.resource.data.get('chips', 0) <= 10000
+                && request.resource.data.get('gems', 0) <= 2000));
       allow read: if signedIn();
       allow update: if signedIn()
         && resource.data.toUid == request.auth.uid
@@ -303,6 +307,13 @@ service cloud.firestore {
             'game', 'gameRev', 'winner', 'status', 'currentTurnSeat',
             'turnPhase', 'turnStartTime', 'drawDeckCount',
             'centerDiscards', 'hostUid'])
+            || resource.data.hostUid == request.auth.uid)
+        // حقول قوى الإدارة داخل الغرفة — لا يستطيع عضو عادي
+        // تزويرها (كنز/إعلان/جائزة/طرد/أمر إنهاء). يقبلها
+        // الأدمن (أعلاه) أو المضيف كمالك للغرفة
+        && (!changedKeys().hasAny([
+            'notice', 'treasure', 'flashPrize', 'lastAnnounce',
+            'adminCommand', 'kicked'])
             || resource.data.hostUid == request.auth.uid));
       allow delete: if isAdmin()
         || (signedIn() && resource.data.hostUid == request.auth.uid);
@@ -330,7 +341,8 @@ service cloud.firestore {
       // الكتابة للمضيف حصرياً (صاحب المحرك المرجعي) فيستحيل على
       // ضيف تزوير يده — المضيف يعيد كتابتها مع كل لقطة على أي حال
       match /hands/{uid} {
-        allow read: if signedIn() && request.auth.uid == uid;
+        allow read: if isAdmin()
+            || (signedIn() && request.auth.uid == uid);
         allow write: if isAdmin() || (signedIn()
           && get(/databases/$(database)/documents/rooms/$(id)).data.hostUid
               == request.auth.uid);

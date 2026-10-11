@@ -190,24 +190,39 @@ class _AuthGateState extends State<_AuthGate> {
       return;
     }
     auth.addListener(_onAuthChange);
+    // إشعارات الهدايا اللحظية — تصل واللاعب داخل المباراة
+    auth.giftAlert.addListener(_onGiftAlert);
   }
 
   void _onAuthChange() {
     if (mounted) setState(() {});
   }
 
+  void _onGiftAlert() {
+    final auth = _authOrNull;
+    final msg = auth?.giftAlert.value;
+    if (msg == null || msg.isEmpty) return;
+    auth?.giftAlert.value = null;
+    final ctx = _navigatorKey.currentContext;
+    if (ctx == null) return;
+    TopNotification.show(ctx, msg, icon: Icons.card_giftcard_rounded);
+  }
+
   @override
   void dispose() {
-    _authOrNull?.removeListener(_onAuthChange);
+    final auth = _authOrNull;
+    auth?.removeListener(_onAuthChange);
+    auth?.giftAlert.removeListener(_onGiftAlert);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     if (_authAvailable && (_authOrNull?.isAuthenticated ?? false)) {
-      // حظر إداري — يسبق كل شيء ولا يترك سوى تسجيل الخروج
-      if (_authOrNull?.currentUser?.isBanned == true) {
-        return const _BannedScreen();
+      // حظر إداري (دائم أو مؤقت) — يسبق كل شيء ولا يترك سوى تسجيل الخروج
+      final u = _authOrNull?.currentUser;
+      if (u != null && (u.isBanned || u.isTempBanned)) {
+        return _BannedScreen(banUntil: u.isBanned ? null : u.banUntil);
       }
       // وضع الصيانة يُطبَّق بعد الدخول — شاشة الدخول تبقى متاحة للمدير
       return const MaintenanceGate(child: HomeScreen());
@@ -216,10 +231,13 @@ class _AuthGateState extends State<_AuthGate> {
   }
 }
 
-/// شاشة الحساب المحظور — تظهر عند isBanned=true في وثيقة المستخدم
+/// شاشة الحساب المحظور — تظهر عند isBanned=true أو حظر مؤقت سارٍ
 /// ويستطيع اللاعب فقط تسجيل الخروج (فك الحظر يكون من لوحة الإدارة)
 class _BannedScreen extends StatelessWidget {
-  const _BannedScreen();
+  const _BannedScreen({this.banUntil});
+
+  /// نهاية الحظر المؤقت — تُعرض بدل رسالة الحظر الدائم
+  final DateTime? banUntil;
 
   @override
   Widget build(BuildContext context) {
@@ -244,15 +262,20 @@ class _BannedScreen extends StatelessWidget {
                     color: Color(0xFFEF5350), size: 56),
               ),
               const SizedBox(height: 24),
-              Text('تم حظر حسابك'.tr,
+              Text(
+                  banUntil != null
+                      ? 'حسابك موقوف مؤقتاً'.tr
+                      : 'تم حظر حسابك'.tr,
                   style: const TextStyle(
                       color: Colors.white,
                       fontSize: 22,
                       fontWeight: FontWeight.w900)),
               const SizedBox(height: 12),
               Text(
-                'تم إيقاف هذا الحساب من قبل الإدارة. إذا كنت تعتقد أن هذا خطأ، تواصل مع الدعم.'
-                    .tr,
+                banUntil != null
+                    ? '${'تم إيقاف حسابك إدارياً حتى'.tr} ${banUntil!.day}/${banUntil!.month}/${banUntil!.year}'
+                    : 'تم إيقاف هذا الحساب من قبل الإدارة. إذا كنت تعتقد أن هذا خطأ، تواصل مع الدعم.'
+                        .tr,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                     color: Color(0xFFB8C4DC), fontSize: 14, height: 1.6),

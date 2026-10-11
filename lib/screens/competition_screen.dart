@@ -305,13 +305,19 @@ class _CompetitionScreenState extends State<CompetitionScreen>
               children: [
                 Row(
                   children: [
+                    if (r.isAdmin)
+                      const Padding(
+                        padding: EdgeInsetsDirectional.only(end: 3),
+                        child: Text('👑', style: TextStyle(fontSize: 12)),
+                      ),
                     Flexible(
                       child: Text(
                         r.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                            color: isMe ? _gold : _textWhite,
+                            color:
+                                r.isAdmin ? _gold : (isMe ? _gold : _textWhite),
                             fontSize: 13,
                             fontWeight: FontWeight.w800),
                       ),
@@ -322,6 +328,12 @@ class _CompetitionScreenState extends State<CompetitionScreen>
                     ],
                   ],
                 ),
+                if (r.isAdmin)
+                  Text('مسؤول اللعبة'.tr,
+                      style: const TextStyle(
+                          color: _gold,
+                          fontSize: 8.5,
+                          fontWeight: FontWeight.w800)),
                 if (r.title.isNotEmpty)
                   Text(r.title,
                       maxLines: 1,

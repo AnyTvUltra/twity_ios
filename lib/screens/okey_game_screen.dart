@@ -23,6 +23,8 @@ import '../services/auth_service.dart';
 import '../services/competition_service.dart';
 import '../services/game_settings_service.dart';
 import '../services/okey_room_service.dart';
+import '../services/admin_power_service.dart';
+import '../widgets/admin_room_tools.dart';
 import '../services/store_service.dart';
 import '../services/voice_service.dart';
 import '../services/radio_service.dart';
@@ -30,6 +32,7 @@ import '../widgets/radio_player_widget.dart';
 import '../widgets/animated_skin_effect.dart';
 import '../widgets/skin_image.dart';
 import '../games/okey/widgets/game_notice.dart';
+import '../utils/top_notification.dart';
 import 'package:game_hub/utils/haptics.dart';
 import '../l10n/app_lang.dart';
 
@@ -177,6 +180,11 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   Map<int, Map<String, dynamic>> _roomPlayerMaps = {};
   final Set<String> _consumedMoves = {};
   String? _seasonId; // مفتاح الموسم الجاري — لتسجيل النتائج موسمياً
+
+  // ═══ قوى الإدارة ═══
+  bool _flashClaimed = false; // الجائزة الخاطفة استُلمت (مرة واحدة)
+  bool _endNoticeShown = false; // إشعار «انتهت الجولة» عُرض
+  bool _treasureBusy = false; // ضغطة كنز جارية
 
   // ═══ وضع التدريب ═══
   bool _showTrainingIntro = false;
@@ -897,7 +905,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
         if (rp.seatIndex < 0 || rp.seatIndex > 3) continue;
         final p = _engine.players[rp.seatIndex];
         if (!rp.isBot) {
-          p.name = rp.name;
+          p.name = rp.isAdmin ? '👑 ${rp.name}' : rp.name;
           if (rp.photoUrl.isNotEmpty) p.avatarUrl = rp.photoUrl;
         }
         p.title = rp.title;
@@ -1034,6 +1042,50 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   /// كل تحديث لوثيقة الغرفة — شات للجميع، ولقطة اللعبة للضيوف
   void _onRoomSnapshot(OkeyRoom room) {
     if (!mounted) return;
+
+    // طرد إداري — أُزيل مقعدي وتصلني إشارة kicked فأخرج فوراً
+    final meUid = AuthService().currentUser?.uid;
+    if (meUid != null &&
+        room.kicked?['uid'] == meUid &&
+        !room.players.any((p) => p.uid == meUid) &&
+        !_isSpectator) {
+      unawaited(AuthService().setActiveRoom('', ''));
+      TopNotification.show(context, 'أخرجك المشرف من الغرفة 👢'.tr,
+          icon: Icons.block_rounded);
+      if (Navigator.of(context).canPop()) Navigator.of(context).pop();
+      return;
+    }
+
+    // أمر إداري «إنهاء الجولة» — المضيف وحده يغلق الغرفة نظيفاً
+    // (القواعد تقيّد status بالمضيف) فيُنهيها عند الجميع بلا فائز
+    final cmd = room.adminCommand;
+    if (_isHost &&
+        room.status == 'playing' &&
+        cmd != null &&
+        cmd['type'] == 'endRound') {
+      unawaited(FirebaseFirestore.instance
+          .collection('rooms')
+          .doc(room.id)
+          .update({'status': 'finished', 'adminCommand': null}));
+    }
+    // انتهت بلا فائز (أمر إداري) — أخبر الجميع مرة واحدة
+    if (room.status == 'finished' &&
+        _engine.winner == null &&
+        !_endNoticeShown) {
+      _endNoticeShown = true;
+      _showGameNotice('انتهت الجولة بقرار الإدارة 🏁'.tr,
+          icon: Icons.flag_rounded);
+    }
+
+    // جائزة الأدمن الخاطفة — الفائز بالجولة يرصدها لنفسه مرة واحدة
+    if (room.flashPrize > 0 && room.flashPrizeClaimed == null) {
+      final w = room.winner;
+      if (w != null && '${w['uid']}' == meUid && !_flashClaimed) {
+        _flashClaimed = true;
+        unawaited(_claimFlashPrize(room));
+      }
+    }
+
     _room = room;
     _roomPlayerMaps = {for (final p in room.players) p.seatIndex: p.toMap()};
 
@@ -1081,7 +1133,7 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
           final li = _localSeatOfDoc(rp.seatIndex);
           if (li < 0 || li > 3) continue;
           final p = _engine.players[li];
-          p.name = rp.name;
+          p.name = rp.isAdmin ? '👑 ${rp.name}' : rp.name;
           if (rp.photoUrl.isNotEmpty) p.avatarUrl = rp.photoUrl;
           p.title = rp.title;
           p.frameId = rp.frameId;
@@ -1136,12 +1188,20 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
   }
 
   /// رسالة شات الغرفة: فقاعة محلية فوراً + كتابة للوثيقة فتصل
-  /// البقية مع اللقطة التالية
+  /// البقية مع اللقطة التالية — تاج 👑 يسبق رسائل الأدمن الظاهر
   void _sendRoomChat(String msg) {
-    _showChatBubble(msg, 0);
+    final me = AuthService().currentUser;
+    if (me?.isMutedNow ?? false) {
+      _showGameNotice('أنت مكتوم من الإدارة حالياً 🔇'.tr,
+          icon: Icons.mic_off_rounded);
+      return;
+    }
+    final shown = (me?.isVisibleAdmin ?? false) && !msg.startsWith('👑')
+        ? '👑 $msg'
+        : msg;
+    _showChatBubble(shown, 0);
     if (_isOnline && widget.roomId != null) {
-      OkeyRoomService().sendRoomChat(
-          widget.roomId!, AuthService().currentUser?.uid ?? '', msg);
+      OkeyRoomService().sendRoomChat(widget.roomId!, me?.uid ?? '', shown);
     }
   }
 
@@ -4647,8 +4707,190 @@ class _OkeyGameScreenState extends State<OkeyGameScreen>
 
         // حجر مأخوذ من كومة الرمي نحو حامل الآخذ
         if (_animatingTakeTile != null) _buildTakeFlight(),
+
+        // ═══ طبقة قوى الإدارة: تاج الأدوات + إعلان الغرفة + الكنز ═══
+        if (_isOnline && _room != null) _buildAdminOverlay(sw, sh),
       ],
     );
+  }
+
+  /// طبقة الإدارة فوق المشهد — زر أدوات 👑 للأدمن، شريط إعلان الغرفة،
+  /// وصندوق الكنز النابض الذي يفتحه أول ضاغط
+  Widget _buildAdminOverlay(double sw, double sh) {
+    final room = _room!;
+    final top = sh * 0.055;
+    return Stack(
+      fit: StackFit.expand,
+      clipBehavior: Clip.none,
+      children: [
+        // زر أدوات الإدارة — يظهر للأدمن فقط
+        if (AdminPowerService().isAdmin)
+          Positioned(
+            top: top,
+            left: 8,
+            child: SafeArea(
+              child: AdminRoomToolsSheet.entryButton(context, room),
+            ),
+          ),
+
+        // إعلان الغرفة المثبّت — شريط علوي لكل المتواجدين
+        if (room.notice.isNotEmpty)
+          Positioned(
+            top: top,
+            left: sw * 0.22,
+            right: sw * 0.22,
+            child: SafeArea(
+              child: IgnorePointer(
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xE6101524),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: const Color(0xFF38BDF8).withOpacity(0.5)),
+                  ),
+                  child: Text(
+                    '📢 ${room.notice}',
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        color: Color(0xFF38BDF8),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+        // صندوق الكنز النابض — أول لاعب يضغط يأخذ الجائزة
+        // (المشاهد لا يراه — كتابة الاستلام للأعضاء فقط بالقواعد)
+        if (room.treasure != null &&
+            room.treasureClaim == null &&
+            !_isSpectator)
+          Positioned(
+            bottom: sh * 0.24,
+            left: 10,
+            child: SafeArea(
+              child: GestureDetector(
+                onTap: _treasureBusy ? null : () => _tapTreasure(room),
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xEE2A1F05),
+                    border: Border.all(
+                        color: const Color(0xFFFFD54F).withOpacity(0.8),
+                        width: 1.6),
+                    boxShadow: [
+                      BoxShadow(
+                          color: const Color(0xFFFFD54F).withOpacity(0.35),
+                          blurRadius: 16),
+                    ],
+                  ),
+                  child: _treasureBusy
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Color(0xFFFFD54F)))
+                      : const Text('🧰', style: TextStyle(fontSize: 22)),
+                ),
+              ),
+            ),
+          ),
+
+        // إشعار «أخذ فلان الكنز» — يظهر لحظة الاستلام
+        if (room.treasure != null && room.treasureClaim != null)
+          Positioned(
+            bottom: sh * 0.24,
+            left: 10,
+            child: SafeArea(
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xEE0E2A16),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                      color: const Color(0xFF4ADE80).withOpacity(0.5)),
+                ),
+                child: Text(
+                  '🧰 ${room.treasureClaim!['name'] ?? ''} ${'أخذ الكنز'.tr} 🎉',
+                  style: const TextStyle(
+                      color: Color(0xFF4ADE80),
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// ضغطة صندوق الكنز — الأسرع يأخذ الجائزة عبر المعاملة
+  Future<void> _tapTreasure(OkeyRoom room) async {
+    AppHaptics.medium();
+    setState(() => _treasureBusy = true);
+    final result = await AdminPowerService().claimTreasure(room.id);
+    if (!mounted) return;
+    setState(() => _treasureBusy = false);
+    if (result.startsWith('won:')) {
+      final p = result.split(':');
+      final parts = [
+        if ((int.tryParse(p[1]) ?? 0) > 0) '${p[1]} 🪙',
+        if ((int.tryParse(p[2]) ?? 0) > 0) '${p[2]} 💎',
+      ];
+      _showGameNotice('${'فزت بالكنز'.tr} 🧰: ${parts.join(' + ')}',
+          icon: Icons.celebration_rounded);
+    } else if (result == 'taken') {
+      _showGameNotice('سبقك إليه لاعب آخر 🧰'.tr,
+          icon: Icons.hourglass_empty_rounded);
+    }
+  }
+
+  /// الجائزة الخاطفة: الفائز يوقّع الاستلام بمعاملة ثم يرصد رقائقه
+  /// — سقف الرصيد الذاتي في القواعد يسمح حتى 50000
+  Future<void> _claimFlashPrize(OkeyRoom room) async {
+    final me = AuthService().currentUser;
+    if (me == null) return;
+    try {
+      final ref = FirebaseFirestore.instance.collection('rooms').doc(room.id);
+      final won =
+          await FirebaseFirestore.instance.runTransaction<bool>((tx) async {
+        final snap = await tx.get(ref);
+        final d = snap.data();
+        if (d == null || d['flashPrizeClaimed'] is Map) return false;
+        final w = d['winner'];
+        if (w is! Map || '${w['uid']}' != me.uid) return false;
+        tx.update(ref, {
+          'flashPrizeClaimed': {
+            'uid': me.uid,
+            'at': DateTime.now().millisecondsSinceEpoch,
+          },
+        });
+        return true;
+      });
+      if (won) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(me.uid)
+            .update({
+          'chips': me.chips + room.flashPrize,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        if (mounted) {
+          _showGameNotice(
+              '⚡ ${'جائزة الإدارة الخاطفة'.tr}: +${room.flashPrize} 🪙',
+              icon: Icons.bolt_rounded);
+        }
+      }
+    } catch (e) {
+      debugPrint('flashPrize claim: $e');
+    }
   }
 
   // ─────────────────────────────────────────────

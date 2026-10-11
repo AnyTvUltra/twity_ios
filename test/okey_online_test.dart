@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game_hub/games/okey/okey_engine.dart';
 import 'package:game_hub/games/okey/okey_models.dart';
@@ -287,6 +288,72 @@ void main() {
       });
       expect(old.connected, isTrue);
       expect(old.title, '');
+    });
+  });
+
+  group('قوى الإدارة', () {
+    test('OkeyRoomPlayer يحمل isAdmin — الأدمن يُسلسله والعادي يُخفيه', () {
+      final admin = OkeyRoomPlayer(
+          uid: 'a1',
+          name: 'أدمن',
+          username: 'admin',
+          photoUrl: '',
+          seatIndex: 0,
+          isAdmin: true);
+      final back = OkeyRoomPlayer.fromMap(admin.toMap());
+      expect(back.isAdmin, isTrue);
+
+      // اللاعب العادي: الحقل لا يُكتب إطلاقاً — وثائق قديمة تقرأه false
+      final normal = OkeyRoomPlayer(
+          uid: 'n1', name: 'x', username: 'x', photoUrl: '', seatIndex: 1);
+      expect(normal.toMap().containsKey('isAdmin'), isFalse);
+      expect(OkeyRoomPlayer.fromMap(normal.toMap()).isAdmin, isFalse);
+    });
+
+    test('AppUser يفكك حقول الإدارة والإشراف ويحسب حالاتها', () {
+      final future =
+          Timestamp.fromDate(DateTime.now().add(const Duration(days: 1)));
+      final past =
+          Timestamp.fromDate(DateTime.now().subtract(const Duration(days: 1)));
+
+      final admin = AppUser.fromMap('admin_uid_001', {
+        'isAdmin': true,
+        'adminStealth': false,
+        'mutedUntil': future,
+        'banUntil': past,
+      });
+      expect(admin.isAdmin, isTrue);
+      expect(admin.isVisibleAdmin, isTrue);
+      expect(admin.isMutedNow, isTrue);
+      expect(admin.isTempBanned, isFalse,
+          reason: 'الحظر منتهي الصلاحية لا يُحسب');
+
+      // التخفي يخفي التاج فقط — الصلاحية باقية
+      final stealth = AppUser.fromMap(
+          'stealth_uid_002', {'isAdmin': true, 'adminStealth': true});
+      expect(stealth.isAdmin, isTrue);
+      expect(stealth.isVisibleAdmin, isFalse);
+
+      // حظر مؤقت مستقبلي = محظور حالياً
+      final tempBanned =
+          AppUser.fromMap('banned_uid_003', {'banUntil': future});
+      expect(tempBanned.isTempBanned, isTrue);
+      expect(tempBanned.isBanned, isFalse);
+
+      // رحلة ذهاب وعودة عبر toMap — الحقول لا تضيع
+      final back = AppUser.fromMap('admin_uid_001', admin.toMap());
+      expect(back.isAdmin, isTrue);
+      expect(back.isMutedNow, isTrue);
+      expect(back.adminStealth, isFalse);
+    });
+
+    test('AppUser بلا حقول إدارية (وثيقة قديمة) = لاعب عادي', () {
+      final u = AppUser.fromMap('normal_uid_009', {'displayName': 'لاعب'});
+      expect(u.isAdmin, isFalse);
+      expect(u.isVisibleAdmin, isFalse);
+      expect(u.isMutedNow, isFalse);
+      expect(u.isTempBanned, isFalse);
+      expect(u.isBanned, isFalse);
     });
   });
 

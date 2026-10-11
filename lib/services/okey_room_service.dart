@@ -22,6 +22,9 @@ class OkeyRoomPlayer {
   final String title;
   final String frameId;
 
+  /// أدمن ظاهر — التاج يُكتب عند الانضمام ولا يُكتب في وضع التخفي
+  final bool isAdmin;
+
   OkeyRoomPlayer({
     required this.uid,
     required this.name,
@@ -34,6 +37,7 @@ class OkeyRoomPlayer {
     this.connected = true,
     this.title = '',
     this.frameId = '',
+    this.isAdmin = false,
   });
 
   factory OkeyRoomPlayer.fromMap(Map<String, dynamic> data) {
@@ -49,6 +53,7 @@ class OkeyRoomPlayer {
       connected: data['connected'] ?? true,
       title: data['title'] ?? '',
       frameId: data['frameId'] ?? '',
+      isAdmin: data['isAdmin'] == true,
     );
   }
 
@@ -65,6 +70,7 @@ class OkeyRoomPlayer {
       'connected': connected,
       if (title.isNotEmpty) 'title': title,
       if (frameId.isNotEmpty) 'frameId': frameId,
+      if (isAdmin) 'isAdmin': true,
     };
   }
 }
@@ -107,6 +113,32 @@ class OkeyRoom {
   /// معرّفات المشاهدين — لا يشغلون مقاعداً ولا يقرؤون أيدياً خاصة
   final List<String> spectators;
 
+  // ── حقول قوى الإدارة (يكتبها الأدمن/المضيف فقط بحسب القواعد) ──
+
+  /// شريط إعلان داخل الغرفة — يظهر لكل المتواجدين
+  final String notice;
+
+  /// إعلان دخول أدمن: {uid, name, at} — بانر «انضمّ مسؤول اللعبة»
+  final Map<String, dynamic>? lastAnnounce;
+
+  /// صندوق كنز مزروع: {chips, gems, by, at}
+  final Map<String, dynamic>? treasure;
+
+  /// من أخذ الكنز: {uid, name, at} — وجوده يخفي الصندوق
+  final Map<String, dynamic>? treasureClaim;
+
+  /// جائزة خاطفة للفائز بهذه الجولة (رقائق)
+  final int flashPrize;
+
+  /// الفائز الذي استلم الجائزة الخاطفة: {uid, at}
+  final Map<String, dynamic>? flashPrizeClaimed;
+
+  /// أمر إداري للمضيف: {type: 'endRound', at}
+  final Map<String, dynamic>? adminCommand;
+
+  /// آخر لاعب طُرد: {uid, at} — يُخرجه جهازه فور رؤيته
+  final Map<String, dynamic>? kicked;
+
   OkeyRoom({
     required this.id,
     required this.stakes,
@@ -129,6 +161,14 @@ class OkeyRoom {
     this.isPrivate = false,
     this.tournamentId = '',
     this.spectators = const [],
+    this.notice = '',
+    this.lastAnnounce,
+    this.treasure,
+    this.treasureClaim,
+    this.flashPrize = 0,
+    this.flashPrizeClaimed,
+    this.adminCommand,
+    this.kicked,
   });
 
   factory OkeyRoom.fromDoc(DocumentSnapshot doc) {
@@ -177,6 +217,26 @@ class OkeyRoom {
       isPrivate: data['isPrivate'] ?? false,
       tournamentId: data['tournamentId'] ?? '',
       spectators: List<String>.from(data['spectators'] as List<dynamic>? ?? []),
+      notice: data['notice'] ?? '',
+      lastAnnounce: data['lastAnnounce'] != null
+          ? Map<String, dynamic>.from(data['lastAnnounce'])
+          : null,
+      treasure: data['treasure'] != null
+          ? Map<String, dynamic>.from(data['treasure'])
+          : null,
+      treasureClaim: data['treasureClaim'] != null
+          ? Map<String, dynamic>.from(data['treasureClaim'])
+          : null,
+      flashPrize: (data['flashPrize'] as num?)?.toInt() ?? 0,
+      flashPrizeClaimed: data['flashPrizeClaimed'] != null
+          ? Map<String, dynamic>.from(data['flashPrizeClaimed'])
+          : null,
+      adminCommand: data['adminCommand'] != null
+          ? Map<String, dynamic>.from(data['adminCommand'])
+          : null,
+      kicked: data['kicked'] != null
+          ? Map<String, dynamic>.from(data['kicked'])
+          : null,
     );
   }
 }
@@ -233,6 +293,7 @@ class OkeyRoomService {
             seatIndex: seatIndex,
             title: user.title,
             frameId: user.equippedSkins['frame'] ?? '',
+            isAdmin: user.isVisibleAdmin,
           );
 
           await _firestore.collection('rooms').doc(doc.id).update({
@@ -263,6 +324,7 @@ class OkeyRoomService {
         seatIndex: 0,
         title: user.title,
         frameId: user.equippedSkins['frame'] ?? '',
+        isAdmin: user.isVisibleAdmin,
       );
       final newRoomData = {
         'stakes': stakes,
@@ -337,6 +399,7 @@ class OkeyRoomService {
         seatIndex: 0,
         title: user.title,
         frameId: user.equippedSkins['frame'] ?? '',
+        isAdmin: user.isVisibleAdmin,
       );
 
       await docRef.set({
@@ -365,6 +428,27 @@ class OkeyRoomService {
       return OkeyRoom.fromDoc(await docRef.get());
     } catch (e) {
       debugPrint('Error creating private room: $e');
+      return null;
+    }
+  }
+
+  /// يجد غرفة بكودها بأي حالة — لمراقبة الأدمن على الغرف الجارية
+  /// والممتلئة (المشاهدة لا تحتاج مقعداً ولا رهاناً)
+  Future<OkeyRoom?> findRoomByCode(String code) async {
+    try {
+      final q = await _firestore
+          .collection('rooms')
+          .where('code', isEqualTo: code.trim().toUpperCase())
+          .limit(3)
+          .get();
+      OkeyRoom? best;
+      for (final d in q.docs) {
+        final r = OkeyRoom.fromDoc(d);
+        if (best == null || r.status == 'playing') best = r;
+      }
+      return best;
+    } catch (e) {
+      debugPrint('findRoomByCode: $e');
       return null;
     }
   }
@@ -408,6 +492,7 @@ class OkeyRoomService {
         seatIndex: seatIndex,
         title: user.title,
         frameId: user.equippedSkins['frame'] ?? '',
+        isAdmin: user.isVisibleAdmin,
       );
       await _firestore.collection('rooms').doc(room.id).update({
         'players': FieldValue.arrayUnion([newPlayer.toMap()]),
@@ -482,6 +567,7 @@ class OkeyRoomService {
                   connected: connected,
                   title: p.title,
                   frameId: p.frameId,
+                  isAdmin: p.isAdmin,
                 )
               : p
       ];
@@ -822,6 +908,11 @@ class OkeyRoomService {
   /// مع اللقطة التالية، وتُعرض كفقاعة فوق استكانة المرسل
   Future<void> sendRoomChat(String roomId, String uid, String msg) async {
     try {
+      // المكتوم إدارياً لا تُرسل رسائله — فحص من جهة المرسل
+      if (AuthService().currentUser?.uid == uid &&
+          (AuthService().currentUser?.isMutedNow ?? false)) {
+        return;
+      }
       await _firestore.collection('rooms').doc(roomId).update({
         'chat': {
           'uid': uid,

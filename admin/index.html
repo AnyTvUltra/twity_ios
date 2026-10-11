@@ -315,6 +315,7 @@
       const [searchTerm, setSearchTerm] = useState('');
       const [statusFilter, setStatusFilter] = useState('all');
       const [editingPlayer, setEditingPlayer] = useState(null);
+      const [giftTarget, setGiftTarget] = useState(null);
       const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
       const [newPlayerData, setNewPlayerData] = useState({ email: '', password: '', name: '', chips: 1500, rating: 1200 });
 
@@ -457,6 +458,9 @@
                 losses: data.losses || 0,
                 status: data.isBanned ? 'banned' : 'active',
                 isOnline: data.isOnline || false,
+                isAdmin: data.isAdmin === true,
+                mutedUntil: data.mutedUntil?.toMillis?.() || null,
+                banUntil: data.banUntil?.toMillis?.() || null,
               });
             });
             setPlayers(list);
@@ -619,6 +623,80 @@
           showToast(`تم ${isBanned ? 'إلغاء حظر' : 'حظر'} اللاعب بنجاح`);
         } catch (err) {
           showToast('فشل تغيير حالة اللاعب: ' + err.message, 'error');
+        }
+      };
+
+      // ── صلاحيات الإدارة داخل اللعبة ──
+      // isAdmin على وثيقة المستخدم يقرأه التطبيق: تاج 👑 في الغرف
+      // والمتصدرين + أدوات الإشراف والهدايا داخل اللعبة
+      const toggleAdminFlag = async (playerId, isAdminNow, name) => {
+        const msg = isAdminNow
+          ? `إزالة صلاحية المسؤول عن "${name}"؟`
+          : `منح "${name}" صلاحية المسؤول؟ (تاج + أدوات إشراف داخل اللعبة)`;
+        if (!window.confirm(msg)) return;
+        try {
+          const { doc, updateDoc } = window.fbTools;
+          await updateDoc(doc(window.db, 'users', playerId), { isAdmin: !isAdminNow });
+          showToast(isAdminNow ? 'أُزيلت صلاحية المسؤول' : '👑 أصبح مسؤولاً — التاج يظهر له في اللعبة');
+        } catch (err) {
+          showToast('فشل تغيير الصلاحية: ' + err.message, 'error');
+        }
+      };
+
+      // كتم الشات — mutedUntil تقرأها sendRoomChat فتمنع الرسائل
+      const mutePlayerFor = async (playerId, minutes, name) => {
+        try {
+          const { doc, updateDoc, Timestamp } = window.fbTools;
+          await updateDoc(doc(window.db, 'users', playerId), {
+            mutedUntil: minutes ? Timestamp.fromDate(new Date(Date.now() + minutes * 60000)) : null
+          });
+          showToast(minutes ? `🔇 كُتم ${name} لمدة ${minutes} دقيقة` : `🔊 فُكّ كتم ${name}`);
+        } catch (err) {
+          showToast('فشل الكتم: ' + err.message, 'error');
+        }
+      };
+
+      // حظر مؤقت — banUntil تطرده بوابة الحظر حتى نهاية المدة
+      const tempBanPlayer = async (playerId, name) => {
+        const input = window.prompt(`أيام الحظر المؤقت لـ "${name}"؟ (0 = فك الإيقاف)`, '1');
+        if (input === null) return;
+        const days = Number(input);
+        if (isNaN(days) || days < 0) return;
+        try {
+          const { doc, updateDoc, Timestamp } = window.fbTools;
+          await updateDoc(doc(window.db, 'users', playerId), {
+            banUntil: days > 0 ? Timestamp.fromDate(new Date(Date.now() + days * 86400000)) : null
+          });
+          showToast(days > 0 ? `⛔ أُوقف ${name} لمدة ${days} يوم` : `فُكّ إيقاف ${name}`);
+        } catch (err) {
+          showToast('فشل الإيقاف: ' + err.message, 'error');
+        }
+      };
+
+      // إهداء لحظي — وثيقة claims تصل اللاعب وهو يلعب بإشعار «هدية من الإدارة»
+      const sendAdminGift = async () => {
+        if (!giftTarget) return;
+        const chips = Number(giftTarget.giftChips) || 0;
+        const gems = Number(giftTarget.giftGems) || 0;
+        if (chips <= 0 && gems <= 0) {
+          showToast('أدخل مبلغاً صالحاً', 'error');
+          return;
+        }
+        try {
+          const { collection, addDoc, serverTimestamp } = window.fbTools;
+          await addDoc(collection(window.db, 'claims'), {
+            toUid: giftTarget.id,
+            fromUid: user?.uid || 'admin-panel',
+            fromAdmin: true,
+            chips,
+            gems,
+            claimed: false,
+            at: serverTimestamp()
+          });
+          showToast(`🎁 أُرسلت الهدية إلى ${giftTarget.name} — تصله لحظياً`);
+          setGiftTarget(null);
+        } catch (err) {
+          showToast('فشل إرسال الهدية: ' + err.message, 'error');
         }
       };
 
@@ -1464,7 +1542,9 @@
                                       {p.isOnline && <span className="absolute -bottom-0.5 -left-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-[#141417]"></span>}
                                     </div>
                                     <div className="min-w-0">
-                                      <div className="text-sm font-bold text-white truncate max-w-[140px]">{p.name}</div>
+                                      <div className="text-sm font-bold text-white truncate max-w-[140px]">
+                                        {p.isAdmin && <span title="مسؤول">👑 </span>}{p.name}
+                                      </div>
                                       <div className="text-[10px] text-zinc-500 truncate max-w-[140px]" dir="ltr">{p.email}</div>
                                     </div>
                                   </div>
@@ -1486,14 +1566,35 @@
                                   </div>
                                 </td>
                                 <td>
-                                  {p.status === 'banned'
-                                    ? <span className="badge b-danger">محظور</span>
-                                    : <span className="badge b-ok">{p.isOnline ? 'متصل' : 'نشط'}</span>}
+                                  <div className="flex flex-col gap-1 items-start">
+                                    {p.status === 'banned'
+                                      ? <span className="badge b-danger">محظور</span>
+                                      : <span className="badge b-ok">{p.isOnline ? 'متصل' : 'نشط'}</span>}
+                                    {p.isAdmin && <span className="badge" style={{background:'rgba(245,197,66,.12)',color:'#f5c542',border:'1px solid rgba(245,197,66,.3)'}}>مسؤول 👑</span>}
+                                    {p.mutedUntil && p.mutedUntil > Date.now() && <span className="badge b-warn">مكتوم 🔇</span>}
+                                    {p.banUntil && p.banUntil > Date.now() && <span className="badge b-danger">موقوف ⛔</span>}
+                                  </div>
                                 </td>
                                 <td>
-                                  <div className="flex items-center gap-1.5 justify-end">
+                                  <div className="flex items-center gap-1.5 justify-end flex-wrap">
                                     <button onClick={() => setEditingPlayer(p)} className="btn btn-sec btn-sm" title="تعديل الرصيد">
                                       <Icon name="wallet" style={{width:12,height:12}}/> الرصيد
+                                    </button>
+                                    <button onClick={() => setGiftTarget({...p, giftChips: 1000, giftGems: 0})} className="btn btn-sec btn-sm" title="إهداء لحظي — يصله وهو يلعب">
+                                      <Icon name="gift" style={{width:12,height:12}}/>
+                                    </button>
+                                    <button onClick={() => toggleAdminFlag(p.id, p.isAdmin, p.name)}
+                                      className={`btn btn-sm ${p.isAdmin ? 'btn-ok' : 'btn-sec'}`}
+                                      title={p.isAdmin ? 'إزالة صلاحية المسؤول' : 'منح صلاحية المسؤول'}>
+                                      <Icon name="shield" style={{width:12,height:12}}/>
+                                    </button>
+                                    <button onClick={() => mutePlayerFor(p.id, (p.mutedUntil && p.mutedUntil > Date.now()) ? 0 : 60, p.name)}
+                                      className={`btn btn-sm ${(p.mutedUntil && p.mutedUntil > Date.now()) ? 'btn-ok' : 'btn-sec'}`}
+                                      title={(p.mutedUntil && p.mutedUntil > Date.now()) ? 'فك الكتم' : 'كتم ساعة'}>
+                                      <Icon name={p.mutedUntil && p.mutedUntil > Date.now() ? 'mic' : 'mic-off'} style={{width:12,height:12}}/>
+                                    </button>
+                                    <button onClick={() => tempBanPlayer(p.id, p.name)} className="btn btn-sec btn-sm" title="إيقاف مؤقت بالأيام">
+                                      <Icon name="timer" style={{width:12,height:12}}/>
                                     </button>
                                     <button onClick={() => togglePlayerStatus(p.id, p.status)}
                                       className={`btn btn-sm ${p.status === 'banned' ? 'btn-ok' : 'btn-sec'}`}
@@ -2151,6 +2252,44 @@
                     <input name="absVal" type="number" placeholder="تعيين قيمة محددة..." className="inp flex-1" />
                     <button type="submit" className="btn btn-primary">تعيين</button>
                   </form>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL: إهداء لحظي من الإدارة — يصل اللاعب وهو يلعب عبر claims */}
+          {giftTarget && (
+            <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+              <div className="card w-full max-w-sm border-[#2b2b30]">
+                <div className="px-5 py-4 border-b border-[#232327] flex items-center justify-between">
+                  <div className="sec-title"><Icon name="gift"/> إهداء لحظي — {giftTarget.name}</div>
+                  <button onClick={() => setGiftTarget(null)} className="text-zinc-500 hover:text-white"><Icon name="x" style={{width:16,height:16}}/></button>
+                </div>
+                <div className="p-5 space-y-4">
+                  <p className="text-[11px] text-zinc-500 leading-5">
+                    تُرسل عبر وثيقة claims وتصل اللاعب فوراً وهو داخل اللعبة
+                    بإشعار «هدية من الإدارة 👑» — الرصيد يُضاف لحظياً.
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="lbl">الرقائق 🪙</label>
+                      <input type="number" min="0" value={giftTarget.giftChips}
+                        onChange={(e) => setGiftTarget(p => ({...p, giftChips: e.target.value}))} className="inp" />
+                    </div>
+                    <div>
+                      <label className="lbl">الجواهر 💎</label>
+                      <input type="number" min="0" value={giftTarget.giftGems}
+                        onChange={(e) => setGiftTarget(p => ({...p, giftGems: e.target.value}))} className="inp" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[1000, 5000, 25000, 100000].map(v => (
+                      <button key={v} onClick={() => setGiftTarget(p => ({...p, giftChips: v}))} className="btn btn-sec btn-sm">{v >= 1000 ? `${v/1000}K` : v}</button>
+                    ))}
+                  </div>
+                  <button onClick={sendAdminGift} className="btn btn-ok w-full">
+                    <Icon name="send" style={{width:14,height:14}}/> إرسال الهدية 🎁
+                  </button>
                 </div>
               </div>
             </div>
