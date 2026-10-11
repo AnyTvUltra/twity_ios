@@ -14,10 +14,14 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // هل المستخدم الحالي مدير؟ (وثيقته موجودة في admins)
+    // هل المستخدم الحالي مدير؟ وثيقة admins/{uid} (من الكونسول)
+    // أو علم isAdmin على وثيقته (يمنحه أدمن من لوحة الويب)
     function isAdmin() {
       return signedIn()
-        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+        && (exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+            || (exists(/databases/$(database)/documents/users/$(request.auth.uid))
+                && get(/databases/$(database)/documents/users/$(request.auth.uid))
+                    .data.get('isAdmin', false) == true));
     }
 
     // الحقول التي تغيّرت في طلب التحديث
@@ -166,13 +170,16 @@ service cloud.firestore {
     // ── المطالبات: إهداء/إحالة — لا يجوز إنشاء مطالبة لنفسك ──
     // سقف الهدية للمستخدم العادي؛ الأدمن يهدي بلا سقف (كل هدية موثّقة هنا)
     match /claims/{id} {
+      // كل وثيقة مقيدة بسقف التحديث الذاتي للرصيد (50K رقاقة/2K جوهرة)
+      // حتى يرصدها المستلم في معاملة واحدة ذرية؛ الهدايا الأكبر
+      // تُقسَّم لعدة وثائق. الأدمن يجوز له الإهداء لنفسه (للتجربة)
       allow create: if signedIn()
         && request.resource.data.claimed == false
-        && request.resource.data.toUid != request.auth.uid
         && request.resource.data.fromUid == request.auth.uid
-        && (isAdmin()
-            || (request.resource.data.get('chips', 0) <= 10000
-                && request.resource.data.get('gems', 0) <= 2000));
+        && (request.resource.data.toUid != request.auth.uid || isAdmin())
+        && request.resource.data.get('chips', 0) <= 50000
+        && request.resource.data.get('gems', 0) <= 2000
+        && (isAdmin() || request.resource.data.get('chips', 0) <= 10000);
       allow read: if signedIn();
       allow update: if signedIn()
         && resource.data.toUid == request.auth.uid

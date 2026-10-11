@@ -40,17 +40,51 @@ class AdminPowerService {
     if (chips <= 0 && gems <= 0 && (skinId == null || skinId.isEmpty)) {
       return false;
     }
+    // كل وثيقة ضمن سقف التحديث الذاتي (50K رقاقة / 2K جوهرة) حتى
+    // يرصدها المستلم ذرّياً — الهدايا الأكبر تنقسم لعدة وثائق
     try {
-      await _firestore.collection('claims').add({
-        'toUid': toUid,
-        'fromUid': me.uid,
-        'fromAdmin': true,
-        'chips': chips,
-        'gems': gems,
-        if (skinId != null && skinId.isNotEmpty) 'skinId': skinId,
-        'claimed': false,
-        'at': FieldValue.serverTimestamp(),
-      });
+      final batch = _firestore.batch();
+      int rest = chips;
+      while (rest > 0) {
+        final c = rest > 50000 ? 50000 : rest;
+        rest -= c;
+        batch.set(_firestore.collection('claims').doc(), {
+          'toUid': toUid,
+          'fromUid': me.uid,
+          'fromAdmin': true,
+          'chips': c,
+          'gems': 0,
+          'claimed': false,
+          'at': FieldValue.serverTimestamp(),
+        });
+      }
+      rest = gems;
+      while (rest > 0) {
+        final g = rest > 2000 ? 2000 : rest;
+        rest -= g;
+        batch.set(_firestore.collection('claims').doc(), {
+          'toUid': toUid,
+          'fromUid': me.uid,
+          'fromAdmin': true,
+          'chips': 0,
+          'gems': g,
+          'claimed': false,
+          'at': FieldValue.serverTimestamp(),
+        });
+      }
+      if (skinId != null && skinId.isNotEmpty) {
+        batch.set(_firestore.collection('claims').doc(), {
+          'toUid': toUid,
+          'fromUid': me.uid,
+          'fromAdmin': true,
+          'chips': 0,
+          'gems': 0,
+          'skinId': skinId,
+          'claimed': false,
+          'at': FieldValue.serverTimestamp(),
+        });
+      }
+      await batch.commit();
       return true;
     } catch (e) {
       debugPrint('giftTo: $e');
@@ -261,7 +295,10 @@ class AdminPowerService {
     int gems = 0,
   }) async {
     final me = _me;
+    // الجائزة حقل واحد ذري في الغرفة — لا يمكن تقسيمها، فالسقف
+    // يلتزم بحد التحديث الذاتي للفائز (50K رقاقة / 2K جوهرة)
     if (!isAdmin || me == null || (chips <= 0 && gems <= 0)) return false;
+    if (chips > 50000 || gems > 2000) return false;
     try {
       await _firestore.collection('rooms').doc(roomId).update({
         'treasure': {
@@ -324,7 +361,8 @@ class AdminPowerService {
   /// جائزة خاطفة — تُضاف لرصيد الفائز بهذه الجولة تلقائياً.
   /// الفائز يرصدها بنفسه (ضمن سقف الرصيد) ويُسجَّل flashPrizeClaimed
   Future<bool> setFlashPrize(String roomId, int chips) async {
-    if (!isAdmin || chips <= 0) return false;
+    // الفائز يرصدها لنفسه ضمن سقف التحديث الذاتي — لا تتجاوزه
+    if (!isAdmin || chips <= 0 || chips > 50000) return false;
     try {
       await _firestore.collection('rooms').doc(roomId).update({
         'flashPrize': chips,

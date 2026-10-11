@@ -601,41 +601,59 @@ class AuthService extends ChangeNotifier {
       final skins = <String>[];
       bool fromAdmin = false;
       int grantedCount = 0;
+      final userRef = _firestore.collection('users').doc(user.uid);
 
+      // كل وثيقة claim تُرصد في معاملة ذرية واحدة: رصيد المستخدم +
+      // قلب claimed معاً — لا تُستهلك هدية بلا رصيد ولا يتكرر الرصد.
+      // سقف الوثيقة 50K/2K في القواعد يطابق سقف التحديث الذاتي.
       for (final d in snap.docs) {
-        final granted = await _firestore.runTransaction((tx) async {
-          final s = await tx.get(d.reference);
-          final data = s.data();
-          if (data == null || data['claimed'] == true) return null;
-          tx.update(d.reference, {'claimed': true});
-          return data;
-        });
-        if (granted == null) continue;
-        grantedCount++;
-        chips += (granted['chips'] as num?)?.toInt() ?? 0;
-        gems += (granted['gems'] as num?)?.toInt() ?? 0;
-        if (granted['fromAdmin'] == true) fromAdmin = true;
-        final skin = granted['skinId'] as String?;
-        if (skin != null &&
-            skin.isNotEmpty &&
-            !user.ownedSkins.contains(skin)) {
-          skins.add(skin);
+        try {
+          final granted = await _firestore.runTransaction((tx) async {
+            final s = await tx.get(d.reference);
+            final data = s.data();
+            if (data == null || data['claimed'] == true) return null;
+
+            final uSnap = await tx.get(userRef);
+            final ud = uSnap.data() ?? <String, dynamic>{};
+            final c = (data['chips'] as num?)?.toInt() ?? 0;
+            final g = (data['gems'] as num?)?.toInt() ?? 0;
+            final skin = data['skinId'] as String?;
+            final owned = List<String>.from(
+                (ud['ownedSkins'] as List?)?.map((e) => '$e') ?? const []);
+            final addSkin =
+                skin != null && skin.isNotEmpty && !owned.contains(skin);
+            if (addSkin) owned.add(skin);
+
+            tx.update(userRef, {
+              'chips': ((ud['chips'] as num?)?.toInt() ?? 0) + c,
+              'gems': ((ud['gems'] as num?)?.toInt() ?? 0) + g,
+              'ownedSkins': owned,
+              'updatedAt': FieldValue.serverTimestamp(),
+            });
+            tx.update(d.reference, {'claimed': true});
+            return data;
+          });
+          if (granted == null) continue;
+          grantedCount++;
+          chips += (granted['chips'] as num?)?.toInt() ?? 0;
+          gems += (granted['gems'] as num?)?.toInt() ?? 0;
+          if (granted['fromAdmin'] == true) fromAdmin = true;
+          final skin = granted['skinId'] as String?;
+          if (skin != null && skin.isNotEmpty && !skins.contains(skin)) {
+            skins.add(skin);
+          }
+        } catch (e) {
+          debugPrint('claim ${d.id} failed: $e');
         }
       }
       if (grantedCount == 0) return;
 
-      final owned = [...user.ownedSkins, ...skins];
-      await _firestore.collection('users').doc(user.uid).update({
-        'chips': user.chips + chips,
-        'gems': user.gems + gems,
-        'ownedSkins': owned,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
+      // المزامنة الحيّة عبر بثّ الوثيقة تصحح الرصيد لحظياً؛
+      // نحدّث المحلي فوراً ليعكس الإشعار أحدث قيمة
       _currentUser = user.copyWith(
         chips: user.chips + chips,
         gems: user.gems + gems,
-        ownedSkins: owned,
+        ownedSkins: [...user.ownedSkins, ...skins],
       );
       notifyListeners();
 
